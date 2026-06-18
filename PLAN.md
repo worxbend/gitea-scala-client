@@ -128,7 +128,11 @@ Current checkpoint:
 - The optional OkHttp bridge adapts sttp's async `OkHttpFutureBackend` to the client module's `Backend[Task]` boundary; it does not use the blocking sync backend.
 - OkHttp dependencies remain confined to `backend-okhttp`; `core`, `client`, and `backend-zio` do not depend on OkHttp.
 - `backend-okhttp.test` covers hermetic live-layer construction and custom OkHttp client layer construction without calling external services.
-- Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
+- Phase 8 has started with opt-in live integration tests in the `it` module.
+- `LiveGiteaIntegrationSpec` only runs when both `GITEA_URL` and `GITEA_TOKEN` are non-empty; otherwise ZIO Test reports the live tests as ignored and performs no network calls.
+- The current live integration slice calls `GET /user` and streams the authenticated user's repositories through the live ZIO backend with `RepoListParams(limit = Some(1))`.
+- README documents how to run or skip live integration tests.
+- Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, `./mill it.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
 
@@ -621,6 +625,13 @@ Deliverable:
 
 unit tests run by default; live integration tests are opt-in and documented.
 
+Completed subset:
+
+- Replaced the placeholder integration module with `LiveGiteaIntegrationSpec`.
+- Live tests are guarded by `TestAspect.ifEnv` non-empty predicates for `GITEA_URL` and `GITEA_TOKEN`, so default validation remains hermetic and reports the live tests as ignored.
+- Covered `GET /user` and one paginated repository stream through `ZioGiteaBackend`.
+- Documented integration test execution in README.
+
 ## Phase 9 - Examples and README
 
 Goal: make the rewritten project understandable by running it.
@@ -678,9 +689,9 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- start Phase 8 by replacing the placeholder integration module with opt-in tests that only run when `GITEA_URL` and `GITEA_TOKEN` are present,
-- cover a small live read-only slice such as `GET /user` and one paginated stream through the live ZIO backend,
-- document how to run or skip integration tests without requiring external services for default unit validation,
-- keep `./mill __.test` hermetic when integration credentials are absent.
+- start Phase 9 with runnable example files for the existing read-only API, beginning with `ListMyRepos.scala` and one stream-oriented example such as `WatchNotifications.scala`,
+- keep examples hermetic by default and gated on documented environment variables,
+- expand README with a pasteable quickstart, auth modes, ZLayer usage, pagination streams, error handling, retry/rate-limit behavior, backend choices, testing against Gitea, supported API version, and Mill commands,
+- keep `./mill __.test`, `./mill it.test`, and `./mill examples.run` passing without external services when live credentials are absent.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.

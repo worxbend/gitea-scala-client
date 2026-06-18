@@ -27,6 +27,7 @@ Useful commands:
 ```bash
 ./mill __.compile
 ./mill __.test
+./mill it.test
 ./mill examples.run
 ```
 
@@ -41,6 +42,21 @@ then environment loading, then Typesafe config. The environment retry knob is
 `GITEA_MAX_RETRIES`; the Typesafe config key is `gitea4s.max-retries`. Both accept
 zero or a positive integer.
 
+Integration tests are opt-in and live under the `it` module. By default, `./mill __.test`
+and `./mill it.test` do not call external services; the live tests are reported as ignored.
+Set both variables below to run the current live read-only smoke checks through
+`ZioGiteaBackend`:
+
+```bash
+GITEA_URL=https://gitea.example \
+GITEA_TOKEN=... \
+./mill it.test
+```
+
+The current integration slice calls `GET /user` and streams the authenticated user's
+repositories with a page size of one. Invalid live config or API failures fail the tests
+when both integration variables are present.
+
 Example Typesafe config:
 
 ```hocon
@@ -54,4 +70,4 @@ gitea4s {
 ```
 
 The rewrite is still in progress. Implemented APIs are covered by hermetic stub-backed tests;
-integration tests, additional examples, and publishing polish remain planned work.
+additional examples and publishing polish remain planned work.
