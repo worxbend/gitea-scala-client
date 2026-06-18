@@ -18,6 +18,8 @@ surface is still being filled out.
   construction.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
+- Typed issue comments with `CreateIssueComment` and `issueCreateComment` request
+  construction.
 - Primary Java `HttpClient` backend through sttp `HttpClientZioBackend`.
 - Optional OkHttp backend bridge isolated in `backend-okhttp`.
 - Environment and Typesafe config loading, retry handling, examples, and

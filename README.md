@@ -169,7 +169,7 @@ tags, releases, pull requests, and notification threads.
 
 ## Issue Writes
 
-The current write endpoints cover issue creation and editing:
+The current write endpoints cover issue creation, editing, closing, and comments:
 
 ```scala
 import io.worxbend.gitea4s.model.{CreateIssue, EditIssue}
@@ -188,6 +188,8 @@ client.edit(
 )
 
 client.close(owner = "my-org", repo = "my-repo", index = 12)
+
+client.comment(owner = "my-org", repo = "my-repo", index = 12, body = "Confirmed")
 ```
 
 Write requests are not retried by default.

@@ -142,6 +142,21 @@ object GiteaClientSpec extends ZIOSpecDefault:
           Assertion.equalTo(Some("closed"))
         )
       },
+      test("adds an issue comment through the IssuesApi comment method") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.POST &&
+              request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "comments")) &&
+              (request.body match
+                case StringBody(body, _, _) => body.contains(""""body":"Looks good"""")
+                case _ => false)
+          }.thenRespond(ResponseStub.adjust("""{"id":30,"body":"Looks good"}""", StatusCode.Created))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.comment("owner", "repo", 8, "Looks good").map(comment => comment.id -> comment.body))(
+          Assertion.equalTo(Some(30L) -> Some("Looks good"))
+        )
+      },
       test("loads an organization through the OrgsApi facade") {
         val backend =
           taskStub.whenRequestMatches(_.uri.path.endsWith(List("orgs", "platform")))

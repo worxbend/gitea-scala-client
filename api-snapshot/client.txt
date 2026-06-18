@@ -421,6 +421,7 @@ public interface io.worxbend.gitea4s.api.IssuesApi {
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> create(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateIssue);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> edit(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssue);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> close(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Comment> comment(java.lang.String, java.lang.String, long, java.lang.String);
 }
 
 ## io.worxbend.gitea4s.api.NotificationsApi
@@ -521,6 +522,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoint$ implements scala.deri
 
 ## io.worxbend.gitea4s.http.GiteaEndpoints
 public final class io.worxbend.gitea4s.http.GiteaEndpoints {
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueCreateComment();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueCreateIssue();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueEditIssue();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueGetIssue();
@@ -572,6 +574,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint issueGetIssue();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueCreateIssue();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueEditIssue();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueCreateComment();
   public io.worxbend.gitea4s.http.GiteaEndpoint notifyGetList();
   public io.worxbend.gitea4s.http.GiteaEndpoint notifyNewAvailable();
   public io.worxbend.gitea4s.http.GiteaEndpoint notifyGetThread();
@@ -664,6 +667,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequest$ implements scala.deriv
 ## io.worxbend.gitea4s.http.GiteaRequests
 public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> createIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateIssue);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> createIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.CreateIssueComment);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.User> currentUser(io.worxbend.gitea4s.GiteaConfig);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> editIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssue);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> issue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
@@ -740,6 +744,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> issue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> createIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateIssue);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> editIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssue);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> createIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.CreateIssueComment);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.NotificationThread>> notifications(io.worxbend.gitea4s.GiteaConfig, io.worxbend.gitea4s.http.NotificationListParams);
   public io.worxbend.gitea4s.http.NotificationListParams notifications$default$2();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.NotificationCount> notificationCount(io.worxbend.gitea4s.GiteaConfig);

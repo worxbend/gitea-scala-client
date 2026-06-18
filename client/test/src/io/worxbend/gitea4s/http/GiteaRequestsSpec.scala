@@ -2,7 +2,7 @@ package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{Auth, CreateIssue, EditIssue, IssueState, NotificationSubjectType}
+import io.worxbend.gitea4s.model.{Auth, CreateIssue, CreateIssueComment, EditIssue, IssueState, NotificationSubjectType}
 import sttp.client4.*
 import sttp.client4.testing.{BackendStub, ResponseStub}
 import sttp.model.{Header, Method, StatusCode}
@@ -336,6 +336,37 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
               json.contains(""""title":"Implement POST"""") &&
                 json.contains(""""due_date":"2026-07-01T00:00:00Z"""") &&
                 json.contains(""""labels":[1,2]""")
+            case _ => false
+        )
+      },
+      test("builds schema-traceable create issue comment request with JSON body") {
+        val built =
+          GiteaRequests.createIssueComment(
+            config,
+            "worx bend",
+            "gitea/scala",
+            99,
+            CreateIssueComment("Looks good")
+          )
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.issueCreateComment,
+          endpoint.method == "POST",
+          endpoint.operationId == "issueCreateComment",
+          endpoint.path == "/repos/{owner}/{repo}/issues/{index}/comments",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
+          endpoint.response == "#/responses/Comment",
+          request.method == Method.POST,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/comments",
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("Content-Type").exists(_.startsWith("application/json")),
+          built.retryable == false,
+          request.body match
+            case StringBody(json, _, _) => json.contains(""""body":"Looks good"""")
             case _ => false
         )
       },

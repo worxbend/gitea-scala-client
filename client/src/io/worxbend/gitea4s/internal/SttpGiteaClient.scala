@@ -13,7 +13,9 @@ import io.worxbend.gitea4s.http.{
 }
 import io.worxbend.gitea4s.model.{
   Branch,
+  Comment,
   CreateIssue,
+  CreateIssueComment,
   EditIssue,
   Issue,
   IssueState,
@@ -153,3 +155,6 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def close(owner: String, repo: String, index: Long): IO[GiteaError, Issue] =
     edit(owner, repo, index, EditIssue(state = Some(IssueState.Closed)))
+
+  override def comment(owner: String, repo: String, index: Long, body: String): IO[GiteaError, Comment] =
+    executor.send(GiteaRequests.createIssueComment(config, owner, repo, index, CreateIssueComment(body)))

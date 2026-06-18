@@ -253,3 +253,10 @@
 2026-06-18T09:03:21Z added typed issue editing and close helper with EditIssue payload, PATCH request builder, IssuesApi facade wiring, tests, README, changelog, PLAN, and API snapshots
 2026-06-18T09:03:21Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts; ./mill --no-server __.publishM2Local"
 2026-06-18T09:03:21Z checkpoint commit created message="Add issue edit API"
+2026-06-18T09:04:39Z iteration 7 no changes to commit
+2026-06-18T09:04:39Z iteration 7 completed validation_status=0
+2026-06-18T09:04:39Z iteration 8 started remaining=15249s
+2026-06-18T09:08:43Z added typed issue comment creation with CreateIssueComment payload, POST request builder, IssuesApi facade wiring, tests, README, changelog, PLAN, and API snapshots
+2026-06-18T09:08:43Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts; ./mill --no-server __.publishM2Local"
+2026-06-18T09:09:12Z checkpoint commit created message="Add issue comment creation API"
+2026-06-18T09:09:12Z iteration 8 completed validation_status=0

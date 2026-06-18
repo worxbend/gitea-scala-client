@@ -4,7 +4,9 @@ import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.model.{
   Auth,
   Branch,
+  Comment,
   CreateIssue,
+  CreateIssueComment,
   EditIssue,
   Issue,
   IssueState,
@@ -227,6 +229,21 @@ object GiteaRequests:
       List("repos", owner, repo, "issues", index.toString),
       body.toJson,
       GiteaResponseMapper.decodeJson[Issue]
+    )
+
+  def createIssueComment(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: CreateIssueComment
+  ): GiteaRequest[Comment] =
+    postJson(
+      config,
+      GiteaEndpoints.issueCreateComment,
+      List("repos", owner, repo, "issues", index.toString, "comments"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Comment]
     )
 
   def notifications(config: GiteaConfig, params: NotificationListParams = NotificationListParams.default)
