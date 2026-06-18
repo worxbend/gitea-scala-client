@@ -55,6 +55,15 @@ object GiteaEndpoints:
       response = "#/responses/Repository"
     )
 
+  val orgGet: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/orgs/{org}",
+      operationId = "orgGet",
+      parameters = List(GiteaParameter("org", "path", required = true)),
+      response = "#/responses/Organization"
+    )
+
   val userListRepos: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

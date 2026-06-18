@@ -54,6 +54,16 @@ object GiteaClientSpec extends ZIOSpecDefault:
           Assertion.equalTo(Some(17L) -> Some(7L) -> Some("tracked"))
         )
       },
+      test("loads an organization through the OrgsApi facade") {
+        val backend =
+          taskStub.whenRequestMatches(_.uri.path.endsWith(List("orgs", "platform")))
+            .thenRespond(ResponseStub.adjust("""{"id":9,"name":"platform","full_name":"Platform Team"}"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.orgs.get("platform").map(org => org.id -> org.name -> org.fullName))(
+          Assertion.equalTo(Some(9L) -> Some("platform") -> Some("Platform Team"))
+        )
+      },
       test("returns decode failures as GiteaError") {
         val backend =
           taskStub.whenAnyRequest.thenRespond(ResponseStub.adjust("""{"id":"not-a-number"}"""))

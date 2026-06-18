@@ -1,15 +1,21 @@
 package io.worxbend.gitea4s.internal
 
 import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
+import io.worxbend.gitea4s.api.OrgsApi
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{GiteaRequests, IssueListParams, RepoListParams, UserSearchParams}
-import io.worxbend.gitea4s.model.{Issue, Repository, User}
+import io.worxbend.gitea4s.model.{Issue, Organization, Repository, User}
 import sttp.client4.Backend
 import zio.{Chunk, IO, Task}
 import zio.stream.ZStream
 
 final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends GiteaClient:
   private val executor = GiteaRequestExecutor(backend)
+
+  override val orgs: OrgsApi =
+    new OrgsApi:
+      override def get(org: String): IO[GiteaError, Organization] =
+        executor.send(GiteaRequests.organization(config, org))
 
   override def me: IO[GiteaError, User] =
     executor.send(GiteaRequests.currentUser(config))

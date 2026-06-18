@@ -47,6 +47,22 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("Authorization").contains("token secret")
         )
       },
+      test("builds schema-traceable get organization request") {
+        val built = GiteaRequests.organization(config, "space org/slash")
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.orgGet,
+          endpoint.operationId == "orgGet",
+          endpoint.path == "/orgs/{org}",
+          endpoint.parameters.map(_.name) == List("org"),
+          endpoint.response == "#/responses/Organization",
+          request.method == Method.GET,
+          request.uri.toString == "https://gitea.example/root/api/v1/orgs/space%20org%2Fslash",
+          request.header("Accept").contains("application/json")
+        )
+      },
       test("builds schema-traceable paginated user repository list request") {
         val built =
           GiteaRequests.userRepos(config, "space user/slash", RepoListParams(page = Some(2), limit = Some(15)))
@@ -178,6 +194,18 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.decode(raw).map(_.id) == Right(Some(42L))
         )
       },
+      test("decodes a successful organization response through BackendStub") {
+        val response = """{"id":9,"name":"platform","full_name":"Platform Team"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(response))
+        val built = GiteaRequests.organization(config, "platform")
+        val raw = built.request.send(backend)
+
+        assertTrue(
+          built.decode(raw).map(_.id) == Right(Some(9L)),
+          built.decode(raw).map(_.name) == Right(Some("platform")),
+          built.decode(raw).map(_.fullName) == Right(Some("Platform Team"))
+        )
+      },
       test("decodes paginated issue list response and pagination headers") {
         val response = """[{"id":1,"number":7,"state":"open","title":"First"}]"""
         val headers = List(Header("x-total-count", "31"))
@@ -246,6 +274,16 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           built.decode(raw) == Left(GiteaError.NotFound("missing repo", body))
+        )
+      },
+      test("maps organization not-found responses") {
+        val body = """{"message":"missing org"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val built = GiteaRequests.organization(config, "missing")
+        val raw = built.request.send(backend)
+
+        assertTrue(
+          built.decode(raw) == Left(GiteaError.NotFound("missing org", body))
         )
       },
       test("maps rate limit reset headers") {

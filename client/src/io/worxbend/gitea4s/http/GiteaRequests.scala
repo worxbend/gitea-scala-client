@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.GiteaConfig
-import io.worxbend.gitea4s.model.{Auth, Issue, IssueState, Page, Repository, User}
+import io.worxbend.gitea4s.model.{Auth, Issue, IssueState, Organization, Page, Repository, User}
 import sttp.client4.*
 import sttp.model.{MediaType, Uri}
 
@@ -34,6 +34,15 @@ object GiteaRequests:
       List("repos", owner, repo),
       Nil,
       GiteaResponseMapper.decodeJson[Repository]
+    )
+
+  def organization(config: GiteaConfig, org: String): GiteaRequest[Organization] =
+    get(
+      config,
+      GiteaEndpoints.orgGet,
+      List("orgs", org),
+      Nil,
+      GiteaResponseMapper.decodeJson[Organization]
     )
 
   def userRepos(config: GiteaConfig, username: String, params: RepoListParams = RepoListParams.default)

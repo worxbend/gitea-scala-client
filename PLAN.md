@@ -4,9 +4,9 @@
 
 This project must be rewritten from scratch as a Mill-built Scala project.
 
-Use Mill instead of SBT.
+Use Mill only.
 
-Do not modernize, extend, or depend on the current SBT build as the implementation path. The existing `build.sbt`, `project/Dependencies.scala`, and `project/Config.scala` are legacy artifacts only. They may be deleted once the Mill build is in place, or kept temporarily only as historical context during migration.
+Do not modernize, extend, or depend on an SBT build as the implementation path.
 
 Do not preserve the current generic request-option prototype as the foundation. The new client should use typed domain models, typed request parameters, sttp request builders, ZIO effects, and ZIO streams.
 
@@ -35,8 +35,7 @@ API target: Gitea API v1.26.2, using the local `plugin-redoc-2.yaml` Swagger 2.0
 ## Current Repo State
 
 The repository now has a compiling Mill-based Scala 3 skeleton for `gitea4s`.
-The legacy SBT files remain as historical artifacts only; `./mill` is the
-authoritative build entrypoint.
+`./mill` is the authoritative build entrypoint.
 
 Existing files of note:
 
@@ -66,10 +65,6 @@ backend-okhttp/src/io/worxbend/gitea4s/backend/okhttp/OkHttpGiteaBackend.scala
 examples/src/io/worxbend/gitea4s/examples/ShowApiReference.scala
 it/src/io/worxbend/gitea4s/it/IntegrationPlaceholder.scala
 plugin-redoc-2.yaml
-build.sbt
-project/build.properties
-project/Dependencies.scala
-project/Config.scala
 README.md
 ```
 
@@ -87,18 +82,19 @@ Current checkpoint:
 - Core supporting types now include `Page`, `Auth`, and the `GiteaError` ADT.
 - `CoreModelsSpec` covers JSON decode and round-trip behavior for the first model slice, enum validation, pagination codec behavior, auth modes, and the error ADT.
 - `GiteaConfig` now carries typed sttp `Uri`, `Auth`, timeout, page size, user agent, OTP, and retry settings.
-- Client HTTP now has schema-traceable endpoint metadata and pure sttp request construction for `GET /user` (`userGetCurrent`), `GET /users/{username}` (`userGet`), `GET /users/search` (`userSearch`), `GET /users/{username}/followers` (`userListFollowers`), `GET /users/{username}/following` (`userListFollowing`), `GET /users/{username}/repos` (`userListRepos`), `GET /repos/{owner}/{repo}` (`repoGet`), `GET /repos/{owner}/{repo}/topics` (`repoListTopics`), `GET /repos/{owner}/{repo}/issues` (`issueListIssues`), and `GET /repos/{owner}/{repo}/issues/{index}` (`issueGetIssue`).
+- Client HTTP now has schema-traceable endpoint metadata and pure sttp request construction for `GET /user` (`userGetCurrent`), `GET /users/{username}` (`userGet`), `GET /users/search` (`userSearch`), `GET /users/{username}/followers` (`userListFollowers`), `GET /users/{username}/following` (`userListFollowing`), `GET /users/{username}/repos` (`userListRepos`), `GET /orgs/{org}` (`orgGet`), `GET /repos/{owner}/{repo}` (`repoGet`), `GET /repos/{owner}/{repo}/topics` (`repoListTopics`), `GET /repos/{owner}/{repo}/issues` (`issueListIssues`), and `GET /repos/{owner}/{repo}/issues/{index}` (`issueGetIssue`).
 - `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`.
 - `RepoListParams` covers page/limit for `userListRepos`; `UserSearchParams` covers `q`/page/limit for `userSearch`; `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`.
 - `GiteaResponseMapper` decodes successful JSON responses, paginated issue/repository lists, object-shaped user-search and topic-name pages, 204/unit responses, Gitea error payloads, raw failure bodies, pagination headers, and rate-limit reset headers.
-- `GiteaRequestsSpec` uses sttp `BackendStub` to cover path encoding, query params, auth/OTP/user-agent/JSON accept headers, JSON content type for body requests, successful decoding, pagination mapping for issue/user/repository/topic/search lists, Gitea error mapping, and rate-limit mapping.
-- Phase 4 has started with a small ZIO API facade: `UsersApi`, `ReposApi`, and `IssuesApi` are wired through `GiteaClient.fromBackend`.
+- `GiteaRequestsSpec` uses sttp `BackendStub` to cover path encoding, query params, auth/OTP/user-agent/JSON accept headers, JSON content type for body requests, successful decoding, pagination mapping for issue/user/repository/topic/search lists, organization decoding, Gitea error mapping, and rate-limit mapping.
+- Phase 4 has started with a small ZIO API facade: `UsersApi`, `ReposApi`, `IssuesApi`, and a nested `OrgsApi` namespace are wired through `GiteaClient.fromBackend`.
 - `GiteaRequestExecutor` sends `GiteaRequest[A]` through a sttp `Backend[Task]`, decodes responses through the existing mapper, and maps backend failures to `GiteaError.TransportError`.
 - `IssuesApi.get(owner, repo, index)` fetches a single issue and `IssuesApi.list(owner, repo, IssueListParams)` streams paginated issues with `ZStream.paginateChunkZIO`.
 - `UsersApi.followers(username)`, `UsersApi.following(username)`, and `UsersApi.search(params)` stream paginated users through the shared pagination helper.
 - `ReposApi.list(owner, RepoListParams)` streams repositories from `userListRepos`, and `ReposApi.topics(owner, repo)` collects all topic pages from `repoListTopics`.
 - `ReposApi.list` intentionally requires an explicit `RepoListParams` argument for now because Scala cannot generate default arguments for both overloaded `list` methods on `ReposApi` and `IssuesApi`.
-- `GiteaClientSpec` covers current-user success, user/repository/issue `get`, decode failure, transport failure, multi-page issue/repository/topic/search streaming, and follower/following stream pagination through a `BackendStub[Task]`.
+- `OrgsApi.get(org)` is exposed as `client.orgs.get(org)` to avoid colliding with the existing single-argument `UsersApi.get(username)` method on `GiteaClient`.
+- `GiteaClientSpec` covers current-user success, user/repository/issue `get`, organization lookup through `client.orgs.get`, decode failure, transport failure, multi-page issue/repository/topic/search streaming, and follower/following stream pagination through a `BackendStub[Task]`.
 - Validation passed: `./mill core.test`, `./mill client.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
@@ -241,7 +237,7 @@ Optional OkHttp module only:
 mvn"com.softwaremill.sttp.client4::okhttp-backend:${Versions.sttp}"
 ```
 
-Do not add SBT plugins or SBT test dependencies.
+Do not add SBT build files or plugins.
 
 ## Phase 2 - Core Models and Codecs
 
@@ -637,8 +633,9 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 4 by introducing `OrgsApi` into `GiteaClient`, starting with `GET /orgs/{org}` (`orgGet`) from `plugin-redoc-2.yaml`,
-- add schema-traceable endpoint metadata and a pure request builder that decodes the existing `Organization` model through the executor,
-- add stub-backed tests that verify endpoint metadata, path encoding, successful decoding, error mapping, and the `OrgsApi.get(org)` facade.
+- continue Phase 4 by extending `OrgsApi` with paginated organization members from `GET /orgs/{org}/members` (`orgListMembers`) in `plugin-redoc-2.yaml`,
+- add schema-traceable endpoint metadata and a pure request builder that decodes `#/responses/UserList` through the existing pagination mapper,
+- add `client.orgs.members(org)` as a `ZStream[GiteaError, User]` using the shared pagination helper,
+- add stub-backed tests that verify endpoint metadata, path encoding, page/limit query params, pagination decoding, error mapping, and multi-page facade streaming.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.
