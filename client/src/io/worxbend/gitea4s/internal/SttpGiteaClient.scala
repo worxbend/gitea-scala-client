@@ -21,6 +21,7 @@ import io.worxbend.gitea4s.model.{
   EditDeadlineOption,
   EditIssueComment,
   EditIssue,
+  EditReactionOption,
   Issue,
   IssueDeadline,
   IssueLabelsOption,
@@ -32,6 +33,7 @@ import io.worxbend.gitea4s.model.{
   NotificationThread,
   Organization,
   PullRequest,
+  Reaction,
   Release,
   Repository,
   Tag,
@@ -233,6 +235,25 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override def deleteComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.deleteIssueComment(config, owner, repo, id))
 
+  override def commentReactions(owner: String, repo: String, id: Long): IO[GiteaError, Chunk[Reaction]] =
+    executor.send(GiteaRequests.issueCommentReactions(config, owner, repo, id))
+
+  override def reactToComment(
+      owner: String,
+      repo: String,
+      id: Long,
+      body: EditReactionOption
+  ): IO[GiteaError, Reaction] =
+    executor.send(GiteaRequests.postIssueCommentReaction(config, owner, repo, id, body))
+
+  override def deleteCommentReaction(
+      owner: String,
+      repo: String,
+      id: Long,
+      body: EditReactionOption
+  ): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteIssueCommentReaction(config, owner, repo, id, body))
+
   override def blocks(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, Issue] =
     Pagination.paginated { page =>
       executor.send(GiteaRequests.issueBlocks(config, owner, repo, index, page))
@@ -264,3 +285,24 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       dependency: IssueMeta
   ): IO[GiteaError, Issue] =
     executor.send(GiteaRequests.removeIssueDependency(config, owner, repo, index, dependency))
+
+  override def reactions(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, Reaction] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.issueReactions(config, owner, repo, index, page))
+    }
+
+  override def react(
+      owner: String,
+      repo: String,
+      index: Long,
+      body: EditReactionOption
+  ): IO[GiteaError, Reaction] =
+    executor.send(GiteaRequests.postIssueReaction(config, owner, repo, index, body))
+
+  override def deleteReaction(
+      owner: String,
+      repo: String,
+      index: Long,
+      body: EditReactionOption
+  ): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteIssueReaction(config, owner, repo, index, body))

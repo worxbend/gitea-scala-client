@@ -8,11 +8,13 @@ import io.worxbend.gitea4s.model.{
   EditDeadlineOption,
   EditIssueComment,
   EditIssue,
+  EditReactionOption,
   Issue,
   IssueDeadline,
   Label,
   LockIssueOption,
-  IssueMeta
+  IssueMeta,
+  Reaction
 }
 import zio.{Chunk, IO}
 import zio.stream.ZStream
@@ -69,6 +71,12 @@ trait IssuesApi:
 
   def deleteComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit]
 
+  def commentReactions(owner: String, repo: String, id: Long): IO[GiteaError, Chunk[Reaction]]
+
+  def reactToComment(owner: String, repo: String, id: Long, body: EditReactionOption): IO[GiteaError, Reaction]
+
+  def deleteCommentReaction(owner: String, repo: String, id: Long, body: EditReactionOption): IO[GiteaError, Unit]
+
   def blocks(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, Issue]
 
   def block(owner: String, repo: String, index: Long, blockedIssue: IssueMeta): IO[GiteaError, Issue]
@@ -80,3 +88,9 @@ trait IssuesApi:
   def addDependency(owner: String, repo: String, index: Long, dependency: IssueMeta): IO[GiteaError, Issue]
 
   def removeDependency(owner: String, repo: String, index: Long, dependency: IssueMeta): IO[GiteaError, Issue]
+
+  def reactions(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, Reaction]
+
+  def react(owner: String, repo: String, index: Long, body: EditReactionOption): IO[GiteaError, Reaction]
+
+  def deleteReaction(owner: String, repo: String, index: Long, body: EditReactionOption): IO[GiteaError, Unit]

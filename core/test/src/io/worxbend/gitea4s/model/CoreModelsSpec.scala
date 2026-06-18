@@ -239,6 +239,25 @@ object CoreModelsSpec extends ZIOSpecDefault:
           decoded == Right(payload)
         )
       },
+      test("decodes reactions and round-trips reaction request payload") {
+        val reactionJson =
+          """{
+            |  "content": "+1",
+            |  "created_at": "2026-06-18T09:00:00Z",
+            |  "user": { "id": 42, "login": "octo" }
+            |}""".stripMargin
+        val payload = EditReactionOption(content = "+1")
+
+        val reaction = reactionJson.fromJson[Reaction]
+
+        assertTrue(
+          reaction.map(_.content) == Right(Some("+1")),
+          reaction.map(_.createdAt) == Right(Some(Instant.parse("2026-06-18T09:00:00Z"))),
+          reaction.map(_.user.flatMap(_.login)) == Right(Some("octo")),
+          payload.toJson == """{"content":"+1"}""",
+          payload.toJson.fromJson[EditReactionOption] == Right(payload)
+        )
+      },
       test("round-trips issue meta payloads for dependency and blocking requests") {
         val sameRepo = IssueMeta(index = 13L)
         val crossRepo = IssueMeta(index = 21L, owner = Some("other-owner"), repo = Some("other-repo"))

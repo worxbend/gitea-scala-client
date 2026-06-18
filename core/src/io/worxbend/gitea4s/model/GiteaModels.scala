@@ -238,6 +238,22 @@ final case class EditIssueComment(
 object EditIssueComment:
   given JsonCodec[EditIssueComment] = DeriveJsonCodec.gen[EditIssueComment]
 
+final case class EditReactionOption(
+    content: String
+)
+
+object EditReactionOption:
+  given JsonCodec[EditReactionOption] = DeriveJsonCodec.gen[EditReactionOption]
+
+final case class Reaction(
+    content: Option[String] = None,
+    @jsonField("created_at") createdAt: Option[Instant] = None,
+    user: Option[User] = None
+)
+
+object Reaction:
+  given JsonCodec[Reaction] = DeriveJsonCodec.gen[Reaction]
+
 final case class IssueMeta(
     index: Long,
     owner: Option[String] = None,

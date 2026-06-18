@@ -18,6 +18,7 @@ import io.worxbend.gitea4s.model.{
   EditDeadlineOption,
   EditIssue,
   EditIssueComment,
+  EditReactionOption,
   IssueMeta,
   LockIssueOption
 }
@@ -225,6 +226,78 @@ object GiteaClientSpec extends ZIOSpecDefault:
           loaded.body.contains("First"),
           edited.body.contains("Updated"),
           deleted == Right(())
+        )
+      },
+      test("manages issue and comment reactions through the IssuesApi methods") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "reactions"))
+            }
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"content":"+1","user":{"id":1,"login":"alice"}}]""", StatusCode.Ok, twoPageHeaders),
+              ResponseStub.adjust("""[{"content":"heart","user":{"id":2,"login":"bob"}}]""", StatusCode.Ok, twoPageHeaders)
+            )
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "reactions")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""content":"+1"""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""{"content":"+1"}""", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "reactions")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""content":"+1"""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "comments", "30", "reactions"))
+            }
+            .thenRespond(ResponseStub.adjust("""[{"content":"eyes","user":{"id":3,"login":"carol"}}]"""))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "comments", "30", "reactions")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""content":"eyes"""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""{"content":"eyes"}""", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "comments", "30", "reactions")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""content":"eyes"""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          issueReactions <- client.reactions("owner", "repo", 8).runCollect
+          issueReaction <- client.react("owner", "repo", 8, EditReactionOption("+1"))
+          issueReactionDeleted <- client.deleteReaction("owner", "repo", 8, EditReactionOption("+1")).either
+          commentReactions <- client.commentReactions("owner", "repo", 30)
+          commentReaction <- client.reactToComment("owner", "repo", 30, EditReactionOption("eyes"))
+          commentReactionDeleted <- client.deleteCommentReaction(
+            "owner",
+            "repo",
+            30,
+            EditReactionOption("eyes")
+          ).either
+        yield assertTrue(
+          issueReactions.map(_.content) == Chunk(Some("+1"), Some("heart")),
+          issueReaction.content.contains("+1"),
+          issueReactionDeleted == Right(()),
+          commentReactions.map(_.content) == Chunk(Some("eyes")),
+          commentReaction.content.contains("eyes"),
+          commentReactionDeleted == Right(())
         )
       },
       test("manages issue labels through the IssuesApi label methods") {

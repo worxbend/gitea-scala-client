@@ -23,6 +23,8 @@ surface is still being filled out.
 - Typed issue comment listing, lookup, editing, and deletion with
   `IssueCommentListParams`, `RepositoryCommentListParams`, `EditIssueComment`,
   and schema-traceable issue comment request construction.
+- Typed issue and issue-comment reactions with `Reaction`, `EditReactionOption`,
+  and schema-traceable reaction request construction.
 - Typed issue label listing, replacement, addition, clearing, and removal with
   `IssueLabelsOption` and schema-traceable issue label request construction.
 - Typed issue locking and unlocking with `LockIssueOption` and

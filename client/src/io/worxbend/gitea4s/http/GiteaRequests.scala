@@ -10,6 +10,7 @@ import io.worxbend.gitea4s.model.{
   EditDeadlineOption,
   EditIssueComment,
   EditIssue,
+  EditReactionOption,
   Issue,
   IssueDeadline,
   IssueLabelsOption,
@@ -22,6 +23,7 @@ import io.worxbend.gitea4s.model.{
   Organization,
   Page,
   PullRequest,
+  Reaction,
   Release,
   Repository,
   Tag,
@@ -317,6 +319,50 @@ object GiteaRequests:
       GiteaResponseMapper.decodeUnit
     )
 
+  def issueCommentReactions(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      id: Long
+  ): GiteaRequest[zio.Chunk[Reaction]] =
+    get(
+      config,
+      GiteaEndpoints.issueGetCommentReactions,
+      List("repos", owner, repo, "issues", "comments", id.toString, "reactions"),
+      Nil,
+      GiteaResponseMapper.decodeChunk[Reaction]
+    )
+
+  def postIssueCommentReaction(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      id: Long,
+      body: EditReactionOption
+  ): GiteaRequest[Reaction] =
+    postJson(
+      config,
+      GiteaEndpoints.issuePostCommentReaction,
+      List("repos", owner, repo, "issues", "comments", id.toString, "reactions"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Reaction]
+    )
+
+  def deleteIssueCommentReaction(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      id: Long,
+      body: EditReactionOption
+  ): GiteaRequest[Unit] =
+    deleteJson(
+      config,
+      GiteaEndpoints.issueDeleteCommentReaction,
+      List("repos", owner, repo, "issues", "comments", id.toString, "reactions"),
+      body.toJson,
+      GiteaResponseMapper.decodeUnit
+    )
+
   def issueBlocks(config: GiteaConfig, owner: String, repo: String, index: Long, page: Int = 1)
       : GiteaRequest[Page[Issue]] =
     val pageSize = config.pageSize
@@ -498,6 +544,48 @@ object GiteaRequests:
       List("repos", owner, repo, "issues", index.toString, "deadline"),
       body.toJson,
       GiteaResponseMapper.decodeJson[IssueDeadline]
+    )
+
+  def issueReactions(config: GiteaConfig, owner: String, repo: String, index: Long, page: Int = 1)
+      : GiteaRequest[Page[Reaction]] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      GiteaEndpoints.issueGetIssueReactions,
+      List("repos", owner, repo, "issues", index.toString, "reactions"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[Reaction](response, page, pageSize)
+    )
+
+  def postIssueReaction(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: EditReactionOption
+  ): GiteaRequest[Reaction] =
+    postJson(
+      config,
+      GiteaEndpoints.issuePostIssueReaction,
+      List("repos", owner, repo, "issues", index.toString, "reactions"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Reaction]
+    )
+
+  def deleteIssueReaction(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: EditReactionOption
+  ): GiteaRequest[Unit] =
+    deleteJson(
+      config,
+      GiteaEndpoints.issueDeleteIssueReaction,
+      List("repos", owner, repo, "issues", index.toString, "reactions"),
+      body.toJson,
+      GiteaResponseMapper.decodeUnit
     )
 
   def notifications(config: GiteaConfig, params: NotificationListParams = NotificationListParams.default)

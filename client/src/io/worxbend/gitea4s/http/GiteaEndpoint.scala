@@ -369,6 +369,47 @@ object GiteaEndpoints:
       response = "#/responses/empty"
     )
 
+  val issueGetCommentReactions: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      operationId = "issueGetCommentReactions",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("id", "path", required = true)
+      ),
+      response = "#/responses/ReactionList"
+    )
+
+  val issuePostCommentReaction: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "POST",
+      path = "/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      operationId = "issuePostCommentReaction",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("id", "path", required = true),
+        GiteaParameter("content", "body", required = false)
+      ),
+      response = "#/responses/Reaction"
+    )
+
+  val issueDeleteCommentReaction: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      operationId = "issueDeleteCommentReaction",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("id", "path", required = true),
+        GiteaParameter("content", "body", required = false)
+      ),
+      response = "#/responses/empty"
+    )
+
   val issueListBlocks: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",
@@ -562,6 +603,49 @@ object GiteaEndpoints:
         GiteaParameter("body", "body", required = false)
       ),
       response = "#/responses/IssueDeadline"
+    )
+
+  val issueGetIssueReactions: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/issues/{index}/reactions",
+      operationId = "issueGetIssueReactions",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/ReactionList"
+    )
+
+  val issuePostIssueReaction: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "POST",
+      path = "/repos/{owner}/{repo}/issues/{index}/reactions",
+      operationId = "issuePostIssueReaction",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("content", "body", required = false)
+      ),
+      response = "#/responses/Reaction"
+    )
+
+  val issueDeleteIssueReaction: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/issues/{index}/reactions",
+      operationId = "issueDeleteIssueReaction",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("content", "body", required = false)
+      ),
+      response = "#/responses/empty"
     )
 
   val notifyGetList: GiteaEndpoint =

@@ -9,6 +9,7 @@ import io.worxbend.gitea4s.model.{
   EditDeadlineOption,
   EditIssueComment,
   EditIssue,
+  EditReactionOption,
   IssueDeadline,
   IssueLabelsOption,
   IssueMeta,
@@ -470,6 +471,46 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           deleteComment.retryable == false
         )
       },
+      test("builds schema-traceable issue comment reaction requests") {
+        val body = EditReactionOption(content = "+1")
+        val list = GiteaRequests.issueCommentReactions(config, "worx bend", "gitea/scala", 30)
+        val add = GiteaRequests.postIssueCommentReaction(config, "worx bend", "gitea/scala", 30, body)
+        val remove = GiteaRequests.deleteIssueCommentReaction(config, "worx bend", "gitea/scala", 30, body)
+
+        assertTrue(
+          list.endpoint == GiteaEndpoints.issueGetCommentReactions,
+          list.endpoint.method == "GET",
+          list.endpoint.operationId == "issueGetCommentReactions",
+          list.endpoint.path == "/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+          list.endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
+          list.endpoint.response == "#/responses/ReactionList",
+          list.request.method == Method.GET,
+          list.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/comments/30/reactions",
+          list.retryable == true,
+          add.endpoint == GiteaEndpoints.issuePostCommentReaction,
+          add.endpoint.method == "POST",
+          add.endpoint.operationId == "issuePostCommentReaction",
+          add.endpoint.parameters.map(_.name) == List("owner", "repo", "id", "content"),
+          add.endpoint.response == "#/responses/Reaction",
+          add.request.method == Method.POST,
+          add.request.header("Content-Type").exists(_.startsWith("application/json")),
+          add.retryable == false,
+          add.request.body match
+            case StringBody(json, _, _) => json.contains(""""content":"+1"""")
+            case _ => false,
+          remove.endpoint == GiteaEndpoints.issueDeleteCommentReaction,
+          remove.endpoint.method == "DELETE",
+          remove.endpoint.operationId == "issueDeleteCommentReaction",
+          remove.endpoint.path == "/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+          remove.request.method == Method.DELETE,
+          remove.request.header("Content-Type").exists(_.startsWith("application/json")),
+          remove.retryable == false,
+          remove.request.body match
+            case StringBody(json, _, _) => json.contains(""""content":"+1"""")
+            case _ => false
+        )
+      },
       test("builds schema-traceable issue label requests") {
         val get = GiteaRequests.issueLabels(config, "worx bend", "gitea/scala", 99)
         val replace =
@@ -665,6 +706,49 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           removeDependency.request.method == Method.DELETE,
           removeDependency.request.header("Content-Type").exists(_.startsWith("application/json")),
           removeDependency.retryable == false
+        )
+      },
+      test("builds schema-traceable issue reaction requests") {
+        val body = EditReactionOption(content = "heart")
+        val list = GiteaRequests.issueReactions(config, "worx bend", "gitea/scala", 99, page = 4)
+        val add = GiteaRequests.postIssueReaction(config, "worx bend", "gitea/scala", 99, body)
+        val remove = GiteaRequests.deleteIssueReaction(config, "worx bend", "gitea/scala", 99, body)
+
+        assertTrue(
+          list.endpoint == GiteaEndpoints.issueGetIssueReactions,
+          list.endpoint.method == "GET",
+          list.endpoint.operationId == "issueGetIssueReactions",
+          list.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/reactions",
+          list.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "page", "limit"),
+          list.endpoint.response == "#/responses/ReactionList",
+          list.request.method == Method.GET,
+          list.request.uri.toString.contains(
+            "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/reactions?"
+          ),
+          list.request.uri.paramsMap.get("page").contains("4"),
+          list.request.uri.paramsMap.get("limit").contains("25"),
+          list.retryable == true,
+          add.endpoint == GiteaEndpoints.issuePostIssueReaction,
+          add.endpoint.method == "POST",
+          add.endpoint.operationId == "issuePostIssueReaction",
+          add.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "content"),
+          add.endpoint.response == "#/responses/Reaction",
+          add.request.method == Method.POST,
+          add.request.header("Content-Type").exists(_.startsWith("application/json")),
+          add.retryable == false,
+          add.request.body match
+            case StringBody(json, _, _) => json.contains(""""content":"heart"""")
+            case _ => false,
+          remove.endpoint == GiteaEndpoints.issueDeleteIssueReaction,
+          remove.endpoint.method == "DELETE",
+          remove.endpoint.operationId == "issueDeleteIssueReaction",
+          remove.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/reactions",
+          remove.request.method == Method.DELETE,
+          remove.request.header("Content-Type").exists(_.startsWith("application/json")),
+          remove.retryable == false,
+          remove.request.body match
+            case StringBody(json, _, _) => json.contains(""""content":"heart"""")
+            case _ => false
         )
       },
       test("builds paginated follower and following list requests") {
@@ -934,6 +1018,35 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           dependencies.decode(dependencies.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
           block.decode(block.request.send(backend)).map(_.number) == Right(Some(99L)),
           removeDependency.decode(removeDependency.request.send(backend)).map(_.title) == Right(Some("Root"))
+        )
+      },
+      test("decodes issue and comment reaction responses") {
+        val listResponse = """[{"content":"+1","user":{"id":42,"login":"octo"}}]"""
+        val reactionResponse = """{"content":"heart","created_at":"2026-06-18T09:00:00Z"}"""
+        val headers = List(Header("x-total-count", "1"))
+        val backend =
+          BackendStub.synchronous
+            .whenRequestMatches(request => request.method == Method.GET && request.uri.paramsMap.contains("page"))
+            .thenRespond(ResponseStub.adjust(listResponse, StatusCode.Ok, headers))
+            .whenRequestMatches(_.method == Method.GET)
+            .thenRespond(ResponseStub.adjust(listResponse))
+            .whenRequestMatches(_.method == Method.POST)
+            .thenRespond(ResponseStub.adjust(reactionResponse, StatusCode.Created))
+            .whenRequestMatches(_.method == Method.DELETE)
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val issueReactions = GiteaRequests.issueReactions(config, "owner", "repo", 99)
+        val commentReactions = GiteaRequests.issueCommentReactions(config, "owner", "repo", 30)
+        val add = GiteaRequests.postIssueReaction(config, "owner", "repo", 99, EditReactionOption("heart"))
+        val remove = GiteaRequests.deleteIssueCommentReaction(config, "owner", "repo", 30, EditReactionOption("+1"))
+
+        assertTrue(
+          issueReactions.decode(issueReactions.request.send(backend)).map(_.data.headOption.flatMap(_.content)) ==
+            Right(Some("+1")),
+          issueReactions.decode(issueReactions.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
+          commentReactions.decode(commentReactions.request.send(backend)).map(_.headOption.flatMap(_.content)) ==
+            Right(Some("+1")),
+          add.decode(add.request.send(backend)).map(_.content) == Right(Some("heart")),
+          remove.decode(remove.request.send(backend)) == Right(())
         )
       },
       test("decodes single issue and paginated user list responses") {
