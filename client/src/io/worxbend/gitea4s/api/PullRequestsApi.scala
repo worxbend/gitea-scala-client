@@ -15,4 +15,6 @@ trait PullRequestsApi:
 
   def pinnedPullRequests(owner: String, repo: String): IO[GiteaError, Chunk[PullRequest]]
 
+  def pullRequestByBaseHead(owner: String, repo: String, base: String, head: String): IO[GiteaError, PullRequest]
+
   def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest]

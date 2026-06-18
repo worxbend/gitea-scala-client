@@ -23,6 +23,8 @@ surface is still being filled out.
   `repoListPinnedIssues`, `repoNewPinAllowed`, and `NewIssuePinsAllowed`.
 - Typed pinned pull-request listing with `repoListPinnedPullRequests` request
   construction.
+- Typed pull-request lookup by base and head with
+  `repoGetPullRequestByBaseHead` request construction.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

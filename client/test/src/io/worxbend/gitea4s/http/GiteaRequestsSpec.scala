@@ -302,6 +302,25 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.retryable == true
         )
       },
+      test("builds schema-traceable get repository pull request by base and head request") {
+        val built =
+          GiteaRequests.repoPullRequestByBaseHead(config, "worx bend", "gitea/scala", "main branch", "feature/slash")
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetPullRequestByBaseHead,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetPullRequestByBaseHead",
+          endpoint.path == "/repos/{owner}/{repo}/pulls/{base}/{head}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "base", "head"),
+          endpoint.response == "#/responses/PullRequest",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/main%20branch/feature%2Fslash",
+          built.retryable == true
+        )
+      },
       test("builds schema-traceable get repository pull request request") {
         val built = GiteaRequests.repoPullRequest(config, "worx bend", "gitea/scala", 88)
         val endpoint = built.endpoint

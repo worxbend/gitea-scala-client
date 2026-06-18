@@ -285,6 +285,7 @@ pull-request list:
 ```scala
 client.pullRequests(owner = "my-org", repo = "my-repo").take(25).runCollect
 client.pullRequest(owner = "my-org", repo = "my-repo", index = 7)
+client.pullRequestByBaseHead(owner = "my-org", repo = "my-repo", base = "main", head = "feature")
 client.pinnedPullRequests(owner = "my-org", repo = "my-repo")
 ```
 

@@ -219,6 +219,21 @@ object GiteaRequests:
       GiteaResponseMapper.decodeChunk[PullRequest]
     )
 
+  def repoPullRequestByBaseHead(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      base: String,
+      head: String
+  ): GiteaRequest[PullRequest] =
+    get(
+      config,
+      GiteaEndpoints.repoGetPullRequestByBaseHead,
+      List("repos", owner, repo, "pulls", base, head),
+      Nil,
+      GiteaResponseMapper.decodeJson[PullRequest]
+    )
+
   def repoPullRequest(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[PullRequest] =
     get(
       config,

@@ -147,6 +147,14 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override def pinnedPullRequests(owner: String, repo: String): IO[GiteaError, Chunk[PullRequest]] =
     executor.send(GiteaRequests.pinnedPullRequests(config, owner, repo))
 
+  override def pullRequestByBaseHead(
+      owner: String,
+      repo: String,
+      base: String,
+      head: String
+  ): IO[GiteaError, PullRequest] =
+    executor.send(GiteaRequests.repoPullRequestByBaseHead(config, owner, repo, base, head))
+
   override def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.repoPullRequest(config, owner, repo, index))
 

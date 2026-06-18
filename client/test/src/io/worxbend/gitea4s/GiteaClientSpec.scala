@@ -941,17 +941,22 @@ object GiteaClientSpec extends ZIOSpecDefault:
             .thenRespond(ResponseStub.adjust("""{"id":2,"number":2,"title":"Second","state":"closed"}"""))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "pinned")))
             .thenRespond(ResponseStub.adjust("""[{"id":3,"number":3,"title":"Pinned","state":"open"}]"""))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "main", "feature")))
+            .thenRespond(ResponseStub.adjust("""{"id":4,"number":4,"title":"By branch","state":"open"}"""))
         val client = GiteaClient.fromBackend(config, backend)
 
         for
           pullRequests <- client.pullRequests("alice", "api", PullRequestListParams.default).runCollect
           pullRequest <- client.pullRequest("alice", "api", 2)
           pinnedPullRequests <- client.pinnedPullRequests("alice", "api")
+          pullRequestByBaseHead <- client.pullRequestByBaseHead("alice", "api", "main", "feature")
         yield assertTrue(
           pullRequests.map(_.number) == Chunk(Some(1L), Some(2L)),
           pullRequest.id.contains(2L),
           pullRequest.title.contains("Second"),
-          pinnedPullRequests.map(_.number) == Chunk(Some(3L))
+          pinnedPullRequests.map(_.number) == Chunk(Some(3L)),
+          pullRequestByBaseHead.number.contains(4L),
+          pullRequestByBaseHead.title.contains("By branch")
         )
       },
       test("loads notification count, streams notification threads, and fetches a single thread") {

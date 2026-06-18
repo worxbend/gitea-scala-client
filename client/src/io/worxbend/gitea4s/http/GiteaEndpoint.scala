@@ -231,6 +231,20 @@ object GiteaEndpoints:
       response = "#/responses/PullRequestList"
     )
 
+  val repoGetPullRequestByBaseHead: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/pulls/{base}/{head}",
+      operationId = "repoGetPullRequestByBaseHead",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("base", "path", required = true),
+        GiteaParameter("head", "path", required = true)
+      ),
+      response = "#/responses/PullRequest"
+    )
+
   val repoGetPullRequest: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

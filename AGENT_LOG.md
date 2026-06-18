@@ -345,3 +345,9 @@
 2026-06-18T11:30:37Z added typed pinned pull-request listing with repoListPinnedPullRequests endpoint metadata, request builder, facade wiring, stub-backed tests, README, CHANGELOG, and PLAN updates
 2026-06-18T11:31:52Z validation passed commands="./mill --no-server client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
 2026-06-18T11:32:14Z checkpoint commit created message="Add pinned pull request API"
+2026-06-18T11:32:47Z iteration 6 no changes to commit
+2026-06-18T11:32:47Z iteration 6 completed validation_status=0
+2026-06-18T11:32:47Z iteration 7 started remaining=15270s
+2026-06-18T11:38:00Z added typed pull-request base/head lookup with repoGetPullRequestByBaseHead endpoint metadata, request builder, PullRequestsApi facade wiring, stub-backed tests, README, CHANGELOG, PLAN, and API snapshots
+2026-06-18T11:38:58Z validation passed commands="./mill --no-server client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T11:38:58Z checkpoint commit created message="Add pull request base-head lookup API"
