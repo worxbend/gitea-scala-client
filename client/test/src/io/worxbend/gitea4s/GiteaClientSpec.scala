@@ -100,6 +100,18 @@ object GiteaClientSpec extends ZIOSpecDefault:
           repo.name.contains("project")
         )
       },
+      test("checks repository pin capacity through the ReposApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "owner", "repo", "new_pin_allowed"))
+          }.thenRespond(ResponseStub.adjust("""{"issues":true,"pull_requests":false}"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.newIssuePinsAllowed("owner", "repo").map(value => value.issues -> value.pullRequests))(
+          Assertion.equalTo(Some(true) -> Some(false))
+        )
+      },
       test("loads an issue through the IssuesApi get method") {
         val backend =
           taskStub.whenRequestMatches(_.uri.path.endsWith(List("repos", "owner", "repo", "issues", "7")))
@@ -108,6 +120,18 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(client.get("owner", "repo", 7).map(issue => issue.id -> issue.number -> issue.title))(
           Assertion.equalTo(Some(17L) -> Some(7L) -> Some("tracked"))
+        )
+      },
+      test("lists pinned issues through the IssuesApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "pinned"))
+          }.thenRespond(ResponseStub.adjust("""[{"id":17,"number":7,"title":"pinned"}]"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.pinned("owner", "repo").map(_.headOption.flatMap(_.title)))(
+          Assertion.equalTo(Some("pinned"))
         )
       },
       test("creates an issue through the IssuesApi create method") {

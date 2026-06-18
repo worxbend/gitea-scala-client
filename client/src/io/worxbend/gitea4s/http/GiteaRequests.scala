@@ -19,6 +19,7 @@ import io.worxbend.gitea4s.model.{
   IssueState,
   Label,
   LockIssueOption,
+  NewIssuePinsAllowed,
   NotificationCount,
   NotificationThread,
   Organization,
@@ -141,6 +142,15 @@ object GiteaRequests:
       response => GiteaResponseMapper.decodeTopicNamesPage(response, page, pageSize)
     )
 
+  def repoNewPinAllowed(config: GiteaConfig, owner: String, repo: String): GiteaRequest[NewIssuePinsAllowed] =
+    get(
+      config,
+      GiteaEndpoints.repoNewPinAllowed,
+      List("repos", owner, repo, "new_pin_allowed"),
+      Nil,
+      GiteaResponseMapper.decodeJson[NewIssuePinsAllowed]
+    )
+
   def repoBranches(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Branch]] =
     val pageSize = config.pageSize
 
@@ -220,6 +230,15 @@ object GiteaRequests:
       List("repos", owner, repo, "issues"),
       issueQuery(params, page, pageSize),
       response => GiteaResponseMapper.decodePage[Issue](response, page, pageSize)
+    )
+
+  def pinnedIssues(config: GiteaConfig, owner: String, repo: String): GiteaRequest[zio.Chunk[Issue]] =
+    get(
+      config,
+      GiteaEndpoints.repoListPinnedIssues,
+      List("repos", owner, repo, "issues", "pinned"),
+      Nil,
+      GiteaResponseMapper.decodeChunk[Issue]
     )
 
   def issue(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Issue] =

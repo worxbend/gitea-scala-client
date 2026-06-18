@@ -105,6 +105,14 @@ final case class TopicNames(
 object TopicNames:
   given JsonCodec[TopicNames] = DeriveJsonCodec.gen[TopicNames]
 
+final case class NewIssuePinsAllowed(
+    issues: Option[Boolean] = None,
+    @jsonField("pull_requests") pullRequests: Option[Boolean] = None
+)
+
+object NewIssuePinsAllowed:
+  given JsonCodec[NewIssuePinsAllowed] = DeriveJsonCodec.gen[NewIssuePinsAllowed]
+
 final case class NotificationCount(
     @jsonField("new") unread: Option[Long] = None
 )

@@ -31,6 +31,7 @@ import io.worxbend.gitea4s.model.{
   IssueState,
   Label,
   LockIssueOption,
+  NewIssuePinsAllowed,
   NotificationCount,
   NotificationThread,
   Organization,
@@ -108,6 +109,9 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       executor.send(GiteaRequests.userRepos(config, owner, params.copy(page = Some(page))))
     }
 
+  override def newIssuePinsAllowed(owner: String, repo: String): IO[GiteaError, NewIssuePinsAllowed] =
+    executor.send(GiteaRequests.repoNewPinAllowed(config, owner, repo))
+
   override def topics(owner: String, repo: String): IO[GiteaError, Chunk[String]] =
     Pagination.paginated { page =>
       executor.send(GiteaRequests.repoTopics(config, owner, repo, page))
@@ -167,6 +171,9 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
     Pagination.paginated { page =>
       executor.send(GiteaRequests.issues(config, owner, repo, params.copy(page = Some(page))))
     }
+
+  override def pinned(owner: String, repo: String): IO[GiteaError, Chunk[Issue]] =
+    executor.send(GiteaRequests.pinnedIssues(config, owner, repo))
 
   override def create(owner: String, repo: String, body: CreateIssue): IO[GiteaError, Issue] =
     executor.send(GiteaRequests.createIssue(config, owner, repo, body))

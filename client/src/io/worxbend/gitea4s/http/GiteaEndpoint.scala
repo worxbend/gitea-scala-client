@@ -130,6 +130,18 @@ object GiteaEndpoints:
       response = "#/responses/TopicNames"
     )
 
+  val repoNewPinAllowed: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/new_pin_allowed",
+      operationId = "repoNewPinAllowed",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true)
+      ),
+      response = "#/responses/RepoNewIssuePinsAllowed"
+    )
+
   val repoListBranches: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",
@@ -240,6 +252,18 @@ object GiteaEndpoints:
         GiteaParameter("mentioned_by", "query", required = false),
         GiteaParameter("page", "query", required = false),
         GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/IssueList"
+    )
+
+  val repoListPinnedIssues: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/issues/pinned",
+      operationId = "repoListPinnedIssues",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true)
       ),
       response = "#/responses/IssueList"
     )

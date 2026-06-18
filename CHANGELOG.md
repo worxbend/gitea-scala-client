@@ -19,6 +19,8 @@ surface is still being filled out.
 - Typed issue deletion with `issueDelete` request construction.
 - Typed issue pinning, unpinning, and pin moving with `pinIssue`,
   `unpinIssue`, and `moveIssuePin` request construction.
+- Typed pinned issue listing and repository pin-capacity checks with
+  `repoListPinnedIssues`, `repoNewPinAllowed`, and `NewIssuePinsAllowed`.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

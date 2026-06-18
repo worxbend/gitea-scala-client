@@ -16,6 +16,7 @@ import io.worxbend.gitea4s.model.{
   IssueMeta,
   IssueState,
   LockIssueOption,
+  NewIssuePinsAllowed,
   NotificationSubjectType,
   WatchInfo
 }
@@ -164,6 +165,23 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/topics?"),
           request.uri.paramsMap.get("page").contains("3"),
           request.uri.paramsMap.get("limit").contains("25")
+        )
+      },
+      test("builds schema-traceable repository new pin allowed request") {
+        val built = GiteaRequests.repoNewPinAllowed(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoNewPinAllowed,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoNewPinAllowed",
+          endpoint.path == "/repos/{owner}/{repo}/new_pin_allowed",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.response == "#/responses/RepoNewIssuePinsAllowed",
+          request.method == Method.GET,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/new_pin_allowed",
+          built.retryable == true
         )
       },
       test("builds schema-traceable paginated repository branches request") {
@@ -320,6 +338,23 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99"
+        )
+      },
+      test("builds schema-traceable repository pinned issues request") {
+        val built = GiteaRequests.pinnedIssues(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListPinnedIssues,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoListPinnedIssues",
+          endpoint.path == "/repos/{owner}/{repo}/issues/pinned",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.response == "#/responses/IssueList",
+          request.method == Method.GET,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/pinned",
+          built.retryable == true
         )
       },
       test("builds schema-traceable delete issue request") {
@@ -1168,6 +1203,25 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.decode(raw).map(_.page) == Right(1),
           built.decode(raw).map(_.pageSize) == Right(25),
           built.decode(raw).map(_.hasNext) == Right(true)
+        )
+      },
+      test("decodes pinned issues and new pin allowed responses") {
+        val pinnedBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""[{"id":1,"number":10,"title":"pinned"}]""")
+          )
+        val allowedBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"issues":true,"pull_requests":false}""")
+          )
+        val pinnedRequest = GiteaRequests.pinnedIssues(config, "owner", "repo")
+        val allowedRequest = GiteaRequests.repoNewPinAllowed(config, "owner", "repo")
+        val pinned = pinnedRequest.decode(pinnedRequest.request.send(pinnedBackend))
+        val allowed = allowedRequest.decode(allowedRequest.request.send(allowedBackend))
+
+        assertTrue(
+          pinned.map(_.headOption.flatMap(_.title)) == Right(Some("pinned")),
+          allowed == Right(NewIssuePinsAllowed(issues = Some(true), pullRequests = Some(false)))
         )
       },
       test("decodes a created issue response") {

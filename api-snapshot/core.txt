@@ -1563,6 +1563,46 @@ public final class io.worxbend.gitea4s.model.Milestone$ implements scala.derivin
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.NewIssuePinsAllowed
+public final class io.worxbend.gitea4s.model.NewIssuePinsAllowed implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.NewIssuePinsAllowed(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.Object> issues();
+  public scala.Option<java.lang.Object> pullRequests();
+  public io.worxbend.gitea4s.model.NewIssuePinsAllowed copy(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.lang.Object> copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.Object> _1();
+  public scala.Option<java.lang.Object> _2();
+  public static io.worxbend.gitea4s.model.NewIssuePinsAllowed apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.model.NewIssuePinsAllowed fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.NewIssuePinsAllowed> given_JsonCodec_NewIssuePinsAllowed();
+  public static io.worxbend.gitea4s.model.NewIssuePinsAllowed unapply(io.worxbend.gitea4s.model.NewIssuePinsAllowed);
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+}
+
+## io.worxbend.gitea4s.model.NewIssuePinsAllowed$
+public final class io.worxbend.gitea4s.model.NewIssuePinsAllowed$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.NewIssuePinsAllowed$ MODULE$;
+  public io.worxbend.gitea4s.model.NewIssuePinsAllowed apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.model.NewIssuePinsAllowed unapply(io.worxbend.gitea4s.model.NewIssuePinsAllowed);
+  public scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.NewIssuePinsAllowed> given_JsonCodec_NewIssuePinsAllowed();
+  public io.worxbend.gitea4s.model.NewIssuePinsAllowed fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.NotificationCount
 public final class io.worxbend.gitea4s.model.NotificationCount implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.NotificationCount(scala.Option<java.lang.Object>);

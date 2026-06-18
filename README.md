@@ -11,9 +11,9 @@ and zio-json.
 - Version: `0.1.0-SNAPSHOT`
 - API reference: local `plugin-redoc-2.yaml` for Gitea API `1.26.2`
 - Implemented surface: typed core models/codecs plus users, organizations,
-  repositories, issue list/get/create/delete/pin/deadline/label/lock/dependency/blocking/reaction/
-  subscription/tracked-time/stopwatch management, releases, pull requests, and
-  notifications through a ZIO client API
+  repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
+  dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
+  releases, pull requests, and notifications through a ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -165,11 +165,13 @@ client
   .runCollect
 ```
 
-Current stream-oriented APIs include user followers/following/search,
-user and organization repositories, organization members, issues, issue
-reactions, issue subscribers, issue tracked times, current-user stopwatches,
-repository-wide issue comments, branches, tags, releases, pull
-requests, and notification threads.
+Current stream-oriented APIs include user followers/following/search, user and
+organization repositories, organization members, issues, issue reactions, issue
+subscribers, issue tracked times, current-user stopwatches, repository-wide
+issue comments, branches, tags, releases, pull requests, and notification
+threads. Pinned issues are exposed as a non-paginated `Chunk[Issue]` because
+Gitea returns that endpoint as a plain `IssueList` without pagination
+parameters.
 
 ## Issue Writes
 
@@ -197,6 +199,9 @@ client.create(
   repo = "my-repo",
   body = CreateIssue(title = "Bug report", body = Some("Observed behavior..."))
 )
+
+client.pinned(owner = "my-org", repo = "my-repo")
+client.newIssuePinsAllowed(owner = "my-org", repo = "my-repo")
 
 client.delete(owner = "my-org", repo = "my-repo", index = 12)
 client.pin(owner = "my-org", repo = "my-repo", index = 12)

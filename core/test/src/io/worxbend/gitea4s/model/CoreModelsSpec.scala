@@ -97,6 +97,20 @@ object CoreModelsSpec extends ZIOSpecDefault:
           topics.map(_.topics) == Right(Some(List("scala", "zio", "gitea")))
         )
       },
+      test("decodes new issue pins allowed response shape") {
+        val json =
+          """{
+            |  "issues": true,
+            |  "pull_requests": false
+            |}""".stripMargin
+
+        val allowed = json.fromJson[NewIssuePinsAllowed]
+
+        assertTrue(
+          allowed == Right(NewIssuePinsAllowed(issues = Some(true), pullRequests = Some(false))),
+          allowed.map(_.toJson) == Right("""{"issues":true,"pull_requests":false}""")
+        )
+      },
       test("decodes notification count, subject, and thread payloads") {
         val countJson =
           """{

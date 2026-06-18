@@ -37,6 +37,8 @@ trait IssuesApi:
       params: IssueListParams = IssueListParams.default
   ): ZStream[Any, GiteaError, Issue]
 
+  def pinned(owner: String, repo: String): IO[GiteaError, Chunk[Issue]]
+
   def create(owner: String, repo: String, body: CreateIssue): IO[GiteaError, Issue]
 
   def delete(owner: String, repo: String, index: Long): IO[GiteaError, Unit]

@@ -331,3 +331,11 @@
 2026-06-18T11:17:06Z validation passed commands="./mill --no-server client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
 2026-06-18T11:17:06Z checkpoint commit created message="Add issue pin API"
 2026-06-18T11:17:06Z iteration 4 completed validation_status=0
+2026-06-18T11:17:49Z iteration 4 no changes to commit
+2026-06-18T11:17:49Z iteration 4 completed validation_status=0
+2026-06-18T11:17:49Z iteration 5 started remaining=16168s
+2026-06-18T11:28:00Z added typed pinned issue listing and repository pin-capacity checks with NewIssuePinsAllowed, request builders, facade wiring, tests, README, CHANGELOG, and PLAN updates
+2026-06-18T11:29:00Z validation failed command="./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local" reason="request-layer test used ResponseStub body where Response[String] was required"
+2026-06-18T11:30:00Z validation passed commands="./mill --no-server client.test; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T11:31:00Z checkpoint commit created message="Add pinned issue read APIs"
+2026-06-18T11:31:00Z iteration 5 completed validation_status=0
