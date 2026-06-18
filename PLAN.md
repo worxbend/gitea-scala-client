@@ -112,7 +112,11 @@ Current checkpoint:
 - `GiteaClientSpec` also covers multi-page notification thread streaming, unread notification counts, and single-notification lookup through a `BackendStub[Task]`.
 - `GiteaRequestsSpec` covers release, pull request, and notification endpoint metadata, path encoding, page/limit and filter query parameters, JSON decoding, and not-found mapping.
 - README now describes the currently implemented typed read-only API surface instead of the initial skeleton state.
-- Validation passed: `./mill core.test`, `./mill client.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
+- `backend-zio` now exposes the Phase 5 live Java HttpClient-backed constructors through `ZioGiteaBackend.live`, `configured`, `withToken`, `withBasic`, `anonymous`, and caller-owned custom `java.net.http.HttpClient` support through `usingClient`.
+- The client module remains decoupled from the concrete sttp ZIO backend; `backend-zio` builds clients through the existing `GiteaClient.fromBackend` abstraction.
+- `backend-zio.test` covers hermetic live-layer construction and custom Java HttpClient layer construction without calling external services.
+- `examples.run` remains hermetic when `GITEA_URL` and `GITEA_TOKEN` are absent, and calls `GET /user` through the live ZIO backend when both variables are present.
+- Validation passed: `./mill backend-zio.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
 
@@ -650,10 +654,9 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- start Phase 5 by implementing the `backend-zio` live layer around sttp4 `HttpClientZioBackend`,
-- add `GiteaClient.live` / token-based layer constructors or equivalent public constructors without coupling `core` or `client` to the concrete backend,
-- support custom Java `HttpClient` creation through `ZioGiteaBackend.usingClient`,
-- add a small runnable example that reads `GITEA_URL` and `GITEA_TOKEN` and calls `client.me` or streams repositories when those variables are present,
-- keep live integration behavior opt-in and make unit validation remain hermetic.
+- begin Phase 6 by implementing the optional `backend-okhttp` bridge without leaking OkHttp dependencies into `core`, `client`, or `backend-zio`,
+- prefer `OkHttpFutureBackend` adapted to ZIO if practical; otherwise use `OkHttpSyncBackend` with explicit blocking documentation,
+- add hermetic construction tests for the OkHttp-backed client and keep live integration behavior opt-in,
+- update README backend-choice notes once the optional OkHttp bridge compiles.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.

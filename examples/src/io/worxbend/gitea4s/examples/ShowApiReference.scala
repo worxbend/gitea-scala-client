@@ -1,7 +1,51 @@
 package io.worxbend.gitea4s.examples
 
+import io.worxbend.gitea4s.backend.zio.ZioGiteaBackend
+import io.worxbend.gitea4s.error.GiteaError
+import io.worxbend.gitea4s.model.Auth
 import io.worxbend.gitea4s.model.ApiReference
+import io.worxbend.gitea4s.GiteaConfig
+import sttp.model.Uri
+import zio.{Console, ZIO, ZIOAppDefault}
 
-object ShowApiReference:
-  def main(args: Array[String]): Unit =
-    println(s"gitea4s targets Gitea API ${ApiReference.gitea1262.version}")
+object ShowApiReference extends ZIOAppDefault:
+  def run =
+    val referenceLine = s"gitea4s targets Gitea API ${ApiReference.gitea1262.version}"
+
+    liveConfig match
+      case None =>
+        Console.printLine(referenceLine) *>
+          Console.printLine("Set GITEA_URL and GITEA_TOKEN to also call GET /user with the live ZIO backend.")
+      case Some(config) =>
+        Console.printLine(referenceLine) *>
+          ZIO.serviceWithZIO[io.worxbend.gitea4s.GiteaClient](_.me)
+            .provideLayer(ZioGiteaBackend.configured(config))
+            .foldZIO(
+              error => Console.printLineError(s"GET /user failed: ${describeFailure(error)}") *> ZIO.fail(error),
+              user => Console.printLine(s"Authenticated as ${user.login.getOrElse("<unknown>")}")
+            )
+
+  private def liveConfig: Option[GiteaConfig] =
+    for
+      url <- sys.env.get("GITEA_URL").filter(_.nonEmpty)
+      token <- sys.env.get("GITEA_TOKEN").filter(_.nonEmpty)
+      baseUrl <- Uri.parse(url).toOption
+    yield GiteaConfig.default(baseUrl, Auth.Token(token))
+
+  private def describeFailure(error: GiteaError | Throwable): String =
+    error match
+      case giteaError: GiteaError => describe(giteaError)
+      case throwable: Throwable => s"backend initialization failed: ${throwable.getMessage}"
+
+  private def describe(error: GiteaError): String =
+    error match
+      case GiteaError.BadRequest(message, _) => s"bad request: $message"
+      case GiteaError.Unauthorized(message, _) => s"unauthorized: $message"
+      case GiteaError.Forbidden(message, _) => s"forbidden: $message"
+      case GiteaError.NotFound(message, _) => s"not found: $message"
+      case GiteaError.Conflict(message, _) => s"conflict: $message"
+      case GiteaError.UnprocessableEntity(message, _) => s"unprocessable entity: $message"
+      case GiteaError.RateLimited(resetAt, _) => s"rate limited; reset at ${resetAt.fold("unknown")(_.toString)}"
+      case GiteaError.ServerError(status, _) => s"server error: HTTP $status"
+      case GiteaError.DecodeError(message, _) => s"decode error: $message"
+      case GiteaError.TransportError(cause) => s"transport error: ${cause.getMessage}"
