@@ -195,3 +195,11 @@
 2026-06-18T07:36:31Z validation passed commands="./mill examples.compile; ./mill examples.runMain io.worxbend.gitea4s.examples.ListBranchesAndTags; env GITEA_URL=https://gitea.example GITEA_TOKEN=dummy ./mill examples.runMain io.worxbend.gitea4s.examples.ListBranchesAndTags; ./mill __.test; ./mill it.test; ./mill examples.run; ./mill __.compile"
 2026-06-18T07:36:31Z checkpoint commit created message="Add branch and tag listing example"
 2026-06-18T07:36:31Z iteration 14 completed validation_status=0
+2026-06-18T07:37:18Z iteration 14 no changes to commit
+2026-06-18T07:37:18Z iteration 14 completed validation_status=0
+2026-06-18T07:37:18Z iteration 15 started remaining=13844s
+2026-06-18T07:38:53Z started Phase 9 user search example slice
+2026-06-18T07:39:45Z added hermetic SearchUsers example and README command documentation
+2026-06-18T07:40:05Z validation passed commands="./mill examples.compile; ./mill examples.runMain io.worxbend.gitea4s.examples.SearchUsers; env GITEA_URL=https://gitea.example GITEA_TOKEN=dummy ./mill examples.runMain io.worxbend.gitea4s.examples.SearchUsers; ./mill __.test; ./mill it.test; ./mill examples.run; ./mill __.compile"
+2026-06-18T07:40:35Z checkpoint commit created message="Add user search example"
+2026-06-18T07:40:35Z iteration 15 completed validation_status=0

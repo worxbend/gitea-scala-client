@@ -204,6 +204,11 @@ GITEA_TOKEN=... \
 
 GITEA_URL=https://gitea.example \
 GITEA_TOKEN=... \
+GITEA_USER_QUERY=alice \
+./mill examples.runMain io.worxbend.gitea4s.examples.SearchUsers
+
+GITEA_URL=https://gitea.example \
+GITEA_TOKEN=... \
 GITEA_ORG=my-org \
 ./mill examples.runMain io.worxbend.gitea4s.examples.OrgMembers
 
@@ -226,9 +231,9 @@ GITEA_REPO=my-repo \
 ./mill examples.runMain io.worxbend.gitea4s.examples.ListBranchesAndTags
 ```
 
-If `GITEA_URL`, credentials, or example-specific inputs such as `GITEA_ORG` are
-missing, examples print the target API version and exit without making network
-calls.
+If `GITEA_URL`, credentials, or example-specific inputs such as `GITEA_USER_QUERY`
+and `GITEA_ORG` are missing, examples print the target API version and exit
+without making network calls.
 
 ## Testing Against Gitea
 
@@ -259,6 +264,7 @@ and makes no external calls.
 ./mill examples.run
 ./mill examples.runMain io.worxbend.gitea4s.examples.ListMyRepos
 ./mill examples.runMain io.worxbend.gitea4s.examples.WatchNotifications
+./mill examples.runMain io.worxbend.gitea4s.examples.SearchUsers
 ./mill examples.runMain io.worxbend.gitea4s.examples.OrgMembers
 ./mill examples.runMain io.worxbend.gitea4s.examples.ListReleases
 ./mill examples.runMain io.worxbend.gitea4s.examples.ListPullRequests

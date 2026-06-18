@@ -137,6 +137,7 @@ Current checkpoint:
 - `ListMyRepos` can be run with `examples.runMain` to authenticate with the live ZIO backend, call `GET /user`, and stream up to 25 repositories for the authenticated login.
 - `WatchNotifications` can be run with `examples.runMain` to read the unread notification count and stream up to 20 unread notification threads.
 - `OrgMembers`, `ListReleases`, and `ListPullRequests` can be run with `examples.runMain` for additional read-only organization and repository workflows.
+- `SearchUsers` can be run with `examples.runMain` to stream up to 25 users matching `GITEA_USER_QUERY`.
 - Example live calls are gated on `GITEA_URL` plus either `GITEA_TOKEN` or `GITEA_USERNAME`/`GITEA_PASSWORD`; when the URL or credentials are absent they print the target API version and make no network calls.
 - README now includes installation status, pasteable quickstart, auth modes, ZLayer usage, pagination streams, error handling, retry/rate-limit behavior, backend choices, examples, integration testing, supported API version, and Mill commands.
 - Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, `./mill it.test`, and `./mill examples.run`.
@@ -677,6 +678,7 @@ Completed subset:
 - Added shared example support for safe environment-gated live config loading and consistent Gitea error rendering.
 - Added `ListMyRepos.scala` for the current authenticated user's repository stream.
 - Added `WatchNotifications.scala` for unread notification count and notification-thread streaming.
+- Added `SearchUsers.scala` for streaming up to 25 users matching `GITEA_USER_QUERY`.
 - Added `OrgMembers.scala` for streaming up to 25 organization members with `client.orgs.members`.
 - Added `ListReleases.scala` for streaming up to 25 releases from `GITEA_OWNER`/`GITEA_REPO`.
 - Added `ListPullRequests.scala` for streaming up to 25 pull requests from `GITEA_OWNER`/`GITEA_REPO`.
@@ -708,8 +710,8 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 9 with another read-only runnable example from the implemented surface, such as user search,
-- keep examples and README aligned with the currently implemented API surface,
+- begin Phase 10 publishing readiness with a small Mill-native metadata/doc slice, such as Maven coordinates and local doc/source jar generation,
+- keep examples and README aligned with any build or publishing commands that become runnable,
 - keep `./mill __.test`, `./mill it.test`, and `./mill examples.run` passing without external services when live credentials are absent.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.
