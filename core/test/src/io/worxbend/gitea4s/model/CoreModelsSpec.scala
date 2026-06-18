@@ -1,0 +1,259 @@
+package io.worxbend.gitea4s.model
+
+import io.worxbend.gitea4s.error.GiteaError
+import zio.Chunk
+import zio.json.*
+import zio.test.*
+
+import java.time.Instant
+
+object CoreModelsSpec extends ZIOSpecDefault:
+  def spec =
+    suite("Core models")(
+      test("decodes user and organization fields from schema JSON names") {
+        val userJson =
+          """{
+            |  "id": 42,
+            |  "login": "octo",
+            |  "login_name": "octo-login",
+            |  "full_name": "Octo User",
+            |  "email": "octo@example.test",
+            |  "avatar_url": "https://gitea.example/avatars/42",
+            |  "html_url": "https://gitea.example/octo",
+            |  "is_admin": true,
+            |  "followers_count": 7,
+            |  "following_count": 3,
+            |  "starred_repos_count": 11,
+            |  "created": "2026-05-20T10:15:30Z",
+            |  "last_login": "2026-06-01T08:00:00Z"
+            |}""".stripMargin
+
+        val organizationJson =
+          """{
+            |  "id": 9,
+            |  "name": "platform",
+            |  "username": "platform",
+            |  "full_name": "Platform Team",
+            |  "avatar_url": "https://gitea.example/avatars/org/9",
+            |  "repo_admin_change_team_access": true
+            |}""".stripMargin
+
+        val user = userJson.fromJson[User]
+        val organization = organizationJson.fromJson[Organization]
+
+        assertTrue(
+          user.map(_.id) == Right(Some(42L)),
+          user.map(_.loginName) == Right(Some("octo-login")),
+          user.map(_.isAdmin) == Right(Some(true)),
+          user.map(_.created) == Right(Some(Instant.parse("2026-05-20T10:15:30Z"))),
+          organization.map(_.fullName) == Right(Some("Platform Team")),
+          organization.map(_.repoAdminChangeTeamAccess) == Right(Some(true))
+        )
+      },
+      test("decodes repository permissions, object format, and private flag") {
+        val json =
+          """{
+            |  "id": 100,
+            |  "owner": { "id": 42, "login": "octo" },
+            |  "name": "gitea4s",
+            |  "full_name": "octo/gitea4s",
+            |  "private": true,
+            |  "fork": false,
+            |  "html_url": "https://gitea.example/octo/gitea4s",
+            |  "clone_url": "https://gitea.example/octo/gitea4s.git",
+            |  "ssh_url": "git@gitea.example:octo/gitea4s.git",
+            |  "default_branch": "main",
+            |  "stars_count": 5,
+            |  "forks_count": 2,
+            |  "watchers_count": 6,
+            |  "open_issues_count": 1,
+            |  "permissions": { "admin": true, "pull": true, "push": true },
+            |  "topics": ["scala", "zio"],
+            |  "object_format_name": "sha256",
+            |  "created_at": "2026-05-20T10:15:30Z",
+            |  "updated_at": "2026-06-01T08:00:00Z"
+            |}""".stripMargin
+
+        val repository = json.fromJson[Repository]
+
+        assertTrue(
+          repository.map(_.fullName) == Right(Some("octo/gitea4s")),
+          repository.map(_.isPrivate) == Right(Some(true)),
+          repository.map(_.owner.flatMap(_.login)) == Right(Some("octo")),
+          repository.map(_.permissions.flatMap(_.admin)) == Right(Some(true)),
+          repository.map(_.topics) == Right(Some(List("scala", "zio"))),
+          repository.map(_.objectFormatName) == Right(Some(ObjectFormatName.Sha256))
+        )
+      },
+      test("decodes issue, label, milestone, and comment payloads") {
+        val issueJson =
+          """{
+            |  "id": 200,
+            |  "number": 12,
+            |  "title": "Implement models",
+            |  "body": "First slice",
+            |  "state": "open",
+            |  "user": { "id": 42, "login": "octo" },
+            |  "labels": [{ "id": 1, "name": "kind/api", "color": "0e8a16" }],
+            |  "milestone": {
+            |    "id": 3,
+            |    "title": "v0.1",
+            |    "state": "open",
+            |    "open_issues": 8,
+            |    "closed_issues": 5,
+            |    "due_on": "2026-07-01T00:00:00Z"
+            |  },
+            |  "repository": { "id": 100, "owner": "octo", "name": "gitea4s", "full_name": "octo/gitea4s" },
+            |  "created_at": "2026-05-20T10:15:30Z",
+            |  "updated_at": "2026-06-01T08:00:00Z"
+            |}""".stripMargin
+
+        val commentJson =
+          """{
+            |  "id": 300,
+            |  "body": "Looks good",
+            |  "user": { "id": 43, "login": "reviewer" },
+            |  "issue_url": "https://gitea.example/api/v1/repos/octo/gitea4s/issues/12",
+            |  "html_url": "https://gitea.example/octo/gitea4s/issues/12#comment-300",
+            |  "created_at": "2026-06-01T09:00:00Z"
+            |}""".stripMargin
+
+        val issue = issueJson.fromJson[Issue]
+        val comment = commentJson.fromJson[Comment]
+
+        assertTrue(
+          issue.map(_.state) == Right(Some(IssueState.Open)),
+          issue.map(_.labels.flatMap(_.headOption.flatMap(_.name))) == Right(Some("kind/api")),
+          issue.map(_.milestone.flatMap(_.dueOn)) == Right(Some(Instant.parse("2026-07-01T00:00:00Z"))),
+          issue.map(_.repository.flatMap(_.fullName)) == Right(Some("octo/gitea4s")),
+          comment.map(_.user.flatMap(_.login)) == Right(Some("reviewer")),
+          comment.map(_.issueUrl) == Right(Some("https://gitea.example/api/v1/repos/octo/gitea4s/issues/12"))
+        )
+      },
+      test("decodes pull request, release, branch, and tag payloads") {
+        val pullRequestJson =
+          """{
+            |  "id": 400,
+            |  "number": 4,
+            |  "title": "Add request layer",
+            |  "state": "closed",
+            |  "draft": false,
+            |  "base": { "label": "octo:main", "ref": "main", "sha": "abc", "repo_id": 100 },
+            |  "head": { "label": "octo:feature", "ref": "feature", "sha": "def", "repo_id": 101 },
+            |  "merged": true,
+            |  "merged_at": "2026-06-02T12:00:00Z",
+            |  "merged_by": { "id": 42, "login": "octo" },
+            |  "additions": 10,
+            |  "deletions": 2,
+            |  "changed_files": 3,
+            |  "diff_url": "https://gitea.example/octo/gitea4s/pulls/4.diff"
+            |}""".stripMargin
+
+        val releaseJson =
+          """{
+            |  "id": 500,
+            |  "author": { "id": 42, "login": "octo" },
+            |  "name": "v0.1.0",
+            |  "tag_name": "v0.1.0",
+            |  "draft": false,
+            |  "prerelease": true,
+            |  "target_commitish": "main",
+            |  "published_at": "2026-06-03T12:00:00Z"
+            |}""".stripMargin
+
+        val branchJson =
+          """{
+            |  "name": "main",
+            |  "protected": true,
+            |  "user_can_merge": true,
+            |  "required_approvals": 2,
+            |  "status_check_contexts": ["ci"],
+            |  "commit": {
+            |    "id": "abc123",
+            |    "message": "Initial",
+            |    "timestamp": "2026-06-01T08:00:00Z",
+            |    "author": { "name": "Octo", "email": "octo@example.test", "username": "octo" },
+            |    "verification": { "verified": true, "reason": "gpg" }
+            |  }
+            |}""".stripMargin
+
+        val tagJson =
+          """{
+            |  "id": "refs/tags/v0.1.0",
+            |  "name": "v0.1.0",
+            |  "message": "First release",
+            |  "commit": { "sha": "abc123", "created": "2026-06-01T08:00:00Z" },
+            |  "tarball_url": "https://gitea.example/octo/gitea4s/archive/v0.1.0.tar.gz"
+            |}""".stripMargin
+
+        val pullRequest = pullRequestJson.fromJson[PullRequest]
+        val release = releaseJson.fromJson[Release]
+        val branch = branchJson.fromJson[Branch]
+        val tag = tagJson.fromJson[Tag]
+
+        assertTrue(
+          pullRequest.map(_.state) == Right(Some(IssueState.Closed)),
+          pullRequest.map(_.base.flatMap(_.repoId)) == Right(Some(100L)),
+          release.map(_.tagName) == Right(Some("v0.1.0")),
+          release.map(_.publishedAt) == Right(Some(Instant.parse("2026-06-03T12:00:00Z"))),
+          branch.map(_.isProtected) == Right(Some(true)),
+          branch.map(_.commit.flatMap(_.verification.flatMap(_.verified))) == Right(Some(true)),
+          tag.map(_.commit.flatMap(_.sha)) == Right(Some("abc123"))
+        )
+      },
+      test("round-trips representative models through zio-json") {
+        val user = User(id = Some(42L), login = Some("octo"))
+        val repository = Repository(
+          id = Some(100L),
+          owner = Some(user),
+          name = Some("gitea4s"),
+          isPrivate = Some(false),
+          objectFormatName = Some(ObjectFormatName.Sha1)
+        )
+        val issue = Issue(
+          id = Some(200L),
+          number = Some(12L),
+          title = Some("Implement models"),
+          state = Some(IssueState.Open),
+          labels = Some(List(Label(id = Some(1L), name = Some("kind/api"))))
+        )
+        val page = Page(
+          data = Chunk(user),
+          totalCount = Some(1L),
+          page = 1,
+          pageSize = 50,
+          hasNext = false
+        )
+
+        assertTrue(
+          user.toJson.fromJson[User] == Right(user),
+          repository.toJson.fromJson[Repository] == Right(repository),
+          issue.toJson.fromJson[Issue] == Right(issue),
+          page.toJson.fromJson[Page[User]] == Right(page)
+        )
+      },
+      test("rejects unknown closed-set enum values") {
+        val issue = """{ "id": 1, "state": "paused" }""".fromJson[Issue]
+        val repository = """{ "id": 1, "object_format_name": "md5" }""".fromJson[Repository]
+
+        assertTrue(issue.isLeft, repository.isLeft)
+      },
+      test("models auth modes and core error ADT values") {
+        val auth: Auth = Auth.Basic("octo", "secret")
+        val error: GiteaError =
+          GiteaError.RateLimited(Some(Instant.parse("2026-06-18T00:00:00Z")), "rate limited")
+
+        assertTrue(
+          auth == Auth.Basic("octo", "secret"),
+          error == GiteaError.RateLimited(Some(Instant.parse("2026-06-18T00:00:00Z")), "rate limited")
+        )
+      },
+      test("decodes Gitea error payload") {
+        val decoded = """{ "message": "not found", "url": "https://docs.gitea.com/api" }"""
+          .fromJson[GiteaErrorPayload]
+
+        assertTrue(
+          decoded == Right(GiteaErrorPayload(Some("not found"), Some("https://docs.gitea.com/api")))
+        )
+      }
+    )
