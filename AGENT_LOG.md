@@ -187,3 +187,11 @@
 2026-06-18T07:32:48Z validation passed commands="./mill examples.compile; ./mill examples.runMain io.worxbend.gitea4s.examples.ListPullRequests; env GITEA_URL=https://gitea.example GITEA_TOKEN=dummy ./mill examples.runMain io.worxbend.gitea4s.examples.ListPullRequests; ./mill __.test; ./mill it.test; ./mill examples.run; ./mill __.compile"
 2026-06-18T07:33:29Z checkpoint commit created message="Add pull request listing example"
 2026-06-18T07:33:29Z iteration 13 completed validation_status=0
+2026-06-18T07:33:53Z iteration 13 no changes to commit
+2026-06-18T07:33:53Z iteration 13 completed validation_status=0
+2026-06-18T07:33:53Z iteration 14 started remaining=14049s
+2026-06-18T07:36:00Z started Phase 9 branch and tag listing example slice
+2026-06-18T07:36:31Z added hermetic ListBranchesAndTags example and README command documentation
+2026-06-18T07:36:31Z validation passed commands="./mill examples.compile; ./mill examples.runMain io.worxbend.gitea4s.examples.ListBranchesAndTags; env GITEA_URL=https://gitea.example GITEA_TOKEN=dummy ./mill examples.runMain io.worxbend.gitea4s.examples.ListBranchesAndTags; ./mill __.test; ./mill it.test; ./mill examples.run; ./mill __.compile"
+2026-06-18T07:36:31Z checkpoint commit created message="Add branch and tag listing example"
+2026-06-18T07:36:31Z iteration 14 completed validation_status=0

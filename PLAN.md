@@ -680,6 +680,7 @@ Completed subset:
 - Added `OrgMembers.scala` for streaming up to 25 organization members with `client.orgs.members`.
 - Added `ListReleases.scala` for streaming up to 25 releases from `GITEA_OWNER`/`GITEA_REPO`.
 - Added `ListPullRequests.scala` for streaming up to 25 pull requests from `GITEA_OWNER`/`GITEA_REPO`.
+- Added `ListBranchesAndTags.scala` for streaming up to 25 branches and 25 tags from `GITEA_OWNER`/`GITEA_REPO`.
 - Kept `ShowApiReference.scala` as the stable default `examples.run` main class.
 - Expanded README across the planned Phase 9 sections for the currently implemented read-only API.
 
@@ -707,7 +708,7 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 9 with another read-only runnable example from the implemented surface, such as branch/tag listing or user search,
+- continue Phase 9 with another read-only runnable example from the implemented surface, such as user search,
 - keep examples and README aligned with the currently implemented API surface,
 - keep `./mill __.test`, `./mill it.test`, and `./mill examples.run` passing without external services when live credentials are absent.
 

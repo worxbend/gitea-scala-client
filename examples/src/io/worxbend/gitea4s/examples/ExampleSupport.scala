@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.examples
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{ApiReference, NotificationThread, PullRequest, Release, Repository, User}
+import io.worxbend.gitea4s.model.{ApiReference, Branch, NotificationThread, PullRequest, Release, Repository, Tag, User}
 import io.worxbend.gitea4s.{GiteaConfig, GiteaConfigError}
 
 private[examples] object ExampleSupport:
@@ -71,6 +71,17 @@ private[examples] object ExampleSupport:
       yield s" $head -> $base"
     s"$number [$state$draft]$branches $title"
 
+  def branchSummary(branch: Branch): String =
+    val name = branch.name.getOrElse("<unnamed branch>")
+    val commit = branch.commit.flatMap(_.id).fold("")(sha => s" @ ${shortSha(sha)}")
+    val protectedLabel = if branch.isProtected.contains(true) then " protected" else ""
+    s"$name$commit$protectedLabel"
+
+  def tagSummary(tag: Tag): String =
+    val name = tag.name.orElse(tag.id).getOrElse("<unnamed tag>")
+    val commit = tag.commit.flatMap(_.sha).fold("")(sha => s" @ ${shortSha(sha)}")
+    s"$name$commit"
+
   private def hasNoCredentials(env: Map[String, String]): Boolean =
     nonBlank(env, GiteaConfig.Env.token).isEmpty &&
       nonBlank(env, GiteaConfig.Env.username).isEmpty &&
@@ -91,3 +102,6 @@ private[examples] object ExampleSupport:
       case GiteaError.ServerError(status, _) => s"server error: HTTP $status"
       case GiteaError.DecodeError(message, _) => s"decode error: $message"
       case GiteaError.TransportError(cause) => s"transport error: ${cause.getMessage}"
+
+  private def shortSha(value: String): String =
+    value.take(12)
