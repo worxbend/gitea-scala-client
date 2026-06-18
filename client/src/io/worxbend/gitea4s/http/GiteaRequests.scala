@@ -9,7 +9,9 @@ import io.worxbend.gitea4s.model.{
   CreateIssueComment,
   EditIssue,
   Issue,
+  IssueLabelsOption,
   IssueState,
+  Label,
   NotificationCount,
   NotificationThread,
   Organization,
@@ -246,6 +248,67 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Comment]
     )
 
+  def issueLabels(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[zio.Chunk[Label]] =
+    get(
+      config,
+      GiteaEndpoints.issueGetLabels,
+      List("repos", owner, repo, "issues", index.toString, "labels"),
+      Nil,
+      GiteaResponseMapper.decodeChunk[Label]
+    )
+
+  def replaceIssueLabels(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: IssueLabelsOption
+  ): GiteaRequest[zio.Chunk[Label]] =
+    putJson(
+      config,
+      GiteaEndpoints.issueReplaceLabels,
+      List("repos", owner, repo, "issues", index.toString, "labels"),
+      body.toJson,
+      GiteaResponseMapper.decodeChunk[Label]
+    )
+
+  def addIssueLabels(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: IssueLabelsOption
+  ): GiteaRequest[zio.Chunk[Label]] =
+    postJson(
+      config,
+      GiteaEndpoints.issueAddLabel,
+      List("repos", owner, repo, "issues", index.toString, "labels"),
+      body.toJson,
+      GiteaResponseMapper.decodeChunk[Label]
+    )
+
+  def clearIssueLabels(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.issueClearLabels,
+      List("repos", owner, repo, "issues", index.toString, "labels"),
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def removeIssueLabel(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long
+  ): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.issueRemoveLabel,
+      List("repos", owner, repo, "issues", index.toString, "labels", id.toString),
+      GiteaResponseMapper.decodeUnit
+    )
+
   def notifications(config: GiteaConfig, params: NotificationListParams = NotificationListParams.default)
       : GiteaRequest[Page[NotificationThread]] =
     val page = params.page.getOrElse(1)
@@ -337,6 +400,26 @@ object GiteaRequests:
       retryable = GiteaRequest.isReadOnly(endpoint)
     )
 
+  private def putJson[A](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      json: String,
+      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+  ): GiteaRequest[A] =
+    GiteaRequest(
+      endpoint = endpoint,
+      request = basicRequest
+        .put(apiUri(config.baseUrl, path, Nil))
+        .body(json)
+        .contentType(MediaType.ApplicationJson)
+        .response(asStringAlways)
+        .readTimeout(config.timeout)
+        .headers(commonHeaders(config)),
+      decode = decode,
+      retryable = GiteaRequest.isReadOnly(endpoint)
+    )
+
   private def patchJson[A](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
@@ -350,6 +433,23 @@ object GiteaRequests:
         .patch(apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
+        .response(asStringAlways)
+        .readTimeout(config.timeout)
+        .headers(commonHeaders(config)),
+      decode = decode,
+      retryable = GiteaRequest.isReadOnly(endpoint)
+    )
+
+  private def delete[A](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+  ): GiteaRequest[A] =
+    GiteaRequest(
+      endpoint = endpoint,
+      request = basicRequest
+        .delete(apiUri(config.baseUrl, path, Nil))
         .response(asStringAlways)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),

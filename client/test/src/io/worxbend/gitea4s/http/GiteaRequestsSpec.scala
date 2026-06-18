@@ -2,7 +2,15 @@ package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{Auth, CreateIssue, CreateIssueComment, EditIssue, IssueState, NotificationSubjectType}
+import io.worxbend.gitea4s.model.{
+  Auth,
+  CreateIssue,
+  CreateIssueComment,
+  EditIssue,
+  IssueLabelsOption,
+  IssueState,
+  NotificationSubjectType
+}
 import sttp.client4.*
 import sttp.client4.testing.{BackendStub, ResponseStub}
 import sttp.model.{Header, Method, StatusCode}
@@ -370,6 +378,63 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             case _ => false
         )
       },
+      test("builds schema-traceable issue label requests") {
+        val get = GiteaRequests.issueLabels(config, "worx bend", "gitea/scala", 99)
+        val replace =
+          GiteaRequests.replaceIssueLabels(
+            config,
+            "worx bend",
+            "gitea/scala",
+            99,
+            IssueLabelsOption(List(1L, 2L))
+          )
+        val add =
+          GiteaRequests.addIssueLabels(
+            config,
+            "worx bend",
+            "gitea/scala",
+            99,
+            IssueLabelsOption(List(3L))
+          )
+        val clear = GiteaRequests.clearIssueLabels(config, "worx bend", "gitea/scala", 99)
+        val remove = GiteaRequests.removeIssueLabel(config, "worx bend", "gitea/scala", 99, 3)
+
+        assertTrue(
+          get.endpoint == GiteaEndpoints.issueGetLabels,
+          get.endpoint.operationId == "issueGetLabels",
+          get.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/labels",
+          get.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
+          get.endpoint.response == "#/responses/LabelList",
+          get.request.method == Method.GET,
+          get.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/labels",
+          get.retryable == true,
+          replace.endpoint == GiteaEndpoints.issueReplaceLabels,
+          replace.request.method == Method.PUT,
+          replace.request.header("Content-Type").exists(_.startsWith("application/json")),
+          replace.retryable == false,
+          replace.request.body match
+            case StringBody(json, _, _) => json.contains(""""labels":[1,2]""")
+            case _ => false,
+          add.endpoint == GiteaEndpoints.issueAddLabel,
+          add.request.method == Method.POST,
+          add.request.header("Content-Type").exists(_.startsWith("application/json")),
+          add.retryable == false,
+          add.request.body match
+            case StringBody(json, _, _) => json.contains(""""labels":[3]""")
+            case _ => false,
+          clear.endpoint == GiteaEndpoints.issueClearLabels,
+          clear.request.method == Method.DELETE,
+          clear.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/labels",
+          clear.retryable == false,
+          remove.endpoint == GiteaEndpoints.issueRemoveLabel,
+          remove.request.method == Method.DELETE,
+          remove.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/labels/3",
+          remove.retryable == false
+        )
+      },
       test("builds paginated follower and following list requests") {
         val followers = GiteaRequests.userFollowers(config, "space user/slash", page = 2)
         val following = GiteaRequests.userFollowing(config, "space user/slash", page = 3)
@@ -571,6 +636,24 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.decode(raw).map(_.number) == Right(Some(12L)),
           built.decode(raw).map(_.state) == Right(Some(IssueState.Closed)),
           built.decode(raw).map(_.title) == Right(Some("Retitle"))
+        )
+      },
+      test("decodes issue label list and empty label mutation responses") {
+        val labelResponse = """[{"id":1,"name":"kind/api"},{"id":2,"name":"status/ready"}]"""
+        val emptyResponse = ""
+        val backend =
+          BackendStub.synchronous
+            .whenRequestMatches(_.method == Method.GET)
+            .thenRespond(ResponseStub.adjust(labelResponse))
+            .whenRequestMatches(_.method == Method.DELETE)
+            .thenRespond(ResponseStub.adjust(emptyResponse, StatusCode.NoContent))
+        val labels = GiteaRequests.issueLabels(config, "owner", "repo", 12)
+        val clear = GiteaRequests.clearIssueLabels(config, "owner", "repo", 12)
+
+        assertTrue(
+          labels.decode(labels.request.send(backend)).map(_.map(_.name)) ==
+            Right(Chunk(Some("kind/api"), Some("status/ready"))),
+          clear.decode(clear.request.send(backend)) == Right(())
         )
       },
       test("decodes single issue and paginated user list responses") {

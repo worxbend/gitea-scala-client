@@ -18,7 +18,9 @@ import io.worxbend.gitea4s.model.{
   CreateIssueComment,
   EditIssue,
   Issue,
+  IssueLabelsOption,
   IssueState,
+  Label,
   NotificationCount,
   NotificationThread,
   Organization,
@@ -155,6 +157,31 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def close(owner: String, repo: String, index: Long): IO[GiteaError, Issue] =
     edit(owner, repo, index, EditIssue(state = Some(IssueState.Closed)))
+
+  override def labels(owner: String, repo: String, index: Long): IO[GiteaError, Chunk[Label]] =
+    executor.send(GiteaRequests.issueLabels(config, owner, repo, index))
+
+  override def replaceLabels(
+      owner: String,
+      repo: String,
+      index: Long,
+      labels: Chunk[Long]
+  ): IO[GiteaError, Chunk[Label]] =
+    executor.send(GiteaRequests.replaceIssueLabels(config, owner, repo, index, IssueLabelsOption(labels.toList)))
+
+  override def addLabels(
+      owner: String,
+      repo: String,
+      index: Long,
+      labels: Chunk[Long]
+  ): IO[GiteaError, Chunk[Label]] =
+    executor.send(GiteaRequests.addIssueLabels(config, owner, repo, index, IssueLabelsOption(labels.toList)))
+
+  override def clearLabels(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.clearIssueLabels(config, owner, repo, index))
+
+  override def removeLabel(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.removeIssueLabel(config, owner, repo, index, id))
 
   override def comment(owner: String, repo: String, index: Long, body: String): IO[GiteaError, Comment] =
     executor.send(GiteaRequests.createIssueComment(config, owner, repo, index, CreateIssueComment(body)))

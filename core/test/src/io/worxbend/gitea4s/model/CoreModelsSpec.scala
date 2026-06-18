@@ -230,6 +230,15 @@ object CoreModelsSpec extends ZIOSpecDefault:
           decoded == Right(payload)
         )
       },
+      test("round-trips issue labels request payload") {
+        val payload = IssueLabelsOption(labels = List(1L, 2L, 3L))
+        val decoded = payload.toJson.fromJson[IssueLabelsOption]
+
+        assertTrue(
+          payload.toJson == """{"labels":[1,2,3]}""",
+          decoded == Right(payload)
+        )
+      },
       test("decodes pull request, release, branch, and tag payloads") {
         val pullRequestJson =
           """{

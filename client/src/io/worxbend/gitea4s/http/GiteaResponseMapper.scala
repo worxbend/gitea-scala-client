@@ -18,6 +18,9 @@ object GiteaResponseMapper:
   def decodeUnit(response: Response[String]): Either[GiteaError, Unit] =
     if response.isSuccess then Right(()) else Left(toError(response))
 
+  def decodeChunk[A: JsonDecoder](response: Response[String]): Either[GiteaError, Chunk[A]] =
+    decodeJson[List[A]](response).map(Chunk.fromIterable)
+
   def decodePage[A: JsonDecoder](
       response: Response[String],
       page: Int,

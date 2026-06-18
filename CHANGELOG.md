@@ -20,6 +20,8 @@ surface is still being filled out.
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request
   construction.
+- Typed issue label listing, replacement, addition, clearing, and removal with
+  `IssueLabelsOption` and schema-traceable issue label request construction.
 - Primary Java `HttpClient` backend through sttp `HttpClientZioBackend`.
 - Optional OkHttp backend bridge isolated in `backend-okhttp`.
 - Environment and Typesafe config loading, retry handling, examples, and

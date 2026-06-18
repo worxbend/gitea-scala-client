@@ -230,6 +230,13 @@ final case class CreateIssueComment(
 object CreateIssueComment:
   given JsonCodec[CreateIssueComment] = DeriveJsonCodec.gen[CreateIssueComment]
 
+final case class IssueLabelsOption(
+    labels: List[Long]
+)
+
+object IssueLabelsOption:
+  given JsonCodec[IssueLabelsOption] = DeriveJsonCodec.gen[IssueLabelsOption]
+
 final case class Comment(
     id: Option[Long] = None,
     body: Option[String] = None,

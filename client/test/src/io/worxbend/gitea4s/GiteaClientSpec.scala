@@ -157,6 +157,56 @@ object GiteaClientSpec extends ZIOSpecDefault:
           Assertion.equalTo(Some(30L) -> Some("Looks good"))
         )
       },
+      test("manages issue labels through the IssuesApi label methods") {
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "labels"))
+            }
+            .thenRespond(ResponseStub.adjust("""[{"id":1,"name":"kind/api"}]"""))
+            .whenRequestMatches { request =>
+              request.method == Method.PUT &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "labels")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""labels":[1,2]""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""[{"id":1,"name":"kind/api"},{"id":2,"name":"status/ready"}]"""))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "labels")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""labels":[3]""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""[{"id":3,"name":"priority/high"}]"""))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "labels", "3"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "labels"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          existing <- client.labels("owner", "repo", 8)
+          replaced <- client.replaceLabels("owner", "repo", 8, Chunk(1L, 2L))
+          added <- client.addLabels("owner", "repo", 8, Chunk(3L))
+          removed <- client.removeLabel("owner", "repo", 8, 3).either
+          cleared <- client.clearLabels("owner", "repo", 8).either
+        yield assertTrue(
+          existing.map(_.name) == Chunk(Some("kind/api")),
+          replaced.map(_.id) == Chunk(Some(1L), Some(2L)),
+          added.map(_.name) == Chunk(Some("priority/high")),
+          removed == Right(()),
+          cleared == Right(())
+        )
+      },
       test("loads an organization through the OrgsApi facade") {
         val backend =
           taskStub.whenRequestMatches(_.uri.path.endsWith(List("orgs", "platform")))

@@ -11,7 +11,7 @@ and zio-json.
 - Version: `0.1.0-SNAPSHOT`
 - API reference: local `plugin-redoc-2.yaml` for Gitea API `1.26.2`
 - Implemented surface: typed core models/codecs plus users, organizations,
-  repositories, issue list/get/create, releases, pull requests, and notifications through a ZIO client API
+  repositories, issue list/get/create/label management, releases, pull requests, and notifications through a ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -169,10 +169,11 @@ tags, releases, pull requests, and notification threads.
 
 ## Issue Writes
 
-The current write endpoints cover issue creation, editing, closing, and comments:
+The current write endpoints cover issue creation, editing, closing, labels, and comments:
 
 ```scala
 import io.worxbend.gitea4s.model.{CreateIssue, EditIssue}
+import zio.Chunk
 
 client.create(
   owner = "my-org",
@@ -188,6 +189,11 @@ client.edit(
 )
 
 client.close(owner = "my-org", repo = "my-repo", index = 12)
+
+client.addLabels(owner = "my-org", repo = "my-repo", index = 12, labels = Chunk(1L, 2L))
+client.replaceLabels(owner = "my-org", repo = "my-repo", index = 12, labels = Chunk(3L))
+client.removeLabel(owner = "my-org", repo = "my-repo", index = 12, id = 3L)
+client.clearLabels(owner = "my-org", repo = "my-repo", index = 12)
 
 client.comment(owner = "my-org", repo = "my-repo", index = 12, body = "Confirmed")
 ```

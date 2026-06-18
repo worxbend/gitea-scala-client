@@ -1101,6 +1101,39 @@ public final class io.worxbend.gitea4s.model.Issue$ implements scala.deriving.Mi
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.IssueLabelsOption
+public final class io.worxbend.gitea4s.model.IssueLabelsOption implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.IssueLabelsOption(scala.collection.immutable.List<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.collection.immutable.List<java.lang.Object> labels();
+  public io.worxbend.gitea4s.model.IssueLabelsOption copy(scala.collection.immutable.List<java.lang.Object>);
+  public scala.collection.immutable.List<java.lang.Object> copy$default$1();
+  public scala.collection.immutable.List<java.lang.Object> _1();
+  public static io.worxbend.gitea4s.model.IssueLabelsOption apply(scala.collection.immutable.List<java.lang.Object>);
+  public static io.worxbend.gitea4s.model.IssueLabelsOption fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.IssueLabelsOption> given_JsonCodec_IssueLabelsOption();
+  public static io.worxbend.gitea4s.model.IssueLabelsOption unapply(io.worxbend.gitea4s.model.IssueLabelsOption);
+}
+
+## io.worxbend.gitea4s.model.IssueLabelsOption$
+public final class io.worxbend.gitea4s.model.IssueLabelsOption$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.IssueLabelsOption$ MODULE$;
+  public io.worxbend.gitea4s.model.IssueLabelsOption apply(scala.collection.immutable.List<java.lang.Object>);
+  public io.worxbend.gitea4s.model.IssueLabelsOption unapply(io.worxbend.gitea4s.model.IssueLabelsOption);
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.IssueLabelsOption> given_JsonCodec_IssueLabelsOption();
+  public io.worxbend.gitea4s.model.IssueLabelsOption fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.IssueState
 public abstract class io.worxbend.gitea4s.model.IssueState implements scala.reflect.Enum {
   public io.worxbend.gitea4s.model.IssueState(java.lang.String);
