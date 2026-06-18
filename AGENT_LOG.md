@@ -166,3 +166,9 @@
 2026-06-18T07:45:56Z validation passed commands="./mill __.test; ./mill it.test; ./mill examples.run; ./mill __.compile"
 2026-06-18T07:48:12Z checkpoint commit created message="Add read-only usage examples"
 2026-06-18T07:48:12Z iteration 10 completed validation_status=0
+2026-06-18T07:24:50Z iteration 10 no changes to commit
+2026-06-18T07:24:50Z iteration 10 completed validation_status=0
+2026-06-18T07:24:50Z iteration 11 started remaining=14592s
+2026-06-18T07:25:30Z started Phase 9 organization members example slice
+2026-06-18T07:26:46Z added hermetic OrgMembers example and README command documentation
+2026-06-18T07:26:46Z validation passed commands="./mill examples.compile; ./mill examples.runMain io.worxbend.gitea4s.examples.OrgMembers; env GITEA_URL=https://gitea.example GITEA_TOKEN=dummy ./mill examples.runMain io.worxbend.gitea4s.examples.OrgMembers; ./mill __.test; ./mill it.test; ./mill examples.run; ./mill __.compile"

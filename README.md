@@ -201,10 +201,16 @@ GITEA_TOKEN=... \
 GITEA_URL=https://gitea.example \
 GITEA_TOKEN=... \
 ./mill examples.runMain io.worxbend.gitea4s.examples.WatchNotifications
+
+GITEA_URL=https://gitea.example \
+GITEA_TOKEN=... \
+GITEA_ORG=my-org \
+./mill examples.runMain io.worxbend.gitea4s.examples.OrgMembers
 ```
 
-If `GITEA_URL` or credentials are missing, examples print the target API version
-and exit without making network calls.
+If `GITEA_URL`, credentials, or example-specific inputs such as `GITEA_ORG` are
+missing, examples print the target API version and exit without making network
+calls.
 
 ## Testing Against Gitea
 
@@ -235,6 +241,7 @@ and makes no external calls.
 ./mill examples.run
 ./mill examples.runMain io.worxbend.gitea4s.examples.ListMyRepos
 ./mill examples.runMain io.worxbend.gitea4s.examples.WatchNotifications
+./mill examples.runMain io.worxbend.gitea4s.examples.OrgMembers
 ```
 
 The rewrite is still in progress. Publishing metadata, generated docs, and write

@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.examples
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{ApiReference, NotificationThread, Repository}
+import io.worxbend.gitea4s.model.{ApiReference, NotificationThread, Repository, User}
 import io.worxbend.gitea4s.{GiteaConfig, GiteaConfigError}
 
 private[examples] object ExampleSupport:
@@ -26,6 +26,13 @@ private[examples] object ExampleSupport:
       .orElse(repository.name)
       .orElse(repository.id.map(id => s"repository#$id"))
       .getOrElse("<unknown repository>")
+
+  def userName(user: User): String =
+    user.login
+      .orElse(user.loginName)
+      .orElse(user.fullName)
+      .orElse(user.id.map(id => s"user#$id"))
+      .getOrElse("<unknown user>")
 
   def notificationSummary(thread: NotificationThread): String =
     val id = thread.id.map(_.toString).getOrElse("?")

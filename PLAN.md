@@ -676,6 +676,7 @@ Completed subset:
 - Added shared example support for safe environment-gated live config loading and consistent Gitea error rendering.
 - Added `ListMyRepos.scala` for the current authenticated user's repository stream.
 - Added `WatchNotifications.scala` for unread notification count and notification-thread streaming.
+- Added `OrgMembers.scala` for streaming up to 25 organization members with `client.orgs.members`.
 - Kept `ShowApiReference.scala` as the stable default `examples.run` main class.
 - Expanded README across the planned Phase 9 sections for the currently implemented read-only API.
 
@@ -703,8 +704,7 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 9 with another read-only runnable example, preferably `OrgMembers.scala`, using `client.orgs.members` and keeping it hermetic when live credentials are absent,
-- consider adding a small reusable example for releases or pull requests before write endpoints exist,
+- continue Phase 9 with another read-only runnable example, preferably for releases or pull requests before write endpoints exist,
 - keep examples and README aligned with the currently implemented API surface,
 - keep `./mill __.test`, `./mill it.test`, and `./mill examples.run` passing without external services when live credentials are absent.
 
