@@ -72,5 +72,7 @@ object `backend-okhttp` extends Gitea4sModule:
 object examples extends Gitea4sModule:
   def moduleDeps = Seq(`backend-zio`)
 
+  def mainClass = Some("io.worxbend.gitea4s.examples.ShowApiReference")
+
 object it extends Gitea4sModule:
   def moduleDeps = Seq(`backend-zio`)

@@ -156,3 +156,13 @@
 2026-06-18T07:22:35Z added Phase 8 opt-in live integration tests for GET /user and paginated repository streaming
 2026-06-18T07:22:35Z validation passed commands="./mill it.test; ./mill __.compile; ./mill __.test; ./mill it.test; ./mill examples.run"
 2026-06-18T07:25:11Z final validation passed commands="./mill __.compile; ./mill __.test; ./mill it.test; ./mill examples.run"
+2026-06-18T07:19:25Z iteration 9 no changes to commit
+2026-06-18T07:19:25Z iteration 9 completed validation_status=0
+2026-06-18T07:19:25Z iteration 10 started remaining=14917s
+2026-06-18T07:31:54Z started Phase 9 examples and README slice
+2026-06-18T07:36:41Z added hermetic ListMyRepos and WatchNotifications examples with shared live-config/error support
+2026-06-18T07:37:09Z focused validation passed commands="./mill examples.compile examples.run; ./mill examples.runMain io.worxbend.gitea4s.examples.ListMyRepos; ./mill examples.runMain io.worxbend.gitea4s.examples.WatchNotifications"
+2026-06-18T07:42:03Z expanded README with quickstart, auth, ZLayer, streams, errors, retry, backend, examples, integration, API version, and Mill command sections
+2026-06-18T07:45:56Z validation passed commands="./mill __.test; ./mill it.test; ./mill examples.run; ./mill __.compile"
+2026-06-18T07:48:12Z checkpoint commit created message="Add read-only usage examples"
+2026-06-18T07:48:12Z iteration 10 completed validation_status=0

@@ -132,6 +132,12 @@ Current checkpoint:
 - `LiveGiteaIntegrationSpec` only runs when both `GITEA_URL` and `GITEA_TOKEN` are non-empty; otherwise ZIO Test reports the live tests as ignored and performs no network calls.
 - The current live integration slice calls `GET /user` and streams the authenticated user's repositories through the live ZIO backend with `RepoListParams(limit = Some(1))`.
 - README documents how to run or skip live integration tests.
+- Phase 9 has started with runnable read-only examples for the existing API surface.
+- `ShowApiReference` remains the default `examples.run` entrypoint and is hermetic when live credentials are absent.
+- `ListMyRepos` can be run with `examples.runMain` to authenticate with the live ZIO backend, call `GET /user`, and stream up to 25 repositories for the authenticated login.
+- `WatchNotifications` can be run with `examples.runMain` to read the unread notification count and stream up to 20 unread notification threads.
+- Example live calls are gated on `GITEA_URL` plus either `GITEA_TOKEN` or `GITEA_USERNAME`/`GITEA_PASSWORD`; when the URL or credentials are absent they print the target API version and make no network calls.
+- README now includes installation status, pasteable quickstart, auth modes, ZLayer usage, pagination streams, error handling, retry/rate-limit behavior, backend choices, examples, integration testing, supported API version, and Mill commands.
 - Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, `./mill it.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
@@ -665,6 +671,14 @@ Deliverable:
 
 README quickstart can be pasted into a small app and run successfully.
 
+Completed subset:
+
+- Added shared example support for safe environment-gated live config loading and consistent Gitea error rendering.
+- Added `ListMyRepos.scala` for the current authenticated user's repository stream.
+- Added `WatchNotifications.scala` for unread notification count and notification-thread streaming.
+- Kept `ShowApiReference.scala` as the stable default `examples.run` main class.
+- Expanded README across the planned Phase 9 sections for the currently implemented read-only API.
+
 ## Phase 10 - Publishing Readiness
 
 Goal: prepare the Mill-built library for release.
@@ -689,9 +703,9 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- start Phase 9 with runnable example files for the existing read-only API, beginning with `ListMyRepos.scala` and one stream-oriented example such as `WatchNotifications.scala`,
-- keep examples hermetic by default and gated on documented environment variables,
-- expand README with a pasteable quickstart, auth modes, ZLayer usage, pagination streams, error handling, retry/rate-limit behavior, backend choices, testing against Gitea, supported API version, and Mill commands,
+- continue Phase 9 with another read-only runnable example, preferably `OrgMembers.scala`, using `client.orgs.members` and keeping it hermetic when live credentials are absent,
+- consider adding a small reusable example for releases or pull requests before write endpoints exist,
+- keep examples and README aligned with the currently implemented API surface,
 - keep `./mill __.test`, `./mill it.test`, and `./mill examples.run` passing without external services when live credentials are absent.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.
