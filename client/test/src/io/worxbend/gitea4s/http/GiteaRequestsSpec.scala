@@ -137,6 +137,24 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           following.request.uri.paramsMap.get("limit").contains("25")
         )
       },
+      test("builds schema-traceable user search request") {
+        val built =
+          GiteaRequests.userSearch(config, UserSearchParams(q = Some("space user"), page = Some(2), limit = Some(5)))
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.userSearch,
+          endpoint.operationId == "userSearch",
+          endpoint.path == "/users/search",
+          endpoint.parameters.map(_.name) == List("q", "uid", "page", "limit"),
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/users/search?"),
+          request.uri.paramsMap.get("q").contains("space user"),
+          request.uri.paramsMap.get("page").contains("2"),
+          request.uri.paramsMap.get("limit").contains("5")
+        )
+      },
       test("adds JSON content type only when a JSON body is attached") {
         val base = GiteaRequests.currentUser(config).request
         val withBody = GiteaRequests.withJsonBody(config, base, """{"name":"repo"}""")
@@ -179,20 +197,27 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
       test("decodes single issue and paginated user list responses") {
         val issueResponse = """{"id":1,"number":7,"state":"open","title":"First"}"""
         val userListResponse = """[{"id":2,"login":"alice"}]"""
+        val userSearchResponse = """{"ok":true,"data":[{"id":3,"login":"search-hit"}]}"""
         val backend =
           BackendStub.synchronous
             .whenRequestMatches(_.uri.path.endsWith(List("issues", "7")))
             .thenRespond(ResponseStub.adjust(issueResponse))
             .whenRequestMatches(_.uri.path.endsWith(List("followers")))
             .thenRespond(ResponseStub.adjust(userListResponse, StatusCode.Ok, List(Header("x-total-count", "1"))))
+            .whenRequestMatches(_.uri.path.endsWith(List("users", "search")))
+            .thenRespond(ResponseStub.adjust(userSearchResponse, StatusCode.Ok, List(Header("x-total-count", "1"))))
         val issue = GiteaRequests.issue(config, "owner", "repo", 7)
         val followers = GiteaRequests.userFollowers(config, "octo")
+        val search = GiteaRequests.userSearch(config, UserSearchParams(q = Some("search")))
 
         assertTrue(
           issue.decode(issue.request.send(backend)).map(_.number) == Right(Some(7L)),
           followers.decode(followers.request.send(backend)).map(_.data.headOption.flatMap(_.login)) ==
             Right(Some("alice")),
-          followers.decode(followers.request.send(backend)).map(_.hasNext) == Right(false)
+          followers.decode(followers.request.send(backend)).map(_.hasNext) == Right(false),
+          search.decode(search.request.send(backend)).map(_.data.headOption.flatMap(_.login)) ==
+            Right(Some("search-hit")),
+          search.decode(search.request.send(backend)).map(_.hasNext) == Right(false)
         )
       },
       test("decodes paginated repository list and topic names responses") {

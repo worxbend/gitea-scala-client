@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{GiteaErrorPayload, Page, TopicNames}
+import io.worxbend.gitea4s.model.{GiteaErrorPayload, Page, TopicNames, User}
 import sttp.client4.Response
 import zio.Chunk
 import zio.json.*
@@ -50,6 +50,22 @@ object GiteaResponseMapper:
       )
     }
 
+  def decodeUserSearchPage(
+      response: Response[String],
+      page: Int,
+      pageSize: Int
+  ): Either[GiteaError, Page[User]] =
+    decodeJson[UserSearchResults](response).map { value =>
+      val totalCount = longHeader(response, "x-total-count")
+      Page(
+        data = Chunk.fromIterable(value.data.getOrElse(Nil)),
+        totalCount = totalCount,
+        page = page,
+        pageSize = pageSize,
+        hasNext = hasNextPage(response, page, pageSize, totalCount)
+      )
+    }
+
   def toError(response: Response[String]): GiteaError =
     val body = response.body
     val message = errorMessage(response)
@@ -86,3 +102,11 @@ object GiteaResponseMapper:
 
   private def longHeader(response: Response[String], name: String): Option[Long] =
     response.header(name).flatMap(value => Try(value.toLong).toOption)
+
+  private final case class UserSearchResults(
+      data: Option[List[User]] = None,
+      ok: Option[Boolean] = None
+  )
+
+  private object UserSearchResults:
+    given JsonDecoder[UserSearchResults] = DeriveJsonDecoder.gen[UserSearchResults]

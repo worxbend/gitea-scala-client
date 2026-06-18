@@ -29,6 +29,20 @@ object GiteaEndpoints:
       response = "#/responses/User"
     )
 
+  val userSearch: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/users/search",
+      operationId = "userSearch",
+      parameters = List(
+        GiteaParameter("q", "query", required = false),
+        GiteaParameter("uid", "query", required = false),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "SearchResults[User]"
+    )
+
   val repoGet: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

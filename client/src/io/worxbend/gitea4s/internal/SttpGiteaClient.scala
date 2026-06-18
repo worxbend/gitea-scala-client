@@ -2,7 +2,7 @@ package io.worxbend.gitea4s.internal
 
 import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.{GiteaRequests, IssueListParams, RepoListParams}
+import io.worxbend.gitea4s.http.{GiteaRequests, IssueListParams, RepoListParams, UserSearchParams}
 import io.worxbend.gitea4s.model.{Issue, Repository, User}
 import sttp.client4.Backend
 import zio.{Chunk, IO, Task}
@@ -25,6 +25,11 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override def following(username: String): ZStream[Any, GiteaError, User] =
     Pagination.paginated { page =>
       executor.send(GiteaRequests.userFollowing(config, username, page))
+    }
+
+  override def search(params: UserSearchParams): ZStream[Any, GiteaError, User] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.userSearch(config, params.copy(page = Some(page))))
     }
 
   override def get(owner: String, repo: String): IO[GiteaError, Repository] =

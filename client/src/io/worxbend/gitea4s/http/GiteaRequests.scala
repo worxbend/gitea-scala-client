@@ -15,6 +15,18 @@ object GiteaRequests:
   def user(config: GiteaConfig, username: String): GiteaRequest[User] =
     get(config, GiteaEndpoints.userGet, List("users", username), Nil, GiteaResponseMapper.decodeJson[User])
 
+  def userSearch(config: GiteaConfig, params: UserSearchParams = UserSearchParams.default): GiteaRequest[Page[User]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
+
+    get(
+      config,
+      GiteaEndpoints.userSearch,
+      List("users", "search"),
+      userSearchQuery(params, page, pageSize),
+      response => GiteaResponseMapper.decodeUserSearchPage(response, page, pageSize)
+    )
+
   def repository(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Repository] =
     get(
       config,
@@ -141,6 +153,13 @@ object GiteaRequests:
       params.createdBy.map("created_by" -> _),
       params.assignedBy.map("assigned_by" -> _),
       params.mentionedBy.map("mentioned_by" -> _),
+      Some("page" -> page.toString),
+      Some("limit" -> pageSize.toString)
+    ).flatten
+
+  private def userSearchQuery(params: UserSearchParams, page: Int, pageSize: Int): List[(String, String)] =
+    List(
+      params.q.map("q" -> _),
       Some("page" -> page.toString),
       Some("limit" -> pageSize.toString)
     ).flatten

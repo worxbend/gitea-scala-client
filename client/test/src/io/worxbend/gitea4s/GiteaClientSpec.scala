@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.{IssueListParams, RepoListParams}
+import io.worxbend.gitea4s.http.{IssueListParams, RepoListParams, UserSearchParams}
 import io.worxbend.gitea4s.model.Auth
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -133,5 +133,19 @@ object GiteaClientSpec extends ZIOSpecDefault:
           followers.map(_.login) == Chunk(Some("bob"), Some("carol")),
           following.map(_.login) == Chunk(Some("dave"))
         )
+      },
+      test("streams user search results across pages") {
+        val headers = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub.whenRequestMatches(_.uri.path.endsWith(List("users", "search")))
+            .thenRespondCyclic(
+              ResponseStub.adjust("""{"ok":true,"data":[{"id":1,"login":"alice"}]}""", StatusCode.Ok, headers),
+              ResponseStub.adjust("""{"ok":true,"data":[{"id":2,"login":"alicia"}]}""", StatusCode.Ok, headers)
+            )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        client.search(UserSearchParams(q = Some("ali"))).runCollect.map { users =>
+          assertTrue(users.map(_.login) == Chunk(Some("alice"), Some("alicia")))
+        }
       }
     )
