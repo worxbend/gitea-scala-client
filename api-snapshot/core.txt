@@ -3088,3 +3088,63 @@ public final class io.worxbend.gitea4s.model.User$ implements scala.deriving.Mir
   public io.worxbend.gitea4s.model.User fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
+
+## io.worxbend.gitea4s.model.WatchInfo
+public final class io.worxbend.gitea4s.model.WatchInfo implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.WatchInfo(scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.time.Instant> createdAt();
+  public scala.Option<java.lang.Object> ignored();
+  public scala.Option<java.lang.String> reason();
+  public scala.Option<java.lang.String> repositoryUrl();
+  public scala.Option<java.lang.Object> subscribed();
+  public scala.Option<java.lang.String> url();
+  public io.worxbend.gitea4s.model.WatchInfo copy(scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public scala.Option<java.time.Instant> copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.String> copy$default$3();
+  public scala.Option<java.lang.String> copy$default$4();
+  public scala.Option<java.lang.Object> copy$default$5();
+  public scala.Option<java.lang.String> copy$default$6();
+  public scala.Option<java.time.Instant> _1();
+  public scala.Option<java.lang.Object> _2();
+  public scala.Option<java.lang.String> _3();
+  public scala.Option<java.lang.String> _4();
+  public scala.Option<java.lang.Object> _5();
+  public scala.Option<java.lang.String> _6();
+  public static io.worxbend.gitea4s.model.WatchInfo apply(scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.WatchInfo fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.WatchInfo> given_JsonCodec_WatchInfo();
+  public static io.worxbend.gitea4s.model.WatchInfo unapply(io.worxbend.gitea4s.model.WatchInfo);
+  public static scala.Option<java.time.Instant> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$4();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$6();
+}
+
+## io.worxbend.gitea4s.model.WatchInfo$
+public final class io.worxbend.gitea4s.model.WatchInfo$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.WatchInfo$ MODULE$;
+  public io.worxbend.gitea4s.model.WatchInfo apply(scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.WatchInfo unapply(io.worxbend.gitea4s.model.WatchInfo);
+  public scala.Option<java.time.Instant> $lessinit$greater$default$1();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public scala.Option<java.lang.String> $lessinit$greater$default$4();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public scala.Option<java.lang.String> $lessinit$greater$default$6();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.WatchInfo> given_JsonCodec_WatchInfo();
+  public io.worxbend.gitea4s.model.WatchInfo fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}

@@ -15,7 +15,8 @@ import io.worxbend.gitea4s.model.{
   IssueMeta,
   IssueState,
   LockIssueOption,
-  NotificationSubjectType
+  NotificationSubjectType,
+  WatchInfo
 }
 import sttp.client4.*
 import sttp.client4.testing.{BackendStub, ResponseStub}
@@ -751,6 +752,56 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             case _ => false
         )
       },
+      test("builds schema-traceable issue subscription requests") {
+        val list = GiteaRequests.issueSubscriptions(config, "worx bend", "gitea/scala", 99, page = 5)
+        val check = GiteaRequests.issueSubscription(config, "worx bend", "gitea/scala", 99)
+        val add = GiteaRequests.addIssueSubscription(config, "worx bend", "gitea/scala", 99, "space user/slash")
+        val remove = GiteaRequests.deleteIssueSubscription(config, "worx bend", "gitea/scala", 99, "space user/slash")
+
+        assertTrue(
+          list.endpoint == GiteaEndpoints.issueSubscriptions,
+          list.endpoint.method == "GET",
+          list.endpoint.operationId == "issueSubscriptions",
+          list.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/subscriptions",
+          list.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "page", "limit"),
+          list.endpoint.response == "#/responses/UserList",
+          list.request.method == Method.GET,
+          list.request.uri.toString.contains(
+            "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/subscriptions?"
+          ),
+          list.request.uri.paramsMap.get("page").contains("5"),
+          list.request.uri.paramsMap.get("limit").contains("25"),
+          list.retryable == true,
+          check.endpoint == GiteaEndpoints.issueCheckSubscription,
+          check.endpoint.method == "GET",
+          check.endpoint.operationId == "issueCheckSubscription",
+          check.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/subscriptions/check",
+          check.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
+          check.endpoint.response == "#/responses/WatchInfo",
+          check.request.method == Method.GET,
+          check.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/subscriptions/check",
+          check.retryable == true,
+          add.endpoint == GiteaEndpoints.issueAddSubscription,
+          add.endpoint.method == "PUT",
+          add.endpoint.operationId == "issueAddSubscription",
+          add.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
+          add.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "user"),
+          add.endpoint.response == "#/responses/empty",
+          add.request.method == Method.PUT,
+          add.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/subscriptions/space%20user%2Fslash",
+          add.retryable == false,
+          remove.endpoint == GiteaEndpoints.issueDeleteSubscription,
+          remove.endpoint.method == "DELETE",
+          remove.endpoint.operationId == "issueDeleteSubscription",
+          remove.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
+          remove.request.method == Method.DELETE,
+          remove.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/subscriptions/space%20user%2Fslash",
+          remove.retryable == false
+        )
+      },
       test("builds paginated follower and following list requests") {
         val followers = GiteaRequests.userFollowers(config, "space user/slash", page = 2)
         val following = GiteaRequests.userFollowing(config, "space user/slash", page = 3)
@@ -1046,6 +1097,42 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           commentReactions.decode(commentReactions.request.send(backend)).map(_.headOption.flatMap(_.content)) ==
             Right(Some("+1")),
           add.decode(add.request.send(backend)).map(_.content) == Right(Some("heart")),
+          remove.decode(remove.request.send(backend)) == Right(())
+        )
+      },
+      test("decodes issue subscription responses") {
+        val userListResponse = """[{"id":42,"login":"octo"}]"""
+        val watchResponse =
+          """{
+            |  "created_at": "2026-06-18T10:00:00Z",
+            |  "ignored": false,
+            |  "repository_url": "https://gitea.example/api/v1/repos/owner/repo",
+            |  "subscribed": true,
+            |  "url": "https://gitea.example/api/v1/repos/owner/repo/subscription"
+            |}""".stripMargin
+        val headers = List(Header("x-total-count", "1"))
+        val backend =
+          BackendStub.synchronous
+            .whenRequestMatches(_.uri.path.endsWith(List("subscriptions", "check")))
+            .thenRespond(ResponseStub.adjust(watchResponse))
+            .whenRequestMatches(_.method == Method.GET)
+            .thenRespond(ResponseStub.adjust(userListResponse, StatusCode.Ok, headers))
+            .whenRequestMatches(_.method == Method.PUT)
+            .thenRespond(ResponseStub.adjust("", StatusCode.Created))
+            .whenRequestMatches(_.method == Method.DELETE)
+            .thenRespond(ResponseStub.adjust("", StatusCode.Ok))
+        val list = GiteaRequests.issueSubscriptions(config, "owner", "repo", 99)
+        val check = GiteaRequests.issueSubscription(config, "owner", "repo", 99)
+        val add = GiteaRequests.addIssueSubscription(config, "owner", "repo", 99, "octo")
+        val remove = GiteaRequests.deleteIssueSubscription(config, "owner", "repo", 99, "octo")
+
+        assertTrue(
+          list.decode(list.request.send(backend)).map(_.data.headOption.flatMap(_.login)) == Right(Some("octo")),
+          list.decode(list.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
+          check.decode(check.request.send(backend)).map(_.subscribed) == Right(Some(true)),
+          check.decode(check.request.send(backend)).map(_.createdAt) ==
+            Right(Some(Instant.parse("2026-06-18T10:00:00Z"))),
+          add.decode(add.request.send(backend)) == Right(()),
           remove.decode(remove.request.send(backend)) == Right(())
         )
       },

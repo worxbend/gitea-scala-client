@@ -37,7 +37,8 @@ import io.worxbend.gitea4s.model.{
   Release,
   Repository,
   Tag,
-  User
+  User,
+  WatchInfo
 }
 import sttp.client4.Backend
 import zio.{Chunk, IO, Task}
@@ -306,3 +307,17 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       body: EditReactionOption
   ): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.deleteIssueReaction(config, owner, repo, index, body))
+
+  override def subscribers(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, User] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.issueSubscriptions(config, owner, repo, index, page))
+    }
+
+  override def subscription(owner: String, repo: String, index: Long): IO[GiteaError, WatchInfo] =
+    executor.send(GiteaRequests.issueSubscription(config, owner, repo, index))
+
+  override def subscribe(owner: String, repo: String, index: Long, user: String): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.addIssueSubscription(config, owner, repo, index, user))
+
+  override def unsubscribe(owner: String, repo: String, index: Long, user: String): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteIssueSubscription(config, owner, repo, index, user))

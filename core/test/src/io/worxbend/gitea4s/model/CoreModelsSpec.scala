@@ -258,6 +258,26 @@ object CoreModelsSpec extends ZIOSpecDefault:
           payload.toJson.fromJson[EditReactionOption] == Right(payload)
         )
       },
+      test("decodes watch info using schema JSON names") {
+        val watchJson =
+          """{
+            |  "created_at": "2026-06-18T10:00:00Z",
+            |  "ignored": false,
+            |  "reason": "subscribed",
+            |  "repository_url": "https://gitea.example/api/v1/repos/owner/repo",
+            |  "subscribed": true,
+            |  "url": "https://gitea.example/api/v1/repos/owner/repo/subscription"
+            |}""".stripMargin
+
+        val watch = watchJson.fromJson[WatchInfo]
+
+        assertTrue(
+          watch.map(_.createdAt) == Right(Some(Instant.parse("2026-06-18T10:00:00Z"))),
+          watch.map(_.repositoryUrl) == Right(Some("https://gitea.example/api/v1/repos/owner/repo")),
+          watch.map(_.subscribed) == Right(Some(true)),
+          watch.map(_.ignored) == Right(Some(false))
+        )
+      },
       test("round-trips issue meta payloads for dependency and blocking requests") {
         val sameRepo = IssueMeta(index = 13L)
         val crossRepo = IssueMeta(index = 21L, owner = Some("other-owner"), repo = Some("other-repo"))

@@ -300,6 +300,47 @@ object GiteaClientSpec extends ZIOSpecDefault:
           commentReactionDeleted == Right(())
         )
       },
+      test("manages issue subscriptions through the IssuesApi methods") {
+        val headers = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "subscriptions"))
+            }
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"id":1,"login":"alice"}]""", StatusCode.Ok, headers),
+              ResponseStub.adjust("""[{"id":2,"login":"bob"}]""", StatusCode.Ok, headers)
+            )
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "subscriptions", "check"))
+            }
+            .thenRespond(ResponseStub.adjust("""{"subscribed":true,"ignored":false}"""))
+            .whenRequestMatches { request =>
+              request.method == Method.PUT &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "subscriptions", "alice"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "subscriptions", "alice"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.Ok))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          subscribers <- client.subscribers("owner", "repo", 8).runCollect
+          watch <- client.subscription("owner", "repo", 8)
+          subscribed <- client.subscribe("owner", "repo", 8, "alice").either
+          unsubscribed <- client.unsubscribe("owner", "repo", 8, "alice").either
+        yield assertTrue(
+          subscribers.map(_.login) == Chunk(Some("alice"), Some("bob")),
+          watch.subscribed.contains(true),
+          subscribed == Right(()),
+          unsubscribed == Right(())
+        )
+      },
       test("manages issue labels through the IssuesApi label methods") {
         val backend =
           taskStub

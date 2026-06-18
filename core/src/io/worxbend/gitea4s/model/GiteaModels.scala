@@ -254,6 +254,18 @@ final case class Reaction(
 object Reaction:
   given JsonCodec[Reaction] = DeriveJsonCodec.gen[Reaction]
 
+final case class WatchInfo(
+    @jsonField("created_at") createdAt: Option[Instant] = None,
+    ignored: Option[Boolean] = None,
+    reason: Option[String] = None,
+    @jsonField("repository_url") repositoryUrl: Option[String] = None,
+    subscribed: Option[Boolean] = None,
+    url: Option[String] = None
+)
+
+object WatchInfo:
+  given JsonCodec[WatchInfo] = DeriveJsonCodec.gen[WatchInfo]
+
 final case class IssueMeta(
     index: Long,
     owner: Option[String] = None,

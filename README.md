@@ -11,8 +11,8 @@ and zio-json.
 - Version: `0.1.0-SNAPSHOT`
 - API reference: local `plugin-redoc-2.yaml` for Gitea API `1.26.2`
 - Implemented surface: typed core models/codecs plus users, organizations,
-  repositories, issue list/get/create/deadline/label/lock/dependency/blocking/reaction
-  management, releases, pull requests, and notifications through a ZIO client API
+  repositories, issue list/get/create/deadline/label/lock/dependency/blocking/reaction/
+  subscription management, releases, pull requests, and notifications through a ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -166,12 +166,12 @@ client
 
 Current stream-oriented APIs include user followers/following/search,
 user and organization repositories, organization members, issues, issue
-reactions, repository-wide issue comments, branches, tags, releases, pull
+reactions, issue subscribers, repository-wide issue comments, branches, tags, releases, pull
 requests, and notification threads.
 
 ## Issue Writes
 
-The current write endpoints cover issue creation, editing, closing, deadlines, labels, locks, comments, reactions, dependencies, and blocking relationships:
+The current write endpoints cover issue creation, editing, closing, deadlines, labels, locks, comments, reactions, subscriptions, dependencies, and blocking relationships:
 
 ```scala
 import io.worxbend.gitea4s.http.{IssueCommentListParams, RepositoryCommentListParams}
@@ -236,6 +236,11 @@ client.deleteReaction(owner = "my-org", repo = "my-repo", index = 12, body = Edi
 client.commentReactions(owner = "my-org", repo = "my-repo", id = 42)
 client.reactToComment(owner = "my-org", repo = "my-repo", id = 42, body = EditReactionOption("eyes"))
 client.deleteCommentReaction(owner = "my-org", repo = "my-repo", id = 42, body = EditReactionOption("eyes"))
+
+client.subscribers(owner = "my-org", repo = "my-repo", index = 12)
+client.subscription(owner = "my-org", repo = "my-repo", index = 12)
+client.subscribe(owner = "my-org", repo = "my-repo", index = 12, user = "octo")
+client.unsubscribe(owner = "my-org", repo = "my-repo", index = 12, user = "octo")
 
 client.addDependency(owner = "my-org", repo = "my-repo", index = 12, dependency = IssueMeta(index = 10))
 client.removeDependency(owner = "my-org", repo = "my-repo", index = 12, dependency = IssueMeta(index = 10))

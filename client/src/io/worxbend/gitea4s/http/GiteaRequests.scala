@@ -27,7 +27,8 @@ import io.worxbend.gitea4s.model.{
   Release,
   Repository,
   Tag,
-  User
+  User,
+  WatchInfo
 }
 import sttp.client4.*
 import sttp.model.{MediaType, Method, Uri}
@@ -588,6 +589,55 @@ object GiteaRequests:
       GiteaResponseMapper.decodeUnit
     )
 
+  def issueSubscriptions(config: GiteaConfig, owner: String, repo: String, index: Long, page: Int = 1)
+      : GiteaRequest[Page[User]] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      GiteaEndpoints.issueSubscriptions,
+      List("repos", owner, repo, "issues", index.toString, "subscriptions"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[User](response, page, pageSize)
+    )
+
+  def issueSubscription(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[WatchInfo] =
+    get(
+      config,
+      GiteaEndpoints.issueCheckSubscription,
+      List("repos", owner, repo, "issues", index.toString, "subscriptions", "check"),
+      Nil,
+      GiteaResponseMapper.decodeJson[WatchInfo]
+    )
+
+  def addIssueSubscription(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      user: String
+  ): GiteaRequest[Unit] =
+    put(
+      config,
+      GiteaEndpoints.issueAddSubscription,
+      List("repos", owner, repo, "issues", index.toString, "subscriptions", user),
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def deleteIssueSubscription(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      user: String
+  ): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.issueDeleteSubscription,
+      List("repos", owner, repo, "issues", index.toString, "subscriptions", user),
+      GiteaResponseMapper.decodeUnit
+    )
+
   def notifications(config: GiteaConfig, params: NotificationListParams = NotificationListParams.default)
       : GiteaRequest[Page[NotificationThread]] =
     val page = params.page.getOrElse(1)
@@ -692,6 +742,23 @@ object GiteaRequests:
         .put(apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
+        .response(asStringAlways)
+        .readTimeout(config.timeout)
+        .headers(commonHeaders(config)),
+      decode = decode,
+      retryable = GiteaRequest.isReadOnly(endpoint)
+    )
+
+  private def put[A](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+  ): GiteaRequest[A] =
+    GiteaRequest(
+      endpoint = endpoint,
+      request = basicRequest
+        .put(apiUri(config.baseUrl, path, Nil))
         .response(asStringAlways)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),

@@ -14,7 +14,9 @@ import io.worxbend.gitea4s.model.{
   Label,
   LockIssueOption,
   IssueMeta,
-  Reaction
+  Reaction,
+  User,
+  WatchInfo
 }
 import zio.{Chunk, IO}
 import zio.stream.ZStream
@@ -94,3 +96,11 @@ trait IssuesApi:
   def react(owner: String, repo: String, index: Long, body: EditReactionOption): IO[GiteaError, Reaction]
 
   def deleteReaction(owner: String, repo: String, index: Long, body: EditReactionOption): IO[GiteaError, Unit]
+
+  def subscribers(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, User]
+
+  def subscription(owner: String, repo: String, index: Long): IO[GiteaError, WatchInfo]
+
+  def subscribe(owner: String, repo: String, index: Long, user: String): IO[GiteaError, Unit]
+
+  def unsubscribe(owner: String, repo: String, index: Long, user: String): IO[GiteaError, Unit]

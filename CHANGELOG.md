@@ -25,6 +25,8 @@ surface is still being filled out.
   and schema-traceable issue comment request construction.
 - Typed issue and issue-comment reactions with `Reaction`, `EditReactionOption`,
   and schema-traceable reaction request construction.
+- Typed issue subscriptions with `WatchInfo`, paginated subscriber listing, and
+  schema-traceable subscription request construction.
 - Typed issue label listing, replacement, addition, clearing, and removal with
   `IssueLabelsOption` and schema-traceable issue label request construction.
 - Typed issue locking and unlocking with `LockIssueOption` and
