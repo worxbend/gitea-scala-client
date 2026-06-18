@@ -15,6 +15,9 @@ Current checkpoint:
 - Optional backend: `backend-okhttp` exposes `OkHttpGiteaBackend.live`, token/basic/anonymous
   convenience layers, and caller-owned `okhttp3.OkHttpClient` support through sttp's
   async `OkHttpFutureBackend` adapted to ZIO
+- Config: `GiteaConfig` supports programmatic constructors plus hermetic environment
+  parsing for `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`,
+  `GITEA_PAGE_SIZE`, and `GITEA_TIMEOUT`
 
 Useful commands:
 
@@ -24,9 +27,11 @@ Useful commands:
 ./mill examples.run
 ```
 
-`examples.run` is hermetic by default. If `GITEA_URL` and `GITEA_TOKEN` are present, it
-also builds the live ZIO backend and calls `GET /user`.
+`examples.run` is hermetic by default. If `GITEA_URL` is present with either
+`GITEA_TOKEN` or both `GITEA_USERNAME` and `GITEA_PASSWORD`, it also builds the live
+ZIO backend and calls `GET /user`. Token auth has precedence when both token and
+username/password variables are set. Config validation errors mention variable names but
+not credential values.
 
 The rewrite is still in progress. Implemented APIs are covered by hermetic stub-backed tests;
-config sources, retry, integration tests, additional examples, and publishing polish remain
-planned work.
+retry, integration tests, additional examples, and publishing polish remain planned work.

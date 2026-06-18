@@ -89,6 +89,10 @@ Current checkpoint:
 - `RepoListParams` covers page/limit for `userListRepos` and `orgListRepos`; `UserSearchParams` covers `q`/page/limit for `userSearch`; `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`; `PullRequestListParams` covers `base_branch`, `state`, `sort`, `milestone`, multi-value `labels`, `poster`, page, and limit for `repoListPullRequests`; `NotificationListParams` covers `all`, multi-value `status-types`, multi-value `subject-type`, `since`, `before`, page, and limit for `notifyGetList`.
 - `GiteaResponseMapper` decodes successful JSON responses, paginated issue/repository/branch/tag/release/pull-request/notification lists, object-shaped user-search and topic-name pages, 204/unit responses, Gitea error payloads, raw failure bodies, pagination headers, and rate-limit reset headers.
 - `GiteaRequestsSpec` uses sttp `BackendStub` to cover path encoding, query params, auth/OTP/user-agent/JSON accept headers, JSON content type for body requests, successful decoding, pagination mapping for issue/user/repository/topic/branch/tag/search/release/pull-request/notification lists, organization and notification decoding, Gitea error mapping, and rate-limit mapping.
+- Phase 7 has begun with programmatic and environment-based `GiteaConfig` loading.
+- `GiteaConfig` now exposes `withToken`, `withBasic`, `anonymous`, pure `fromEnv(Map[String, String])`, `fromEnvironment`, `layerFromEnv`, and `environmentLayer`.
+- Environment config supports `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`, `GITEA_PAGE_SIZE`, and `GITEA_TIMEOUT`; `GITEA_TOKEN` has precedence over basic auth, basic auth requires both username and password, and validation errors avoid credential values.
+- `GiteaConfigSpec` covers token/basic/anonymous env loading, credential precedence, invalid URL/page-size handling, incomplete basic credentials, safe error messages, and hermetic ZLayer construction without reading real environment variables.
 - Phase 4 has a small ZIO API facade: `UsersApi`, `ReposApi`, `IssuesApi`, `ReleasesApi`, `PullRequestsApi`, `NotificationsApi`, and a nested `OrgsApi` namespace are wired through `GiteaClient.fromBackend`.
 - `GiteaRequestExecutor` sends `GiteaRequest[A]` through a sttp `Backend[Task]`, decodes responses through the existing mapper, and maps backend failures to `GiteaError.TransportError`.
 - `IssuesApi.get(owner, repo, index)` fetches a single issue and `IssuesApi.list(owner, repo, IssueListParams)` streams paginated issues with `ZStream.paginateChunkZIO`.
@@ -534,6 +538,13 @@ OkHttp-backed client compiles and passes the reusable client contract tests wher
 
 Goal: production-grade behavior without hiding failures.
 
+Completed subset:
+
+- Programmatic `GiteaConfig` constructors for token, basic, and anonymous auth.
+- Environment-based config parsing and ZLayer construction for `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`, `GITEA_PAGE_SIZE`, and `GITEA_TIMEOUT`.
+- Explicit credential precedence: token auth wins; otherwise basic auth is used only when username and password are both set; otherwise auth is anonymous.
+- Hermetic config tests under `client.test` without requiring real environment variables.
+
 Config sources:
 
 - Programmatic constructors first.
@@ -658,9 +669,9 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- begin Phase 7 with programmatic and environment-based config loading for `GiteaConfig`,
-- support `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`, `GITEA_PAGE_SIZE`, and `GITEA_TIMEOUT`,
-- keep credential precedence explicit and avoid exposing secrets in errors or docs,
-- add hermetic config tests under `./mill client.test` without requiring real environment variables.
+- continue Phase 7 with retry and resilience infrastructure for safe read-only requests,
+- retry transport failures, `429 RateLimited`, and selected 5xx responses only for idempotent requests by default,
+- keep retry schedules testable with ZIO Test clocks and avoid real sleeps,
+- add hermetic retry tests under `./mill client.test` without external services.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.

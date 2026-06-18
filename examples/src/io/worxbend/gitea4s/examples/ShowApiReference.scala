@@ -2,10 +2,8 @@ package io.worxbend.gitea4s.examples
 
 import io.worxbend.gitea4s.backend.zio.ZioGiteaBackend
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.Auth
 import io.worxbend.gitea4s.model.ApiReference
-import io.worxbend.gitea4s.GiteaConfig
-import sttp.model.Uri
+import io.worxbend.gitea4s.{GiteaConfig, GiteaConfigError}
 import zio.{Console, ZIO, ZIOAppDefault}
 
 object ShowApiReference extends ZIOAppDefault:
@@ -13,10 +11,16 @@ object ShowApiReference extends ZIOAppDefault:
     val referenceLine = s"gitea4s targets Gitea API ${ApiReference.gitea1262.version}"
 
     liveConfig match
-      case None =>
+      case Right(None) =>
         Console.printLine(referenceLine) *>
-          Console.printLine("Set GITEA_URL and GITEA_TOKEN to also call GET /user with the live ZIO backend.")
-      case Some(config) =>
+          Console.printLine(
+            "Set GITEA_URL with GITEA_TOKEN or GITEA_USERNAME/GITEA_PASSWORD to also call GET /user."
+          )
+      case Left(error) =>
+        Console.printLine(referenceLine) *>
+          Console.printLineError(s"Cannot read live Gitea config: ${error.message}") *>
+          ZIO.fail(error)
+      case Right(Some(config)) =>
         Console.printLine(referenceLine) *>
           ZIO.serviceWithZIO[io.worxbend.gitea4s.GiteaClient](_.me)
             .provideLayer(ZioGiteaBackend.configured(config))
@@ -25,12 +29,9 @@ object ShowApiReference extends ZIOAppDefault:
               user => Console.printLine(s"Authenticated as ${user.login.getOrElse("<unknown>")}")
             )
 
-  private def liveConfig: Option[GiteaConfig] =
-    for
-      url <- sys.env.get("GITEA_URL").filter(_.nonEmpty)
-      token <- sys.env.get("GITEA_TOKEN").filter(_.nonEmpty)
-      baseUrl <- Uri.parse(url).toOption
-    yield GiteaConfig.default(baseUrl, Auth.Token(token))
+  private def liveConfig: Either[GiteaConfigError, Option[GiteaConfig]] =
+    if sys.env.get(GiteaConfig.Env.url).forall(_.trim.isEmpty) then Right(None)
+    else GiteaConfig.fromEnv(sys.env.toMap).map(Some(_))
 
   private def describeFailure(error: GiteaError | Throwable): String =
     error match
