@@ -8,9 +8,12 @@ import io.worxbend.gitea4s.model.{
   ChangedFile,
   Comment,
   Commit,
+  CommitStatus,
+  CombinedStatus,
   CreateIssue,
   CreateIssueComment,
   CreatePullReviewOptions,
+  CreateStatusOption,
   DismissPullReviewOptions,
   EditDeadlineOption,
   EditIssueComment,
@@ -199,6 +202,74 @@ object GiteaRequests:
       List("repos", owner, repo, "releases", id.toString),
       Nil,
       GiteaResponseMapper.decodeJson[Release]
+    )
+
+  def repoCombinedStatusByRef(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      ref: String,
+      page: Int = 1
+  ): GiteaRequest[CombinedStatus] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      GiteaEndpoints.repoGetCombinedStatusByRef,
+      List("repos", owner, repo, "commits", ref, "status"),
+      pageQuery(page, pageSize),
+      GiteaResponseMapper.decodeJson[CombinedStatus]
+    )
+
+  def repoStatusesByRef(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      ref: String,
+      params: CommitStatusListParams = CommitStatusListParams.default
+  ): GiteaRequest[Page[CommitStatus]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
+
+    get(
+      config,
+      GiteaEndpoints.repoListStatusesByRef,
+      List("repos", owner, repo, "commits", ref, "statuses"),
+      commitStatusQuery(params, page, pageSize),
+      response => GiteaResponseMapper.decodePage[CommitStatus](response, page, pageSize)
+    )
+
+  def repoStatuses(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      sha: String,
+      params: CommitStatusListParams = CommitStatusListParams.default
+  ): GiteaRequest[Page[CommitStatus]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
+
+    get(
+      config,
+      GiteaEndpoints.repoListStatuses,
+      List("repos", owner, repo, "statuses", sha),
+      commitStatusQuery(params, page, pageSize),
+      response => GiteaResponseMapper.decodePage[CommitStatus](response, page, pageSize)
+    )
+
+  def createStatus(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      sha: String,
+      body: CreateStatusOption
+  ): GiteaRequest[CommitStatus] =
+    postJson(
+      config,
+      GiteaEndpoints.repoCreateStatus,
+      List("repos", owner, repo, "statuses", sha),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[CommitStatus]
     )
 
   def repoPullRequests(
@@ -1346,6 +1417,18 @@ object GiteaRequests:
       Some("limit" -> pageSize.toString),
       params.verification.map(value => "verification" -> value.toString),
       params.files.map(value => "files" -> value.toString)
+    ).flatten
+
+  private def commitStatusQuery(
+      params: CommitStatusListParams,
+      page: Int,
+      pageSize: Int
+  ): List[(String, String)] =
+    List(
+      params.sort.map(sort => "sort" -> sort.queryValue),
+      params.state.map(state => "state" -> state.queryValue),
+      Some("page" -> page.toString),
+      Some("limit" -> pageSize.toString)
     ).flatten
 
   private def notificationQuery(params: NotificationListParams, page: Int, pageSize: Int): List[(String, String)] =

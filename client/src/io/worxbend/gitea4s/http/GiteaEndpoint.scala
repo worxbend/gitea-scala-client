@@ -199,6 +199,69 @@ object GiteaEndpoints:
       response = "#/responses/Release"
     )
 
+  val repoGetCombinedStatusByRef: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/commits/{ref}/status",
+      operationId = "repoGetCombinedStatusByRef",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("ref", "path", required = true),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/CombinedStatus"
+    )
+
+  val repoListStatusesByRef: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/commits/{ref}/statuses",
+      operationId = "repoListStatusesByRef",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("ref", "path", required = true),
+        GiteaParameter("sort", "query", required = false),
+        GiteaParameter("state", "query", required = false),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/CommitStatusList"
+    )
+
+  val repoListStatuses: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/statuses/{sha}",
+      operationId = "repoListStatuses",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("sha", "path", required = true),
+        GiteaParameter("sort", "query", required = false),
+        GiteaParameter("state", "query", required = false),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/CommitStatusList"
+    )
+
+  val repoCreateStatus: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "POST",
+      path = "/repos/{owner}/{repo}/statuses/{sha}",
+      operationId = "repoCreateStatus",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("sha", "path", required = true),
+        GiteaParameter("body", "body", required = false)
+      ),
+      response = "#/responses/CommitStatus"
+    )
+
   val repoListPullRequests: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

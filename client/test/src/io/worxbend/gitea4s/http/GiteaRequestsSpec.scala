@@ -10,6 +10,7 @@ import io.worxbend.gitea4s.model.{
   CreateIssueComment,
   CreatePullReviewComment,
   CreatePullReviewOptions,
+  CreateStatusOption,
   DismissPullReviewOptions,
   EditDeadlineOption,
   EditIssueComment,
@@ -22,6 +23,7 @@ import io.worxbend.gitea4s.model.{
   LockIssueOption,
   NewIssuePinsAllowed,
   NotificationSubjectType,
+  CommitStatusState,
   PullReviewState,
   PullReviewRequestOptions,
   SubmitPullReviewOptions,
@@ -255,6 +257,127 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           endpoint.response == "#/responses/Release",
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/77"
+        )
+      },
+      test("builds and decodes schema-traceable combined commit status request") {
+        val built = GiteaRequests.repoCombinedStatusByRef(config, "worx bend", "gitea/scala", "feature/slash", page = 3)
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"sha":"abc123","state":"warning","total_count":2}""")
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetCombinedStatusByRef,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetCombinedStatusByRef",
+          endpoint.path == "/repos/{owner}/{repo}/commits/{ref}/status",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "ref", "page", "limit"),
+          endpoint.response == "#/responses/CombinedStatus",
+          request.method == Method.GET,
+          request.uri.toString.contains(
+            "/api/v1/repos/worx%20bend/gitea%2Fscala/commits/feature%2Fslash/status?"
+          ),
+          request.uri.paramsMap.get("page").contains("3"),
+          request.uri.paramsMap.get("limit").contains("25"),
+          request.header("Accept").contains("application/json"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)).map(_.state) == Right(Some(CommitStatusState.Warning)),
+          built.decode(request.send(backend)).map(_.totalCount) == Right(Some(2L))
+        )
+      },
+      test("builds and decodes schema-traceable commit status list requests") {
+        val params = CommitStatusListParams(
+          sort = Some(CommitStatusSort.HighestIndex),
+          state = Some(CommitStatusListState.Success),
+          page = Some(4),
+          limit = Some(9)
+        )
+        val byRef = GiteaRequests.repoStatusesByRef(config, "worx bend", "gitea/scala", "main branch", params)
+        val bySha = GiteaRequests.repoStatuses(config, "worx bend", "gitea/scala", "abc/123", params)
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """[{"id":700,"context":"ci/mill","status":"success","target_url":"https://ci.example/builds/700"}]""",
+              StatusCode.Ok,
+              List(Header("x-total-count", "1"))
+            )
+          )
+
+        assertTrue(
+          byRef.endpoint == GiteaEndpoints.repoListStatusesByRef,
+          byRef.endpoint.method == "GET",
+          byRef.endpoint.operationId == "repoListStatusesByRef",
+          byRef.endpoint.path == "/repos/{owner}/{repo}/commits/{ref}/statuses",
+          byRef.endpoint.parameters.map(_.name) == List("owner", "repo", "ref", "sort", "state", "page", "limit"),
+          byRef.endpoint.response == "#/responses/CommitStatusList",
+          byRef.request.method == Method.GET,
+          byRef.request.uri.toString.contains(
+            "/api/v1/repos/worx%20bend/gitea%2Fscala/commits/main%20branch/statuses?"
+          ),
+          byRef.request.uri.paramsMap.get("sort").contains("highestindex"),
+          byRef.request.uri.paramsMap.get("state").contains("success"),
+          byRef.request.uri.paramsMap.get("page").contains("4"),
+          byRef.request.uri.paramsMap.get("limit").contains("9"),
+          byRef.request.header("Content-Type").isEmpty,
+          byRef.retryable == true,
+          bySha.endpoint == GiteaEndpoints.repoListStatuses,
+          bySha.endpoint.method == "GET",
+          bySha.endpoint.operationId == "repoListStatuses",
+          bySha.endpoint.path == "/repos/{owner}/{repo}/statuses/{sha}",
+          bySha.endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "sort", "state", "page", "limit"),
+          bySha.endpoint.response == "#/responses/CommitStatusList",
+          bySha.request.method == Method.GET,
+          bySha.request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/statuses/abc%2F123?"),
+          bySha.request.uri.paramsMap.get("sort").contains("highestindex"),
+          bySha.request.uri.paramsMap.get("state").contains("success"),
+          bySha.request.header("Content-Type").isEmpty,
+          bySha.retryable == true,
+          byRef.decode(byRef.request.send(backend)).map(_.data.headOption.flatMap(_.state)) ==
+            Right(Some(CommitStatusState.Success)),
+          byRef.decode(byRef.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
+          bySha.decode(bySha.request.send(backend)).map(_.data.headOption.flatMap(_.targetUrl)) ==
+            Right(Some("https://ci.example/builds/700"))
+        )
+      },
+      test("builds and decodes schema-traceable create commit status request") {
+        val body = CreateStatusOption(
+          context = Some("ci/mill"),
+          description = Some("Mill tests passed"),
+          state = Some(CommitStatusState.Success),
+          targetUrl = Some("https://ci.example/builds/700")
+        )
+        val built = GiteaRequests.createStatus(config, "worx bend", "gitea/scala", "abc/123", body)
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"id":700,"context":"ci/mill","status":"success"}""", StatusCode.Created)
+          )
+        val requestBody =
+          request.body match
+            case StringBody(value, _, _) => value
+            case _ => ""
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoCreateStatus,
+          endpoint.method == "POST",
+          endpoint.operationId == "repoCreateStatus",
+          endpoint.path == "/repos/{owner}/{repo}/statuses/{sha}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "body"),
+          endpoint.response == "#/responses/CommitStatus",
+          request.method == Method.POST,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/statuses/abc%2F123",
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("Content-Type").exists(_.startsWith("application/json")),
+          requestBody ==
+            """{"context":"ci/mill","description":"Mill tests passed","state":"success","target_url":"https://ci.example/builds/700"}""",
+          built.retryable == false,
+          built.decode(request.send(backend)).map(_.id) == Right(Some(700L)),
+          built.decode(request.send(backend)).map(_.state) == Right(Some(CommitStatusState.Success))
         )
       },
       test("builds schema-traceable paginated repository pull request list request") {
@@ -2205,6 +2328,36 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           releases.decode(releases.request.send(backend)) == Left(GiteaError.NotFound("missing release", body)),
           release.decode(release.request.send(backend)) == Left(GiteaError.NotFound("missing release", body))
+        )
+      },
+      test("maps documented commit status failures") {
+        val badRequestBody = """{"message":"invalid ref"}"""
+        val notFoundBody = """{"message":"missing commit"}"""
+        val badRequestBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(badRequestBody, StatusCode.BadRequest))
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val combined = GiteaRequests.repoCombinedStatusByRef(config, "owner", "repo", "bad ref")
+        val byRef = GiteaRequests.repoStatusesByRef(config, "owner", "repo", "missing")
+        val bySha = GiteaRequests.repoStatuses(config, "owner", "repo", "missing")
+        val create =
+          GiteaRequests.createStatus(
+            config,
+            "owner",
+            "repo",
+            "missing",
+            CreateStatusOption(state = Some(CommitStatusState.Error))
+          )
+
+        assertTrue(
+          combined.decode(combined.request.send(badRequestBackend)) ==
+            Left(GiteaError.BadRequest("invalid ref", badRequestBody)),
+          byRef.decode(byRef.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing commit", notFoundBody)),
+          bySha.decode(bySha.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing commit", notFoundBody)),
+          create.decode(create.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing commit", notFoundBody))
         )
       },
       test("maps repository pull request not-found responses") {

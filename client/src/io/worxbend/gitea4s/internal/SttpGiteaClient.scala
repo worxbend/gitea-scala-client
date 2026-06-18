@@ -5,6 +5,7 @@ import io.worxbend.gitea4s.api.OrgsApi
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
   GiteaRequests,
+  CommitStatusListParams,
   IssueCommentListParams,
   IssueListParams,
   IssueTrackedTimeListParams,
@@ -22,10 +23,13 @@ import io.worxbend.gitea4s.model.{
   Branch,
   ChangedFile,
   Comment,
+  CombinedStatus,
   Commit,
+  CommitStatus,
   CreateIssue,
   CreateIssueComment,
   CreatePullReviewOptions,
+  CreateStatusOption,
   DismissPullReviewOptions,
   EditDeadlineOption,
   EditIssueComment,
@@ -137,6 +141,37 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
     Pagination.paginated { page =>
       executor.send(GiteaRequests.repoTags(config, owner, repo, page))
     }
+
+  override def combinedStatusByRef(owner: String, repo: String, ref: String): IO[GiteaError, CombinedStatus] =
+    executor.send(GiteaRequests.repoCombinedStatusByRef(config, owner, repo, ref))
+
+  override def statusesByRef(
+      owner: String,
+      repo: String,
+      ref: String,
+      params: CommitStatusListParams
+  ): ZStream[Any, GiteaError, CommitStatus] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoStatusesByRef(config, owner, repo, ref, params.copy(page = Some(page))))
+    }
+
+  override def statuses(
+      owner: String,
+      repo: String,
+      sha: String,
+      params: CommitStatusListParams
+  ): ZStream[Any, GiteaError, CommitStatus] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoStatuses(config, owner, repo, sha, params.copy(page = Some(page))))
+    }
+
+  override def createStatus(
+      owner: String,
+      repo: String,
+      sha: String,
+      body: CreateStatusOption
+  ): IO[GiteaError, CommitStatus] =
+    executor.send(GiteaRequests.createStatus(config, owner, repo, sha, body))
 
   override def releases(owner: String, repo: String): ZStream[Any, GiteaError, Release] =
     Pagination.paginated { page =>

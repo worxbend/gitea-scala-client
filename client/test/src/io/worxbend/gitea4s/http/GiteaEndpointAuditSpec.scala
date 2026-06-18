@@ -1,0 +1,274 @@
+package io.worxbend.gitea4s.http
+
+import io.worxbend.gitea4s.GiteaConfig
+import io.worxbend.gitea4s.model.{
+  Auth,
+  CreatePullReviewOptions,
+  DismissPullReviewOptions,
+  PullReviewRequestOptions,
+  PullReviewState,
+  SubmitPullReviewOptions
+}
+import sttp.client4.*
+import zio.test.*
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path, Paths}
+
+object GiteaEndpointAuditSpec extends ZIOSpecDefault:
+  private val config =
+    GiteaConfig.default(uri"https://gitea.example", Auth.Token("secret"))
+
+  private val audited = List(
+    AuditedRequest(
+      request = GiteaRequests.repoPullReviews(config, "owner", "repo", index = 12),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoPullReview(config, "owner", "repo", index = 12, id = 34),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.deletePullReview(config, "owner", "repo", index = 12, id = 34),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoPullReviewComments(config, "owner", "repo", index = 12, id = 34),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.createPullReviewRequests(
+        config,
+        "owner",
+        "repo",
+        index = 12,
+        PullReviewRequestOptions(reviewers = Some(List("octo")))
+      ),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.deletePullReviewRequests(
+        config,
+        "owner",
+        "repo",
+        index = 12,
+        PullReviewRequestOptions(teamReviewers = Some(List("reviewers")))
+      ),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.createPullReview(
+        config,
+        "owner",
+        "repo",
+        index = 12,
+        CreatePullReviewOptions(body = Some("review"), event = Some(PullReviewState.Comment))
+      ),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.submitPullReview(
+        config,
+        "owner",
+        "repo",
+        index = 12,
+        id = 34,
+        SubmitPullReviewOptions(body = Some("approved"), event = Some(PullReviewState.Approved))
+      ),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.dismissPullReview(
+        config,
+        "owner",
+        "repo",
+        index = 12,
+        id = 34,
+        DismissPullReviewOptions(message = Some("stale"))
+      ),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.undismissPullReview(config, "owner", "repo", index = 12, id = 34),
+      noBodyLifecyclePost = true
+    ),
+    AuditedRequest(
+      request = GiteaRequests.resolvePullReviewComment(config, "owner", "repo", id = 56),
+      noBodyLifecyclePost = true
+    ),
+    AuditedRequest(
+      request = GiteaRequests.unresolvePullReviewComment(config, "owner", "repo", id = 56),
+      noBodyLifecyclePost = true
+    )
+  )
+
+  def spec =
+    suite("Gitea endpoint metadata audit")(
+      test("pull-review lifecycle metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = audited.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      }
+    )
+
+  private def audit(swagger: SwaggerAudit, audited: AuditedRequest): List[String] =
+    val endpoint = audited.request.endpoint
+    swagger.operation(endpoint.path, endpoint.method) match
+      case Left(message) => List(s"${endpoint.operationId}: $message")
+      case Right(operation) =>
+        val requiredPathParameterNames =
+          endpoint.parameters.collect {
+            case GiteaParameter(name, "path", true) => name
+          }
+        val endpointHasBody = endpoint.parameters.exists(_.in == "body")
+        val requestHasBody = audited.request.request.body != NoBody
+        val expectedRetryable = endpoint.method.equalsIgnoreCase("GET") || endpoint.method.equalsIgnoreCase("HEAD")
+
+        List(
+          compare("operationId", endpoint.operationId, operation.operationId),
+          compare("method", endpoint.method.toUpperCase, operation.method),
+          compare("path", endpoint.path, operation.path),
+          compare("required path parameters", requiredPathParameterNames, operation.requiredPathParameters),
+          compare("success response labels", List(endpoint.response), operation.successResponseLabels),
+          compare("endpoint body presence", endpointHasBody, operation.hasRequestBody),
+          compare("request body presence", requestHasBody, operation.hasRequestBody),
+          compare("retryable", audited.request.retryable, expectedRetryable),
+          Option.when(audited.noBodyLifecyclePost && requestHasBody)("no-body lifecycle POST emitted a request body"),
+          Option.when(audited.noBodyLifecyclePost && audited.request.request.header("Content-Type").nonEmpty)(
+            "no-body lifecycle POST emitted Content-Type"
+          )
+        ).flatten.map(message => s"${endpoint.operationId}: $message")
+
+  private def compare[A](label: String, actual: A, expected: A): Option[String] =
+    Option.when(actual != expected)(s"$label actual=$actual expected=$expected")
+
+  private final case class AuditedRequest(
+      request: GiteaRequest[?],
+      noBodyLifecyclePost: Boolean
+  )
+
+  private final case class SwaggerOperation(
+      path: String,
+      method: String,
+      operationId: String,
+      requiredPathParameters: List[String],
+      successResponseLabels: List[String],
+      hasRequestBody: Boolean
+  )
+
+  private final class SwaggerAudit(lines: Vector[String]):
+    def operation(path: String, method: String): Either[String, SwaggerOperation] =
+      for
+        pathIndex <- findPath(path)
+        methodIndex <- findMethod(pathIndex, method)
+        methodBlock = blockAfter(methodIndex, minimumIndent = 6)
+        operationId <- findValue(methodBlock, "operationId")
+        parameters = parseParameters(methodBlock)
+        responses = parseSuccessResponseLabels(methodBlock)
+      yield SwaggerOperation(
+        path = path,
+        method = method.toUpperCase,
+        operationId = operationId,
+        requiredPathParameters = parameters.collect {
+          case SwaggerParameter(name, "path", true) => name
+        },
+        successResponseLabels = responses,
+        hasRequestBody = parameters.exists(_.in == "body")
+      )
+
+    private def findPath(path: String): Either[String, Int] =
+      lines.indexWhere(_.trim == s"$path:") match
+        case -1    => Left(s"path not found in plugin-redoc-2.yaml: $path")
+        case index => Right(index)
+
+    private def findMethod(pathIndex: Int, method: String): Either[String, Int] =
+      val needle = s"${method.toLowerCase}:"
+      val nextPathIndex = lines.indexWhere(line => line.startsWith("  /") && line.trim.endsWith(":"), pathIndex + 1)
+      val end = if nextPathIndex == -1 then lines.length else nextPathIndex
+      val index = lines.indexWhere(_.trim == needle, pathIndex + 1)
+      Option
+        .when(index != -1 && index < end)(index)
+        .toRight(s"method not found for $method ${lines(pathIndex).trim.stripSuffix(":")}")
+
+    private def blockAfter(index: Int, minimumIndent: Int): Vector[String] =
+      lines
+        .drop(index + 1)
+        .takeWhile(line => line.trim.isEmpty || indentation(line) >= minimumIndent)
+
+    private def findValue(block: Vector[String], key: String): Either[String, String] =
+      block
+        .find(_.trim.startsWith(s"$key: "))
+        .map(_.trim.stripPrefix(s"$key: ").trim)
+        .toRight(s"$key not found")
+
+    private def parseParameters(block: Vector[String]): List[SwaggerParameter] =
+      val parameterLines = section(block, "parameters:", "responses:")
+      parameterEntries(parameterLines).flatMap { entry =>
+        for
+          name <- entryValue(entry, "name")
+          in <- entryValue(entry, "in")
+        yield SwaggerParameter(
+          name = name,
+          in = in,
+          required = entryValue(entry, "required").contains("true")
+        )
+      }
+
+    private def parseSuccessResponseLabels(block: Vector[String]): List[String] =
+      val responseLines = block.dropWhile(_.trim != "responses:").drop(1)
+      responseEntries(responseLines).flatMap {
+        case (status, entry) if status.startsWith("2") => entryValue(entry, "$ref")
+        case _                                         => None
+      }
+
+    private def section(block: Vector[String], start: String, end: String): Vector[String] =
+      block.dropWhile(_.trim != start).drop(1).takeWhile(_.trim != end)
+
+    private def parameterEntries(parameterLines: Vector[String]): List[Vector[String]] =
+      entries(parameterLines, line => line.startsWith(" " * 8 + "- "))
+
+    private def responseEntries(responseLines: Vector[String]): List[(String, Vector[String])] =
+      val grouped = entries(responseLines, line => responseStatus(line).nonEmpty)
+      grouped.flatMap(entry => responseStatus(entry.headOption.getOrElse("")).map(_ -> entry))
+
+    private def entries(rawLines: Vector[String], entryStart: String => Boolean): List[Vector[String]] =
+      rawLines.foldLeft(List.empty[Vector[String]]) {
+        case (entries, line) if entryStart(line) => entries :+ Vector(line)
+        case (Nil, _)                            => Nil
+        case (entries, line)                     => entries.init :+ (entries.last :+ line)
+      }
+
+    private def responseStatus(line: String): Option[String] =
+      val trimmed = line.trim
+      Option.when(trimmed.startsWith("'") && trimmed.endsWith(":"))(trimmed.stripPrefix("'").stripSuffix("':"))
+
+    private def entryValue(entry: Vector[String], key: String): Option[String] =
+      entry
+        .find(_.trim.startsWith(s"$key:"))
+        .map(_.trim.stripPrefix(s"$key:").trim.stripPrefix("'").stripSuffix("'"))
+        .orElse {
+          entry
+            .find(_.trim.startsWith(s"- $key:"))
+            .map(_.trim.stripPrefix(s"- $key:").trim.stripPrefix("'").stripSuffix("'"))
+        }
+
+    private def indentation(line: String): Int =
+      line.takeWhile(_ == ' ').length
+
+  private object SwaggerAudit:
+    def load(): SwaggerAudit =
+      val path = swaggerPath()
+      val content = Files.readString(path, StandardCharsets.UTF_8)
+      SwaggerAudit(content.linesIterator.toVector)
+
+    private def swaggerPath(): Path =
+      val candidates = Iterator
+        .iterate(Paths.get("").toAbsolutePath)(_.getParent)
+        .takeWhile(_ != null)
+        .map(_.resolve("plugin-redoc-2.yaml"))
+        .toList
+
+      candidates.find(Files.isRegularFile(_)).getOrElse(Paths.get("plugin-redoc-2.yaml").toAbsolutePath)
+
+  private final case class SwaggerParameter(name: String, in: String, required: Boolean)

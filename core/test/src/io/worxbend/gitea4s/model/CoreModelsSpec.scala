@@ -347,6 +347,87 @@ object CoreModelsSpec extends ZIOSpecDefault:
           stopwatch.map(_.seconds) == Right(Some(3723L))
         )
       },
+      test("decodes commit status and combined status payloads using schema JSON names") {
+        val commitStatusJson =
+          """{
+            |  "context": "ci/mill",
+            |  "created_at": "2026-06-18T11:00:00Z",
+            |  "creator": { "id": 42, "login": "octo" },
+            |  "description": "Mill tests passed",
+            |  "id": 700,
+            |  "status": "success",
+            |  "target_url": "https://ci.example/builds/700",
+            |  "updated_at": "2026-06-18T11:05:00Z",
+            |  "url": "https://gitea.example/api/v1/repos/octo/gitea4s/statuses/abc123"
+            |}""".stripMargin
+        val combinedStatusJson =
+          """{
+            |  "commit_url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/commits/abc123",
+            |  "repository": { "id": 100, "name": "gitea4s", "full_name": "octo/gitea4s" },
+            |  "sha": "abc123",
+            |  "state": "warning",
+            |  "statuses": [{
+            |    "context": "ci/mill",
+            |    "id": 700,
+            |    "status": "success",
+            |    "target_url": "https://ci.example/builds/700"
+            |  }],
+            |  "total_count": 1,
+            |  "url": "https://gitea.example/api/v1/repos/octo/gitea4s/commits/abc123/status"
+            |}""".stripMargin
+
+        val commitStatus = commitStatusJson.fromJson[CommitStatus]
+        val combinedStatus = combinedStatusJson.fromJson[CombinedStatus]
+
+        assertTrue(
+          commitStatus.map(_.id) == Right(Some(700L)),
+          commitStatus.map(_.state) == Right(Some(CommitStatusState.Success)),
+          commitStatus.map(_.createdAt) == Right(Some(Instant.parse("2026-06-18T11:00:00Z"))),
+          commitStatus.map(_.updatedAt) == Right(Some(Instant.parse("2026-06-18T11:05:00Z"))),
+          commitStatus.map(_.targetUrl) == Right(Some("https://ci.example/builds/700")),
+          commitStatus.map(_.creator.flatMap(_.login)) == Right(Some("octo")),
+          combinedStatus.map(_.commitUrl) ==
+            Right(Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/commits/abc123")),
+          combinedStatus.map(_.repository.flatMap(_.fullName)) == Right(Some("octo/gitea4s")),
+          combinedStatus.map(_.state) == Right(Some(CommitStatusState.Warning)),
+          combinedStatus.map(_.statuses.flatMap(_.headOption).flatMap(_.state)) ==
+            Right(Some(CommitStatusState.Success)),
+          combinedStatus.map(_.totalCount) == Right(Some(1L))
+        )
+      },
+      test("round-trips commit status request and response payloads with state/status JSON fields") {
+        val create = CreateStatusOption(
+          context = Some("ci/mill"),
+          description = Some("Mill tests passed"),
+          state = Some(CommitStatusState.Success),
+          targetUrl = Some("https://ci.example/builds/700")
+        )
+        val returned = CommitStatus(
+          context = Some("ci/mill"),
+          id = Some(700L),
+          state = Some(CommitStatusState.Success),
+          targetUrl = Some("https://ci.example/builds/700")
+        )
+        val combined = CombinedStatus(
+          commitUrl = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/commits/abc123"),
+          sha = Some("abc123"),
+          state = Some(CommitStatusState.Success),
+          statuses = Some(List(returned)),
+          totalCount = Some(1L)
+        )
+
+        assertTrue(
+          create.toJson ==
+            """{"context":"ci/mill","description":"Mill tests passed","state":"success","target_url":"https://ci.example/builds/700"}""",
+          create.toJson.fromJson[CreateStatusOption] == Right(create),
+          returned.toJson ==
+            """{"context":"ci/mill","id":700,"status":"success","target_url":"https://ci.example/builds/700"}""",
+          returned.toJson.fromJson[CommitStatus] == Right(returned),
+          combined.toJson.contains(""""commit_url":"https://gitea.example/api/v1/repos/octo/gitea4s/git/commits/abc123""""),
+          combined.toJson.contains(""""total_count":1"""),
+          combined.toJson.fromJson[CombinedStatus] == Right(combined)
+        )
+      },
       test("round-trips issue meta payloads for dependency and blocking requests") {
         val sameRepo = IssueMeta(index = 13L)
         val crossRepo = IssueMeta(index = 21L, owner = Some("other-owner"), repo = Some("other-repo"))
@@ -638,8 +719,17 @@ object CoreModelsSpec extends ZIOSpecDefault:
         val notificationSubject =
           """{ "title": "Invalid", "state": "stale", "type": "Message" }""".fromJson[NotificationSubject]
         val pullReview = """{ "id": 1, "state": "STALE" }""".fromJson[PullReview]
+        val commitStatus = """{ "id": 1, "status": "queued" }""".fromJson[CommitStatus]
+        val createStatus = """{ "state": "queued" }""".fromJson[CreateStatusOption]
 
-        assertTrue(issue.isLeft, repository.isLeft, notificationSubject.isLeft, pullReview.isLeft)
+        assertTrue(
+          issue.isLeft,
+          repository.isLeft,
+          notificationSubject.isLeft,
+          pullReview.isLeft,
+          commitStatus.isLeft,
+          createStatus.isLeft
+        )
       },
       test("models auth modes and core error ADT values") {
         val auth: Auth = Auth.Basic("octo", "secret")

@@ -14,6 +14,11 @@ surface is still being filled out.
 - Typed core models, zio-json codecs, and the `GiteaError` ADT.
 - Read-only ZIO client APIs for users, organizations, repositories, issues,
   releases, pull requests, and notifications.
+- Typed commit-status models and repository APIs with `CommitStatus`,
+  `CombinedStatus`, `CreateStatusOption`, `CommitStatusState`,
+  `CommitStatusListParams`, and request construction for
+  `repoGetCombinedStatusByRef`, `repoListStatusesByRef`, `repoListStatuses`,
+  and `repoCreateStatus`.
 - Typed issue creation with `CreateIssue` and `issueCreateIssue` request
   construction.
 - Typed issue deletion with `issueDelete` request construction.

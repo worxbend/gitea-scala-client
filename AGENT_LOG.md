@@ -475,3 +475,77 @@ M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
 M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
 M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+2026-06-18T21:30:19Z iteration 2 started remaining=17412s
+2026-06-18T21:30:19Z iteration 2 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-18T21:30:19Z iteration 2 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-qsw90fnt/repo copied_entries=79
+2026-06-18T21:30:19Z iteration 2 ideator phase started count=3
+2026-06-18T21:30:19Z iteration 2 ideator phase concurrency workers=3
+2026-06-18T21:30:19Z iteration 2 ideator 1 role="the pragmatist" started
+2026-06-18T21:30:19Z iteration 2 ideator 2 role="the architect" started
+2026-06-18T21:30:19Z iteration 2 ideator 3 role="the contrarian" started
+2026-06-18T21:30:28Z iteration 2 ideator 2 role="the architect" completed status=0
+2026-06-18T21:30:28Z iteration 2 ideator 3 role="the contrarian" completed status=0
+2026-06-18T21:30:28Z iteration 2 ideator 1 role="the pragmatist" completed status=0
+2026-06-18T21:30:28Z iteration 2 ideator phase completed approaches=3
+2026-06-18T21:30:28Z iteration 2 selector started approaches=3
+2026-06-18T21:30:38Z iteration 2 selector completed status=0
+2026-06-18T21:30:38Z iteration 2 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-qsw90fnt/repo
+2026-06-18T21:30:38Z iteration 2 selector rejected alternative role="the architect" approach="Audit-First Contract Ratchet: pause feature expansion briefly to establish a lightweight Swagger-to-handwritten-endpoint contract check, then use that check as a gate for the ne..." reason="Strong directionally, but selected strategy makes the audit more explicitly a ratchet for future slice selection and includes lifecycle semantics beyond metadata fields."
+2026-06-18T21:30:38Z iteration 2 selector rejected alternative role="the contrarian" approach="Contract-First Pause: stop expanding endpoints and spend the next iteration making the local Swagger contract an executable constraint on the handwritten client surface before a..." reason="Useful warning against unchecked expansion, but too pause-heavy as-is; the project should not stop feature growth indefinitely once a small audit pattern is established."
+2026-06-18T21:30:38Z iteration 2 selector rejected alternative role="the pragmatist" approach="Audit-Gated Vertical Slice: pause endpoint expansion long enough to create a lightweight spec-trace gate, then use that gate to choose and land the next smallest high-value API..." reason="Closest to the selected strategy, but the final synthesis sharpens the Planner guidance around recent lifecycle endpoints and the specific drift risks recorded in memory."
+2026-06-18T21:30:38Z iteration 2 selector alternatives persisted count=3
+2026-06-18T21:30:38Z iteration 2 planner started
+2026-06-18T21:31:49Z iteration 2 plan: 5 task(s) in 5 phase(s). The iteration starts with the audit guardrail because handwritten endpoint metadata is now the highest drift risk. Commit-status support is sequenced after that audit and split by dependency: core models first, HTTP construction second, facade wiring third, then docs/snapshots/plan updates.
+2026-06-18T21:31:49Z iteration 2 phase 1 started parallel=False tasks=1
+2026-06-18T21:34:56Z iteration 2 task t1 ('Add endpoint metadata audit for pull-review lifecycle') status=0
+2026-06-18T21:34:56Z iteration 2 phase 2 started parallel=False tasks=1
+2026-06-18T21:36:50Z iteration 2 task t2 ('Add commit-status core models and codecs') status=0
+2026-06-18T21:36:50Z iteration 2 phase 3 started parallel=False tasks=1
+2026-06-18T21:41:41Z iteration 2 task t3 ('Implement commit-status HTTP request layer') status=0
+2026-06-18T21:41:41Z iteration 2 phase 4 started parallel=False tasks=1
+2026-06-18T21:44:11Z iteration 2 task t4 ('Expose commit-status facade methods') status=0
+2026-06-18T21:44:11Z iteration 2 phase 5 started parallel=False tasks=1
+2026-06-18T21:47:40Z iteration 2 task t5 ('Update docs, snapshots, and continuation plan') status=0
+2026-06-18T21:47:40Z iteration 2 reviewer started
+
+## Reviewer Summary - Iteration 2 - 2026-06-18T21:49:07Z
+
+What was done:
+- Inspected the full uncommitted patch for the commit-status slice and the pull-review lifecycle endpoint audit across source, tests, docs, snapshots, `PLAN.md`, and `AGENT_LOG.md`.
+- Cross-checked `repoGetCombinedStatusByRef`, `repoListStatusesByRef`, `repoListStatuses`, and `repoCreateStatus` against `plugin-redoc-2.yaml`; methods, paths, operation IDs, path/body parameters, success response refs, status/state JSON fields, and list query enum values line up with the local Swagger file.
+- Ran focused validation: `git diff --check` and `./mill --no-server core.test client.test`.
+
+What was found:
+- No functional blocker or regression was found in this iteration.
+- Commit-status core models/codecs correctly model returned `CommitStatus.status`, `CombinedStatus.state`, create payload `CreateStatusOption.state`, timestamp fields, target URL naming, and the `skipped` status value where Swagger permits it.
+- Request construction follows existing patterns: path segments are encoded safely, GET requests are retryable, POST status creation is non-retryable, JSON bodies include `Content-Type`, and paginated status list endpoints decode through `Page[CommitStatus]`.
+- The new endpoint audit is useful but intentionally narrow: it currently covers pull-review lifecycle endpoints only and does not yet ratchet the newly added commit-status metadata or query enum values.
+- A minor API design gap remains: the low-level combined-status request builder accepts a `page` argument and always applies `limit = config.pageSize`, but the public `ReposApi.combinedStatusByRef` facade exposes only the first page.
+
+Top improvement proposals:
+- Extend `GiteaEndpointAuditSpec` to cover the commit-status endpoint group, including implemented query parameters and query enum values for `sort` and `state`.
+- Decide and document the public shape for combined-status pagination: either add explicit params/page access for `combinedStatusByRef` or intentionally keep it as first-page lookup and state that richer status pagination belongs to `statusesByRef`.
+- Keep the split between payload `CommitStatusState` and list-filter `CommitStatusListState`; payloads include `skipped`, while Swagger list filters do not.
+2026-06-18T21:50:03Z iteration 2 reviewer completed status=0
+2026-06-18T21:50:03Z iteration 2 memory updated
+2026-06-18T21:50:03Z iteration 2 completed validation_status=0
+2026-06-18T21:50:03Z iteration 2 checkpoint started
+2026-06-18T21:50:03Z iteration 2 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+A  client/src/io/worxbend/gitea4s/http/CommitStatusListParams.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+A  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+A  core/src/io/worxbend/gitea4s/model/CommitStatus.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

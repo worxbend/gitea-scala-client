@@ -13,9 +13,9 @@ and zio-json.
 - Implemented surface: typed core models/codecs plus users, organizations,
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
-  releases, pull requests including reviews, pinned pull-request reads,
-  diff/patch downloads, merge-status checks, review-comment resolution, and
-  notifications through a ZIO client API
+  commit statuses, releases, pull requests including reviews, pinned
+  pull-request reads, diff/patch downloads, merge-status checks,
+  review-comment resolution, and notifications through a ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -171,9 +171,46 @@ Current stream-oriented APIs include user followers/following/search, user and
 organization repositories, organization members, issues, issue reactions, issue
 subscribers, issue tracked times, current-user stopwatches, repository-wide
 issue comments, branches, tags, releases, pull requests, and notification
-threads. Pinned issues and pinned pull requests are exposed as non-paginated
-chunks because Gitea returns those endpoints as plain list responses without
-pagination parameters.
+threads. Commit-status list APIs are also paginated streams. Pinned issues and
+pinned pull requests are exposed as non-paginated chunks because Gitea returns
+those endpoints as plain list responses without pagination parameters.
+
+## Commit Statuses
+
+Repository commit-status support covers combined status lookup by ref, status
+listing by ref or SHA, and status creation:
+
+```scala
+import io.worxbend.gitea4s.http.{CommitStatusListParams, CommitStatusListState, CommitStatusSort}
+import io.worxbend.gitea4s.model.{CommitStatusState, CreateStatusOption}
+
+client.combinedStatusByRef(owner = "my-org", repo = "my-repo", ref = "main")
+
+client.statusesByRef(
+  owner = "my-org",
+  repo = "my-repo",
+  ref = "main",
+  params = CommitStatusListParams(
+    sort = Some(CommitStatusSort.RecentUpdate),
+    state = Some(CommitStatusListState.Success),
+    limit = Some(25)
+  )
+).take(25).runCollect
+
+client.statuses(owner = "my-org", repo = "my-repo", sha = "abc123").take(25).runCollect
+
+client.createStatus(
+  owner = "my-org",
+  repo = "my-repo",
+  sha = "abc123",
+  body = CreateStatusOption(
+    state = Some(CommitStatusState.Success),
+    context = Some("ci/build"),
+    targetUrl = Some("https://ci.example/build/123"),
+    description = Some("Build passed")
+  )
+)
+```
 
 ## Issue Writes
 

@@ -2,6 +2,9 @@ package io.worxbend.gitea4s
 
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
+  CommitStatusListParams,
+  CommitStatusListState,
+  CommitStatusSort,
   GiteaRequests,
   IssueCommentListParams,
   IssueListParams,
@@ -19,8 +22,10 @@ import io.worxbend.gitea4s.internal.GiteaRequestExecutor
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
   Auth,
+  CommitStatusState,
   CreateIssue,
   CreatePullReviewOptions,
+  CreateStatusOption,
   DismissPullReviewOptions,
   EditDeadlineOption,
   EditIssue,
@@ -906,6 +911,130 @@ object GiteaClientSpec extends ZIOSpecDefault:
         yield assertTrue(
           branches.map(_.name) == Chunk(Some("main"), Some("release")),
           tags.map(_.name) == Chunk(Some("v1.0.0"), Some("v1.1.0"))
+        )
+      },
+      test("loads and streams commit statuses through the ReposApi methods") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+        val listParams = CommitStatusListParams(
+          sort = Some(CommitStatusSort.HighestIndex),
+          state = Some(CommitStatusListState.Success)
+        )
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "commits", "main", "status"))
+            }
+            .thenRespond(
+              ResponseStub.adjust(
+                """{"sha":"abc123","state":"success","total_count":2,"statuses":[{"context":"ci","status":"success"}]}"""
+              )
+            )
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "commits", "main", "statuses")) &&
+                request.uri.paramsMap.get("sort").contains("highestindex") &&
+                request.uri.paramsMap.get("state").contains("success")
+            }
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"context":"ci","status":"success"}]""", StatusCode.Ok, twoPageHeaders),
+              ResponseStub.adjust("""[{"context":"lint","status":"success"}]""", StatusCode.Ok, twoPageHeaders)
+            )
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "statuses", "abc123")) &&
+                request.uri.paramsMap.get("sort").contains("highestindex") &&
+                request.uri.paramsMap.get("state").contains("success")
+            }
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"context":"build","status":"success"}]""", StatusCode.Ok, twoPageHeaders),
+              ResponseStub.adjust("""[{"context":"docs","status":"success"}]""", StatusCode.Ok, twoPageHeaders)
+            )
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "statuses", "abc123")) &&
+                (request.body match
+                  case StringBody(body, _, _) =>
+                    body.contains(""""state":"success"""") &&
+                      body.contains(""""target_url":"https://ci.example/build/1"""")
+                  case _ => false)
+            }
+            .thenRespond(
+              ResponseStub.adjust(
+                """{"context":"ci","status":"success","target_url":"https://ci.example/build/1"}""",
+                StatusCode.Created
+              )
+            )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          combined <- client.combinedStatusByRef("alice", "api", "main")
+          byRef <- client.statusesByRef("alice", "api", "main", listParams).runCollect
+          bySha <- client.statuses("alice", "api", "abc123", listParams).runCollect
+          created <- client.createStatus(
+            "alice",
+            "api",
+            "abc123",
+            CreateStatusOption(
+              context = Some("ci"),
+              state = Some(CommitStatusState.Success),
+              targetUrl = Some("https://ci.example/build/1")
+            )
+          )
+        yield assertTrue(
+          combined.sha.contains("abc123"),
+          combined.state.contains(CommitStatusState.Success),
+          byRef.map(_.context) == Chunk(Some("ci"), Some("lint")),
+          bySha.map(_.context) == Chunk(Some("build"), Some("docs")),
+          created.state.contains(CommitStatusState.Success),
+          created.targetUrl.contains("https://ci.example/build/1")
+        )
+      },
+      test("propagates commit status decode and transport errors through the facade") {
+        val decodeBackend =
+          taskStub.whenAnyRequest.thenRespond(ResponseStub.adjust("""{"sha":"abc123","state":"unknown"}"""))
+        val failure = RuntimeException("connection refused")
+        val transportBackend = taskStub.whenAnyRequest.thenThrow(failure)
+        val decodeClient = GiteaClient.fromBackend(config, decodeBackend)
+        val transportClient = GiteaClient.fromBackend(config, transportBackend)
+
+        for
+          decodeResult <- decodeClient.combinedStatusByRef("alice", "api", "main").either
+          transportResult <- transportClient.statusesByRef("alice", "api", "main").runCollect.either
+        yield assertTrue(
+          decodeResult.left.exists(_.isInstanceOf[GiteaError.DecodeError]),
+          transportResult.left.exists {
+            case GiteaError.TransportError(cause) => cause eq failure
+            case _ => false
+          }
+        )
+      },
+      test("does not retry create status because it is a non-retryable write") {
+        val failure = RuntimeException("connection reset")
+
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.fail(failure),
+              ZIO.succeed(stringResponse("""{"context":"unused","status":"success"}""", StatusCode.Created))
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 2), ScriptedBackend(responses))
+          result <- client
+            .createStatus(
+              "alice",
+              "api",
+              "abc123",
+              CreateStatusOption(context = Some("ci"), state = Some(CommitStatusState.Success))
+            )
+            .either
+          remaining <- responses.get
+        yield assertTrue(
+          result.left.exists {
+            case GiteaError.TransportError(cause) => cause eq failure
+            case _ => false
+          },
+          remaining.size == 1
         )
       },
       test("loads and streams repository releases") {
