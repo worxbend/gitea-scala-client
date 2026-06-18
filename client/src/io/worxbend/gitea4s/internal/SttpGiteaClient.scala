@@ -17,8 +17,21 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override def get(username: String): IO[GiteaError, User] =
     executor.send(GiteaRequests.user(config, username))
 
+  override def followers(username: String): ZStream[Any, GiteaError, User] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.userFollowers(config, username, page))
+    }
+
+  override def following(username: String): ZStream[Any, GiteaError, User] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.userFollowing(config, username, page))
+    }
+
   override def get(owner: String, repo: String): IO[GiteaError, Repository] =
     executor.send(GiteaRequests.repository(config, owner, repo))
+
+  override def get(owner: String, repo: String, index: Long): IO[GiteaError, Issue] =
+    executor.send(GiteaRequests.issue(config, owner, repo, index))
 
   override def list(
       owner: String,

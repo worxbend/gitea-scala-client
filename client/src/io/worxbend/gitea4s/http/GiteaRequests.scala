@@ -37,6 +37,31 @@ object GiteaRequests:
       response => GiteaResponseMapper.decodePage[Issue](response, page, pageSize)
     )
 
+  def issue(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Issue] =
+    get(
+      config,
+      GiteaEndpoints.issueGetIssue,
+      List("repos", owner, repo, "issues", index.toString),
+      Nil,
+      GiteaResponseMapper.decodeJson[Issue]
+    )
+
+  def userFollowers(config: GiteaConfig, username: String, page: Int = 1): GiteaRequest[Page[User]] =
+    paginatedUsers(
+      config = config,
+      endpoint = GiteaEndpoints.userListFollowers,
+      path = List("users", username, "followers"),
+      page = page
+    )
+
+  def userFollowing(config: GiteaConfig, username: String, page: Int = 1): GiteaRequest[Page[User]] =
+    paginatedUsers(
+      config = config,
+      endpoint = GiteaEndpoints.userListFollowing,
+      path = List("users", username, "following"),
+      page = page
+    )
+
   def withJsonBody(config: GiteaConfig, request: Request[String], json: String): Request[String] =
     request
       .body(json)
@@ -98,3 +123,25 @@ object GiteaRequests:
 
   private def nonEmptyCsv(name: String, values: zio.Chunk[String]): Option[(String, String)] =
     Option.when(values.nonEmpty)(name -> values.mkString(","))
+
+  private def paginatedUsers(
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      page: Int
+  ): GiteaRequest[Page[User]] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      endpoint,
+      path,
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[User](response, page, pageSize)
+    )
+
+  private def pageQuery(page: Int, pageSize: Int): List[(String, String)] =
+    List(
+      "page" -> page.toString,
+      "limit" -> pageSize.toString
+    )

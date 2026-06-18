@@ -73,6 +73,37 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.paramsMap.get("limit").contains("10")
         )
       },
+      test("builds schema-traceable get issue request") {
+        val built = GiteaRequests.issue(config, "worx bend", "gitea/scala", 99)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.issueGetIssue,
+          endpoint.operationId == "issueGetIssue",
+          endpoint.path == "/repos/{owner}/{repo}/issues/{index}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
+          request.method == Method.GET,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99"
+        )
+      },
+      test("builds paginated follower and following list requests") {
+        val followers = GiteaRequests.userFollowers(config, "space user/slash", page = 2)
+        val following = GiteaRequests.userFollowing(config, "space user/slash", page = 3)
+
+        assertTrue(
+          followers.endpoint == GiteaEndpoints.userListFollowers,
+          followers.endpoint.operationId == "userListFollowers",
+          followers.request.uri.toString.contains("/api/v1/users/space%20user%2Fslash/followers?"),
+          followers.request.uri.paramsMap.get("page").contains("2"),
+          followers.request.uri.paramsMap.get("limit").contains("25"),
+          following.endpoint == GiteaEndpoints.userListFollowing,
+          following.endpoint.operationId == "userListFollowing",
+          following.request.uri.toString.contains("/api/v1/users/space%20user%2Fslash/following?"),
+          following.request.uri.paramsMap.get("page").contains("3"),
+          following.request.uri.paramsMap.get("limit").contains("25")
+        )
+      },
       test("adds JSON content type only when a JSON body is attached") {
         val base = GiteaRequests.currentUser(config).request
         val withBody = GiteaRequests.withJsonBody(config, base, """{"name":"repo"}""")
@@ -112,10 +143,29 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.decode(raw).map(_.hasNext) == Right(true)
         )
       },
+      test("decodes single issue and paginated user list responses") {
+        val issueResponse = """{"id":1,"number":7,"state":"open","title":"First"}"""
+        val userListResponse = """[{"id":2,"login":"alice"}]"""
+        val backend =
+          BackendStub.synchronous
+            .whenRequestMatches(_.uri.path.endsWith(List("issues", "7")))
+            .thenRespond(ResponseStub.adjust(issueResponse))
+            .whenRequestMatches(_.uri.path.endsWith(List("followers")))
+            .thenRespond(ResponseStub.adjust(userListResponse, StatusCode.Ok, List(Header("x-total-count", "1"))))
+        val issue = GiteaRequests.issue(config, "owner", "repo", 7)
+        val followers = GiteaRequests.userFollowers(config, "octo")
+
+        assertTrue(
+          issue.decode(issue.request.send(backend)).map(_.number) == Right(Some(7L)),
+          followers.decode(followers.request.send(backend)).map(_.data.headOption.flatMap(_.login)) ==
+            Right(Some("alice")),
+          followers.decode(followers.request.send(backend)).map(_.hasNext) == Right(false)
+        )
+      },
       test("maps Gitea error responses while preserving raw body") {
         val body = """{"message":"missing repo","url":"https://docs.gitea.com/api"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
-        val built = GiteaRequests.repository(config, "owner", "missing")
+        val built = GiteaRequests.issue(config, "owner", "missing", 404)
         val raw = built.request.send(backend)
 
         assertTrue(

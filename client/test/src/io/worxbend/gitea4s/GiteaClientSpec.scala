@@ -44,6 +44,16 @@ object GiteaClientSpec extends ZIOSpecDefault:
           repo.name.contains("project")
         )
       },
+      test("loads an issue through the IssuesApi get method") {
+        val backend =
+          taskStub.whenRequestMatches(_.uri.path.endsWith(List("repos", "owner", "repo", "issues", "7")))
+            .thenRespond(ResponseStub.adjust("""{"id":17,"number":7,"title":"tracked"}"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.get("owner", "repo", 7).map(issue => issue.id -> issue.number -> issue.title))(
+          Assertion.equalTo(Some(17L) -> Some(7L) -> Some("tracked"))
+        )
+      },
       test("returns decode failures as GiteaError") {
         val backend =
           taskStub.whenAnyRequest.thenRespond(ResponseStub.adjust("""{"id":"not-a-number"}"""))
@@ -79,5 +89,26 @@ object GiteaClientSpec extends ZIOSpecDefault:
         client.list("owner", "repo", IssueListParams.default).runCollect.map { issues =>
           assertTrue(issues.map(_.number) == Chunk(Some(1L), Some(2L)))
         }
+      },
+      test("streams followers and following users across paginated endpoints") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+        val onePageHeaders = List(Header("x-total-count", "1"))
+        val backend =
+          taskStub.whenRequestMatches(_.uri.path.endsWith(List("users", "alice", "followers")))
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"id":1,"login":"bob"}]""", StatusCode.Ok, twoPageHeaders),
+              ResponseStub.adjust("""[{"id":2,"login":"carol"}]""", StatusCode.Ok, twoPageHeaders)
+            )
+            .whenRequestMatches(_.uri.path.endsWith(List("users", "alice", "following")))
+            .thenRespond(ResponseStub.adjust("""[{"id":3,"login":"dave"}]""", StatusCode.Ok, onePageHeaders))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          followers <- client.followers("alice").runCollect
+          following <- client.following("alice").runCollect
+        yield assertTrue(
+          followers.map(_.login) == Chunk(Some("bob"), Some("carol")),
+          following.map(_.login) == Chunk(Some("dave"))
+        )
       }
     )

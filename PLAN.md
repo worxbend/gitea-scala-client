@@ -86,14 +86,15 @@ Current checkpoint:
 - Core supporting types now include `Page`, `Auth`, and the `GiteaError` ADT.
 - `CoreModelsSpec` covers JSON decode and round-trip behavior for the first model slice, enum validation, pagination codec behavior, auth modes, and the error ADT.
 - `GiteaConfig` now carries typed sttp `Uri`, `Auth`, timeout, page size, user agent, OTP, and retry settings.
-- Client HTTP now has schema-traceable endpoint metadata and pure sttp request construction for `GET /user` (`userGetCurrent`), `GET /users/{username}` (`userGet`), `GET /repos/{owner}/{repo}` (`repoGet`), and `GET /repos/{owner}/{repo}/issues` (`issueListIssues`).
+- Client HTTP now has schema-traceable endpoint metadata and pure sttp request construction for `GET /user` (`userGetCurrent`), `GET /users/{username}` (`userGet`), `GET /users/{username}/followers` (`userListFollowers`), `GET /users/{username}/following` (`userListFollowing`), `GET /repos/{owner}/{repo}` (`repoGet`), `GET /repos/{owner}/{repo}/issues` (`issueListIssues`), and `GET /repos/{owner}/{repo}/issues/{index}` (`issueGetIssue`).
 - `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`.
 - `GiteaResponseMapper` decodes successful JSON responses, paginated issue lists, 204/unit responses, Gitea error payloads, raw failure bodies, pagination headers, and rate-limit reset headers.
-- `GiteaRequestsSpec` uses sttp `BackendStub` to cover path encoding, query params, auth/OTP/user-agent/JSON accept headers, JSON content type for body requests, successful decoding, pagination mapping, Gitea error mapping, and rate-limit mapping.
+- `GiteaRequestsSpec` uses sttp `BackendStub` to cover path encoding, query params, auth/OTP/user-agent/JSON accept headers, JSON content type for body requests, successful decoding, pagination mapping for issue and user lists, Gitea error mapping, and rate-limit mapping.
 - Phase 4 has started with a small ZIO API facade: `UsersApi`, `ReposApi`, and `IssuesApi` are wired through `GiteaClient.fromBackend`.
 - `GiteaRequestExecutor` sends `GiteaRequest[A]` through a sttp `Backend[Task]`, decodes responses through the existing mapper, and maps backend failures to `GiteaError.TransportError`.
-- `IssuesApi.list(owner, repo, IssueListParams)` streams paginated issues with `ZStream.paginateChunkZIO`.
-- `GiteaClientSpec` covers current-user success, user/repository `get`, decode failure, transport failure, and multi-page issue streaming through a `BackendStub[Task]`.
+- `IssuesApi.get(owner, repo, index)` fetches a single issue and `IssuesApi.list(owner, repo, IssueListParams)` streams paginated issues with `ZStream.paginateChunkZIO`.
+- `UsersApi.followers(username)` and `UsersApi.following(username)` stream paginated users through the shared pagination helper.
+- `GiteaClientSpec` covers current-user success, user/repository/issue `get`, decode failure, transport failure, multi-page issue streaming, and follower/following stream pagination through a `BackendStub[Task]`.
 - Validation passed: `./mill core.test`, `./mill client.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
@@ -632,8 +633,8 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 4 by adding schema-traceable request builders for the next read-only endpoints needed by the planned API traits, starting with `GET /repos/{owner}/{repo}/issues/{index}` and user follower/following list endpoints from `plugin-redoc-2.yaml`,
-- extend `IssuesApi` with `get(owner, repo, index)` and `UsersApi` with follower/following streams, using the existing executor and pagination helper,
-- add stub-backed tests that verify endpoint metadata, path/query encoding, successful decoding, error mapping, and stream pagination for the new methods.
+- continue Phase 4 by adding schema-traceable request builders for the next read-only endpoints needed by the planned API traits, starting with `GET /users/{username}/repos` (`userListRepos`) and `GET /repos/{owner}/{repo}/topics` (`repoListTopics`) from `plugin-redoc-2.yaml`,
+- introduce the minimal typed params/response shape needed for `ReposApi.list(owner, params)` and wire `ReposApi.topics(owner, repo)` through the existing executor and pagination helper,
+- add stub-backed tests that verify endpoint metadata, path/query encoding, successful decoding, error mapping, and stream pagination for the new repository methods.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.

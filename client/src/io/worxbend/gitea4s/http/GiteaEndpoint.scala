@@ -64,3 +64,42 @@ object GiteaEndpoints:
       ),
       response = "#/responses/IssueList"
     )
+
+  val issueGetIssue: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/issues/{index}",
+      operationId = "issueGetIssue",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "#/responses/Issue"
+    )
+
+  val userListFollowers: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/users/{username}/followers",
+      operationId = "userListFollowers",
+      parameters = List(
+        GiteaParameter("username", "path", required = true),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/UserList"
+    )
+
+  val userListFollowing: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/users/{username}/following",
+      operationId = "userListFollowing",
+      parameters = List(
+        GiteaParameter("username", "path", required = true),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/UserList"
+    )
