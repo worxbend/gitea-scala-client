@@ -47,6 +47,39 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("Authorization").contains("token secret")
         )
       },
+      test("builds schema-traceable paginated user repository list request") {
+        val built =
+          GiteaRequests.userRepos(config, "space user/slash", RepoListParams(page = Some(2), limit = Some(15)))
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.userListRepos,
+          endpoint.operationId == "userListRepos",
+          endpoint.path == "/users/{username}/repos",
+          endpoint.parameters.map(_.name) == List("username", "page", "limit"),
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/users/space%20user%2Fslash/repos?"),
+          request.uri.paramsMap.get("page").contains("2"),
+          request.uri.paramsMap.get("limit").contains("15")
+        )
+      },
+      test("builds schema-traceable paginated repository topics request") {
+        val built = GiteaRequests.repoTopics(config, "worx bend", "gitea/scala", page = 3)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListTopics,
+          endpoint.operationId == "repoListTopics",
+          endpoint.path == "/repos/{owner}/{repo}/topics",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "page", "limit"),
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/topics?"),
+          request.uri.paramsMap.get("page").contains("3"),
+          request.uri.paramsMap.get("limit").contains("25")
+        )
+      },
       test("encodes issue list query parameters from typed params") {
         val params = IssueListParams(
           state = Some(IssueState.Open),
@@ -160,6 +193,24 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           followers.decode(followers.request.send(backend)).map(_.data.headOption.flatMap(_.login)) ==
             Right(Some("alice")),
           followers.decode(followers.request.send(backend)).map(_.hasNext) == Right(false)
+        )
+      },
+      test("decodes paginated repository list and topic names responses") {
+        val repoListResponse = """[{"id":10,"name":"api"},{"id":11,"name":"client"}]"""
+        val topicsResponse = """{"topics":["scala","zio"]}"""
+        val backend =
+          BackendStub.synchronous
+            .whenRequestMatches(_.uri.path.endsWith(List("users", "octo", "repos")))
+            .thenRespond(ResponseStub.adjust(repoListResponse, StatusCode.Ok, List(Header("x-total-count", "2"))))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "topics")))
+            .thenRespond(ResponseStub.adjust(topicsResponse, StatusCode.Ok, List(Header("x-total-count", "2"))))
+        val repos = GiteaRequests.userRepos(config, "octo")
+        val topics = GiteaRequests.repoTopics(config, "octo", "api")
+
+        assertTrue(
+          repos.decode(repos.request.send(backend)).map(_.data.map(_.name)) ==
+            Right(Chunk(Some("api"), Some("client"))),
+          topics.decode(topics.request.send(backend)).map(_.data) == Right(Chunk("scala", "zio"))
         )
       },
       test("maps Gitea error responses while preserving raw body") {

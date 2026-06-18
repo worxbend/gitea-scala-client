@@ -85,6 +85,18 @@ object CoreModelsSpec extends ZIOSpecDefault:
           repository.map(_.objectFormatName) == Right(Some(ObjectFormatName.Sha256))
         )
       },
+      test("decodes topic names response shape") {
+        val json =
+          """{
+            |  "topics": ["scala", "zio", "gitea"]
+            |}""".stripMargin
+
+        val topics = json.fromJson[TopicNames]
+
+        assertTrue(
+          topics.map(_.topics) == Right(Some(List("scala", "zio", "gitea")))
+        )
+      },
       test("decodes issue, label, milestone, and comment payloads") {
         val issueJson =
           """{

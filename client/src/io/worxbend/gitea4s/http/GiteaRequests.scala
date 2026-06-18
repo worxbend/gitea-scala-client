@@ -24,6 +24,30 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Repository]
     )
 
+  def userRepos(config: GiteaConfig, username: String, params: RepoListParams = RepoListParams.default)
+      : GiteaRequest[Page[Repository]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
+
+    get(
+      config,
+      GiteaEndpoints.userListRepos,
+      List("users", username, "repos"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[Repository](response, page, pageSize)
+    )
+
+  def repoTopics(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[String]] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      GiteaEndpoints.repoListTopics,
+      List("repos", owner, repo, "topics"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodeTopicNamesPage(response, page, pageSize)
+    )
+
   def issues(config: GiteaConfig, owner: String, repo: String, params: IssueListParams = IssueListParams.default)
       : GiteaRequest[Page[Issue]] =
     val page = params.page.getOrElse(1)

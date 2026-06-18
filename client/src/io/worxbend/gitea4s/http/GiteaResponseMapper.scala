@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{GiteaErrorPayload, Page}
+import io.worxbend.gitea4s.model.{GiteaErrorPayload, Page, TopicNames}
 import sttp.client4.Response
 import zio.Chunk
 import zio.json.*
@@ -27,6 +27,22 @@ object GiteaResponseMapper:
       val totalCount = longHeader(response, "x-total-count")
       Page(
         data = Chunk.fromIterable(values),
+        totalCount = totalCount,
+        page = page,
+        pageSize = pageSize,
+        hasNext = hasNextPage(response, page, pageSize, totalCount)
+      )
+    }
+
+  def decodeTopicNamesPage(
+      response: Response[String],
+      page: Int,
+      pageSize: Int
+  ): Either[GiteaError, Page[String]] =
+    decodeJson[TopicNames](response).map { value =>
+      val totalCount = longHeader(response, "x-total-count")
+      Page(
+        data = Chunk.fromIterable(value.topics.getOrElse(Nil)),
         totalCount = totalCount,
         page = page,
         pageSize = pageSize,

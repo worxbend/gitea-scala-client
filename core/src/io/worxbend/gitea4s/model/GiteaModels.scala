@@ -97,6 +97,13 @@ final case class Repository(
 object Repository:
   given JsonCodec[Repository] = DeriveJsonCodec.gen[Repository]
 
+final case class TopicNames(
+    topics: Option[List[String]] = None
+)
+
+object TopicNames:
+  given JsonCodec[TopicNames] = DeriveJsonCodec.gen[TopicNames]
+
 final case class Label(
     id: Option[Long] = None,
     name: Option[String] = None,

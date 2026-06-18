@@ -2,10 +2,10 @@ package io.worxbend.gitea4s.internal
 
 import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.{GiteaRequests, IssueListParams}
+import io.worxbend.gitea4s.http.{GiteaRequests, IssueListParams, RepoListParams}
 import io.worxbend.gitea4s.model.{Issue, Repository, User}
 import sttp.client4.Backend
-import zio.{IO, Task}
+import zio.{Chunk, IO, Task}
 import zio.stream.ZStream
 
 final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends GiteaClient:
@@ -30,13 +30,26 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override def get(owner: String, repo: String): IO[GiteaError, Repository] =
     executor.send(GiteaRequests.repository(config, owner, repo))
 
+  override def list(
+      owner: String,
+      params: RepoListParams
+  ): ZStream[Any, GiteaError, Repository] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.userRepos(config, owner, params.copy(page = Some(page))))
+    }
+
+  override def topics(owner: String, repo: String): IO[GiteaError, Chunk[String]] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoTopics(config, owner, repo, page))
+    }.runCollect
+
   override def get(owner: String, repo: String, index: Long): IO[GiteaError, Issue] =
     executor.send(GiteaRequests.issue(config, owner, repo, index))
 
   override def list(
       owner: String,
       repo: String,
-      params: IssueListParams = IssueListParams.default
+      params: IssueListParams
   ): ZStream[Any, GiteaError, Issue] =
     Pagination.paginated { page =>
       executor.send(GiteaRequests.issues(config, owner, repo, params.copy(page = Some(page))))

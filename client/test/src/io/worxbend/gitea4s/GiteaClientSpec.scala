@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.IssueListParams
+import io.worxbend.gitea4s.http.{IssueListParams, RepoListParams}
 import io.worxbend.gitea4s.model.Auth
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -89,6 +89,29 @@ object GiteaClientSpec extends ZIOSpecDefault:
         client.list("owner", "repo", IssueListParams.default).runCollect.map { issues =>
           assertTrue(issues.map(_.number) == Chunk(Some(1L), Some(2L)))
         }
+      },
+      test("streams user repositories and collects repository topics across pages") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub.whenRequestMatches(_.uri.path.endsWith(List("users", "alice", "repos")))
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"id":10,"name":"api"}]""", StatusCode.Ok, twoPageHeaders),
+              ResponseStub.adjust("""[{"id":11,"name":"client"}]""", StatusCode.Ok, twoPageHeaders)
+            )
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "topics")))
+            .thenRespondCyclic(
+              ResponseStub.adjust("""{"topics":["scala"]}""", StatusCode.Ok, twoPageHeaders),
+              ResponseStub.adjust("""{"topics":["zio"]}""", StatusCode.Ok, twoPageHeaders)
+            )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          repos <- client.list("alice", RepoListParams.default).runCollect
+          topics <- client.topics("alice", "api")
+        yield assertTrue(
+          repos.map(_.name) == Chunk(Some("api"), Some("client")),
+          topics == Chunk("scala", "zio")
+        )
       },
       test("streams followers and following users across paginated endpoints") {
         val twoPageHeaders = List(Header("x-total-count", "2"))

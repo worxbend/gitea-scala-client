@@ -41,6 +41,33 @@ object GiteaEndpoints:
       response = "#/responses/Repository"
     )
 
+  val userListRepos: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/users/{username}/repos",
+      operationId = "userListRepos",
+      parameters = List(
+        GiteaParameter("username", "path", required = true),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/RepositoryList"
+    )
+
+  val repoListTopics: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/topics",
+      operationId = "repoListTopics",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/TopicNames"
+    )
+
   val issueListIssues: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",
