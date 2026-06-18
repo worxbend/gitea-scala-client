@@ -334,6 +334,47 @@ object GiteaEndpoints:
       response = "204 merged / 404 not merged"
     )
 
+  val repoMergePullRequest: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "POST",
+      path = "/repos/{owner}/{repo}/pulls/{index}/merge",
+      operationId = "repoMergePullRequest",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("body", "body", required = false)
+      ),
+      response = "#/responses/empty"
+    )
+
+  val repoCancelScheduledAutoMerge: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/pulls/{index}/merge",
+      operationId = "repoCancelScheduledAutoMerge",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
+  val repoUpdatePullRequest: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "POST",
+      path = "/repos/{owner}/{repo}/pulls/{index}/update",
+      operationId = "repoUpdatePullRequest",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("style", "query", required = false)
+      ),
+      response = "#/responses/empty"
+    )
+
   val repoResolvePullReviewComment: GiteaEndpoint =
     GiteaEndpoint(
       method = "POST",

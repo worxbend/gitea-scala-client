@@ -88,3 +88,20 @@ object PullReviewState:
 
   given JsonCodec[PullReviewState] =
     summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+
+enum MergePullRequestMethod(val jsonValue: String):
+  case Merge extends MergePullRequestMethod("merge")
+  case Rebase extends MergePullRequestMethod("rebase")
+  case RebaseMerge extends MergePullRequestMethod("rebase-merge")
+  case Squash extends MergePullRequestMethod("squash")
+  case FastForwardOnly extends MergePullRequestMethod("fast-forward-only")
+  case ManuallyMerged extends MergePullRequestMethod("manually-merged")
+
+object MergePullRequestMethod:
+  private val byJsonValue = MergePullRequestMethod.values.map(method => method.jsonValue -> method).toMap
+
+  def fromString(value: String): Either[String, MergePullRequestMethod] =
+    byJsonValue.get(value).toRight(s"Unknown merge pull request method: $value")
+
+  given JsonCodec[MergePullRequestMethod] =
+    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)

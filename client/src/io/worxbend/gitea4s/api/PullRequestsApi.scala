@@ -5,13 +5,15 @@ import io.worxbend.gitea4s.http.{
   PullRequestCommitsParams,
   PullRequestDiffType,
   PullRequestFilesParams,
-  PullRequestListParams
+  PullRequestListParams,
+  PullRequestUpdateStyle
 }
 import io.worxbend.gitea4s.model.{
   ChangedFile,
   Commit,
   CreatePullReviewOptions,
   DismissPullReviewOptions,
+  MergePullRequestOption,
   PullRequest,
   PullReview,
   PullReviewComment,
@@ -35,6 +37,17 @@ trait PullRequestsApi:
   def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest]
 
   def pullRequestIsMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean]
+
+  def mergePullRequest(
+      owner: String,
+      repo: String,
+      index: Long,
+      body: MergePullRequestOption
+  ): IO[GiteaError, Unit]
+
+  def cancelScheduledAutoMerge(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
+
+  def updatePullRequest(owner: String, repo: String, index: Long, style: PullRequestUpdateStyle): IO[GiteaError, Unit]
 
   def requestPullReviews(
       owner: String,

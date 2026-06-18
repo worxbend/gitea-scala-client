@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.{CommitStatusListParams, RepoListParams}
+import io.worxbend.gitea4s.http.{CombinedStatusParams, CommitStatusListParams, RepoListParams}
 import io.worxbend.gitea4s.model.{
   Branch,
   CombinedStatus,
@@ -27,7 +27,12 @@ trait ReposApi:
 
   def tags(owner: String, repo: String): ZStream[Any, GiteaError, Tag]
 
-  def combinedStatusByRef(owner: String, repo: String, ref: String): IO[GiteaError, CombinedStatus]
+  def combinedStatusByRef(
+      owner: String,
+      repo: String,
+      ref: String,
+      params: CombinedStatusParams = CombinedStatusParams.default
+  ): IO[GiteaError, CombinedStatus]
 
   def statusesByRef(
       owner: String,

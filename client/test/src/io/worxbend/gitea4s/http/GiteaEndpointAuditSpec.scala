@@ -3,7 +3,9 @@ package io.worxbend.gitea4s.http
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.model.{
   Auth,
+  CommitStatusState,
   CreatePullReviewOptions,
+  CreateStatusOption,
   DismissPullReviewOptions,
   PullReviewRequestOptions,
   PullReviewState,
@@ -19,7 +21,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   private val config =
     GiteaConfig.default(uri"https://gitea.example", Auth.Token("secret"))
 
-  private val audited = List(
+  private val pullReviewLifecycleRequests = List(
     AuditedRequest(
       request = GiteaRequests.repoPullReviews(config, "owner", "repo", index = 12),
       noBodyLifecyclePost = false
@@ -102,11 +104,114 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val commitStatusRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoCombinedStatusByRef(
+        config,
+        "owner",
+        "repo",
+        ref = "main",
+        CombinedStatusParams(page = Some(2), limit = Some(10))
+      ),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoStatusesByRef(
+        config,
+        "owner",
+        "repo",
+        ref = "main",
+        CommitStatusListParams(
+          sort = Some(CommitStatusSort.HighestIndex),
+          state = Some(CommitStatusListState.Success),
+          page = Some(2),
+          limit = Some(10)
+        )
+      ),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoStatuses(
+        config,
+        "owner",
+        "repo",
+        sha = "abc123",
+        CommitStatusListParams(
+          sort = Some(CommitStatusSort.Oldest),
+          state = Some(CommitStatusListState.Pending),
+          page = Some(3),
+          limit = Some(11)
+        )
+      ),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.createStatus(
+        config,
+        "owner",
+        "repo",
+        sha = "abc123",
+        CreateStatusOption(context = Some("ci"), state = Some(CommitStatusState.Success))
+      ),
+      noBodyLifecyclePost = false
+    )
+  )
+
   def spec =
     suite("Gitea endpoint metadata audit")(
       test("pull-review lifecycle metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
-        val failures = audited.flatMap(audit(swagger, _))
+        val failures = pullReviewLifecycleRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("commit-status metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = commitStatusRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("commit-status query enums match plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures =
+          List(
+            compare(
+              "repoListStatusesByRef sort enum",
+              CommitStatusSort.values.map(_.queryValue).toList,
+              swagger.parameterEnumValues(
+                "/repos/{owner}/{repo}/commits/{ref}/statuses",
+                "GET",
+                "sort"
+              )
+            ),
+            compare(
+              "repoListStatusesByRef state enum",
+              CommitStatusListState.values.map(_.queryValue).toList,
+              swagger.parameterEnumValues(
+                "/repos/{owner}/{repo}/commits/{ref}/statuses",
+                "GET",
+                "state"
+              )
+            ),
+            compare(
+              "repoListStatuses sort enum",
+              CommitStatusSort.values.map(_.queryValue).toList,
+              swagger.parameterEnumValues(
+                "/repos/{owner}/{repo}/statuses/{sha}",
+                "GET",
+                "sort"
+              )
+            ),
+            compare(
+              "repoListStatuses state enum",
+              CommitStatusListState.values.map(_.queryValue).toList,
+              swagger.parameterEnumValues(
+                "/repos/{owner}/{repo}/statuses/{sha}",
+                "GET",
+                "state"
+              )
+            )
+          ).flatten
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       }
@@ -171,11 +276,24 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
         method = method.toUpperCase,
         operationId = operationId,
         requiredPathParameters = parameters.collect {
-          case SwaggerParameter(name, "path", true) => name
+          case SwaggerParameter(name, "path", true, _) => name
         },
         successResponseLabels = responses,
         hasRequestBody = parameters.exists(_.in == "body")
       )
+
+    def parameterEnumValues(path: String, method: String, name: String): List[String] =
+      val operationParameters =
+        for
+          pathIndex <- findPath(path)
+          methodIndex <- findMethod(pathIndex, method)
+          methodBlock = blockAfter(methodIndex, minimumIndent = 6)
+        yield parseParameters(methodBlock)
+
+      operationParameters.toOption
+        .flatMap(_.find(_.name == name))
+        .map(_.enumValues)
+        .getOrElse(Nil)
 
     private def findPath(path: String): Either[String, Int] =
       lines.indexWhere(_.trim == s"$path:") match
@@ -211,7 +329,8 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
         yield SwaggerParameter(
           name = name,
           in = in,
-          required = entryValue(entry, "required").contains("true")
+          required = entryValue(entry, "required").contains("true"),
+          enumValues = enumValues(entry)
         )
       }
 
@@ -253,6 +372,17 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
             .map(_.trim.stripPrefix(s"- $key:").trim.stripPrefix("'").stripSuffix("'"))
         }
 
+    private def enumValues(entry: Vector[String]): List[String] =
+      entry
+        .dropWhile { line =>
+          val trimmed = line.trim
+          trimmed != "enum:" && trimmed != "- enum:"
+        }
+        .drop(1)
+        .takeWhile(line => line.trim.startsWith("- "))
+        .map(_.trim.stripPrefix("- ").trim)
+        .toList
+
     private def indentation(line: String): Int =
       line.takeWhile(_ == ' ').length
 
@@ -271,4 +401,4 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
       candidates.find(Files.isRegularFile(_)).getOrElse(Paths.get("plugin-redoc-2.yaml").toAbsolutePath)
 
-  private final case class SwaggerParameter(name: String, in: String, required: Boolean)
+  private final case class SwaggerParameter(name: String, in: String, required: Boolean, enumValues: List[String])

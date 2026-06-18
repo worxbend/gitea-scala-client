@@ -487,6 +487,28 @@ object CoreModelsSpec extends ZIOSpecDefault:
           decoded == Right(payload)
         )
       },
+      test("round-trips merge pull request option using schema JSON names") {
+        val payload = MergePullRequestOption(
+          mergeMethod = MergePullRequestMethod.RebaseMerge,
+          mergeCommitId = Some("abc123"),
+          mergeMessageField = Some("Merge pull request"),
+          mergeTitleField = Some("PR title"),
+          deleteBranchAfterMerge = Some(true),
+          forceMerge = Some(false),
+          headCommitId = Some("def456"),
+          mergeWhenChecksSucceed = Some(true)
+        )
+        val decoded = payload.toJson.fromJson[MergePullRequestOption]
+
+        assertTrue(
+          payload.toJson ==
+            """{"Do":"rebase-merge","MergeCommitID":"abc123","MergeMessageField":"Merge pull request","MergeTitleField":"PR title","delete_branch_after_merge":true,"force_merge":false,"head_commit_id":"def456","merge_when_checks_succeed":true}""",
+          decoded == Right(payload),
+          MergePullRequestOption(MergePullRequestMethod.Merge).toJson == """{"Do":"merge"}""",
+          MergePullRequestMethod.values.map(_.jsonValue).toList ==
+            List("merge", "rebase", "rebase-merge", "squash", "fast-forward-only", "manually-merged")
+        )
+      },
       test("round-trips pull review write payloads using schema JSON names") {
         val comment = CreatePullReviewComment(
           body = Some("Use the shared helper here"),
@@ -721,6 +743,7 @@ object CoreModelsSpec extends ZIOSpecDefault:
         val pullReview = """{ "id": 1, "state": "STALE" }""".fromJson[PullReview]
         val commitStatus = """{ "id": 1, "status": "queued" }""".fromJson[CommitStatus]
         val createStatus = """{ "state": "queued" }""".fromJson[CreateStatusOption]
+        val mergeOption = """{ "Do": "cherry-pick" }""".fromJson[MergePullRequestOption]
 
         assertTrue(
           issue.isLeft,
@@ -728,7 +751,8 @@ object CoreModelsSpec extends ZIOSpecDefault:
           notificationSubject.isLeft,
           pullReview.isLeft,
           commitStatus.isLeft,
-          createStatus.isLeft
+          createStatus.isLeft,
+          mergeOption.isLeft
         )
       },
       test("models auth modes and core error ADT values") {

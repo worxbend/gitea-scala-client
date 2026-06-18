@@ -2,6 +2,7 @@ package io.worxbend.gitea4s
 
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
+  CombinedStatusParams,
   CommitStatusListParams,
   CommitStatusListState,
   CommitStatusSort,
@@ -14,6 +15,7 @@ import io.worxbend.gitea4s.http.{
   PullRequestDiffType,
   PullRequestFilesParams,
   PullRequestListParams,
+  PullRequestUpdateStyle,
   RepoListParams,
   RepositoryCommentListParams,
   UserSearchParams
@@ -33,6 +35,8 @@ import io.worxbend.gitea4s.model.{
   EditReactionOption,
   IssueMeta,
   LockIssueOption,
+  MergePullRequestMethod,
+  MergePullRequestOption,
   PullReviewRequestOptions,
   PullReviewState,
   SubmitPullReviewOptions
@@ -923,7 +927,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
           taskStub
             .whenRequestMatches { request =>
               request.method == Method.GET &&
-                request.uri.path.endsWith(List("repos", "alice", "api", "commits", "main", "status"))
+                request.uri.path.endsWith(List("repos", "alice", "api", "commits", "main", "status")) &&
+                request.uri.paramsMap.get("page").contains("1") &&
+                request.uri.paramsMap.get("limit").contains("1")
             }
             .thenRespond(
               ResponseStub.adjust(
@@ -988,6 +994,35 @@ object GiteaClientSpec extends ZIOSpecDefault:
           bySha.map(_.context) == Chunk(Some("build"), Some("docs")),
           created.state.contains(CommitStatusState.Success),
           created.targetUrl.contains("https://ci.example/build/1")
+        )
+      },
+      test("sends custom combined commit status pagination through the ReposApi method") {
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "commits", "main", "status")) &&
+                request.uri.paramsMap.get("page").contains("3") &&
+                request.uri.paramsMap.get("limit").contains("7")
+            }
+            .thenRespond(
+              ResponseStub.adjust(
+                """{"sha":"abc123","state":"success","total_count":7,"statuses":[{"context":"page-3","status":"success"}]}"""
+              )
+            )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          combined <- client.combinedStatusByRef(
+            "alice",
+            "api",
+            "main",
+            CombinedStatusParams(page = Some(3), limit = Some(7))
+          )
+        yield assertTrue(
+          combined.sha.contains("abc123"),
+          combined.totalCount.contains(7L),
+          combined.statuses.exists(_.exists(_.context.contains("page-3")))
         )
       },
       test("propagates commit status decode and transport errors through the facade") {
@@ -1076,10 +1111,45 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2")))
             .thenRespond(ResponseStub.adjust("""{"id":2,"number":2,"title":"Second","state":"closed"}"""))
-            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "merge")))
+            .whenRequestMatches(request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "merge"))
+            )
             .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
-            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "3", "merge")))
+            .whenRequestMatches(request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "3", "merge"))
+            )
             .thenRespond(ResponseStub.adjust("", StatusCode.NotFound))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "merge")) &&
+                (request.body match
+                  case StringBody(body, _, _) =>
+                    body.contains(""""Do":"squash"""") &&
+                      body.contains(""""MergeTitleField":"Merge typed facade"""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.Ok))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "merge"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "update")) &&
+                request.uri.paramsMap.get("style").contains("merge") &&
+                request.body == NoBody
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.Ok))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "update")) &&
+                request.uri.paramsMap.get("style").contains("rebase") &&
+                request.body == NoBody
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.Ok))
             .whenRequestMatches { request =>
               request.method == Method.POST &&
                 request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "requested_reviewers")) &&
@@ -1195,6 +1265,18 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequest <- client.pullRequest("alice", "api", 2)
           merged <- client.pullRequestIsMerged("alice", "api", 2)
           notMerged <- client.pullRequestIsMerged("alice", "api", 3)
+          mergePullRequest <- client.mergePullRequest(
+            "alice",
+            "api",
+            2,
+            MergePullRequestOption(
+              mergeMethod = MergePullRequestMethod.Squash,
+              mergeTitleField = Some("Merge typed facade")
+            )
+          ).either
+          canceledAutoMerge <- client.cancelScheduledAutoMerge("alice", "api", 2).either
+          updatedByMerge <- client.updatePullRequest("alice", "api", 2, PullRequestUpdateStyle.Merge).either
+          updatedByRebase <- client.updatePullRequest("alice", "api", 2, PullRequestUpdateStyle.Rebase).either
           requestedReviews <- client.requestPullReviews(
             "alice",
             "api",
@@ -1245,6 +1327,10 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequest.title.contains("Second"),
           merged,
           !notMerged,
+          mergePullRequest == Right(()),
+          canceledAutoMerge == Right(()),
+          updatedByMerge == Right(()),
+          updatedByRebase == Right(()),
           requestedReviews.map(_.state) == Chunk(Some(PullReviewState.RequestReview)),
           canceledReviewRequests == Right(()),
           reviews.map(_.state) == Chunk(Some(PullReviewState.Approved), Some(PullReviewState.RequestChanges)),
@@ -1263,6 +1349,84 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequestByBaseHead.title.contains("By branch"),
           changedFiles.map(_.filename) == Chunk(Some("src/Main.scala"), Some("README.md")),
           commits.map(_.sha) == Chunk(Some("abc123"), Some("def456"))
+        )
+      },
+      test("propagates pull-request merge and update write errors through the facade") {
+        val backend =
+          taskStub
+            .whenRequestMatches(request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "merge"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"merge forbidden"}""", StatusCode.Forbidden))
+            .whenRequestMatches(request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "3", "merge"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"pull request not found"}""", StatusCode.NotFound))
+            .whenRequestMatches(request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "4", "update"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"pull request has conflicts"}""", StatusCode.Conflict))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          forbidden <- client
+            .mergePullRequest("alice", "api", 2, MergePullRequestOption(MergePullRequestMethod.Merge))
+            .either
+          notFound <- client.cancelScheduledAutoMerge("alice", "api", 3).either
+          conflict <- client.updatePullRequest("alice", "api", 4, PullRequestUpdateStyle.Merge).either
+        yield assertTrue(
+          forbidden.left.exists(_.isInstanceOf[GiteaError.Forbidden]),
+          notFound.left.exists(_.isInstanceOf[GiteaError.NotFound]),
+          conflict.left.exists(_.isInstanceOf[GiteaError.Conflict])
+        )
+      },
+      test("does not retry pull-request merge and update write requests") {
+        val failure = RuntimeException("connection reset")
+
+        def clientWithTwoResponses =
+          Ref.make(
+            List[Task[Response[String]]](
+              ZIO.fail(failure),
+              ZIO.succeed(stringResponse("", StatusCode.Ok))
+            )
+          ).map { responses =>
+            (GiteaClient.fromBackend(config.copy(maxRetries = 2), ScriptedBackend(responses)), responses)
+          }
+
+        for
+          mergeSetup <- clientWithTwoResponses
+          (mergeClient, mergeResponses) = mergeSetup
+          mergeResult <- mergeClient
+            .mergePullRequest("alice", "api", 2, MergePullRequestOption(MergePullRequestMethod.Merge))
+            .either
+          mergeRemaining <- mergeResponses.get
+          cancelSetup <- clientWithTwoResponses
+          (cancelClient, cancelResponses) = cancelSetup
+          cancelResult <- cancelClient.cancelScheduledAutoMerge("alice", "api", 2).either
+          cancelRemaining <- cancelResponses.get
+          updateSetup <- clientWithTwoResponses
+          (updateClient, updateResponses) = updateSetup
+          updateResult <- updateClient.updatePullRequest("alice", "api", 2, PullRequestUpdateStyle.Rebase).either
+          updateRemaining <- updateResponses.get
+        yield assertTrue(
+          mergeResult.left.exists {
+            case GiteaError.TransportError(cause) => cause eq failure
+            case _ => false
+          },
+          mergeRemaining.size == 1,
+          cancelResult.left.exists {
+            case GiteaError.TransportError(cause) => cause eq failure
+            case _ => false
+          },
+          cancelRemaining.size == 1,
+          updateResult.left.exists {
+            case GiteaError.TransportError(cause) => cause eq failure
+            case _ => false
+          },
+          updateRemaining.size == 1
         )
       },
       test("loads notification count, streams notification threads, and fetches a single thread") {

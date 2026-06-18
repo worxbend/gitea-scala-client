@@ -549,3 +549,81 @@ A  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 A  core/src/io/worxbend/gitea4s/model/CommitStatus.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-18T21:50:06Z iteration 3 started remaining=16226s
+2026-06-18T21:50:06Z iteration 3 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-18T21:50:06Z iteration 3 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-_dy9pcrf/repo copied_entries=82
+2026-06-18T21:50:06Z iteration 3 ideator phase started count=3
+2026-06-18T21:50:06Z iteration 3 ideator phase concurrency workers=3
+2026-06-18T21:50:06Z iteration 3 ideator 1 role="the pragmatist" started
+2026-06-18T21:50:06Z iteration 3 ideator 2 role="the architect" started
+2026-06-18T21:50:06Z iteration 3 ideator 3 role="the contrarian" started
+2026-06-18T21:50:14Z iteration 3 ideator 2 role="the architect" completed status=0
+2026-06-18T21:50:14Z iteration 3 ideator 3 role="the contrarian" completed status=0
+2026-06-18T21:50:18Z iteration 3 ideator 1 role="the pragmatist" completed status=0
+2026-06-18T21:50:18Z iteration 3 ideator phase completed approaches=3
+2026-06-18T21:50:18Z iteration 3 selector started approaches=3
+2026-06-18T21:50:28Z iteration 3 selector completed status=0
+2026-06-18T21:50:28Z iteration 3 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-_dy9pcrf/repo
+2026-06-18T21:50:28Z iteration 3 selector rejected alternative role="the architect" approach="Audit-Gated Expansion: treat the commit-status metadata audit as a release-quality gate before adding any new PR write surface, then use its findings to standardize the next wri..." reason="Strong overall direction, but selected as a hybrid rather than as-is because it underemphasizes resolving the combined-status pagination facade before PR write expansion."
+2026-06-18T21:50:28Z iteration 3 selector rejected alternative role="the contrarian" approach="Audit-Gated Surface Freeze: pause endpoint expansion and treat the next iteration as a contract hardening pass, using commit-status metadata audit and combined-status pagination..." reason="Useful warning about drift risk, but too much of a surface freeze. The next plan should harden contracts without losing forward momentum on the next practical PR workflow slice."
+2026-06-18T21:50:28Z iteration 3 selector rejected alternative role="the pragmatist" approach="Audit-First Vertical Expansion: freeze new surface briefly, use the commit-status endpoints as the next calibration target for the metadata audit, then let that audit shape the..." reason="Closest to the selected strategy, but the final guidance should be more explicit that the audit is a bounded gate, not a broad cleanup pass, and that combined-status pagination is part of the gate."
+2026-06-18T21:50:28Z iteration 3 selector alternatives persisted count=3
+2026-06-18T21:50:28Z iteration 3 planner started
+2026-06-18T21:52:18Z iteration 3 plan: 6 task(s) in 5 phase(s). The first phase hardens the existing handwritten contract surface before adding more endpoints. The second phase resolves the combined-status API decision so the public facade matches the existing low-level Swagger parameters. The pull-request merge/update work is then split into request-layer and facade-layer tasks because the facade depends on the new models and builders. Documentation and API snapshot refresh can run in parallel after code is complete because they touch separate files.
+2026-06-18T21:52:18Z iteration 3 phase 1 started parallel=False tasks=1
+2026-06-18T21:54:16Z iteration 3 task t1 ('Add commit-status metadata audit') status=0
+2026-06-18T21:54:16Z iteration 3 phase 2 started parallel=False tasks=1
+2026-06-18T21:57:11Z iteration 3 task t2 ('Expose combined-status pagination controls') status=0
+2026-06-18T21:57:11Z iteration 3 phase 3 started parallel=False tasks=1
+2026-06-18T22:01:27Z iteration 3 task t3 ('Implement pull-request merge/update request layer') status=0
+2026-06-18T22:01:27Z iteration 3 phase 4 started parallel=False tasks=1
+2026-06-18T22:03:49Z iteration 3 task t4 ('Wire pull-request merge/update facade') status=0
+2026-06-18T22:03:49Z iteration 3 phase 5 started parallel=True tasks=2
+2026-06-18T22:05:34Z iteration 3 task t5 ('Refresh API snapshot and validation') status=0
+2026-06-18T22:06:27Z iteration 3 task t6 ('Update docs and continuation plan') status=0
+2026-06-18T22:06:27Z iteration 3 reviewer started
+
+## Reviewer Summary - Iteration 3 - 2026-06-18T22:08:34Z
+
+What was done:
+- Inspected the full uncommitted patch for the commit-status metadata audit, combined-status pagination controls, pull-request merge/update request layer, facade wiring, tests, README, CHANGELOG, PLAN, AGENT_LOG, and API snapshots.
+- Cross-checked `repoGetCombinedStatusByRef`, `repoListStatusesByRef`, `repoListStatuses`, `repoCreateStatus`, `repoMergePullRequest`, `repoCancelScheduledAutoMerge`, and `repoUpdatePullRequest` against `plugin-redoc-2.yaml`.
+- Ran focused validation: `./mill --no-server core.test client.test compatibility.check`.
+
+What was found:
+- No functional blocker was found in request construction or facade wiring. Combined-status page/limit controls flow through both low-level and public APIs, default to page `1` plus configured page size, and remain retryable as a GET.
+- Pull-request merge/update construction matches the local Swagger paths and methods. Merge uses a JSON `MergePullRequestOption` body, cancel scheduled auto-merge uses bodyless DELETE, and update uses a bodyless POST with the documented `style` query enum. All three write operations are non-retryable.
+- Core merge models and codecs match the schema JSON field names and merge-method enum values.
+- The newly extended commit-status audit covers operation metadata and query enum values, but the merge/update endpoints added in the same iteration are not yet covered by the metadata audit.
+- Documented merge/update failures include `405` and `423`; the current mapper still classifies unmodeled non-5xx statuses as `GiteaError.ServerError`, which is misleading for method-not-allowed and repository-archived/resource-locked cases.
+
+Top improvement proposals:
+- Extend `GiteaEndpointAuditSpec` to cover `repoMergePullRequest`, `repoCancelScheduledAutoMerge`, and `repoUpdatePullRequest`, including the `style` query enum and documented non-2xx statuses/refs.
+- Add explicit error modeling or at least explicit tests/documentation for documented `405` and `423` responses before expanding more pull-request write surface.
+- Refactor the lightweight Swagger audit so lookup failures are reported directly and documented failure-response comparison can be reused by future endpoint groups.
+2026-06-18T22:09:36Z iteration 3 reviewer completed status=0
+2026-06-18T22:09:36Z iteration 3 memory updated
+2026-06-18T22:09:36Z iteration 3 completed validation_status=0
+2026-06-18T22:09:36Z iteration 3 checkpoint started
+2026-06-18T22:09:36Z iteration 3 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/PullRequestsApi.scala
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+A  client/src/io/worxbend/gitea4s/http/CombinedStatusParams.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+A  client/src/io/worxbend/gitea4s/http/PullRequestUpdateStyle.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+M  core/src/io/worxbend/gitea4s/model/Enums.scala
+M  core/src/io/worxbend/gitea4s/model/GiteaModels.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

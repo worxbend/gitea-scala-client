@@ -19,6 +19,15 @@ surface is still being filled out.
   `CommitStatusListParams`, and request construction for
   `repoGetCombinedStatusByRef`, `repoListStatusesByRef`, `repoListStatuses`,
   and `repoCreateStatus`.
+- Commit-status endpoint metadata audit coverage for operation IDs, methods,
+  paths, required path parameters, success responses, body presence,
+  retryability, and the documented sort/state query enum values.
+- Public combined-status pagination controls through `CombinedStatusParams` on
+  `ReposApi.combinedStatusByRef`.
+- Typed pull-request merge, scheduled auto-merge cancellation, and branch update
+  commands with `MergePullRequestOption`, `MergePullRequestMethod`,
+  `PullRequestUpdateStyle`, `repoMergePullRequest`,
+  `repoCancelScheduledAutoMerge`, and `repoUpdatePullRequest`.
 - Typed issue creation with `CreateIssue` and `issueCreateIssue` request
   construction.
 - Typed issue deletion with `issueDelete` request construction.

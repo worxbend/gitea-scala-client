@@ -14,7 +14,7 @@ and zio-json.
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
   commit statuses, releases, pull requests including reviews, pinned
-  pull-request reads, diff/patch downloads, merge-status checks,
+  pull-request reads, diff/patch downloads, merge-status checks, merge/update commands,
   review-comment resolution, and notifications through a ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
@@ -178,13 +178,27 @@ those endpoints as plain list responses without pagination parameters.
 ## Commit Statuses
 
 Repository commit-status support covers combined status lookup by ref, status
-listing by ref or SHA, and status creation:
+listing by ref or SHA, and status creation. `CombinedStatusParams` controls the
+`page` and `limit` query parameters for combined status lookup; when omitted the
+client sends page `1` and the configured default page size.
 
 ```scala
-import io.worxbend.gitea4s.http.{CommitStatusListParams, CommitStatusListState, CommitStatusSort}
+import io.worxbend.gitea4s.http.{
+  CombinedStatusParams,
+  CommitStatusListParams,
+  CommitStatusListState,
+  CommitStatusSort
+}
 import io.worxbend.gitea4s.model.{CommitStatusState, CreateStatusOption}
 
 client.combinedStatusByRef(owner = "my-org", repo = "my-repo", ref = "main")
+
+client.combinedStatusByRef(
+  owner = "my-org",
+  repo = "my-repo",
+  ref = "main",
+  params = CombinedStatusParams(page = Some(2), limit = Some(25))
+)
 
 client.statusesByRef(
   owner = "my-org",
@@ -320,14 +334,19 @@ Write requests are not retried by default.
 Pull-request support includes paginated list/get methods, review creation,
 submission, dismissal, undismissal, review request creation/cancellation,
 review detail and comment methods, review-comment resolve/unresolve commands,
-changed-file and commit streams, raw diff/patch downloads, merge-status checks, and the
-repository pinned pull-request list:
+changed-file and commit streams, raw diff/patch downloads, merge-status checks,
+merge/update commands, and the repository pinned pull-request list.
+`MergePullRequestOption` supports merge methods `merge`, `rebase`,
+`rebase-merge`, `squash`, `fast-forward-only`, and `manually-merged`.
+Pull-request update style values are `merge` and `rebase`:
 
 ```scala
-import io.worxbend.gitea4s.http.PullRequestDiffType
+import io.worxbend.gitea4s.http.{PullRequestDiffType, PullRequestUpdateStyle}
 import io.worxbend.gitea4s.model.{
   CreatePullReviewOptions,
   DismissPullReviewOptions,
+  MergePullRequestMethod,
+  MergePullRequestOption,
   PullReviewRequestOptions,
   PullReviewState,
   SubmitPullReviewOptions
@@ -337,6 +356,22 @@ client.pullRequests(owner = "my-org", repo = "my-repo").take(25).runCollect
 client.pullRequest(owner = "my-org", repo = "my-repo", index = 7)
 client.pullRequestByBaseHead(owner = "my-org", repo = "my-repo", base = "main", head = "feature")
 client.pullRequestIsMerged(owner = "my-org", repo = "my-repo", index = 7)
+client.mergePullRequest(
+  owner = "my-org",
+  repo = "my-repo",
+  index = 7,
+  body = MergePullRequestOption(
+    mergeMethod = MergePullRequestMethod.Squash,
+    deleteBranchAfterMerge = Some(true)
+  )
+)
+client.cancelScheduledAutoMerge(owner = "my-org", repo = "my-repo", index = 7)
+client.updatePullRequest(
+  owner = "my-org",
+  repo = "my-repo",
+  index = 7,
+  style = PullRequestUpdateStyle.Rebase
+)
 client.requestPullReviews(
   owner = "my-org",
   repo = "my-repo",

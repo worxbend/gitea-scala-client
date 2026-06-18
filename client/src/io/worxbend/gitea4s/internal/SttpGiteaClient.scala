@@ -5,6 +5,7 @@ import io.worxbend.gitea4s.api.OrgsApi
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
   GiteaRequests,
+  CombinedStatusParams,
   CommitStatusListParams,
   IssueCommentListParams,
   IssueListParams,
@@ -14,6 +15,7 @@ import io.worxbend.gitea4s.http.{
   PullRequestDiffType,
   PullRequestFilesParams,
   PullRequestListParams,
+  PullRequestUpdateStyle,
   RepoListParams,
   RepositoryCommentListParams,
   UserSearchParams
@@ -42,6 +44,7 @@ import io.worxbend.gitea4s.model.{
   IssueState,
   Label,
   LockIssueOption,
+  MergePullRequestOption,
   NewIssuePinsAllowed,
   NotificationCount,
   NotificationThread,
@@ -142,8 +145,13 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       executor.send(GiteaRequests.repoTags(config, owner, repo, page))
     }
 
-  override def combinedStatusByRef(owner: String, repo: String, ref: String): IO[GiteaError, CombinedStatus] =
-    executor.send(GiteaRequests.repoCombinedStatusByRef(config, owner, repo, ref))
+  override def combinedStatusByRef(
+      owner: String,
+      repo: String,
+      ref: String,
+      params: CombinedStatusParams
+  ): IO[GiteaError, CombinedStatus] =
+    executor.send(GiteaRequests.repoCombinedStatusByRef(config, owner, repo, ref, params))
 
   override def statusesByRef(
       owner: String,
@@ -206,6 +214,25 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def pullRequestIsMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean] =
     executor.send(GiteaRequests.repoPullRequestIsMerged(config, owner, repo, index))
+
+  override def mergePullRequest(
+      owner: String,
+      repo: String,
+      index: Long,
+      body: MergePullRequestOption
+  ): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.mergePullRequest(config, owner, repo, index, body))
+
+  override def cancelScheduledAutoMerge(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.cancelScheduledAutoMerge(config, owner, repo, index))
+
+  override def updatePullRequest(
+      owner: String,
+      repo: String,
+      index: Long,
+      style: PullRequestUpdateStyle
+  ): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.updatePullRequest(config, owner, repo, index, style))
 
   override def requestPullReviews(
       owner: String,

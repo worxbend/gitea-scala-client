@@ -21,6 +21,8 @@ import io.worxbend.gitea4s.model.{
   IssueMeta,
   IssueState,
   LockIssueOption,
+  MergePullRequestMethod,
+  MergePullRequestOption,
   NewIssuePinsAllowed,
   NotificationSubjectType,
   CommitStatusState,
@@ -260,7 +262,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         )
       },
       test("builds and decodes schema-traceable combined commit status request") {
-        val built = GiteaRequests.repoCombinedStatusByRef(config, "worx bend", "gitea/scala", "feature/slash", page = 3)
+        val built = GiteaRequests.repoCombinedStatusByRef(
+          config,
+          "worx bend",
+          "gitea/scala",
+          "feature/slash",
+          CombinedStatusParams(page = Some(3), limit = Some(11))
+        )
         val endpoint = built.endpoint
         val request = built.request
         val backend =
@@ -280,12 +288,22 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             "/api/v1/repos/worx%20bend/gitea%2Fscala/commits/feature%2Fslash/status?"
           ),
           request.uri.paramsMap.get("page").contains("3"),
-          request.uri.paramsMap.get("limit").contains("25"),
+          request.uri.paramsMap.get("limit").contains("11"),
           request.header("Accept").contains("application/json"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
           built.decode(request.send(backend)).map(_.state) == Right(Some(CommitStatusState.Warning)),
           built.decode(request.send(backend)).map(_.totalCount) == Right(Some(2L))
+        )
+      },
+      test("defaults combined commit status pagination to first configured page") {
+        val request = GiteaRequests
+          .repoCombinedStatusByRef(config, "worx bend", "gitea/scala", "feature/slash")
+          .request
+
+        assertTrue(
+          request.uri.paramsMap.get("page").contains("1"),
+          request.uri.paramsMap.get("limit").contains("25")
         )
       },
       test("builds and decodes schema-traceable commit status list requests") {
@@ -490,6 +508,87 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.decode(request.send(unmergedBackend)) == Right(false)
         )
       },
+      test("builds and decodes schema-traceable pull request merge request") {
+        val body = MergePullRequestOption(
+          mergeMethod = MergePullRequestMethod.Squash,
+          mergeCommitId = Some("abc123"),
+          mergeMessageField = Some("Squash commits"),
+          mergeTitleField = Some("Add feature"),
+          deleteBranchAfterMerge = Some(true),
+          forceMerge = Some(false),
+          headCommitId = Some("def456"),
+          mergeWhenChecksSucceed = Some(true)
+        )
+        val built = GiteaRequests.mergePullRequest(config, "worx bend", "gitea/scala", 88, body)
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.Ok))
+        val requestBody =
+          request.body match
+            case StringBody(value, _, _) => value
+            case _ => ""
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoMergePullRequest,
+          endpoint.method == "POST",
+          endpoint.operationId == "repoMergePullRequest",
+          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/merge",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
+          endpoint.response == "#/responses/empty",
+          request.method == Method.POST,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/merge",
+          request.header("Accept").contains("application/json"),
+          request.header("Content-Type").exists(_.startsWith("application/json")),
+          requestBody ==
+            """{"Do":"squash","MergeCommitID":"abc123","MergeMessageField":"Squash commits","MergeTitleField":"Add feature","delete_branch_after_merge":true,"force_merge":false,"head_commit_id":"def456","merge_when_checks_succeed":true}""",
+          built.retryable == false,
+          built.decode(request.send(backend)) == Right(())
+        )
+      },
+      test("builds and decodes schema-traceable pull request merge/update lifecycle requests") {
+        val cancel = GiteaRequests.cancelScheduledAutoMerge(config, "worx bend", "gitea/scala", 88)
+        val update = GiteaRequests.updatePullRequest(config, "worx bend", "gitea/scala", 88, PullRequestUpdateStyle.Rebase)
+        val cancelBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val updateBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.Ok))
+
+        assertTrue(
+          cancel.endpoint == GiteaEndpoints.repoCancelScheduledAutoMerge,
+          cancel.endpoint.method == "DELETE",
+          cancel.endpoint.operationId == "repoCancelScheduledAutoMerge",
+          cancel.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/merge",
+          cancel.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
+          cancel.endpoint.response == "#/responses/empty",
+          cancel.request.method == Method.DELETE,
+          cancel.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/merge",
+          cancel.request.header("Accept").contains("application/json"),
+          cancel.request.header("Content-Type").isEmpty,
+          cancel.request.body == NoBody,
+          cancel.retryable == false,
+          cancel.decode(cancel.request.send(cancelBackend)) == Right(()),
+          update.endpoint == GiteaEndpoints.repoUpdatePullRequest,
+          update.endpoint.method == "POST",
+          update.endpoint.operationId == "repoUpdatePullRequest",
+          update.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/update",
+          update.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "style"),
+          update.endpoint.response == "#/responses/empty",
+          update.request.method == Method.POST,
+          update.request.uri.toString.contains(
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/update?"
+          ),
+          update.request.uri.paramsMap.get("style").contains("rebase"),
+          update.request.header("Accept").contains("application/json"),
+          update.request.header("Content-Type").isEmpty,
+          update.request.body == NoBody,
+          update.retryable == false,
+          update.decode(update.request.send(updateBackend)) == Right(()),
+          PullRequestUpdateStyle.values.map(_.queryValue).toList == List("merge", "rebase")
+        )
+      },
       test("builds and decodes schema-traceable pull-review comment resolution requests") {
         val resolve = GiteaRequests.resolvePullReviewComment(config, "worx bend", "gitea/scala", 91)
         val unresolve = GiteaRequests.unresolvePullReviewComment(config, "worx bend", "gitea/scala", 91)
@@ -553,6 +652,42 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
           unresolve.decode(unresolve.request.send(notFoundBackend)) ==
             Left(GiteaError.NotFound("missing review comment", notFoundBody))
+        )
+      },
+      test("maps documented pull request merge/update failures") {
+        val forbiddenBody = """{"message":"forbidden"}"""
+        val notFoundBody = """{"message":"missing pull request"}"""
+        val conflictBody = """{"message":"merge conflict"}"""
+        val validationBody = """{"message":"invalid update"}"""
+        val forbiddenBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(forbiddenBody, StatusCode.Forbidden))
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val conflictBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(conflictBody, StatusCode.Conflict))
+        val validationBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(validationBody, StatusCode.UnprocessableEntity)
+          )
+        val merge = GiteaRequests.mergePullRequest(
+          config,
+          "owner",
+          "repo",
+          77,
+          MergePullRequestOption(MergePullRequestMethod.Merge)
+        )
+        val cancel = GiteaRequests.cancelScheduledAutoMerge(config, "owner", "repo", 77)
+        val update = GiteaRequests.updatePullRequest(config, "owner", "repo", 77, PullRequestUpdateStyle.Merge)
+
+        assertTrue(
+          merge.decode(merge.request.send(forbiddenBackend)) ==
+            Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
+          cancel.decode(cancel.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing pull request", notFoundBody)),
+          merge.decode(merge.request.send(conflictBackend)) ==
+            Left(GiteaError.Conflict("merge conflict", conflictBody)),
+          update.decode(update.request.send(validationBackend)) ==
+            Left(GiteaError.UnprocessableEntity("invalid update", validationBody))
         )
       },
       test("builds and decodes schema-traceable pull review request creation and cancellation") {

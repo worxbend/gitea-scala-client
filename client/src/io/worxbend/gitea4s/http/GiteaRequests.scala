@@ -26,6 +26,7 @@ import io.worxbend.gitea4s.model.{
   IssueState,
   Label,
   LockIssueOption,
+  MergePullRequestOption,
   NewIssuePinsAllowed,
   NotificationCount,
   NotificationThread,
@@ -209,9 +210,10 @@ object GiteaRequests:
       owner: String,
       repo: String,
       ref: String,
-      page: Int = 1
+      params: CombinedStatusParams = CombinedStatusParams.default
   ): GiteaRequest[CombinedStatus] =
-    val pageSize = config.pageSize
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
 
     get(
       config,
@@ -329,6 +331,44 @@ object GiteaRequests:
       List("repos", owner, repo, "pulls", index.toString, "merge"),
       Nil,
       GiteaResponseMapper.decodeNoContentOrNotFoundBoolean
+    )
+
+  def mergePullRequest(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: MergePullRequestOption
+  ): GiteaRequest[Unit] =
+    postJson(
+      config,
+      GiteaEndpoints.repoMergePullRequest,
+      List("repos", owner, repo, "pulls", index.toString, "merge"),
+      body.toJson,
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def cancelScheduledAutoMerge(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.repoCancelScheduledAutoMerge,
+      List("repos", owner, repo, "pulls", index.toString, "merge"),
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def updatePullRequest(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      style: PullRequestUpdateStyle
+  ): GiteaRequest[Unit] =
+    post(
+      config,
+      GiteaEndpoints.repoUpdatePullRequest,
+      List("repos", owner, repo, "pulls", index.toString, "update"),
+      List("style" -> style.queryValue),
+      GiteaResponseMapper.decodeUnit
     )
 
   def resolvePullReviewComment(config: GiteaConfig, owner: String, repo: String, id: Long): GiteaRequest[Unit] =
@@ -1197,18 +1237,27 @@ object GiteaRequests:
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
       path: List[String],
+      query: List[(String, String)],
       decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
       request = basicRequest
-        .post(apiUri(config.baseUrl, path, Nil))
+        .post(apiUri(config.baseUrl, path, query))
         .response(asStringAlways)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),
       decode = decode,
       retryable = GiteaRequest.isReadOnly(endpoint)
     )
+
+  private def post[A](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+  ): GiteaRequest[A] =
+    post(config, endpoint, path, Nil, decode)
 
   private def postJson[A](
       config: GiteaConfig,
