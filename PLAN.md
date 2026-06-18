@@ -136,6 +136,7 @@ Current checkpoint:
 - `ShowApiReference` remains the default `examples.run` entrypoint and is hermetic when live credentials are absent.
 - `ListMyRepos` can be run with `examples.runMain` to authenticate with the live ZIO backend, call `GET /user`, and stream up to 25 repositories for the authenticated login.
 - `WatchNotifications` can be run with `examples.runMain` to read the unread notification count and stream up to 20 unread notification threads.
+- `OrgMembers`, `ListReleases`, and `ListPullRequests` can be run with `examples.runMain` for additional read-only organization and repository workflows.
 - Example live calls are gated on `GITEA_URL` plus either `GITEA_TOKEN` or `GITEA_USERNAME`/`GITEA_PASSWORD`; when the URL or credentials are absent they print the target API version and make no network calls.
 - README now includes installation status, pasteable quickstart, auth modes, ZLayer usage, pagination streams, error handling, retry/rate-limit behavior, backend choices, examples, integration testing, supported API version, and Mill commands.
 - Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, `./mill it.test`, and `./mill examples.run`.
@@ -678,6 +679,7 @@ Completed subset:
 - Added `WatchNotifications.scala` for unread notification count and notification-thread streaming.
 - Added `OrgMembers.scala` for streaming up to 25 organization members with `client.orgs.members`.
 - Added `ListReleases.scala` for streaming up to 25 releases from `GITEA_OWNER`/`GITEA_REPO`.
+- Added `ListPullRequests.scala` for streaming up to 25 pull requests from `GITEA_OWNER`/`GITEA_REPO`.
 - Kept `ShowApiReference.scala` as the stable default `examples.run` main class.
 - Expanded README across the planned Phase 9 sections for the currently implemented read-only API.
 
@@ -705,7 +707,7 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 9 with another read-only runnable example, preferably for pull requests before write endpoints exist,
+- continue Phase 9 with another read-only runnable example from the implemented surface, such as branch/tag listing or user search,
 - keep examples and README aligned with the currently implemented API surface,
 - keep `./mill __.test`, `./mill it.test`, and `./mill examples.run` passing without external services when live credentials are absent.
 

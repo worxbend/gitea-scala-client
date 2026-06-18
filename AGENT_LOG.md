@@ -180,3 +180,10 @@
 2026-06-18T07:34:00Z validation passed commands="./mill examples.compile; ./mill examples.runMain io.worxbend.gitea4s.examples.ListReleases; env GITEA_URL=https://gitea.example GITEA_TOKEN=dummy ./mill examples.runMain io.worxbend.gitea4s.examples.ListReleases; ./mill __.test; ./mill it.test; ./mill examples.run; ./mill __.compile"
 2026-06-18T07:35:00Z checkpoint commit created message="Add repository releases example"
 2026-06-18T07:35:00Z iteration 12 completed validation_status=0
+2026-06-18T07:30:31Z iteration 12 no changes to commit
+2026-06-18T07:30:31Z iteration 12 completed validation_status=0
+2026-06-18T07:30:31Z iteration 13 started remaining=14252s
+2026-06-18T07:32:48Z added hermetic ListPullRequests example and README command documentation
+2026-06-18T07:32:48Z validation passed commands="./mill examples.compile; ./mill examples.runMain io.worxbend.gitea4s.examples.ListPullRequests; env GITEA_URL=https://gitea.example GITEA_TOKEN=dummy ./mill examples.runMain io.worxbend.gitea4s.examples.ListPullRequests; ./mill __.test; ./mill it.test; ./mill examples.run; ./mill __.compile"
+2026-06-18T07:33:29Z checkpoint commit created message="Add pull request listing example"
+2026-06-18T07:33:29Z iteration 13 completed validation_status=0

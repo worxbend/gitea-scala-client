@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.examples
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{ApiReference, NotificationThread, Release, Repository, User}
+import io.worxbend.gitea4s.model.{ApiReference, NotificationThread, PullRequest, Release, Repository, User}
 import io.worxbend.gitea4s.{GiteaConfig, GiteaConfigError}
 
 private[examples] object ExampleSupport:
@@ -54,6 +54,22 @@ private[examples] object ExampleSupport:
       else "published"
     val published = release.publishedAt.fold("")(instant => s" at $instant")
     s"$title$tag [$state$published]"
+
+  def pullRequestSummary(pullRequest: PullRequest): String =
+    val number =
+      pullRequest.number
+        .map(value => s"#$value")
+        .orElse(pullRequest.id.map(value => s"pull#$value"))
+        .getOrElse("#?")
+    val title = pullRequest.title.getOrElse("<untitled pull request>")
+    val state = pullRequest.state.fold("unknown")(_.jsonValue)
+    val draft = if pullRequest.draft.contains(true) then " draft" else ""
+    val branches =
+      for
+        head <- pullRequest.head.flatMap(branch => branch.label.orElse(branch.ref))
+        base <- pullRequest.base.flatMap(branch => branch.label.orElse(branch.ref))
+      yield s" $head -> $base"
+    s"$number [$state$draft]$branches $title"
 
   private def hasNoCredentials(env: Map[String, String]): Boolean =
     nonBlank(env, GiteaConfig.Env.token).isEmpty &&
