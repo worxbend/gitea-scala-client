@@ -140,6 +140,11 @@ Current checkpoint:
 - `SearchUsers` can be run with `examples.runMain` to stream up to 25 users matching `GITEA_USER_QUERY`.
 - Example live calls are gated on `GITEA_URL` plus either `GITEA_TOKEN` or `GITEA_USERNAME`/`GITEA_PASSWORD`; when the URL or credentials are absent they print the target API version and make no network calls.
 - README now includes installation status, pasteable quickstart, auth modes, ZLayer usage, pagination streams, error handling, retry/rate-limit behavior, backend choices, examples, integration testing, supported API version, and Mill commands.
+- Phase 10 has started with Mill-native publishing metadata and local artifact generation.
+- `core`, `client`, `backend-zio`, and `backend-okhttp` now extend a shared publishable module trait with `io.worxbend` Maven coordinates, `0.1.0-SNAPSHOT` versioning, GPL-2.0-only POM license metadata, SCM metadata, and developer metadata.
+- Local source and javadoc jar generation works through Mill `sourceJar` and `docJar` targets.
+- Local Maven publishing works through `./mill __.publishM2Local` and publishes `gitea4s-core_3`, `gitea4s-client_3`, `gitea4s-backend-zio_3`, and `gitea4s-backend-okhttp_3`.
+- README documents local snapshot coordinates, local publish/doc/source commands, and the initial pre-1.0 compatibility policy.
 - Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, `./mill it.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
@@ -692,12 +697,12 @@ Goal: prepare the Mill-built library for release.
 
 Tasks:
 
-- Maven coordinates.
-- License metadata.
-- Semantic versioning policy.
-- API compatibility policy.
-- Scaladoc generation.
-- Source and doc jars.
+- Maven coordinates. Complete for local Mill publishing.
+- License metadata. Complete for local generated POMs.
+- Semantic versioning policy. Started in README for the pre-1.0 snapshot line.
+- API compatibility policy. Started in README for the pre-1.0 snapshot line.
+- Scaladoc generation. Complete for local Mill doc jars.
+- Source and doc jars. Complete for local Mill artifact generation.
 - CI matrix for Java 21 and supported Scala versions.
 - Renovate dependency updates.
 - Changelog.
@@ -710,7 +715,7 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- begin Phase 10 publishing readiness with a small Mill-native metadata/doc slice, such as Maven coordinates and local doc/source jar generation,
+- continue Phase 10 publishing readiness with a small release-process slice, such as a checked-in changelog plus release/versioning notes or a CI matrix for Java 21,
 - keep examples and README aligned with any build or publishing commands that become runnable,
 - keep `./mill __.test`, `./mill it.test`, and `./mill examples.run` passing without external services when live credentials are absent.
 

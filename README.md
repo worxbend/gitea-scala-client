@@ -8,6 +8,7 @@ and zio-json.
 - Build tool: Mill `1.1.6` through the checked-in `./mill` launcher
 - Package root: `io.worxbend.gitea4s`
 - JVM target: Java 21
+- Version: `0.1.0-SNAPSHOT`
 - API reference: local `plugin-redoc-2.yaml` for Gitea API `1.26.2`
 - Implemented surface: typed core models/codecs plus read-only users, organizations,
   repositories, issues, releases, pull requests, and notifications through a ZIO client API
@@ -16,12 +17,32 @@ and zio-json.
 
 ## Installation
 
-This rewrite is not published yet. Use the modules directly from this repository:
+This rewrite is not published to Maven Central yet. Use the modules directly
+from this repository:
 
 ```bash
 ./mill __.compile
 ./mill __.test
 ```
+
+Or publish the library modules to your local Maven repository:
+
+```bash
+./mill __.publishM2Local
+```
+
+Local snapshot coordinates:
+
+```scala
+"io.worxbend" %% "gitea4s-core" % "0.1.0-SNAPSHOT"
+"io.worxbend" %% "gitea4s-client" % "0.1.0-SNAPSHOT"
+"io.worxbend" %% "gitea4s-backend-zio" % "0.1.0-SNAPSHOT"
+"io.worxbend" %% "gitea4s-backend-okhttp" % "0.1.0-SNAPSHOT"
+```
+
+Mill publishes source and javadoc jars for these four library modules. The
+`examples` and `it` modules are runnable project modules, not published
+artifacts.
 
 Module dependency direction:
 
@@ -183,6 +204,16 @@ Use `backend-okhttp` only when an application already standardizes on OkHttp.
 That module adapts sttp's async OkHttp backend to ZIO and keeps OkHttp off the
 main client and core dependency path.
 
+## Publishing Policy
+
+Current versioning starts at `0.1.0-SNAPSHOT`. Before a stable `1.0.0`, source
+and binary compatibility may change while the API surface is still being filled
+out from the Gitea `1.26.2` contract. Patch releases should preserve behavior
+except for bug fixes; minor releases may add endpoints, models, and parameters.
+
+The checked-in license is GPL-2.0-only, and the generated POM metadata uses the
+same license identifier.
+
 ## Examples
 
 The default example is hermetic when live credentials are absent:
@@ -261,6 +292,10 @@ and makes no external calls.
 ./mill __.compile
 ./mill __.test
 ./mill it.test
+./mill __.docJar
+./mill __.sourceJar
+./mill __.publishArtifacts
+./mill __.publishM2Local
 ./mill examples.run
 ./mill examples.runMain io.worxbend.gitea4s.examples.ListMyRepos
 ./mill examples.runMain io.worxbend.gitea4s.examples.WatchNotifications
@@ -271,5 +306,6 @@ and makes no external calls.
 ./mill examples.runMain io.worxbend.gitea4s.examples.ListBranchesAndTags
 ```
 
-The rewrite is still in progress. Publishing metadata, generated docs, and write
-endpoints remain planned work.
+The rewrite is still in progress. Maven Central publishing automation, CI,
+compatibility checks, changelog workflow, and write endpoints remain planned
+work.

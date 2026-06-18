@@ -2,10 +2,13 @@
 package build
 
 import mill.*
+import javalib.PublishModule
+import javalib.publish.*
 import scalalib.*
 
 object Versions:
   val scala = "3.8.4"
+  val library = "0.1.0-SNAPSHOT"
   val zio = "2.1.26"
   val zioJson = "0.9.2"
   val zioConfig = "4.0.7"
@@ -33,14 +36,45 @@ trait Gitea4sModule extends ScalaModule:
 
     def testFramework = "zio.test.sbt.ZTestFramework"
 
-object core extends Gitea4sModule:
+trait PublishableGitea4sModule extends Gitea4sModule, PublishModule:
+  def publishVersion = Versions.library
+
+  def pomSettings = PomSettings(
+    description = "Scala 3 ZIO client library for Gitea API v1.26.2",
+    organization = "io.worxbend",
+    url = "https://github.com/worxbend/gitea-scala-client",
+    licenses = Seq(
+      License(
+        id = "GPL-2.0-only",
+        name = "GNU General Public License v2.0 only",
+        url = "https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html",
+        isOsiApproved = true,
+        isFsfLibre = true,
+        distribution = "repo"
+      )
+    ),
+    versionControl = VersionControl.github("worxbend", "gitea-scala-client"),
+    developers = Seq(
+      Developer(
+        id = "worxbend",
+        name = "Worxbend",
+        url = "https://github.com/worxbend"
+      )
+    )
+  )
+
+object core extends PublishableGitea4sModule:
+  def artifactName = "gitea4s-core"
+
   def mvnDeps = Seq(
     mvn"dev.zio::zio:${Versions.zio}",
     mvn"dev.zio::zio-streams:${Versions.zio}",
     mvn"dev.zio::zio-json:${Versions.zioJson}"
   )
 
-object client extends Gitea4sModule:
+object client extends PublishableGitea4sModule:
+  def artifactName = "gitea4s-client"
+
   def moduleDeps = Seq(core)
 
   def extraTestMvnDeps = Seq(
@@ -54,14 +88,18 @@ object client extends Gitea4sModule:
     mvn"dev.zio::zio-config-typesafe:${Versions.zioConfig}"
   )
 
-object `backend-zio` extends Gitea4sModule:
+object `backend-zio` extends PublishableGitea4sModule:
+  def artifactName = "gitea4s-backend-zio"
+
   def moduleDeps = Seq(client)
 
   def mvnDeps = Seq(
     mvn"com.softwaremill.sttp.client4::zio:${Versions.sttp}"
   )
 
-object `backend-okhttp` extends Gitea4sModule:
+object `backend-okhttp` extends PublishableGitea4sModule:
+  def artifactName = "gitea4s-backend-okhttp"
+
   def moduleDeps = Seq(client)
 
   def mvnDeps = Seq(
