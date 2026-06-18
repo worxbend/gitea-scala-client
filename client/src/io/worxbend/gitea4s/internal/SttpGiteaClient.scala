@@ -10,6 +10,7 @@ import io.worxbend.gitea4s.http.{
   IssueTrackedTimeListParams,
   NotificationListParams,
   PullRequestCommitsParams,
+  PullRequestDiffType,
   PullRequestFilesParams,
   PullRequestListParams,
   RepoListParams,
@@ -161,6 +162,15 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.repoPullRequest(config, owner, repo, index))
+
+  override def pullRequestDiffOrPatch(
+      owner: String,
+      repo: String,
+      index: Long,
+      diffType: PullRequestDiffType,
+      binary: Option[Boolean]
+  ): IO[GiteaError, String] =
+    executor.send(GiteaRequests.repoPullRequestDiffOrPatch(config, owner, repo, index, diffType, binary))
 
   override def pullRequestFiles(
       owner: String,

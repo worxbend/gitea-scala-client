@@ -8,6 +8,7 @@ import io.worxbend.gitea4s.http.{
   IssueTrackedTimeListParams,
   NotificationListParams,
   PullRequestCommitsParams,
+  PullRequestDiffType,
   PullRequestFilesParams,
   PullRequestListParams,
   RepoListParams,
@@ -941,6 +942,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2")))
             .thenRespond(ResponseStub.adjust("""{"id":2,"number":2,"title":"Second","state":"closed"}"""))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2.patch")))
+            .thenRespond(ResponseStub.adjust("From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001"))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "pinned")))
             .thenRespond(ResponseStub.adjust("""[{"id":3,"number":3,"title":"Pinned","state":"open"}]"""))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "main", "feature")))
@@ -976,6 +979,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         for
           pullRequests <- client.pullRequests("alice", "api", PullRequestListParams.default).runCollect
           pullRequest <- client.pullRequest("alice", "api", 2)
+          pullRequestPatch <- client.pullRequestDiffOrPatch("alice", "api", 2, PullRequestDiffType.Patch)
           pinnedPullRequests <- client.pinnedPullRequests("alice", "api")
           pullRequestByBaseHead <- client.pullRequestByBaseHead("alice", "api", "main", "feature")
           changedFiles <- client.pullRequestFiles("alice", "api", 2, PullRequestFilesParams.default).runCollect
@@ -984,6 +988,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequests.map(_.number) == Chunk(Some(1L), Some(2L)),
           pullRequest.id.contains(2L),
           pullRequest.title.contains("Second"),
+          pullRequestPatch.startsWith("From 0000000000000000000000000000000000000000"),
           pinnedPullRequests.map(_.number) == Chunk(Some(3L)),
           pullRequestByBaseHead.number.contains(4L),
           pullRequestByBaseHead.title.contains("By branch"),

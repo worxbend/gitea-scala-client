@@ -30,6 +30,8 @@ surface is still being filled out.
 - Typed pull-request commit streaming with `Commit`, `RepoCommit`,
   `PullRequestCommitsParams`, and `repoGetPullRequestCommits` request
   construction.
+- Typed pull-request diff/patch downloads with `PullRequestDiffType` and
+  `repoDownloadPullDiffOrPatch` request construction.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

@@ -245,6 +245,23 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[PullRequest]
     )
 
+  def repoPullRequestDiffOrPatch(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      diffType: PullRequestDiffType,
+      binary: Option[Boolean] = None
+  ): GiteaRequest[String] =
+    get(
+      config,
+      GiteaEndpoints.repoDownloadPullDiffOrPatch,
+      List("repos", owner, repo, "pulls", s"$index.${diffType.pathValue}"),
+      binary.map(value => List("binary" -> value.toString)).getOrElse(Nil),
+      GiteaResponseMapper.decodeString,
+      accept = MediaType.TextPlain.toString
+    )
+
   def repoPullRequestFiles(
       config: GiteaConfig,
       owner: String,
@@ -908,7 +925,8 @@ object GiteaRequests:
       endpoint: GiteaEndpoint,
       path: List[String],
       query: List[(String, String)],
-      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A],
+      accept: String = MediaType.ApplicationJson.toString
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
@@ -916,7 +934,7 @@ object GiteaRequests:
         .get(apiUri(config.baseUrl, path, query))
         .response(asStringAlways)
         .readTimeout(config.timeout)
-        .headers(commonHeaders(config)),
+        .headers(commonHeaders(config, accept)),
       decode = decode,
       retryable = GiteaRequest.isReadOnly(endpoint)
     )
@@ -1072,9 +1090,9 @@ object GiteaRequests:
   private def apiUri(baseUrl: Uri, path: List[String], query: List[(String, String)]): Uri =
     baseUrl.addPath(List("api", "v1") ++ path).addParams(query*)
 
-  private def commonHeaders(config: GiteaConfig): Map[String, String] =
+  private def commonHeaders(config: GiteaConfig, accept: String = MediaType.ApplicationJson.toString): Map[String, String] =
     List(
-      Some("Accept" -> MediaType.ApplicationJson.toString),
+      Some("Accept" -> accept),
       authorizationHeader(config.auth),
       config.userAgent.map("User-Agent" -> _),
       config.otp.map("X-Gitea-OTP" -> _)

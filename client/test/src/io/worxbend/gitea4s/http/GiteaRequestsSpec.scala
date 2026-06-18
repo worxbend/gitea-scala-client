@@ -337,6 +337,33 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88"
         )
       },
+      test("builds schema-traceable pull request diff or patch request") {
+        val built =
+          GiteaRequests.repoPullRequestDiffOrPatch(
+            config,
+            "worx bend",
+            "gitea/scala",
+            88,
+            PullRequestDiffType.Patch,
+            binary = Some(true)
+          )
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoDownloadPullDiffOrPatch,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoDownloadPullDiffOrPatch",
+          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}.{diffType}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "index", "diffType", "binary"),
+          endpoint.response == "#/responses/string",
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88.patch?"),
+          request.uri.paramsMap.get("binary").contains("true"),
+          request.header("Accept").contains("text/plain"),
+          built.retryable == true
+        )
+      },
       test("builds schema-traceable paginated pull request files request") {
         val params = PullRequestFilesParams(
           skipTo = Some("src/Main.scala"),
@@ -1605,6 +1632,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             )
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2")))
             .thenRespond(ResponseStub.adjust(pullRequestResponse))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2.diff")))
+            .thenRespond(ResponseStub.adjust("diff --git a/README.md b/README.md"))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2", "files")))
             .thenRespond(
               ResponseStub.adjust(
@@ -1633,6 +1662,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val pullRequests = GiteaRequests.repoPullRequests(config, "octo", "api")
         val pinnedPullRequests = GiteaRequests.pinnedPullRequests(config, "octo", "api")
         val pullRequest = GiteaRequests.repoPullRequest(config, "octo", "api", 2)
+        val pullRequestDiff =
+          GiteaRequests.repoPullRequestDiffOrPatch(config, "octo", "api", 2, PullRequestDiffType.Diff)
         val pullRequestFiles = GiteaRequests.repoPullRequestFiles(config, "octo", "api", 2)
         val pullRequestCommits = GiteaRequests.repoPullRequestCommits(config, "octo", "api", 2)
 
@@ -1658,6 +1689,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           pinnedPullRequests.decode(pinnedPullRequests.request.send(backend)).map(_.map(_.title)) ==
             Right(Chunk(Some("Pinned"))),
           pullRequest.decode(pullRequest.request.send(backend)).map(_.title) == Right(Some("Second")),
+          pullRequestDiff.decode(pullRequestDiff.request.send(backend)) ==
+            Right("diff --git a/README.md b/README.md"),
           pullRequestFiles.decode(pullRequestFiles.request.send(backend)).map(_.data.map(_.filename)) ==
             Right(Chunk(Some("src/Main.scala"))),
           pullRequestFiles.decode(pullRequestFiles.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
@@ -1772,6 +1805,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val pullRequests = GiteaRequests.repoPullRequests(config, "owner", "missing")
         val pinnedPullRequests = GiteaRequests.pinnedPullRequests(config, "owner", "missing")
         val pullRequest = GiteaRequests.repoPullRequest(config, "owner", "missing", 77)
+        val pullRequestDiff =
+          GiteaRequests.repoPullRequestDiffOrPatch(config, "owner", "missing", 77, PullRequestDiffType.Diff)
         val pullRequestFiles = GiteaRequests.repoPullRequestFiles(config, "owner", "missing", 77)
         val pullRequestCommits = GiteaRequests.repoPullRequestCommits(config, "owner", "missing", 77)
 
@@ -1781,6 +1816,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           pinnedPullRequests.decode(pinnedPullRequests.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body)),
           pullRequest.decode(pullRequest.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing pull request", body)),
+          pullRequestDiff.decode(pullRequestDiff.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body)),
           pullRequestFiles.decode(pullRequestFiles.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body)),

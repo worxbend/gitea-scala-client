@@ -258,6 +258,21 @@ object GiteaEndpoints:
       response = "#/responses/PullRequest"
     )
 
+  val repoDownloadPullDiffOrPatch: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/pulls/{index}.{diffType}",
+      operationId = "repoDownloadPullDiffOrPatch",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("diffType", "path", required = true),
+        GiteaParameter("binary", "query", required = false)
+      ),
+      response = "#/responses/string"
+    )
+
   val repoGetPullRequestFiles: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",
