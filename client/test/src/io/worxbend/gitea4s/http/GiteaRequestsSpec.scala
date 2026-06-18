@@ -20,6 +20,7 @@ import io.worxbend.gitea4s.model.{
   NewIssuePinsAllowed,
   NotificationSubjectType,
   PullReviewState,
+  PullReviewRequestOptions,
   WatchInfo
 }
 import sttp.client4.*
@@ -360,6 +361,59 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.retryable == true,
           built.decode(request.send(mergedBackend)) == Right(true),
           built.decode(request.send(unmergedBackend)) == Right(false)
+        )
+      },
+      test("builds and decodes schema-traceable pull review request creation and cancellation") {
+        val body = PullReviewRequestOptions(
+          reviewers = Some(List("alice", "bob")),
+          teamReviewers = Some(List("maintainers"))
+        )
+        val create = GiteaRequests.createPullReviewRequests(config, "worx bend", "gitea/scala", 88, body)
+        val delete = GiteaRequests.deletePullReviewRequests(config, "worx bend", "gitea/scala", 88, body)
+        val createBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""[{"id":12,"state":"REQUEST_REVIEW","body":"review requested"}]""", StatusCode.Created)
+          )
+        val deleteBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+
+        val createBody =
+          create.request.body match
+            case StringBody(value, _, _) => value
+            case _ => ""
+        val deleteBody =
+          delete.request.body match
+            case StringBody(value, _, _) => value
+            case _ => ""
+
+        assertTrue(
+          create.endpoint == GiteaEndpoints.repoCreatePullReviewRequests,
+          create.endpoint.method == "POST",
+          create.endpoint.operationId == "repoCreatePullReviewRequests",
+          create.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/requested_reviewers",
+          create.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
+          create.endpoint.response == "#/responses/PullReviewList",
+          create.request.method == Method.POST,
+          create.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/requested_reviewers",
+          create.request.header("Content-Type").exists(_.startsWith("application/json")),
+          createBody == """{"reviewers":["alice","bob"],"team_reviewers":["maintainers"]}""",
+          create.retryable == false,
+          create.decode(create.request.send(createBackend)).map(_.map(_.state)) ==
+            Right(Chunk(Some(PullReviewState.RequestReview))),
+          delete.endpoint == GiteaEndpoints.repoDeletePullReviewRequests,
+          delete.endpoint.method == "DELETE",
+          delete.endpoint.operationId == "repoDeletePullReviewRequests",
+          delete.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/requested_reviewers",
+          delete.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
+          delete.endpoint.response == "#/responses/empty",
+          delete.request.method == Method.DELETE,
+          delete.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/requested_reviewers",
+          delete.request.header("Content-Type").exists(_.startsWith("application/json")),
+          deleteBody == """{"reviewers":["alice","bob"],"team_reviewers":["maintainers"]}""",
+          delete.retryable == false,
+          delete.decode(delete.request.send(deleteBackend)) == Right(())
         )
       },
       test("builds schema-traceable paginated pull request reviews request") {
@@ -1724,6 +1778,16 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             )
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2")))
             .thenRespond(ResponseStub.adjust(pullRequestResponse))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2", "requested_reviewers"))
+            }
+            .thenRespond(ResponseStub.adjust("""[{"id":12,"state":"REQUEST_REVIEW"}]""", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2", "requested_reviewers"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2", "reviews")))
             .thenRespond(
               ResponseStub.adjust(pullReviewListResponse, StatusCode.Ok, List(Header("x-total-count", "1")))
@@ -1766,6 +1830,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val pullRequests = GiteaRequests.repoPullRequests(config, "octo", "api")
         val pinnedPullRequests = GiteaRequests.pinnedPullRequests(config, "octo", "api")
         val pullRequest = GiteaRequests.repoPullRequest(config, "octo", "api", 2)
+        val pullReviewRequestOptions = PullReviewRequestOptions(reviewers = Some(List("alice")))
+        val createPullReviewRequests =
+          GiteaRequests.createPullReviewRequests(config, "octo", "api", 2, pullReviewRequestOptions)
+        val deletePullReviewRequests =
+          GiteaRequests.deletePullReviewRequests(config, "octo", "api", 2, pullReviewRequestOptions)
         val pullReviews = GiteaRequests.repoPullReviews(config, "octo", "api", 2)
         val pullReview = GiteaRequests.repoPullReview(config, "octo", "api", 2, 10)
         val pullReviewComments = GiteaRequests.repoPullReviewComments(config, "octo", "api", 2, 10)
@@ -1796,6 +1865,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           pinnedPullRequests.decode(pinnedPullRequests.request.send(backend)).map(_.map(_.title)) ==
             Right(Chunk(Some("Pinned"))),
           pullRequest.decode(pullRequest.request.send(backend)).map(_.title) == Right(Some("Second")),
+          createPullReviewRequests.decode(createPullReviewRequests.request.send(backend)).map(_.map(_.state)) ==
+            Right(Chunk(Some(PullReviewState.RequestReview))),
+          deletePullReviewRequests.decode(deletePullReviewRequests.request.send(backend)) == Right(()),
           pullReviews.decode(pullReviews.request.send(backend)).map(_.data.map(_.state)) ==
             Right(Chunk(Some(PullReviewState.Approved))),
           pullReviews.decode(pullReviews.request.send(backend)).map(_.data.headOption.flatMap(_.commentsCount)) ==
@@ -1924,6 +1996,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val pullRequestDiff =
           GiteaRequests.repoPullRequestDiffOrPatch(config, "owner", "missing", 77, PullRequestDiffType.Diff)
         val pullRequestIsMerged = GiteaRequests.repoPullRequestIsMerged(config, "owner", "missing", 77)
+        val pullReviewRequestOptions = PullReviewRequestOptions(reviewers = Some(List("alice")))
+        val createPullReviewRequests =
+          GiteaRequests.createPullReviewRequests(config, "owner", "missing", 77, pullReviewRequestOptions)
+        val deletePullReviewRequests =
+          GiteaRequests.deletePullReviewRequests(config, "owner", "missing", 77, pullReviewRequestOptions)
         val pullReviews = GiteaRequests.repoPullReviews(config, "owner", "missing", 77)
         val pullReview = GiteaRequests.repoPullReview(config, "owner", "missing", 77, 10)
         val deletePullReview = GiteaRequests.deletePullReview(config, "owner", "missing", 77, 10)
@@ -1941,6 +2018,10 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           pullRequestDiff.decode(pullRequestDiff.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body)),
           pullRequestIsMerged.decode(pullRequestIsMerged.request.send(backend)) == Right(false),
+          createPullReviewRequests.decode(createPullReviewRequests.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing pull request", body)),
+          deletePullReviewRequests.decode(deletePullReviewRequests.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing pull request", body)),
           pullReviews.decode(pullReviews.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body)),
           pullReview.decode(pullReview.request.send(backend)) ==

@@ -271,6 +271,34 @@ object GiteaEndpoints:
       response = "204 merged / 404 not merged"
     )
 
+  val repoCreatePullReviewRequests: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "POST",
+      path = "/repos/{owner}/{repo}/pulls/{index}/requested_reviewers",
+      operationId = "repoCreatePullReviewRequests",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("body", "body", required = true)
+      ),
+      response = "#/responses/PullReviewList"
+    )
+
+  val repoDeletePullReviewRequests: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/pulls/{index}/requested_reviewers",
+      operationId = "repoDeletePullReviewRequests",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("body", "body", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
   val repoListPullReviews: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

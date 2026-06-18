@@ -39,6 +39,9 @@ surface is still being filled out.
 - Typed pull-request review detail, comment listing, and deletion with
   `PullReviewComment`, `repoGetPullReview`, `repoGetPullReviewComments`, and
   `repoDeletePullReview` request construction.
+- Typed pull-request review request creation and cancellation with
+  `PullReviewRequestOptions`, `repoCreatePullReviewRequests`, and
+  `repoDeletePullReviewRequests` request construction.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

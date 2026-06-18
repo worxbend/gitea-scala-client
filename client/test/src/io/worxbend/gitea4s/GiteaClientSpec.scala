@@ -26,6 +26,7 @@ import io.worxbend.gitea4s.model.{
   EditReactionOption,
   IssueMeta,
   LockIssueOption,
+  PullReviewRequestOptions,
   PullReviewState
 }
 import sttp.capabilities.Effect
@@ -947,6 +948,22 @@ object GiteaClientSpec extends ZIOSpecDefault:
             .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "3", "merge")))
             .thenRespond(ResponseStub.adjust("", StatusCode.NotFound))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "requested_reviewers")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""reviewers":["reviewer"]""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""[{"id":12,"state":"REQUEST_REVIEW"}]""", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "requested_reviewers")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""reviewers":["reviewer"]""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews")))
             .thenRespondCyclic(
               ResponseStub.adjust(
@@ -1013,6 +1030,18 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequest <- client.pullRequest("alice", "api", 2)
           merged <- client.pullRequestIsMerged("alice", "api", 2)
           notMerged <- client.pullRequestIsMerged("alice", "api", 3)
+          requestedReviews <- client.requestPullReviews(
+            "alice",
+            "api",
+            2,
+            PullReviewRequestOptions(reviewers = Some(List("reviewer")))
+          )
+          canceledReviewRequests <- client.cancelPullReviewRequests(
+            "alice",
+            "api",
+            2,
+            PullReviewRequestOptions(reviewers = Some(List("reviewer")))
+          ).either
           reviews <- client.pullRequestReviews("alice", "api", 2).runCollect
           review <- client.pullRequestReview("alice", "api", 2, 10)
           reviewComments <- client.pullRequestReviewComments("alice", "api", 2, 10)
@@ -1028,6 +1057,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequest.title.contains("Second"),
           merged,
           !notMerged,
+          requestedReviews.map(_.state) == Chunk(Some(PullReviewState.RequestReview)),
+          canceledReviewRequests == Right(()),
           reviews.map(_.state) == Chunk(Some(PullReviewState.Approved), Some(PullReviewState.RequestChanges)),
           review.body.contains("Looks good"),
           reviewComments.map(_.path) == Chunk(Some("README.md")),

@@ -447,6 +447,14 @@ final case class PullReviewComment(
 object PullReviewComment:
   given JsonCodec[PullReviewComment] = DeriveJsonCodec.gen[PullReviewComment]
 
+final case class PullReviewRequestOptions(
+    reviewers: Option[List[String]] = None,
+    @jsonField("team_reviewers") teamReviewers: Option[List[String]] = None
+)
+
+object PullReviewRequestOptions:
+  given JsonCodec[PullReviewRequestOptions] = DeriveJsonCodec.gen[PullReviewRequestOptions]
+
 final case class ChangedFile(
     additions: Option[Long] = None,
     changes: Option[Long] = None,

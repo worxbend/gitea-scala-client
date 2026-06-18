@@ -29,6 +29,7 @@ import io.worxbend.gitea4s.model.{
   PullRequest,
   PullReview,
   PullReviewComment,
+  PullReviewRequestOptions,
   Reaction,
   Release,
   Repository,
@@ -254,6 +255,36 @@ object GiteaRequests:
       List("repos", owner, repo, "pulls", index.toString, "merge"),
       Nil,
       GiteaResponseMapper.decodeNoContentOrNotFoundBoolean
+    )
+
+  def createPullReviewRequests(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: PullReviewRequestOptions
+  ): GiteaRequest[zio.Chunk[PullReview]] =
+    postJson(
+      config,
+      GiteaEndpoints.repoCreatePullReviewRequests,
+      List("repos", owner, repo, "pulls", index.toString, "requested_reviewers"),
+      body.toJson,
+      GiteaResponseMapper.decodeChunk[PullReview]
+    )
+
+  def deletePullReviewRequests(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: PullReviewRequestOptions
+  ): GiteaRequest[Unit] =
+    deleteJson(
+      config,
+      GiteaEndpoints.repoDeletePullReviewRequests,
+      List("repos", owner, repo, "pulls", index.toString, "requested_reviewers"),
+      body.toJson,
+      GiteaResponseMapper.decodeUnit
     )
 
   def repoPullReviews(

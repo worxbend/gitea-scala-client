@@ -2970,6 +2970,46 @@ public final class io.worxbend.gitea4s.model.PullReviewComment$ implements scala
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.PullReviewRequestOptions
+public final class io.worxbend.gitea4s.model.PullReviewRequestOptions implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.PullReviewRequestOptions(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> reviewers();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> teamReviewers();
+  public io.worxbend.gitea4s.model.PullReviewRequestOptions copy(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>);
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$1();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$2();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _1();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _2();
+  public static io.worxbend.gitea4s.model.PullReviewRequestOptions apply(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>);
+  public static io.worxbend.gitea4s.model.PullReviewRequestOptions fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.PullReviewRequestOptions> given_JsonCodec_PullReviewRequestOptions();
+  public static io.worxbend.gitea4s.model.PullReviewRequestOptions unapply(io.worxbend.gitea4s.model.PullReviewRequestOptions);
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$1();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$2();
+}
+
+## io.worxbend.gitea4s.model.PullReviewRequestOptions$
+public final class io.worxbend.gitea4s.model.PullReviewRequestOptions$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.PullReviewRequestOptions$ MODULE$;
+  public io.worxbend.gitea4s.model.PullReviewRequestOptions apply(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>);
+  public io.worxbend.gitea4s.model.PullReviewRequestOptions unapply(io.worxbend.gitea4s.model.PullReviewRequestOptions);
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$1();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$2();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.PullReviewRequestOptions> given_JsonCodec_PullReviewRequestOptions();
+  public io.worxbend.gitea4s.model.PullReviewRequestOptions fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.PullReviewState
 public abstract class io.worxbend.gitea4s.model.PullReviewState implements scala.reflect.Enum {
   public io.worxbend.gitea4s.model.PullReviewState(java.lang.String);
