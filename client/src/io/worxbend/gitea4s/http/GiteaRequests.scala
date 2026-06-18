@@ -12,6 +12,7 @@ import io.worxbend.gitea4s.model.{
   IssueLabelsOption,
   IssueState,
   Label,
+  LockIssueOption,
   NotificationCount,
   NotificationThread,
   Organization,
@@ -306,6 +307,29 @@ object GiteaRequests:
       config,
       GiteaEndpoints.issueRemoveLabel,
       List("repos", owner, repo, "issues", index.toString, "labels", id.toString),
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def lockIssue(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: LockIssueOption
+  ): GiteaRequest[Unit] =
+    putJson(
+      config,
+      GiteaEndpoints.issueLockIssue,
+      List("repos", owner, repo, "issues", index.toString, "lock"),
+      body.toJson,
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def unlockIssue(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.issueUnlockIssue,
+      List("repos", owner, repo, "issues", index.toString, "lock"),
       GiteaResponseMapper.decodeUnit
     )
 

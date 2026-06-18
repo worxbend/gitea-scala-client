@@ -2,7 +2,7 @@ package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.IssueListParams
-import io.worxbend.gitea4s.model.{Comment, CreateIssue, EditIssue, Issue, Label}
+import io.worxbend.gitea4s.model.{Comment, CreateIssue, EditIssue, Issue, Label, LockIssueOption}
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
@@ -30,5 +30,9 @@ trait IssuesApi:
   def clearLabels(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
 
   def removeLabel(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit]
+
+  def lock(owner: String, repo: String, index: Long, body: LockIssueOption): IO[GiteaError, Unit]
+
+  def unlock(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
 
   def comment(owner: String, repo: String, index: Long, body: String): IO[GiteaError, Comment]

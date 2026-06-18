@@ -239,6 +239,15 @@ object CoreModelsSpec extends ZIOSpecDefault:
           decoded == Right(payload)
         )
       },
+      test("round-trips issue lock request payload using schema JSON names") {
+        val payload = LockIssueOption(lockReason = Some("resolved"))
+        val decoded = payload.toJson.fromJson[LockIssueOption]
+
+        assertTrue(
+          payload.toJson == """{"lock_reason":"resolved"}""",
+          decoded == Right(payload)
+        )
+      },
       test("decodes pull request, release, branch, and tag payloads") {
         val pullRequestJson =
           """{

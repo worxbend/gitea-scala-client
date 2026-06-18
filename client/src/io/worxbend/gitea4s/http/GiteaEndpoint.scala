@@ -366,6 +366,33 @@ object GiteaEndpoints:
       response = "#/responses/empty"
     )
 
+  val issueLockIssue: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "PUT",
+      path = "/repos/{owner}/{repo}/issues/{index}/lock",
+      operationId = "issueLockIssue",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("body", "body", required = false)
+      ),
+      response = "#/responses/empty"
+    )
+
+  val issueUnlockIssue: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/issues/{index}/lock",
+      operationId = "issueUnlockIssue",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
   val notifyGetList: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

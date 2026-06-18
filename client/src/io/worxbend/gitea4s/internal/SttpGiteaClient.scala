@@ -21,6 +21,7 @@ import io.worxbend.gitea4s.model.{
   IssueLabelsOption,
   IssueState,
   Label,
+  LockIssueOption,
   NotificationCount,
   NotificationThread,
   Organization,
@@ -182,6 +183,12 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def removeLabel(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.removeIssueLabel(config, owner, repo, index, id))
+
+  override def lock(owner: String, repo: String, index: Long, body: LockIssueOption): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.lockIssue(config, owner, repo, index, body))
+
+  override def unlock(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.unlockIssue(config, owner, repo, index))
 
   override def comment(owner: String, repo: String, index: Long, body: String): IO[GiteaError, Comment] =
     executor.send(GiteaRequests.createIssueComment(config, owner, repo, index, CreateIssueComment(body)))

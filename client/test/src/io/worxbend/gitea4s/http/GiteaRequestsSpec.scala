@@ -9,6 +9,7 @@ import io.worxbend.gitea4s.model.{
   EditIssue,
   IssueLabelsOption,
   IssueState,
+  LockIssueOption,
   NotificationSubjectType
 }
 import sttp.client4.*
@@ -435,6 +436,44 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           remove.retryable == false
         )
       },
+      test("builds schema-traceable issue lock and unlock requests") {
+        val lock =
+          GiteaRequests.lockIssue(
+            config,
+            "worx bend",
+            "gitea/scala",
+            99,
+            LockIssueOption(lockReason = Some("resolved"))
+          )
+        val unlock = GiteaRequests.unlockIssue(config, "worx bend", "gitea/scala", 99)
+
+        assertTrue(
+          lock.endpoint == GiteaEndpoints.issueLockIssue,
+          lock.endpoint.method == "PUT",
+          lock.endpoint.operationId == "issueLockIssue",
+          lock.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/lock",
+          lock.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
+          lock.endpoint.response == "#/responses/empty",
+          lock.request.method == Method.PUT,
+          lock.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/lock",
+          lock.request.header("Content-Type").exists(_.startsWith("application/json")),
+          lock.retryable == false,
+          lock.request.body match
+            case StringBody(json, _, _) => json.contains(""""lock_reason":"resolved"""")
+            case _ => false,
+          unlock.endpoint == GiteaEndpoints.issueUnlockIssue,
+          unlock.endpoint.method == "DELETE",
+          unlock.endpoint.operationId == "issueUnlockIssue",
+          unlock.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/lock",
+          unlock.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
+          unlock.endpoint.response == "#/responses/empty",
+          unlock.request.method == Method.DELETE,
+          unlock.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/lock",
+          unlock.retryable == false
+        )
+      },
       test("builds paginated follower and following list requests") {
         val followers = GiteaRequests.userFollowers(config, "space user/slash", page = 2)
         val following = GiteaRequests.userFollowing(config, "space user/slash", page = 3)
@@ -654,6 +693,17 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           labels.decode(labels.request.send(backend)).map(_.map(_.name)) ==
             Right(Chunk(Some("kind/api"), Some("status/ready"))),
           clear.decode(clear.request.send(backend)) == Right(())
+        )
+      },
+      test("decodes empty issue lock and unlock responses") {
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val lock = GiteaRequests.lockIssue(config, "owner", "repo", 12, LockIssueOption(Some("resolved")))
+        val unlock = GiteaRequests.unlockIssue(config, "owner", "repo", 12)
+
+        assertTrue(
+          lock.decode(lock.request.send(backend)) == Right(()),
+          unlock.decode(unlock.request.send(backend)) == Right(())
         )
       },
       test("decodes single issue and paginated user list responses") {

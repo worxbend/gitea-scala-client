@@ -10,7 +10,7 @@ import io.worxbend.gitea4s.http.{
   UserSearchParams
 }
 import io.worxbend.gitea4s.internal.GiteaRequestExecutor
-import io.worxbend.gitea4s.model.{Auth, CreateIssue, EditIssue}
+import io.worxbend.gitea4s.model.{Auth, CreateIssue, EditIssue, LockIssueOption}
 import sttp.capabilities.Effect
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -205,6 +205,32 @@ object GiteaClientSpec extends ZIOSpecDefault:
           added.map(_.name) == Chunk(Some("priority/high")),
           removed == Right(()),
           cleared == Right(())
+        )
+      },
+      test("locks and unlocks an issue through the IssuesApi lock methods") {
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.PUT &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "lock")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""lock_reason":"resolved"""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "lock"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          locked <- client.lock("owner", "repo", 8, LockIssueOption(lockReason = Some("resolved"))).either
+          unlocked <- client.unlock("owner", "repo", 8).either
+        yield assertTrue(
+          locked == Right(()),
+          unlocked == Right(())
         )
       },
       test("loads an organization through the OrgsApi facade") {

@@ -267,3 +267,10 @@
 2026-06-18T09:16:10Z validation passed commands="./mill --no-server core.test; ./mill --no-server client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile; ./mill --no-server __.test; ./mill --no-server it.test; ./mill --no-server examples.run; ./mill --no-server compatibility.check; ./mill --no-server __.docJar __.sourceJar __.publishArtifacts; ./mill --no-server __.publishM2Local"
 2026-06-18T09:16:10Z checkpoint commit created message="Add issue label management API"
 2026-06-18T09:16:10Z iteration 9 completed validation_status=0
+2026-06-18T09:17:10Z iteration 9 no changes to commit
+2026-06-18T09:17:10Z iteration 9 completed validation_status=0
+2026-06-18T09:17:10Z iteration 10 started remaining=14498s
+2026-06-18T09:21:30Z added typed issue lock/unlock API with LockIssueOption, request builders, facade wiring, tests, README, changelog, PLAN, and API snapshots
+2026-06-18T09:21:30Z validation passed commands="./mill --no-server core.test; ./mill --no-server client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T09:21:58Z checkpoint commit created message="Add issue lock API"
+2026-06-18T09:21:58Z iteration 10 completed validation_status=0

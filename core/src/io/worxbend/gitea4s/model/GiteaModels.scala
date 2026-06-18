@@ -237,6 +237,13 @@ final case class IssueLabelsOption(
 object IssueLabelsOption:
   given JsonCodec[IssueLabelsOption] = DeriveJsonCodec.gen[IssueLabelsOption]
 
+final case class LockIssueOption(
+    @jsonField("lock_reason") lockReason: Option[String] = None
+)
+
+object LockIssueOption:
+  given JsonCodec[LockIssueOption] = DeriveJsonCodec.gen[LockIssueOption]
+
 final case class Comment(
     id: Option[Long] = None,
     body: Option[String] = None,
