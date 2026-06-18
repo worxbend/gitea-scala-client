@@ -34,6 +34,8 @@ surface is still being filled out.
   `repoDownloadPullDiffOrPatch` request construction.
 - Typed pull-request merge status checks with `repoPullRequestIsMerged` request
   construction and endpoint-specific 204/404 boolean decoding.
+- Typed pull-request review streaming with `PullReview`, `PullReviewState`, and
+  `repoListPullReviews` request construction.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

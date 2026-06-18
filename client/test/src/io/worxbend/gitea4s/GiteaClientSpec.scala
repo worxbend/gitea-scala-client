@@ -25,7 +25,8 @@ import io.worxbend.gitea4s.model.{
   EditIssueComment,
   EditReactionOption,
   IssueMeta,
-  LockIssueOption
+  LockIssueOption,
+  PullReviewState
 }
 import sttp.capabilities.Effect
 import sttp.client4.*
@@ -946,6 +947,19 @@ object GiteaClientSpec extends ZIOSpecDefault:
             .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "3", "merge")))
             .thenRespond(ResponseStub.adjust("", StatusCode.NotFound))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews")))
+            .thenRespondCyclic(
+              ResponseStub.adjust(
+                """[{"id":10,"state":"APPROVED","body":"Looks good"}]""",
+                StatusCode.Ok,
+                twoPageHeaders
+              ),
+              ResponseStub.adjust(
+                """[{"id":11,"state":"REQUEST_CHANGES","body":"Please update docs"}]""",
+                StatusCode.Ok,
+                twoPageHeaders
+              )
+            )
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2.patch")))
             .thenRespond(ResponseStub.adjust("From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001"))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "pinned")))
@@ -985,6 +999,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequest <- client.pullRequest("alice", "api", 2)
           merged <- client.pullRequestIsMerged("alice", "api", 2)
           notMerged <- client.pullRequestIsMerged("alice", "api", 3)
+          reviews <- client.pullRequestReviews("alice", "api", 2).runCollect
           pullRequestPatch <- client.pullRequestDiffOrPatch("alice", "api", 2, PullRequestDiffType.Patch)
           pinnedPullRequests <- client.pinnedPullRequests("alice", "api")
           pullRequestByBaseHead <- client.pullRequestByBaseHead("alice", "api", "main", "feature")
@@ -996,6 +1011,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequest.title.contains("Second"),
           merged,
           !notMerged,
+          reviews.map(_.state) == Chunk(Some(PullReviewState.Approved), Some(PullReviewState.RequestChanges)),
           pullRequestPatch.startsWith("From 0000000000000000000000000000000000000000"),
           pinnedPullRequests.map(_.number) == Chunk(Some(3L)),
           pullRequestByBaseHead.number.contains(4L),

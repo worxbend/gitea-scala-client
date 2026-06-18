@@ -27,6 +27,7 @@ import io.worxbend.gitea4s.model.{
   Organization,
   Page,
   PullRequest,
+  PullReview,
   Reaction,
   Release,
   Repository,
@@ -252,6 +253,23 @@ object GiteaRequests:
       List("repos", owner, repo, "pulls", index.toString, "merge"),
       Nil,
       GiteaResponseMapper.decodeNoContentOrNotFoundBoolean
+    )
+
+  def repoPullReviews(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      page: Int = 1
+  ): GiteaRequest[Page[PullReview]] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      GiteaEndpoints.repoListPullReviews,
+      List("repos", owner, repo, "pulls", index.toString, "reviews"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[PullReview](response, page, pageSize)
     )
 
   def repoPullRequestDiffOrPatch(

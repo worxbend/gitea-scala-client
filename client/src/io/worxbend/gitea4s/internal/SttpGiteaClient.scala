@@ -41,6 +41,7 @@ import io.worxbend.gitea4s.model.{
   NotificationThread,
   Organization,
   PullRequest,
+  PullReview,
   Reaction,
   Release,
   Repository,
@@ -165,6 +166,11 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def pullRequestIsMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean] =
     executor.send(GiteaRequests.repoPullRequestIsMerged(config, owner, repo, index))
+
+  override def pullRequestReviews(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, PullReview] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoPullReviews(config, owner, repo, index, page))
+    }
 
   override def pullRequestDiffOrPatch(
       owner: String,

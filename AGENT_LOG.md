@@ -379,3 +379,9 @@
 2026-06-18T12:10:00Z validation passed commands="git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
 2026-06-18T12:11:00Z checkpoint commit created message="Add pull request merge status API"
 2026-06-18T12:11:00Z iteration 11 completed validation_status=0
+2026-06-18T12:04:58Z iteration 11 no changes to commit
+2026-06-18T12:04:58Z iteration 11 completed validation_status=0
+2026-06-18T12:04:58Z iteration 12 started remaining=13339s
+2026-06-18T12:12:00Z added typed pull-request review streaming with PullReview/PullReviewState, repoListPullReviews request builder, facade wiring, tests, README, CHANGELOG, PLAN, and API snapshots
+2026-06-18T12:12:00Z validation passed commands="./mill --no-server core.test; ./mill --no-server client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T12:12:00Z checkpoint commit created message="Add pull request reviews API"

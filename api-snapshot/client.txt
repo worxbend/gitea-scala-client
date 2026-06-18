@@ -499,6 +499,7 @@ public interface io.worxbend.gitea4s.api.PullRequestsApi {
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> pullRequestByBaseHead(java.lang.String, java.lang.String, java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> pullRequest(java.lang.String, java.lang.String, long);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.Object> pullRequestIsMerged(java.lang.String, java.lang.String, long);
+  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> pullRequestReviews(java.lang.String, java.lang.String, long);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.String> pullRequestDiffOrPatch(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestDiffType, scala.Option<java.lang.Object>);
   public static scala.Option pullRequestDiffOrPatch$default$5$(io.worxbend.gitea4s.api.PullRequestsApi);
   public default scala.Option<java.lang.Object> pullRequestDiffOrPatch$default$5();
@@ -645,6 +646,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListPinnedIssues();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListPinnedPullRequests();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListPullRequests();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoListPullReviews();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListReleases();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListTags();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListTopics();
@@ -684,6 +686,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetPullRequestByBaseHead();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetPullRequest();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoPullRequestIsMerged();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoListPullReviews();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoDownloadPullDiffOrPatch();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetPullRequestFiles();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetPullRequestCommits();
@@ -884,6 +887,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.ChangedFile>> repoPullRequestFiles(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestFilesParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<java.lang.Object> repoPullRequestIsMerged(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.PullRequest>> repoPullRequests(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.PullRequestListParams);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.PullReview>> repoPullReviews(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Release> repoRelease(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Release>> repoReleases(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Tag>> repoTags(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
@@ -925,6 +929,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.IssueTrackedTimeListParams issueTrackedTimes$default$5();
   public static io.worxbend.gitea4s.http.PullRequestCommitsParams repoPullRequestCommits$default$5();
   public static io.worxbend.gitea4s.http.PullRequestFilesParams repoPullRequestFiles$default$5();
+  public static int repoPullReviews$default$5();
   public static scala.Option<java.lang.Object> repoPullRequestDiffOrPatch$default$6();
 }
 
@@ -964,6 +969,8 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> repoPullRequestByBaseHead(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> repoPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public io.worxbend.gitea4s.http.GiteaRequest<java.lang.Object> repoPullRequestIsMerged(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.PullReview>> repoPullReviews(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, int);
+  public int repoPullReviews$default$5();
   public io.worxbend.gitea4s.http.GiteaRequest<java.lang.String> repoPullRequestDiffOrPatch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestDiffType, scala.Option<java.lang.Object>);
   public scala.Option<java.lang.Object> repoPullRequestDiffOrPatch$default$6();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.ChangedFile>> repoPullRequestFiles(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestFilesParams);

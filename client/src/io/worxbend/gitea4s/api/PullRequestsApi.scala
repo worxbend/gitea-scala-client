@@ -7,7 +7,7 @@ import io.worxbend.gitea4s.http.{
   PullRequestFilesParams,
   PullRequestListParams
 }
-import io.worxbend.gitea4s.model.{ChangedFile, Commit, PullRequest}
+import io.worxbend.gitea4s.model.{ChangedFile, Commit, PullRequest, PullReview}
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
@@ -25,6 +25,8 @@ trait PullRequestsApi:
   def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest]
 
   def pullRequestIsMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean]
+
+  def pullRequestReviews(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, PullReview]
 
   def pullRequestDiffOrPatch(
       owner: String,

@@ -406,6 +406,26 @@ final case class PullRequest(
 object PullRequest:
   given JsonCodec[PullRequest] = DeriveJsonCodec.gen[PullRequest]
 
+final case class PullReview(
+    body: Option[String] = None,
+    @jsonField("comments_count") commentsCount: Option[Long] = None,
+    @jsonField("commit_id") commitId: Option[String] = None,
+    dismissed: Option[Boolean] = None,
+    @jsonField("html_url") htmlUrl: Option[String] = None,
+    id: Option[Long] = None,
+    official: Option[Boolean] = None,
+    @jsonField("pull_request_url") pullRequestUrl: Option[String] = None,
+    stale: Option[Boolean] = None,
+    state: Option[PullReviewState] = None,
+    @jsonField("submitted_at") submittedAt: Option[Instant] = None,
+    team: Option[Team] = None,
+    @jsonField("updated_at") updatedAt: Option[Instant] = None,
+    user: Option[User] = None
+)
+
+object PullReview:
+  given JsonCodec[PullReview] = DeriveJsonCodec.gen[PullReview]
+
 final case class ChangedFile(
     additions: Option[Long] = None,
     changes: Option[Long] = None,

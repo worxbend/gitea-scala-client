@@ -13,8 +13,9 @@ and zio-json.
 - Implemented surface: typed core models/codecs plus users, organizations,
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
-  releases, pull requests including pinned pull-request reads and diff/patch
-  downloads plus merge-status checks, and notifications through a ZIO client API
+  releases, pull requests including reviews, pinned pull-request reads,
+  diff/patch downloads, and merge-status checks, and notifications through a
+  ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -279,9 +280,9 @@ Write requests are not retried by default.
 
 ## Pull Requests
 
-Pull-request reads include paginated list/get methods, changed-file and commit
-streams, raw diff/patch downloads, merge-status checks, and the repository
-pinned pull-request list:
+Pull-request reads include paginated list/get methods, review, changed-file, and
+commit streams, raw diff/patch downloads, merge-status checks, and the
+repository pinned pull-request list:
 
 ```scala
 import io.worxbend.gitea4s.http.PullRequestDiffType
@@ -290,6 +291,7 @@ client.pullRequests(owner = "my-org", repo = "my-repo").take(25).runCollect
 client.pullRequest(owner = "my-org", repo = "my-repo", index = 7)
 client.pullRequestByBaseHead(owner = "my-org", repo = "my-repo", base = "main", head = "feature")
 client.pullRequestIsMerged(owner = "my-org", repo = "my-repo", index = 7)
+client.pullRequestReviews(owner = "my-org", repo = "my-repo", index = 7).take(50).runCollect
 client.pullRequestDiffOrPatch(owner = "my-org", repo = "my-repo", index = 7, diffType = PullRequestDiffType.Diff)
 client.pullRequestFiles(owner = "my-org", repo = "my-repo", index = 7).take(50).runCollect
 client.pullRequestCommits(owner = "my-org", repo = "my-repo", index = 7).take(50).runCollect

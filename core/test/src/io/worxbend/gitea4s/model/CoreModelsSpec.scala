@@ -480,12 +480,31 @@ object CoreModelsSpec extends ZIOSpecDefault:
             |  "stats": { "additions": 10, "deletions": 2, "total": 12 }
             |}""".stripMargin
 
+        val pullReviewJson =
+          """{
+            |  "id": 900,
+            |  "body": "Looks good",
+            |  "comments_count": 2,
+            |  "commit_id": "abc123",
+            |  "dismissed": false,
+            |  "html_url": "https://gitea.example/octo/gitea4s/pulls/4#pullreview-900",
+            |  "official": true,
+            |  "pull_request_url": "https://gitea.example/octo/gitea4s/pulls/4",
+            |  "stale": false,
+            |  "state": "APPROVED",
+            |  "submitted_at": "2026-06-04T12:00:00Z",
+            |  "team": { "id": 10, "name": "maintainers", "permission": "write" },
+            |  "updated_at": "2026-06-04T12:01:00Z",
+            |  "user": { "id": 43, "login": "reviewer" }
+            |}""".stripMargin
+
         val pullRequest = pullRequestJson.fromJson[PullRequest]
         val release = releaseJson.fromJson[Release]
         val branch = branchJson.fromJson[Branch]
         val tag = tagJson.fromJson[Tag]
         val changedFile = changedFileJson.fromJson[ChangedFile]
         val commit = commitJson.fromJson[Commit]
+        val pullReview = pullReviewJson.fromJson[PullReview]
 
         assertTrue(
           pullRequest.map(_.state) == Right(Some(IssueState.Closed)),
@@ -501,7 +520,13 @@ object CoreModelsSpec extends ZIOSpecDefault:
           commit.map(_.commit.flatMap(_.message)) == Right(Some("Implement pull request commits")),
           commit.map(_.commit.flatMap(_.verification.flatMap(_.verified))) == Right(Some(true)),
           commit.map(_.files.flatMap(_.headOption).flatMap(_.filename)) == Right(Some("src/Main.scala")),
-          commit.map(_.stats.flatMap(_.total)) == Right(Some(12L))
+          commit.map(_.stats.flatMap(_.total)) == Right(Some(12L)),
+          pullReview.map(_.state) == Right(Some(PullReviewState.Approved)),
+          pullReview.map(_.commentsCount) == Right(Some(2L)),
+          pullReview.map(_.commitId) == Right(Some("abc123")),
+          pullReview.map(_.submittedAt) == Right(Some(Instant.parse("2026-06-04T12:00:00Z"))),
+          pullReview.map(_.team.flatMap(_.permission)) == Right(Some(TeamPermission.Write)),
+          pullReview.map(_.user.flatMap(_.login)) == Right(Some("reviewer"))
         )
       },
       test("round-trips representative models through zio-json") {
@@ -540,8 +565,9 @@ object CoreModelsSpec extends ZIOSpecDefault:
         val repository = """{ "id": 1, "object_format_name": "md5" }""".fromJson[Repository]
         val notificationSubject =
           """{ "title": "Invalid", "state": "stale", "type": "Message" }""".fromJson[NotificationSubject]
+        val pullReview = """{ "id": 1, "state": "STALE" }""".fromJson[PullReview]
 
-        assertTrue(issue.isLeft, repository.isLeft, notificationSubject.isLeft)
+        assertTrue(issue.isLeft, repository.isLeft, notificationSubject.isLeft, pullReview.isLeft)
       },
       test("models auth modes and core error ADT values") {
         val auth: Auth = Auth.Basic("octo", "secret")

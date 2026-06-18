@@ -72,3 +72,19 @@ object NotificationSubjectType:
 
   given JsonCodec[NotificationSubjectType] =
     summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+
+enum PullReviewState(val jsonValue: String):
+  case Approved extends PullReviewState("APPROVED")
+  case Pending extends PullReviewState("PENDING")
+  case Comment extends PullReviewState("COMMENT")
+  case RequestChanges extends PullReviewState("REQUEST_CHANGES")
+  case RequestReview extends PullReviewState("REQUEST_REVIEW")
+
+object PullReviewState:
+  private val byJsonValue = PullReviewState.values.map(state => state.jsonValue -> state).toMap
+
+  def fromString(value: String): Either[String, PullReviewState] =
+    byJsonValue.get(value).toRight(s"Unknown pull review state: $value")
+
+  given JsonCodec[PullReviewState] =
+    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
