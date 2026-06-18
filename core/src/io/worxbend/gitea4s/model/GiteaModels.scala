@@ -426,6 +426,27 @@ final case class PullReview(
 object PullReview:
   given JsonCodec[PullReview] = DeriveJsonCodec.gen[PullReview]
 
+final case class PullReviewComment(
+    body: Option[String] = None,
+    @jsonField("commit_id") commitId: Option[String] = None,
+    @jsonField("created_at") createdAt: Option[Instant] = None,
+    @jsonField("diff_hunk") diffHunk: Option[String] = None,
+    @jsonField("html_url") htmlUrl: Option[String] = None,
+    id: Option[Long] = None,
+    @jsonField("original_commit_id") originalCommitId: Option[String] = None,
+    @jsonField("original_position") originalPosition: Option[Long] = None,
+    path: Option[String] = None,
+    position: Option[Long] = None,
+    @jsonField("pull_request_review_id") pullRequestReviewId: Option[Long] = None,
+    @jsonField("pull_request_url") pullRequestUrl: Option[String] = None,
+    resolver: Option[User] = None,
+    @jsonField("updated_at") updatedAt: Option[Instant] = None,
+    user: Option[User] = None
+)
+
+object PullReviewComment:
+  given JsonCodec[PullReviewComment] = DeriveJsonCodec.gen[PullReviewComment]
+
 final case class ChangedFile(
     additions: Option[Long] = None,
     changes: Option[Long] = None,

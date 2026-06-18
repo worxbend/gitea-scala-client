@@ -36,6 +36,9 @@ surface is still being filled out.
   construction and endpoint-specific 204/404 boolean decoding.
 - Typed pull-request review streaming with `PullReview`, `PullReviewState`, and
   `repoListPullReviews` request construction.
+- Typed pull-request review detail, comment listing, and deletion with
+  `PullReviewComment`, `repoGetPullReview`, `repoGetPullReviewComments`, and
+  `repoDeletePullReview` request construction.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

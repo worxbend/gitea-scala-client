@@ -2865,6 +2865,111 @@ public final class io.worxbend.gitea4s.model.PullReview$ implements scala.derivi
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.PullReviewComment
+public final class io.worxbend.gitea4s.model.PullReviewComment implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.PullReviewComment(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.User>, scala.Option<java.time.Instant>, scala.Option<io.worxbend.gitea4s.model.User>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.String> body();
+  public scala.Option<java.lang.String> commitId();
+  public scala.Option<java.time.Instant> createdAt();
+  public scala.Option<java.lang.String> diffHunk();
+  public scala.Option<java.lang.String> htmlUrl();
+  public scala.Option<java.lang.Object> id();
+  public scala.Option<java.lang.String> originalCommitId();
+  public scala.Option<java.lang.Object> originalPosition();
+  public scala.Option<java.lang.String> path();
+  public scala.Option<java.lang.Object> position();
+  public scala.Option<java.lang.Object> pullRequestReviewId();
+  public scala.Option<java.lang.String> pullRequestUrl();
+  public scala.Option<io.worxbend.gitea4s.model.User> resolver();
+  public scala.Option<java.time.Instant> updatedAt();
+  public scala.Option<io.worxbend.gitea4s.model.User> user();
+  public io.worxbend.gitea4s.model.PullReviewComment copy(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.User>, scala.Option<java.time.Instant>, scala.Option<io.worxbend.gitea4s.model.User>);
+  public scala.Option<java.lang.String> copy$default$1();
+  public scala.Option<java.lang.String> copy$default$2();
+  public scala.Option<java.time.Instant> copy$default$3();
+  public scala.Option<java.lang.String> copy$default$4();
+  public scala.Option<java.lang.String> copy$default$5();
+  public scala.Option<java.lang.Object> copy$default$6();
+  public scala.Option<java.lang.String> copy$default$7();
+  public scala.Option<java.lang.Object> copy$default$8();
+  public scala.Option<java.lang.String> copy$default$9();
+  public scala.Option<java.lang.Object> copy$default$10();
+  public scala.Option<java.lang.Object> copy$default$11();
+  public scala.Option<java.lang.String> copy$default$12();
+  public scala.Option<io.worxbend.gitea4s.model.User> copy$default$13();
+  public scala.Option<java.time.Instant> copy$default$14();
+  public scala.Option<io.worxbend.gitea4s.model.User> copy$default$15();
+  public scala.Option<java.lang.String> _1();
+  public scala.Option<java.lang.String> _2();
+  public scala.Option<java.time.Instant> _3();
+  public scala.Option<java.lang.String> _4();
+  public scala.Option<java.lang.String> _5();
+  public scala.Option<java.lang.Object> _6();
+  public scala.Option<java.lang.String> _7();
+  public scala.Option<java.lang.Object> _8();
+  public scala.Option<java.lang.String> _9();
+  public scala.Option<java.lang.Object> _10();
+  public scala.Option<java.lang.Object> _11();
+  public scala.Option<java.lang.String> _12();
+  public scala.Option<io.worxbend.gitea4s.model.User> _13();
+  public scala.Option<java.time.Instant> _14();
+  public scala.Option<io.worxbend.gitea4s.model.User> _15();
+  public static io.worxbend.gitea4s.model.PullReviewComment apply(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.User>, scala.Option<java.time.Instant>, scala.Option<io.worxbend.gitea4s.model.User>);
+  public static io.worxbend.gitea4s.model.PullReviewComment fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.PullReviewComment> given_JsonCodec_PullReviewComment();
+  public static io.worxbend.gitea4s.model.PullReviewComment unapply(io.worxbend.gitea4s.model.PullReviewComment);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public static scala.Option<java.time.Instant> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$4();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$5();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$6();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$7();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$8();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$9();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$10();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$11();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$12();
+  public static scala.Option<io.worxbend.gitea4s.model.User> $lessinit$greater$default$13();
+  public static scala.Option<java.time.Instant> $lessinit$greater$default$14();
+  public static scala.Option<io.worxbend.gitea4s.model.User> $lessinit$greater$default$15();
+}
+
+## io.worxbend.gitea4s.model.PullReviewComment$
+public final class io.worxbend.gitea4s.model.PullReviewComment$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.PullReviewComment$ MODULE$;
+  public io.worxbend.gitea4s.model.PullReviewComment apply(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.User>, scala.Option<java.time.Instant>, scala.Option<io.worxbend.gitea4s.model.User>);
+  public io.worxbend.gitea4s.model.PullReviewComment unapply(io.worxbend.gitea4s.model.PullReviewComment);
+  public scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public scala.Option<java.time.Instant> $lessinit$greater$default$3();
+  public scala.Option<java.lang.String> $lessinit$greater$default$4();
+  public scala.Option<java.lang.String> $lessinit$greater$default$5();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$6();
+  public scala.Option<java.lang.String> $lessinit$greater$default$7();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$8();
+  public scala.Option<java.lang.String> $lessinit$greater$default$9();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$10();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$11();
+  public scala.Option<java.lang.String> $lessinit$greater$default$12();
+  public scala.Option<io.worxbend.gitea4s.model.User> $lessinit$greater$default$13();
+  public scala.Option<java.time.Instant> $lessinit$greater$default$14();
+  public scala.Option<io.worxbend.gitea4s.model.User> $lessinit$greater$default$15();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.PullReviewComment> given_JsonCodec_PullReviewComment();
+  public io.worxbend.gitea4s.model.PullReviewComment fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.PullReviewState
 public abstract class io.worxbend.gitea4s.model.PullReviewState implements scala.reflect.Enum {
   public io.worxbend.gitea4s.model.PullReviewState(java.lang.String);

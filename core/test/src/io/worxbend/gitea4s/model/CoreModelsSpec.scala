@@ -498,6 +498,25 @@ object CoreModelsSpec extends ZIOSpecDefault:
             |  "user": { "id": 43, "login": "reviewer" }
             |}""".stripMargin
 
+        val pullReviewCommentJson =
+          """{
+            |  "id": 901,
+            |  "body": "Please rename this",
+            |  "commit_id": "abc123",
+            |  "created_at": "2026-06-04T12:02:00Z",
+            |  "diff_hunk": "@@ -1,1 +1,1 @@",
+            |  "html_url": "https://gitea.example/octo/gitea4s/pulls/4#discussion_r901",
+            |  "original_commit_id": "def456",
+            |  "original_position": 3,
+            |  "path": "src/Main.scala",
+            |  "position": 4,
+            |  "pull_request_review_id": 900,
+            |  "pull_request_url": "https://gitea.example/octo/gitea4s/pulls/4",
+            |  "resolver": { "id": 44, "login": "resolver" },
+            |  "updated_at": "2026-06-04T12:03:00Z",
+            |  "user": { "id": 43, "login": "reviewer" }
+            |}""".stripMargin
+
         val pullRequest = pullRequestJson.fromJson[PullRequest]
         val release = releaseJson.fromJson[Release]
         val branch = branchJson.fromJson[Branch]
@@ -505,6 +524,7 @@ object CoreModelsSpec extends ZIOSpecDefault:
         val changedFile = changedFileJson.fromJson[ChangedFile]
         val commit = commitJson.fromJson[Commit]
         val pullReview = pullReviewJson.fromJson[PullReview]
+        val pullReviewComment = pullReviewCommentJson.fromJson[PullReviewComment]
 
         assertTrue(
           pullRequest.map(_.state) == Right(Some(IssueState.Closed)),
@@ -526,7 +546,13 @@ object CoreModelsSpec extends ZIOSpecDefault:
           pullReview.map(_.commitId) == Right(Some("abc123")),
           pullReview.map(_.submittedAt) == Right(Some(Instant.parse("2026-06-04T12:00:00Z"))),
           pullReview.map(_.team.flatMap(_.permission)) == Right(Some(TeamPermission.Write)),
-          pullReview.map(_.user.flatMap(_.login)) == Right(Some("reviewer"))
+          pullReview.map(_.user.flatMap(_.login)) == Right(Some("reviewer")),
+          pullReviewComment.map(_.commitId) == Right(Some("abc123")),
+          pullReviewComment.map(_.originalCommitId) == Right(Some("def456")),
+          pullReviewComment.map(_.originalPosition) == Right(Some(3L)),
+          pullReviewComment.map(_.pullRequestReviewId) == Right(Some(900L)),
+          pullReviewComment.map(_.resolver.flatMap(_.login)) == Right(Some("resolver")),
+          pullReviewComment.map(_.updatedAt) == Right(Some(Instant.parse("2026-06-04T12:03:00Z")))
         )
       },
       test("round-trips representative models through zio-json") {

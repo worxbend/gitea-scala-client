@@ -286,6 +286,48 @@ object GiteaEndpoints:
       response = "#/responses/PullReviewList"
     )
 
+  val repoGetPullReview: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/pulls/{index}/reviews/{id}",
+      operationId = "repoGetPullReview",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("id", "path", required = true)
+      ),
+      response = "#/responses/PullReview"
+    )
+
+  val repoDeletePullReview: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/pulls/{index}/reviews/{id}",
+      operationId = "repoDeletePullReview",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("id", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
+  val repoGetPullReviewComments: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/pulls/{index}/reviews/{id}/comments",
+      operationId = "repoGetPullReviewComments",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("id", "path", required = true)
+      ),
+      response = "#/responses/PullReviewCommentList"
+    )
+
   val repoDownloadPullDiffOrPatch: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

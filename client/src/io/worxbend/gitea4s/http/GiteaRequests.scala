@@ -28,6 +28,7 @@ import io.worxbend.gitea4s.model.{
   Page,
   PullRequest,
   PullReview,
+  PullReviewComment,
   Reaction,
   Release,
   Repository,
@@ -270,6 +271,50 @@ object GiteaRequests:
       List("repos", owner, repo, "pulls", index.toString, "reviews"),
       pageQuery(page, pageSize),
       response => GiteaResponseMapper.decodePage[PullReview](response, page, pageSize)
+    )
+
+  def repoPullReview(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long
+  ): GiteaRequest[PullReview] =
+    get(
+      config,
+      GiteaEndpoints.repoGetPullReview,
+      List("repos", owner, repo, "pulls", index.toString, "reviews", id.toString),
+      Nil,
+      GiteaResponseMapper.decodeJson[PullReview]
+    )
+
+  def deletePullReview(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long
+  ): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.repoDeletePullReview,
+      List("repos", owner, repo, "pulls", index.toString, "reviews", id.toString),
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def repoPullReviewComments(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long
+  ): GiteaRequest[zio.Chunk[PullReviewComment]] =
+    get(
+      config,
+      GiteaEndpoints.repoGetPullReviewComments,
+      List("repos", owner, repo, "pulls", index.toString, "reviews", id.toString, "comments"),
+      Nil,
+      GiteaResponseMapper.decodeChunk[PullReviewComment]
     )
 
   def repoPullRequestDiffOrPatch(

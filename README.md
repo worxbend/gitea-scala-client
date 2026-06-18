@@ -280,9 +280,9 @@ Write requests are not retried by default.
 
 ## Pull Requests
 
-Pull-request reads include paginated list/get methods, review, changed-file, and
-commit streams, raw diff/patch downloads, merge-status checks, and the
-repository pinned pull-request list:
+Pull-request reads include paginated list/get methods, review detail and comment
+methods, changed-file and commit streams, raw diff/patch downloads, merge-status
+checks, and the repository pinned pull-request list:
 
 ```scala
 import io.worxbend.gitea4s.http.PullRequestDiffType
@@ -292,6 +292,9 @@ client.pullRequest(owner = "my-org", repo = "my-repo", index = 7)
 client.pullRequestByBaseHead(owner = "my-org", repo = "my-repo", base = "main", head = "feature")
 client.pullRequestIsMerged(owner = "my-org", repo = "my-repo", index = 7)
 client.pullRequestReviews(owner = "my-org", repo = "my-repo", index = 7).take(50).runCollect
+client.pullRequestReview(owner = "my-org", repo = "my-repo", index = 7, id = 20)
+client.pullRequestReviewComments(owner = "my-org", repo = "my-repo", index = 7, id = 20)
+client.deletePullRequestReview(owner = "my-org", repo = "my-repo", index = 7, id = 20)
 client.pullRequestDiffOrPatch(owner = "my-org", repo = "my-repo", index = 7, diffType = PullRequestDiffType.Diff)
 client.pullRequestFiles(owner = "my-org", repo = "my-repo", index = 7).take(50).runCollect
 client.pullRequestCommits(owner = "my-org", repo = "my-repo", index = 7).take(50).runCollect

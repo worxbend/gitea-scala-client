@@ -42,6 +42,7 @@ import io.worxbend.gitea4s.model.{
   Organization,
   PullRequest,
   PullReview,
+  PullReviewComment,
   Reaction,
   Release,
   Repository,
@@ -171,6 +172,20 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
     Pagination.paginated { page =>
       executor.send(GiteaRequests.repoPullReviews(config, owner, repo, index, page))
     }
+
+  override def pullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, PullReview] =
+    executor.send(GiteaRequests.repoPullReview(config, owner, repo, index, id))
+
+  override def deletePullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deletePullReview(config, owner, repo, index, id))
+
+  override def pullRequestReviewComments(
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long
+  ): IO[GiteaError, Chunk[PullReviewComment]] =
+    executor.send(GiteaRequests.repoPullReviewComments(config, owner, repo, index, id))
 
   override def pullRequestDiffOrPatch(
       owner: String,

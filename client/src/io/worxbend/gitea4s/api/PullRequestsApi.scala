@@ -7,7 +7,7 @@ import io.worxbend.gitea4s.http.{
   PullRequestFilesParams,
   PullRequestListParams
 }
-import io.worxbend.gitea4s.model.{ChangedFile, Commit, PullRequest, PullReview}
+import io.worxbend.gitea4s.model.{ChangedFile, Commit, PullRequest, PullReview, PullReviewComment}
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
@@ -27,6 +27,17 @@ trait PullRequestsApi:
   def pullRequestIsMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean]
 
   def pullRequestReviews(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, PullReview]
+
+  def pullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, PullReview]
+
+  def deletePullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit]
+
+  def pullRequestReviewComments(
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long
+  ): IO[GiteaError, Chunk[PullReviewComment]]
 
   def pullRequestDiffOrPatch(
       owner: String,

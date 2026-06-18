@@ -960,6 +960,20 @@ object GiteaClientSpec extends ZIOSpecDefault:
                 twoPageHeaders
               )
             )
+            .whenRequestMatches(request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews", "10"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"id":10,"state":"APPROVED","body":"Looks good"}"""))
+            .whenRequestMatches(request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews", "10"))
+            )
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+            .whenRequestMatches(
+              _.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews", "10", "comments"))
+            )
+            .thenRespond(ResponseStub.adjust("""[{"id":12,"body":"Nit","path":"README.md","position":3}]"""))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2.patch")))
             .thenRespond(ResponseStub.adjust("From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001"))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "pinned")))
@@ -1000,6 +1014,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
           merged <- client.pullRequestIsMerged("alice", "api", 2)
           notMerged <- client.pullRequestIsMerged("alice", "api", 3)
           reviews <- client.pullRequestReviews("alice", "api", 2).runCollect
+          review <- client.pullRequestReview("alice", "api", 2, 10)
+          reviewComments <- client.pullRequestReviewComments("alice", "api", 2, 10)
+          deleteReview <- client.deletePullRequestReview("alice", "api", 2, 10)
           pullRequestPatch <- client.pullRequestDiffOrPatch("alice", "api", 2, PullRequestDiffType.Patch)
           pinnedPullRequests <- client.pinnedPullRequests("alice", "api")
           pullRequestByBaseHead <- client.pullRequestByBaseHead("alice", "api", "main", "feature")
@@ -1012,6 +1029,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
           merged,
           !notMerged,
           reviews.map(_.state) == Chunk(Some(PullReviewState.Approved), Some(PullReviewState.RequestChanges)),
+          review.body.contains("Looks good"),
+          reviewComments.map(_.path) == Chunk(Some("README.md")),
+          deleteReview == (),
           pullRequestPatch.startsWith("From 0000000000000000000000000000000000000000"),
           pinnedPullRequests.map(_.number) == Chunk(Some(3L)),
           pullRequestByBaseHead.number.contains(4L),
