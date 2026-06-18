@@ -231,6 +231,14 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Issue]
     )
 
+  def deleteIssue(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.issueDelete,
+      List("repos", owner, repo, "issues", index.toString),
+      GiteaResponseMapper.decodeUnit
+    )
+
   def createIssue(config: GiteaConfig, owner: String, repo: String, body: CreateIssue): GiteaRequest[Issue] =
     postJson(
       config,

@@ -39,6 +39,8 @@ trait IssuesApi:
 
   def create(owner: String, repo: String, body: CreateIssue): IO[GiteaError, Issue]
 
+  def delete(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
+
   def edit(owner: String, repo: String, index: Long, body: EditIssue): IO[GiteaError, Issue]
 
   def close(owner: String, repo: String, index: Long): IO[GiteaError, Issue]

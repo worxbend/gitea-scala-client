@@ -171,6 +171,9 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override def create(owner: String, repo: String, body: CreateIssue): IO[GiteaError, Issue] =
     executor.send(GiteaRequests.createIssue(config, owner, repo, body))
 
+  override def delete(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteIssue(config, owner, repo, index))
+
   override def edit(owner: String, repo: String, index: Long, body: EditIssue): IO[GiteaError, Issue] =
     executor.send(GiteaRequests.editIssue(config, owner, repo, index, body))
 

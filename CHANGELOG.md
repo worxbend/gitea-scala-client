@@ -16,6 +16,7 @@ surface is still being filled out.
   releases, pull requests, and notifications.
 - Typed issue creation with `CreateIssue` and `issueCreateIssue` request
   construction.
+- Typed issue deletion with `issueDelete` request construction.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

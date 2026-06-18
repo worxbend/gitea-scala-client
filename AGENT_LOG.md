@@ -317,3 +317,10 @@
 2026-06-18T11:01:22Z added typed issue stopwatch APIs and current-user stopwatch stream with StopWatch model, request builders, facade wiring, tests, README, CHANGELOG, and PLAN updates
 2026-06-18T11:01:22Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
 2026-06-18T11:01:22Z checkpoint commit created message="Add issue stopwatch API"
+2026-06-18T11:05:33Z iteration 2 no changes to commit
+2026-06-18T11:05:33Z iteration 2 completed validation_status=0
+2026-06-18T11:05:33Z iteration 3 started remaining=16903s
+2026-06-18T11:11:11Z added typed issue deletion API with issueDelete endpoint metadata, request builder, IssuesApi facade wiring, stub-backed tests, README, CHANGELOG, PLAN, and API snapshots
+2026-06-18T11:11:11Z validation passed commands="./mill --no-server client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T11:11:11Z checkpoint commit created message="Add issue deletion API"
+2026-06-18T11:11:11Z iteration 3 completed validation_status=0

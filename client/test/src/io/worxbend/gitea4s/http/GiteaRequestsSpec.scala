@@ -322,6 +322,26 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99"
         )
       },
+      test("builds schema-traceable delete issue request") {
+        val built = GiteaRequests.deleteIssue(config, "worx bend", "gitea/scala", 99)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.issueDelete,
+          endpoint.method == "DELETE",
+          endpoint.operationId == "issueDelete",
+          endpoint.path == "/repos/{owner}/{repo}/issues/{index}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
+          endpoint.response == "#/responses/empty",
+          request.method == Method.DELETE,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99",
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == false
+        )
+      },
       test("builds schema-traceable create issue request with JSON body") {
         val body = CreateIssue(
           title = "Implement POST",

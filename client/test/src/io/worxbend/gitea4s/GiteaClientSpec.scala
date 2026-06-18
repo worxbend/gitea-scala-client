@@ -125,6 +125,18 @@ object GiteaClientSpec extends ZIOSpecDefault:
           Assertion.equalTo(Some(8L))
         )
       },
+      test("deletes an issue through the IssuesApi delete method") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.DELETE &&
+              request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8"))
+          }.thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.delete("owner", "repo", 8).either)(
+          Assertion.equalTo(Right(()))
+        )
+      },
       test("edits an issue through the IssuesApi edit method") {
         val backend =
           taskStub.whenRequestMatches { request =>

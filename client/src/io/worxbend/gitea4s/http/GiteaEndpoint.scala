@@ -257,6 +257,19 @@ object GiteaEndpoints:
       response = "#/responses/Issue"
     )
 
+  val issueDelete: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/issues/{index}",
+      operationId = "issueDelete",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
   val issueCreateIssue: GiteaEndpoint =
     GiteaEndpoint(
       method = "POST",
