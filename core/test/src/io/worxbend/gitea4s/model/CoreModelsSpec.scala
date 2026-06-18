@@ -406,6 +406,40 @@ object CoreModelsSpec extends ZIOSpecDefault:
           decoded == Right(payload)
         )
       },
+      test("round-trips pull review write payloads using schema JSON names") {
+        val comment = CreatePullReviewComment(
+          body = Some("Use the shared helper here"),
+          newPosition = Some(14L),
+          oldPosition = Some(0L),
+          path = Some("src/Main.scala")
+        )
+        val create = CreatePullReviewOptions(
+          body = Some("Review summary"),
+          comments = Some(List(comment)),
+          commitId = Some("abc123"),
+          event = Some(PullReviewState.Comment)
+        )
+        val submit = SubmitPullReviewOptions(
+          body = Some("Approved"),
+          event = Some(PullReviewState.Approved)
+        )
+        val dismiss = DismissPullReviewOptions(
+          message = Some("Superseded by a newer review"),
+          priors = Some(true)
+        )
+
+        assertTrue(
+          comment.toJson ==
+            """{"body":"Use the shared helper here","new_position":14,"old_position":0,"path":"src/Main.scala"}""",
+          create.toJson ==
+            """{"body":"Review summary","comments":[{"body":"Use the shared helper here","new_position":14,"old_position":0,"path":"src/Main.scala"}],"commit_id":"abc123","event":"COMMENT"}""",
+          create.toJson.fromJson[CreatePullReviewOptions] == Right(create),
+          submit.toJson == """{"body":"Approved","event":"APPROVED"}""",
+          submit.toJson.fromJson[SubmitPullReviewOptions] == Right(submit),
+          dismiss.toJson == """{"message":"Superseded by a newer review","priors":true}""",
+          dismiss.toJson.fromJson[DismissPullReviewOptions] == Right(dismiss)
+        )
+      },
       test("decodes pull request, release, branch, and tag payloads") {
         val pullRequestJson =
           """{

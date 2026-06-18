@@ -280,14 +280,21 @@ Write requests are not retried by default.
 
 ## Pull Requests
 
-Pull-request support includes paginated list/get methods, review request
-creation/cancellation, review detail and comment methods, changed-file and
-commit streams, raw diff/patch downloads, merge-status checks, and the
+Pull-request support includes paginated list/get methods, review creation,
+submission, dismissal, undismissal, review request creation/cancellation,
+review detail and comment methods, changed-file and commit streams, raw
+diff/patch downloads, merge-status checks, and the
 repository pinned pull-request list:
 
 ```scala
 import io.worxbend.gitea4s.http.PullRequestDiffType
-import io.worxbend.gitea4s.model.PullReviewRequestOptions
+import io.worxbend.gitea4s.model.{
+  CreatePullReviewOptions,
+  DismissPullReviewOptions,
+  PullReviewRequestOptions,
+  PullReviewState,
+  SubmitPullReviewOptions
+}
 
 client.pullRequests(owner = "my-org", repo = "my-repo").take(25).runCollect
 client.pullRequest(owner = "my-org", repo = "my-repo", index = 7)
@@ -306,7 +313,28 @@ client.cancelPullReviewRequests(
   body = PullReviewRequestOptions(reviewers = Some(List("reviewer")))
 )
 client.pullRequestReviews(owner = "my-org", repo = "my-repo", index = 7).take(50).runCollect
+client.createPullRequestReview(
+  owner = "my-org",
+  repo = "my-repo",
+  index = 7,
+  body = CreatePullReviewOptions(body = Some("Looks good"), event = Some(PullReviewState.Comment))
+)
 client.pullRequestReview(owner = "my-org", repo = "my-repo", index = 7, id = 20)
+client.submitPullRequestReview(
+  owner = "my-org",
+  repo = "my-repo",
+  index = 7,
+  id = 20,
+  body = SubmitPullReviewOptions(body = Some("Approved"), event = Some(PullReviewState.Approved))
+)
+client.dismissPullRequestReview(
+  owner = "my-org",
+  repo = "my-repo",
+  index = 7,
+  id = 20,
+  body = DismissPullReviewOptions(message = Some("outdated"))
+)
+client.undismissPullRequestReview(owner = "my-org", repo = "my-repo", index = 7, id = 20)
 client.pullRequestReviewComments(owner = "my-org", repo = "my-repo", index = 7, id = 20)
 client.deletePullRequestReview(owner = "my-org", repo = "my-repo", index = 7, id = 20)
 client.pullRequestDiffOrPatch(owner = "my-org", repo = "my-repo", index = 7, diffType = PullRequestDiffType.Diff)

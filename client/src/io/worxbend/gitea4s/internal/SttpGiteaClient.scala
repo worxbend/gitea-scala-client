@@ -25,6 +25,8 @@ import io.worxbend.gitea4s.model.{
   Commit,
   CreateIssue,
   CreateIssueComment,
+  CreatePullReviewOptions,
+  DismissPullReviewOptions,
   EditDeadlineOption,
   EditIssueComment,
   EditIssue,
@@ -48,6 +50,7 @@ import io.worxbend.gitea4s.model.{
   Release,
   Repository,
   StopWatch,
+  SubmitPullReviewOptions,
   Tag,
   TrackedTime,
   User,
@@ -190,11 +193,45 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       executor.send(GiteaRequests.repoPullReviews(config, owner, repo, index, page))
     }
 
+  override def createPullRequestReview(
+      owner: String,
+      repo: String,
+      index: Long,
+      body: CreatePullReviewOptions
+  ): IO[GiteaError, PullReview] =
+    executor.send(GiteaRequests.createPullReview(config, owner, repo, index, body))
+
   override def pullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, PullReview] =
     executor.send(GiteaRequests.repoPullReview(config, owner, repo, index, id))
 
+  override def submitPullRequestReview(
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long,
+      body: SubmitPullReviewOptions
+  ): IO[GiteaError, PullReview] =
+    executor.send(GiteaRequests.submitPullReview(config, owner, repo, index, id, body))
+
   override def deletePullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.deletePullReview(config, owner, repo, index, id))
+
+  override def dismissPullRequestReview(
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long,
+      body: DismissPullReviewOptions
+  ): IO[GiteaError, PullReview] =
+    executor.send(GiteaRequests.dismissPullReview(config, owner, repo, index, id, body))
+
+  override def undismissPullRequestReview(
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long
+  ): IO[GiteaError, PullReview] =
+    executor.send(GiteaRequests.undismissPullReview(config, owner, repo, index, id))
 
   override def pullRequestReviewComments(
       owner: String,

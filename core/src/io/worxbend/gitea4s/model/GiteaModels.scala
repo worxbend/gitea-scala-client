@@ -447,6 +447,42 @@ final case class PullReviewComment(
 object PullReviewComment:
   given JsonCodec[PullReviewComment] = DeriveJsonCodec.gen[PullReviewComment]
 
+final case class CreatePullReviewComment(
+    body: Option[String] = None,
+    @jsonField("new_position") newPosition: Option[Long] = None,
+    @jsonField("old_position") oldPosition: Option[Long] = None,
+    path: Option[String] = None
+)
+
+object CreatePullReviewComment:
+  given JsonCodec[CreatePullReviewComment] = DeriveJsonCodec.gen[CreatePullReviewComment]
+
+final case class CreatePullReviewOptions(
+    body: Option[String] = None,
+    comments: Option[List[CreatePullReviewComment]] = None,
+    @jsonField("commit_id") commitId: Option[String] = None,
+    event: Option[PullReviewState] = None
+)
+
+object CreatePullReviewOptions:
+  given JsonCodec[CreatePullReviewOptions] = DeriveJsonCodec.gen[CreatePullReviewOptions]
+
+final case class SubmitPullReviewOptions(
+    body: Option[String] = None,
+    event: Option[PullReviewState] = None
+)
+
+object SubmitPullReviewOptions:
+  given JsonCodec[SubmitPullReviewOptions] = DeriveJsonCodec.gen[SubmitPullReviewOptions]
+
+final case class DismissPullReviewOptions(
+    message: Option[String] = None,
+    priors: Option[Boolean] = None
+)
+
+object DismissPullReviewOptions:
+  given JsonCodec[DismissPullReviewOptions] = DeriveJsonCodec.gen[DismissPullReviewOptions]
+
 final case class PullReviewRequestOptions(
     reviewers: Option[List[String]] = None,
     @jsonField("team_reviewers") teamReviewers: Option[List[String]] = None

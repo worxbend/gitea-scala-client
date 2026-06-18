@@ -10,10 +10,13 @@ import io.worxbend.gitea4s.http.{
 import io.worxbend.gitea4s.model.{
   ChangedFile,
   Commit,
+  CreatePullReviewOptions,
+  DismissPullReviewOptions,
   PullRequest,
   PullReview,
   PullReviewComment,
-  PullReviewRequestOptions
+  PullReviewRequestOptions,
+  SubmitPullReviewOptions
 }
 import zio.{Chunk, IO}
 import zio.stream.ZStream
@@ -49,9 +52,34 @@ trait PullRequestsApi:
 
   def pullRequestReviews(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, PullReview]
 
+  def createPullRequestReview(
+      owner: String,
+      repo: String,
+      index: Long,
+      body: CreatePullReviewOptions
+  ): IO[GiteaError, PullReview]
+
   def pullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, PullReview]
 
+  def submitPullRequestReview(
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long,
+      body: SubmitPullReviewOptions
+  ): IO[GiteaError, PullReview]
+
   def deletePullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit]
+
+  def dismissPullRequestReview(
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long,
+      body: DismissPullReviewOptions
+  ): IO[GiteaError, PullReview]
+
+  def undismissPullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, PullReview]
 
   def pullRequestReviewComments(
       owner: String,

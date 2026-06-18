@@ -20,6 +20,8 @@ import io.worxbend.gitea4s.model.{
   AddTimeOption,
   Auth,
   CreateIssue,
+  CreatePullReviewOptions,
+  DismissPullReviewOptions,
   EditDeadlineOption,
   EditIssue,
   EditIssueComment,
@@ -27,7 +29,8 @@ import io.worxbend.gitea4s.model.{
   IssueMeta,
   LockIssueOption,
   PullReviewRequestOptions,
-  PullReviewState
+  PullReviewState,
+  SubmitPullReviewOptions
 }
 import sttp.capabilities.Effect
 import sttp.client4.*
@@ -964,7 +967,15 @@ object GiteaClientSpec extends ZIOSpecDefault:
                   case _ => false)
             }
             .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
-            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews")))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews"))
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":12,"state":"COMMENT","body":"Pending notes"}"""))
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews"))
+            }
             .thenRespondCyclic(
               ResponseStub.adjust(
                 """[{"id":10,"state":"APPROVED","body":"Looks good"}]""",
@@ -977,11 +988,24 @@ object GiteaClientSpec extends ZIOSpecDefault:
                 twoPageHeaders
               )
             )
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews", "10"))
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":10,"state":"APPROVED","body":"Looks good"}"""))
             .whenRequestMatches(request =>
               request.method == Method.GET &&
                 request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews", "10"))
             )
             .thenRespond(ResponseStub.adjust("""{"id":10,"state":"APPROVED","body":"Looks good"}"""))
+            .whenRequestMatches(
+              _.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews", "10", "dismissals"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"id":10,"state":"APPROVED","dismissed":true}"""))
+            .whenRequestMatches(
+              _.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews", "10", "undismissals"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"id":10,"state":"APPROVED","dismissed":false}"""))
             .whenRequestMatches(request =>
               request.method == Method.DELETE &&
                 request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews", "10"))
@@ -1043,7 +1067,28 @@ object GiteaClientSpec extends ZIOSpecDefault:
             PullReviewRequestOptions(reviewers = Some(List("reviewer")))
           ).either
           reviews <- client.pullRequestReviews("alice", "api", 2).runCollect
+          createdReview <- client.createPullRequestReview(
+            "alice",
+            "api",
+            2,
+            CreatePullReviewOptions(body = Some("Pending notes"), event = Some(PullReviewState.Comment))
+          )
           review <- client.pullRequestReview("alice", "api", 2, 10)
+          submittedReview <- client.submitPullRequestReview(
+            "alice",
+            "api",
+            2,
+            10,
+            SubmitPullReviewOptions(body = Some("Looks good"), event = Some(PullReviewState.Approved))
+          )
+          dismissedReview <- client.dismissPullRequestReview(
+            "alice",
+            "api",
+            2,
+            10,
+            DismissPullReviewOptions(message = Some("outdated"))
+          )
+          undismissedReview <- client.undismissPullRequestReview("alice", "api", 2, 10)
           reviewComments <- client.pullRequestReviewComments("alice", "api", 2, 10)
           deleteReview <- client.deletePullRequestReview("alice", "api", 2, 10)
           pullRequestPatch <- client.pullRequestDiffOrPatch("alice", "api", 2, PullRequestDiffType.Patch)
@@ -1060,7 +1105,11 @@ object GiteaClientSpec extends ZIOSpecDefault:
           requestedReviews.map(_.state) == Chunk(Some(PullReviewState.RequestReview)),
           canceledReviewRequests == Right(()),
           reviews.map(_.state) == Chunk(Some(PullReviewState.Approved), Some(PullReviewState.RequestChanges)),
+          createdReview.state.contains(PullReviewState.Comment),
           review.body.contains("Looks good"),
+          submittedReview.state.contains(PullReviewState.Approved),
+          dismissedReview.dismissed.contains(true),
+          undismissedReview.dismissed.contains(false),
           reviewComments.map(_.path) == Chunk(Some("README.md")),
           deleteReview == (),
           pullRequestPatch.startsWith("From 0000000000000000000000000000000000000000"),

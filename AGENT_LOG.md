@@ -397,3 +397,10 @@
 2026-06-18T12:25:00Z added typed pull-request review-request creation/cancellation APIs with PullReviewRequestOptions, request builders, facade wiring, tests, README, CHANGELOG, PLAN, and API snapshots
 2026-06-18T12:25:00Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
 2026-06-18T12:25:00Z checkpoint commit created message="Add pull request review request API"
+2026-06-18T12:25:53Z iteration 14 no changes to commit
+2026-06-18T12:25:53Z iteration 14 completed validation_status=0
+2026-06-18T12:25:53Z iteration 15 started remaining=12083s
+2026-06-18T12:34:41Z added typed pull-request review create/submit/dismiss/undismiss APIs with request payload models, request builders, facade wiring, tests, README, CHANGELOG, PLAN, and API snapshots
+2026-06-18T12:34:41Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T12:35:00Z checkpoint commit created message="Add pull request review write APIs"
+2026-06-18T12:35:00Z iteration 15 completed validation_status=0

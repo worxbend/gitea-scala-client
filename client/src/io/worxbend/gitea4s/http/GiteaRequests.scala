@@ -10,6 +10,8 @@ import io.worxbend.gitea4s.model.{
   Commit,
   CreateIssue,
   CreateIssueComment,
+  CreatePullReviewOptions,
+  DismissPullReviewOptions,
   EditDeadlineOption,
   EditIssueComment,
   EditIssue,
@@ -34,6 +36,7 @@ import io.worxbend.gitea4s.model.{
   Release,
   Repository,
   StopWatch,
+  SubmitPullReviewOptions,
   Tag,
   TrackedTime,
   User,
@@ -304,6 +307,21 @@ object GiteaRequests:
       response => GiteaResponseMapper.decodePage[PullReview](response, page, pageSize)
     )
 
+  def createPullReview(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: CreatePullReviewOptions
+  ): GiteaRequest[PullReview] =
+    postJson(
+      config,
+      GiteaEndpoints.repoCreatePullReview,
+      List("repos", owner, repo, "pulls", index.toString, "reviews"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[PullReview]
+    )
+
   def repoPullReview(
       config: GiteaConfig,
       owner: String,
@@ -319,6 +337,22 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[PullReview]
     )
 
+  def submitPullReview(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long,
+      body: SubmitPullReviewOptions
+  ): GiteaRequest[PullReview] =
+    postJson(
+      config,
+      GiteaEndpoints.repoSubmitPullReview,
+      List("repos", owner, repo, "pulls", index.toString, "reviews", id.toString),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[PullReview]
+    )
+
   def deletePullReview(
       config: GiteaConfig,
       owner: String,
@@ -331,6 +365,36 @@ object GiteaRequests:
       GiteaEndpoints.repoDeletePullReview,
       List("repos", owner, repo, "pulls", index.toString, "reviews", id.toString),
       GiteaResponseMapper.decodeUnit
+    )
+
+  def dismissPullReview(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long,
+      body: DismissPullReviewOptions
+  ): GiteaRequest[PullReview] =
+    postJson(
+      config,
+      GiteaEndpoints.repoDismissPullReview,
+      List("repos", owner, repo, "pulls", index.toString, "reviews", id.toString, "dismissals"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[PullReview]
+    )
+
+  def undismissPullReview(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long
+  ): GiteaRequest[PullReview] =
+    post(
+      config,
+      GiteaEndpoints.repoUnDismissPullReview,
+      List("repos", owner, repo, "pulls", index.toString, "reviews", id.toString, "undismissals"),
+      GiteaResponseMapper.decodeJson[PullReview]
     )
 
   def repoPullReviewComments(
