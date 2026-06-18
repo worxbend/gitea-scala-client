@@ -17,6 +17,8 @@ surface is still being filled out.
 - Typed issue creation with `CreateIssue` and `issueCreateIssue` request
   construction.
 - Typed issue deletion with `issueDelete` request construction.
+- Typed issue pinning, unpinning, and pin moving with `pinIssue`,
+  `unpinIssue`, and `moveIssuePin` request construction.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

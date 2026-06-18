@@ -41,6 +41,12 @@ trait IssuesApi:
 
   def delete(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
 
+  def pin(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
+
+  def unpin(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
+
+  def movePin(owner: String, repo: String, index: Long, position: Long): IO[GiteaError, Unit]
+
   def edit(owner: String, repo: String, index: Long, body: EditIssue): IO[GiteaError, Issue]
 
   def close(owner: String, repo: String, index: Long): IO[GiteaError, Issue]

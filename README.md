@@ -11,8 +11,9 @@ and zio-json.
 - Version: `0.1.0-SNAPSHOT`
 - API reference: local `plugin-redoc-2.yaml` for Gitea API `1.26.2`
 - Implemented surface: typed core models/codecs plus users, organizations,
-  repositories, issue list/get/create/delete/deadline/label/lock/dependency/blocking/reaction/
-  subscription/tracked-time/stopwatch management, releases, pull requests, and notifications through a ZIO client API
+  repositories, issue list/get/create/delete/pin/deadline/label/lock/dependency/blocking/reaction/
+  subscription/tracked-time/stopwatch management, releases, pull requests, and
+  notifications through a ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -172,7 +173,9 @@ requests, and notification threads.
 
 ## Issue Writes
 
-The current write endpoints cover issue creation, deletion, editing, closing, deadlines, labels, locks, comments, reactions, subscriptions, tracked times, stopwatches, dependencies, and blocking relationships:
+The current write endpoints cover issue creation, deletion, pinning, editing,
+closing, deadlines, labels, locks, comments, reactions, subscriptions, tracked
+times, stopwatches, dependencies, and blocking relationships:
 
 ```scala
 import io.worxbend.gitea4s.http.{IssueCommentListParams, IssueTrackedTimeListParams, RepositoryCommentListParams}
@@ -196,6 +199,9 @@ client.create(
 )
 
 client.delete(owner = "my-org", repo = "my-repo", index = 12)
+client.pin(owner = "my-org", repo = "my-repo", index = 12)
+client.movePin(owner = "my-org", repo = "my-repo", index = 12, position = 1)
+client.unpin(owner = "my-org", repo = "my-repo", index = 12)
 
 client.edit(
   owner = "my-org",

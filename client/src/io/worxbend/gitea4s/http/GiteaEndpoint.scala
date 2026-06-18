@@ -270,6 +270,46 @@ object GiteaEndpoints:
       response = "#/responses/empty"
     )
 
+  val pinIssue: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "POST",
+      path = "/repos/{owner}/{repo}/issues/{index}/pin",
+      operationId = "pinIssue",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
+  val unpinIssue: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/issues/{index}/pin",
+      operationId = "unpinIssue",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
+  val moveIssuePin: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "PATCH",
+      path = "/repos/{owner}/{repo}/issues/{index}/pin/{position}",
+      operationId = "moveIssuePin",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("position", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
   val issueCreateIssue: GiteaEndpoint =
     GiteaEndpoint(
       method = "POST",

@@ -137,6 +137,36 @@ object GiteaClientSpec extends ZIOSpecDefault:
           Assertion.equalTo(Right(()))
         )
       },
+      test("manages issue pins through the IssuesApi pin methods") {
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "pin"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+            .whenRequestMatches { request =>
+              request.method == Method.PATCH &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "pin", "2"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "pin"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          pinned <- client.pin("owner", "repo", 8).either
+          moved <- client.movePin("owner", "repo", 8, 2).either
+          unpinned <- client.unpin("owner", "repo", 8).either
+        yield assertTrue(
+          pinned == Right(()),
+          moved == Right(()),
+          unpinned == Right(())
+        )
+      },
       test("edits an issue through the IssuesApi edit method") {
         val backend =
           taskStub.whenRequestMatches { request =>

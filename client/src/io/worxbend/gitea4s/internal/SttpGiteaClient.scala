@@ -174,6 +174,15 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override def delete(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.deleteIssue(config, owner, repo, index))
 
+  override def pin(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.pinIssue(config, owner, repo, index))
+
+  override def unpin(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.unpinIssue(config, owner, repo, index))
+
+  override def movePin(owner: String, repo: String, index: Long, position: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.moveIssuePin(config, owner, repo, index, position))
+
   override def edit(owner: String, repo: String, index: Long, body: EditIssue): IO[GiteaError, Issue] =
     executor.send(GiteaRequests.editIssue(config, owner, repo, index, body))
 

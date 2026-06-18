@@ -239,6 +239,36 @@ object GiteaRequests:
       GiteaResponseMapper.decodeUnit
     )
 
+  def pinIssue(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Unit] =
+    post(
+      config,
+      GiteaEndpoints.pinIssue,
+      List("repos", owner, repo, "issues", index.toString, "pin"),
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def unpinIssue(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.unpinIssue,
+      List("repos", owner, repo, "issues", index.toString, "pin"),
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def moveIssuePin(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      position: Long
+  ): GiteaRequest[Unit] =
+    patch(
+      config,
+      GiteaEndpoints.moveIssuePin,
+      List("repos", owner, repo, "issues", index.toString, "pin", position.toString),
+      GiteaResponseMapper.decodeUnit
+    )
+
   def createIssue(config: GiteaConfig, owner: String, repo: String, body: CreateIssue): GiteaRequest[Issue] =
     postJson(
       config,
@@ -897,6 +927,23 @@ object GiteaRequests:
         .patch(apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
+        .response(asStringAlways)
+        .readTimeout(config.timeout)
+        .headers(commonHeaders(config)),
+      decode = decode,
+      retryable = GiteaRequest.isReadOnly(endpoint)
+    )
+
+  private def patch[A](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+  ): GiteaRequest[A] =
+    GiteaRequest(
+      endpoint = endpoint,
+      request = basicRequest
+        .patch(apiUri(config.baseUrl, path, Nil))
         .response(asStringAlways)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),

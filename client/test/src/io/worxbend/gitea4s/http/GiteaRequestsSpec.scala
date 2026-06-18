@@ -342,6 +342,44 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.retryable == false
         )
       },
+      test("builds schema-traceable issue pin management requests") {
+        val pin = GiteaRequests.pinIssue(config, "worx bend", "gitea/scala", 99)
+        val unpin = GiteaRequests.unpinIssue(config, "worx bend", "gitea/scala", 99)
+        val move = GiteaRequests.moveIssuePin(config, "worx bend", "gitea/scala", 99, 2)
+
+        assertTrue(
+          pin.endpoint == GiteaEndpoints.pinIssue,
+          pin.endpoint.method == "POST",
+          pin.endpoint.operationId == "pinIssue",
+          pin.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/pin",
+          pin.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
+          pin.endpoint.response == "#/responses/empty",
+          pin.request.method == Method.POST,
+          pin.request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/pin",
+          pin.request.header("Content-Type").isEmpty,
+          pin.retryable == false,
+          unpin.endpoint == GiteaEndpoints.unpinIssue,
+          unpin.endpoint.method == "DELETE",
+          unpin.endpoint.operationId == "unpinIssue",
+          unpin.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/pin",
+          unpin.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
+          unpin.endpoint.response == "#/responses/empty",
+          unpin.request.method == Method.DELETE,
+          unpin.request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/pin",
+          unpin.request.header("Content-Type").isEmpty,
+          unpin.retryable == false,
+          move.endpoint == GiteaEndpoints.moveIssuePin,
+          move.endpoint.method == "PATCH",
+          move.endpoint.operationId == "moveIssuePin",
+          move.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/pin/{position}",
+          move.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "position"),
+          move.endpoint.response == "#/responses/empty",
+          move.request.method == Method.PATCH,
+          move.request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/pin/2",
+          move.request.header("Content-Type").isEmpty,
+          move.retryable == false
+        )
+      },
       test("builds schema-traceable create issue request with JSON body") {
         val body = CreateIssue(
           title = "Implement POST",
