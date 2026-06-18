@@ -116,7 +116,11 @@ Current checkpoint:
 - The client module remains decoupled from the concrete sttp ZIO backend; `backend-zio` builds clients through the existing `GiteaClient.fromBackend` abstraction.
 - `backend-zio.test` covers hermetic live-layer construction and custom Java HttpClient layer construction without calling external services.
 - `examples.run` remains hermetic when `GITEA_URL` and `GITEA_TOKEN` are absent, and calls `GET /user` through the live ZIO backend when both variables are present.
-- Validation passed: `./mill backend-zio.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
+- `backend-okhttp` now exposes the Phase 6 optional OkHttp bridge through `OkHttpGiteaBackend.live`, `configured`, `withToken`, `withBasic`, `anonymous`, and caller-owned custom `okhttp3.OkHttpClient` support through `usingClient`.
+- The optional OkHttp bridge adapts sttp's async `OkHttpFutureBackend` to the client module's `Backend[Task]` boundary; it does not use the blocking sync backend.
+- OkHttp dependencies remain confined to `backend-okhttp`; `core`, `client`, and `backend-zio` do not depend on OkHttp.
+- `backend-okhttp.test` covers hermetic live-layer construction and custom OkHttp client layer construction without calling external services.
+- Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
 
@@ -654,9 +658,9 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- begin Phase 6 by implementing the optional `backend-okhttp` bridge without leaking OkHttp dependencies into `core`, `client`, or `backend-zio`,
-- prefer `OkHttpFutureBackend` adapted to ZIO if practical; otherwise use `OkHttpSyncBackend` with explicit blocking documentation,
-- add hermetic construction tests for the OkHttp-backed client and keep live integration behavior opt-in,
-- update README backend-choice notes once the optional OkHttp bridge compiles.
+- begin Phase 7 with programmatic and environment-based config loading for `GiteaConfig`,
+- support `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`, `GITEA_PAGE_SIZE`, and `GITEA_TIMEOUT`,
+- keep credential precedence explicit and avoid exposing secrets in errors or docs,
+- add hermetic config tests under `./mill client.test` without requiring real environment variables.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.

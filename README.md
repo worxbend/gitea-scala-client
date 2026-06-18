@@ -12,6 +12,9 @@ Current checkpoint:
   repositories, issues, releases, pull requests, and notifications through a ZIO client API
 - Live backend: `backend-zio` exposes `ZioGiteaBackend.live`, token/basic/anonymous
   convenience layers, and custom `java.net.http.HttpClient` support
+- Optional backend: `backend-okhttp` exposes `OkHttpGiteaBackend.live`, token/basic/anonymous
+  convenience layers, and caller-owned `okhttp3.OkHttpClient` support through sttp's
+  async `OkHttpFutureBackend` adapted to ZIO
 
 Useful commands:
 
@@ -25,5 +28,5 @@ Useful commands:
 also builds the live ZIO backend and calls `GET /user`.
 
 The rewrite is still in progress. Implemented APIs are covered by hermetic stub-backed tests;
-config sources, retry, integration tests, optional OkHttp wiring, and publishing polish remain
+config sources, retry, integration tests, additional examples, and publishing polish remain
 planned work.

@@ -65,6 +65,7 @@ object `backend-okhttp` extends Gitea4sModule:
   def moduleDeps = Seq(client)
 
   def mvnDeps = Seq(
+    mvn"com.softwaremill.sttp.client4::zio:${Versions.sttp}",
     mvn"com.softwaremill.sttp.client4::okhttp-backend:${Versions.sttp}"
   )
 
