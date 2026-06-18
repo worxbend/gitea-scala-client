@@ -367,6 +367,71 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.decode(request.send(unmergedBackend)) == Right(false)
         )
       },
+      test("builds and decodes schema-traceable pull-review comment resolution requests") {
+        val resolve = GiteaRequests.resolvePullReviewComment(config, "worx bend", "gitea/scala", 91)
+        val unresolve = GiteaRequests.unresolvePullReviewComment(config, "worx bend", "gitea/scala", 91)
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+
+        assertTrue(
+          resolve.endpoint == GiteaEndpoints.repoResolvePullReviewComment,
+          resolve.endpoint.method == "POST",
+          resolve.endpoint.operationId == "repoResolvePullReviewComment",
+          resolve.endpoint.path == "/repos/{owner}/{repo}/pulls/comments/{id}/resolve",
+          resolve.endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
+          resolve.endpoint.response == "#/responses/empty",
+          resolve.request.method == Method.POST,
+          resolve.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/comments/91/resolve",
+          resolve.request.header("Accept").contains("application/json"),
+          resolve.request.header("Authorization").contains("token secret"),
+          resolve.request.header("User-Agent").contains("gitea4s-test"),
+          resolve.request.header("X-Gitea-OTP").contains("123456"),
+          resolve.request.header("Content-Type").isEmpty,
+          resolve.request.body == NoBody,
+          resolve.retryable == false,
+          resolve.decode(resolve.request.send(backend)) == Right(()),
+          unresolve.endpoint == GiteaEndpoints.repoUnresolvePullReviewComment,
+          unresolve.endpoint.method == "POST",
+          unresolve.endpoint.operationId == "repoUnresolvePullReviewComment",
+          unresolve.endpoint.path == "/repos/{owner}/{repo}/pulls/comments/{id}/unresolve",
+          unresolve.endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
+          unresolve.endpoint.response == "#/responses/empty",
+          unresolve.request.method == Method.POST,
+          unresolve.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/comments/91/unresolve",
+          unresolve.request.header("Accept").contains("application/json"),
+          unresolve.request.header("Authorization").contains("token secret"),
+          unresolve.request.header("User-Agent").contains("gitea4s-test"),
+          unresolve.request.header("X-Gitea-OTP").contains("123456"),
+          unresolve.request.header("Content-Type").isEmpty,
+          unresolve.request.body == NoBody,
+          unresolve.retryable == false,
+          unresolve.decode(unresolve.request.send(backend)) == Right(())
+        )
+      },
+      test("maps documented pull-review comment resolution failures") {
+        val badRequestBody = """{"message":"invalid review comment"}"""
+        val forbiddenBody = """{"message":"forbidden"}"""
+        val notFoundBody = """{"message":"missing review comment"}"""
+        val badRequestBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(badRequestBody, StatusCode.BadRequest))
+        val forbiddenBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(forbiddenBody, StatusCode.Forbidden))
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val resolve = GiteaRequests.resolvePullReviewComment(config, "owner", "repo", 91)
+        val unresolve = GiteaRequests.unresolvePullReviewComment(config, "owner", "repo", 91)
+
+        assertTrue(
+          resolve.decode(resolve.request.send(badRequestBackend)) ==
+            Left(GiteaError.BadRequest("invalid review comment", badRequestBody)),
+          resolve.decode(resolve.request.send(forbiddenBackend)) ==
+            Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
+          unresolve.decode(unresolve.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing review comment", notFoundBody))
+        )
+      },
       test("builds and decodes schema-traceable pull review request creation and cancellation") {
         val body = PullReviewRequestOptions(
           reviewers = Some(List("alice", "bob")),

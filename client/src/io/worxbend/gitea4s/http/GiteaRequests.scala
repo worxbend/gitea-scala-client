@@ -260,6 +260,22 @@ object GiteaRequests:
       GiteaResponseMapper.decodeNoContentOrNotFoundBoolean
     )
 
+  def resolvePullReviewComment(config: GiteaConfig, owner: String, repo: String, id: Long): GiteaRequest[Unit] =
+    post(
+      config,
+      GiteaEndpoints.repoResolvePullReviewComment,
+      List("repos", owner, repo, "pulls", "comments", id.toString, "resolve"),
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def unresolvePullReviewComment(config: GiteaConfig, owner: String, repo: String, id: Long): GiteaRequest[Unit] =
+    post(
+      config,
+      GiteaEndpoints.repoUnresolvePullReviewComment,
+      List("repos", owner, repo, "pulls", "comments", id.toString, "unresolve"),
+      GiteaResponseMapper.decodeUnit
+    )
+
   def createPullReviewRequests(
       config: GiteaConfig,
       owner: String,

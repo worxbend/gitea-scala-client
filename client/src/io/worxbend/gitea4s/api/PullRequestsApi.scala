@@ -88,6 +88,10 @@ trait PullRequestsApi:
       id: Long
   ): IO[GiteaError, Chunk[PullReviewComment]]
 
+  def resolvePullRequestReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit]
+
+  def unresolvePullRequestReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit]
+
   def pullRequestDiffOrPatch(
       owner: String,
       repo: String,

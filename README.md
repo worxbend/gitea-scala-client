@@ -14,8 +14,8 @@ and zio-json.
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
   releases, pull requests including reviews, pinned pull-request reads,
-  diff/patch downloads, and merge-status checks, and notifications through a
-  ZIO client API
+  diff/patch downloads, merge-status checks, review-comment resolution, and
+  notifications through a ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -282,8 +282,8 @@ Write requests are not retried by default.
 
 Pull-request support includes paginated list/get methods, review creation,
 submission, dismissal, undismissal, review request creation/cancellation,
-review detail and comment methods, changed-file and commit streams, raw
-diff/patch downloads, merge-status checks, and the
+review detail and comment methods, review-comment resolve/unresolve commands,
+changed-file and commit streams, raw diff/patch downloads, merge-status checks, and the
 repository pinned pull-request list:
 
 ```scala
@@ -337,6 +337,8 @@ client.dismissPullRequestReview(
 client.undismissPullRequestReview(owner = "my-org", repo = "my-repo", index = 7, id = 20)
 client.pullRequestReviewComments(owner = "my-org", repo = "my-repo", index = 7, id = 20)
 client.deletePullRequestReview(owner = "my-org", repo = "my-repo", index = 7, id = 20)
+client.resolvePullRequestReviewComment(owner = "my-org", repo = "my-repo", id = 91)
+client.unresolvePullRequestReviewComment(owner = "my-org", repo = "my-repo", id = 91)
 client.pullRequestDiffOrPatch(owner = "my-org", repo = "my-repo", index = 7, diffType = PullRequestDiffType.Diff)
 client.pullRequestFiles(owner = "my-org", repo = "my-repo", index = 7).take(50).runCollect
 client.pullRequestCommits(owner = "my-org", repo = "my-repo", index = 7).take(50).runCollect

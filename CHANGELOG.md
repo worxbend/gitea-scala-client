@@ -46,6 +46,9 @@ surface is still being filled out.
   with `CreatePullReviewOptions`, `SubmitPullReviewOptions`,
   `DismissPullReviewOptions`, `repoCreatePullReview`, `repoSubmitPullReview`,
   `repoDismissPullReview`, and `repoUnDismissPullReview` request construction.
+- Typed pull-request review-comment resolution and unresolution with
+  `repoResolvePullReviewComment` and `repoUnresolvePullReviewComment` request
+  construction.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

@@ -241,6 +241,12 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   ): IO[GiteaError, Chunk[PullReviewComment]] =
     executor.send(GiteaRequests.repoPullReviewComments(config, owner, repo, index, id))
 
+  override def resolvePullRequestReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.resolvePullReviewComment(config, owner, repo, id))
+
+  override def unresolvePullRequestReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.unresolvePullReviewComment(config, owner, repo, id))
+
   override def pullRequestDiffOrPatch(
       owner: String,
       repo: String,

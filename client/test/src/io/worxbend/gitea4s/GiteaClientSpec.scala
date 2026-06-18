@@ -1015,6 +1015,18 @@ object GiteaClientSpec extends ZIOSpecDefault:
               _.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "reviews", "10", "comments"))
             )
             .thenRespond(ResponseStub.adjust("""[{"id":12,"body":"Nit","path":"README.md","position":3}]"""))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "comments", "12", "resolve")) &&
+                request.body == NoBody
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "comments", "12", "unresolve")) &&
+                request.body == NoBody
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2.patch")))
             .thenRespond(ResponseStub.adjust("From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001"))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "pinned")))
@@ -1090,6 +1102,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
           )
           undismissedReview <- client.undismissPullRequestReview("alice", "api", 2, 10)
           reviewComments <- client.pullRequestReviewComments("alice", "api", 2, 10)
+          resolvedComment <- client.resolvePullRequestReviewComment("alice", "api", 12).either
+          unresolvedComment <- client.unresolvePullRequestReviewComment("alice", "api", 12).either
           deleteReview <- client.deletePullRequestReview("alice", "api", 2, 10)
           pullRequestPatch <- client.pullRequestDiffOrPatch("alice", "api", 2, PullRequestDiffType.Patch)
           pinnedPullRequests <- client.pinnedPullRequests("alice", "api")
@@ -1111,6 +1125,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
           dismissedReview.dismissed.contains(true),
           undismissedReview.dismissed.contains(false),
           reviewComments.map(_.path) == Chunk(Some("README.md")),
+          resolvedComment == Right(()),
+          unresolvedComment == Right(()),
           deleteReview == (),
           pullRequestPatch.startsWith("From 0000000000000000000000000000000000000000"),
           pinnedPullRequests.map(_.number) == Chunk(Some(3L)),

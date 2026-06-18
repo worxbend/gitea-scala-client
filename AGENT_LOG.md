@@ -404,3 +404,74 @@
 2026-06-18T12:34:41Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
 2026-06-18T12:35:00Z checkpoint commit created message="Add pull request review write APIs"
 2026-06-18T12:35:00Z iteration 15 completed validation_status=0
+2026-06-18T12:35:35Z iteration 15 no changes to commit
+2026-06-18T12:35:35Z iteration 15 completed validation_status=0
+2026-06-18T12:35:35Z iteration limit reached iterations=15
+2026-06-18T21:20:31Z orchestrator started provider=codex budget=18000s iterations=15 max_workers=4
+2026-06-18T21:20:31Z iteration 1 started remaining=18000s
+2026-06-18T21:20:31Z iteration 1 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-18T21:20:31Z iteration 1 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-e0xoyiyk/repo copied_entries=77
+2026-06-18T21:20:31Z iteration 1 ideator phase started count=3
+2026-06-18T21:20:31Z iteration 1 ideator phase concurrency workers=3
+2026-06-18T21:20:31Z iteration 1 ideator 1 role="the pragmatist" started
+2026-06-18T21:20:31Z iteration 1 ideator 2 role="the architect" started
+2026-06-18T21:20:31Z iteration 1 ideator 3 role="the contrarian" started
+2026-06-18T21:20:40Z iteration 1 ideator 3 role="the contrarian" completed status=0
+2026-06-18T21:20:41Z iteration 1 ideator 1 role="the pragmatist" completed status=0
+2026-06-18T21:20:44Z iteration 1 ideator 2 role="the architect" completed status=0
+2026-06-18T21:20:44Z iteration 1 ideator phase completed approaches=3
+2026-06-18T21:20:44Z iteration 1 selector started approaches=3
+2026-06-18T21:20:53Z iteration 1 selector completed status=0
+2026-06-18T21:20:53Z iteration 1 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-e0xoyiyk/repo
+2026-06-18T21:20:53Z iteration 1 selector rejected alternative role="the contrarian" approach="Contract-Density First: prioritize the next slice by maximizing reusable contract pressure instead of endpoint count, choosing an area that exercises new response semantics, par..." reason="Useful emphasis on architectural pressure, but too likely to over-prioritize novelty over release-safe endpoint progress if selected as-is."
+2026-06-18T21:20:53Z iteration 1 selector rejected alternative role="the pragmatist" approach="Contract-First Coverage Expansion: choose the next slice by maximizing schema leverage and minimizing new architectural surface, then advance one endpoint family end-to-end thro..." reason="Strong fit for the current project cadence, but as-is it underweights the value of intentionally selecting a slice that exercises a new response or lifecycle semantic."
+2026-06-18T21:20:53Z iteration 1 selector rejected alternative role="the architect" approach="Spec-Continuity Slice Selection: choose the next endpoint family by maximizing reuse of already-proven request, response, pagination, and facade patterns while preserving direct..." reason="Good release-safety framing, but as-is it risks choosing only the easiest continuity slice and delaying contract shapes that would expose abstraction gaps early."
+2026-06-18T21:20:53Z iteration 1 selector alternatives persisted count=3
+2026-06-18T21:20:53Z iteration 1 planner started
+2026-06-18T21:21:45Z iteration 1 plan: 5 task(s) in 4 phase(s). This iteration selects pull-review comment resolve/unresolve because it is adjacent to the completed pull-review work, small enough for one vertical slice, and likely introduces a useful endpoint-specific lifecycle behavior without broadening the client architecture. HTTP construction comes first, facade wiring depends on it, while documentation and API snapshot refresh can proceed independently after the public API shape is finalized.
+2026-06-18T21:21:45Z iteration 1 phase 1 started parallel=False tasks=1
+2026-06-18T21:24:12Z iteration 1 task t1 ('Implement pull-review comment resolution HTTP slice') status=0
+2026-06-18T21:24:12Z iteration 1 phase 2 started parallel=False tasks=1
+2026-06-18T21:25:36Z iteration 1 task t2 ('Expose pull-review comment resolution facade') status=0
+2026-06-18T21:25:36Z iteration 1 phase 3 started parallel=True tasks=2
+2026-06-18T21:26:54Z iteration 1 task t3 ('Update public API snapshot') status=0
+2026-06-18T21:27:13Z iteration 1 task t4 ('Document pull-review comment resolution') status=0
+2026-06-18T21:27:13Z iteration 1 phase 4 started parallel=False tasks=1
+2026-06-18T21:28:13Z iteration 1 task t5 ('Run validation for the slice') status=0
+2026-06-18T21:28:13Z iteration 1 reviewer started
+
+## Reviewer Summary - Iteration 1 - 2026-06-18T21:29:37Z
+
+What was done:
+- Inspected the full uncommitted patch for pull-review comment resolution/unresolution across request metadata, request builders, facade wiring, tests, README, CHANGELOG, PLAN, AGENT_LOG, and API snapshot updates.
+- Cross-checked `repoResolvePullReviewComment` and `repoUnresolvePullReviewComment` against `plugin-redoc-2.yaml`; both are POST endpoints at `/repos/{owner}/{repo}/pulls/comments/{id}/resolve|unresolve` with path-only parameters and documented 204/400/403/404 responses.
+- Verified the implementation uses existing no-body POST construction, `decodeUnit`, path-safe segment building, auth/OTP/user-agent/accept headers, no content type for absent body, and non-retryable write semantics.
+
+What was found:
+- No functional blocker or regression was found in this iteration.
+- The tests cover schema metadata, path encoding, headers, no body, no content type, retryability, 204 success decoding, documented 400/403/404 mappings, and facade calls through `BackendStub`.
+- The public API snapshot and README/CHANGELOG/PLAN updates are consistent with the new facade surface.
+- Residual risk is mainly process-level: endpoint metadata is hand-maintained and can drift from `plugin-redoc-2.yaml` as the implemented surface grows.
+
+Top improvement proposals:
+- Add a lightweight spec-trace audit that compares implemented `GiteaEndpoints` operation IDs, methods, paths, required parameters, and response labels against `plugin-redoc-2.yaml`, starting with pull-request review/comment lifecycle endpoints.
+- Continue with commit-status endpoints or pull-request merge/write operations next because they are adjacent high-value workflows and will exercise request-body and status-specific response contracts.
+- Preserve the test pattern used here for no-body lifecycle commands: assert `NoBody`, absent `Content-Type`, non-retryability, path encoding, and documented failure mappings.
+2026-06-18T21:30:13Z iteration 1 reviewer completed status=0
+2026-06-18T21:30:13Z iteration 1 memory updated
+2026-06-18T21:30:13Z iteration 1 completed validation_status=0
+2026-06-18T21:30:13Z iteration 1 checkpoint started
+2026-06-18T21:30:13Z iteration 1 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+A  MEMORY.md
+M  PLAN.md
+M  README.md
+A  SCORES.jsonl
+M  api-snapshot/client.txt
+M  client/src/io/worxbend/gitea4s/api/PullRequestsApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
