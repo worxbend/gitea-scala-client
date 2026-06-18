@@ -144,6 +144,9 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       executor.send(GiteaRequests.repoPullRequests(config, owner, repo, params.copy(page = Some(page))))
     }
 
+  override def pinnedPullRequests(owner: String, repo: String): IO[GiteaError, Chunk[PullRequest]] =
+    executor.send(GiteaRequests.pinnedPullRequests(config, owner, repo))
+
   override def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.repoPullRequest(config, owner, repo, index))
 

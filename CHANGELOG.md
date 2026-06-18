@@ -21,6 +21,8 @@ surface is still being filled out.
   `unpinIssue`, and `moveIssuePin` request construction.
 - Typed pinned issue listing and repository pin-capacity checks with
   `repoListPinnedIssues`, `repoNewPinAllowed`, and `NewIssuePinsAllowed`.
+- Typed pinned pull-request listing with `repoListPinnedPullRequests` request
+  construction.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

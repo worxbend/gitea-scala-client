@@ -285,6 +285,23 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.paramsMap.get("limit").contains("11")
         )
       },
+      test("builds schema-traceable repository pinned pull request list request") {
+        val built = GiteaRequests.pinnedPullRequests(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListPinnedPullRequests,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoListPinnedPullRequests",
+          endpoint.path == "/repos/{owner}/{repo}/pulls/pinned",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.response == "#/responses/PullRequestList",
+          request.method == Method.GET,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/pinned",
+          built.retryable == true
+        )
+      },
       test("builds schema-traceable get repository pull request request") {
         val built = GiteaRequests.repoPullRequest(config, "worx bend", "gitea/scala", 88)
         val endpoint = built.endpoint
@@ -1512,6 +1529,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             )
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2")))
             .thenRespond(ResponseStub.adjust(pullRequestResponse))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "pinned")))
+            .thenRespond(ResponseStub.adjust("""[{"id":3,"number":3,"title":"Pinned"}]"""))
         val repos = GiteaRequests.userRepos(config, "octo")
         val orgRepos = GiteaRequests.organizationRepos(config, "platform")
         val topics = GiteaRequests.repoTopics(config, "octo", "api")
@@ -1520,6 +1539,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val releases = GiteaRequests.repoReleases(config, "octo", "api")
         val release = GiteaRequests.repoRelease(config, "octo", "api", 20)
         val pullRequests = GiteaRequests.repoPullRequests(config, "octo", "api")
+        val pinnedPullRequests = GiteaRequests.pinnedPullRequests(config, "octo", "api")
         val pullRequest = GiteaRequests.repoPullRequest(config, "octo", "api", 2)
 
         assertTrue(
@@ -1541,6 +1561,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           pullRequests.decode(pullRequests.request.send(backend)).map(_.data.map(_.number)) ==
             Right(Chunk(Some(1L), Some(2L))),
           pullRequests.decode(pullRequests.request.send(backend)).map(_.totalCount) == Right(Some(2L)),
+          pinnedPullRequests.decode(pinnedPullRequests.request.send(backend)).map(_.map(_.title)) ==
+            Right(Chunk(Some("Pinned"))),
           pullRequest.decode(pullRequest.request.send(backend)).map(_.title) == Right(Some("Second"))
         )
       },
@@ -1647,10 +1669,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val body = """{"message":"missing pull request"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val pullRequests = GiteaRequests.repoPullRequests(config, "owner", "missing")
+        val pinnedPullRequests = GiteaRequests.pinnedPullRequests(config, "owner", "missing")
         val pullRequest = GiteaRequests.repoPullRequest(config, "owner", "missing", 77)
 
         assertTrue(
           pullRequests.decode(pullRequests.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing pull request", body)),
+          pinnedPullRequests.decode(pinnedPullRequests.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body)),
           pullRequest.decode(pullRequest.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body))

@@ -3,7 +3,7 @@ package io.worxbend.gitea4s.api
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.PullRequestListParams
 import io.worxbend.gitea4s.model.PullRequest
-import zio.IO
+import zio.{Chunk, IO}
 import zio.stream.ZStream
 
 trait PullRequestsApi:
@@ -12,5 +12,7 @@ trait PullRequestsApi:
       repo: String,
       params: PullRequestListParams = PullRequestListParams.default
   ): ZStream[Any, GiteaError, PullRequest]
+
+  def pinnedPullRequests(owner: String, repo: String): IO[GiteaError, Chunk[PullRequest]]
 
   def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest]

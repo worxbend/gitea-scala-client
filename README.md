@@ -13,7 +13,8 @@ and zio-json.
 - Implemented surface: typed core models/codecs plus users, organizations,
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
-  releases, pull requests, and notifications through a ZIO client API
+  releases, pull requests including pinned pull-request reads, and notifications
+  through a ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -169,9 +170,9 @@ Current stream-oriented APIs include user followers/following/search, user and
 organization repositories, organization members, issues, issue reactions, issue
 subscribers, issue tracked times, current-user stopwatches, repository-wide
 issue comments, branches, tags, releases, pull requests, and notification
-threads. Pinned issues are exposed as a non-paginated `Chunk[Issue]` because
-Gitea returns that endpoint as a plain `IssueList` without pagination
-parameters.
+threads. Pinned issues and pinned pull requests are exposed as non-paginated
+chunks because Gitea returns those endpoints as plain list responses without
+pagination parameters.
 
 ## Issue Writes
 
@@ -275,6 +276,17 @@ client.unblock(owner = "my-org", repo = "my-repo", index = 12, blockedIssue = Is
 ```
 
 Write requests are not retried by default.
+
+## Pull Requests
+
+Pull-request reads include paginated list/get methods and the repository pinned
+pull-request list:
+
+```scala
+client.pullRequests(owner = "my-org", repo = "my-repo").take(25).runCollect
+client.pullRequest(owner = "my-org", repo = "my-repo", index = 7)
+client.pinnedPullRequests(owner = "my-org", repo = "my-repo")
+```
 
 ## Error Handling
 

@@ -219,6 +219,18 @@ object GiteaEndpoints:
       response = "#/responses/PullRequestList"
     )
 
+  val repoListPinnedPullRequests: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/pulls/pinned",
+      operationId = "repoListPinnedPullRequests",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true)
+      ),
+      response = "#/responses/PullRequestList"
+    )
+
   val repoGetPullRequest: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

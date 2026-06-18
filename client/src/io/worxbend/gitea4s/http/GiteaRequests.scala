@@ -210,6 +210,15 @@ object GiteaRequests:
       response => GiteaResponseMapper.decodePage[PullRequest](response, page, pageSize)
     )
 
+  def pinnedPullRequests(config: GiteaConfig, owner: String, repo: String): GiteaRequest[zio.Chunk[PullRequest]] =
+    get(
+      config,
+      GiteaEndpoints.repoListPinnedPullRequests,
+      List("repos", owner, repo, "pulls", "pinned"),
+      Nil,
+      GiteaResponseMapper.decodeChunk[PullRequest]
+    )
+
   def repoPullRequest(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[PullRequest] =
     get(
       config,

@@ -339,3 +339,9 @@
 2026-06-18T11:30:00Z validation passed commands="./mill --no-server client.test; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
 2026-06-18T11:31:00Z checkpoint commit created message="Add pinned issue read APIs"
 2026-06-18T11:31:00Z iteration 5 completed validation_status=0
+2026-06-18T11:26:52Z iteration 5 no changes to commit
+2026-06-18T11:26:52Z iteration 5 completed validation_status=0
+2026-06-18T11:26:52Z iteration 6 started remaining=15625s
+2026-06-18T11:30:37Z added typed pinned pull-request listing with repoListPinnedPullRequests endpoint metadata, request builder, facade wiring, stub-backed tests, README, CHANGELOG, and PLAN updates
+2026-06-18T11:31:52Z validation passed commands="./mill --no-server client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T11:32:14Z checkpoint commit created message="Add pinned pull request API"
