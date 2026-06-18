@@ -220,3 +220,10 @@
 2026-06-18T08:34:00Z validation passed commands="git diff --check; ./mill __.compile __.test it.test examples.run __.docJar __.sourceJar __.publishArtifacts; ./mill __.publishM2Local"
 2026-06-18T08:35:00Z checkpoint commit created message="Add release process and CI readiness"
 2026-06-18T08:35:00Z iteration 2 completed validation_status=0
+2026-06-18T08:27:45Z iteration 2 no changes to commit
+2026-06-18T08:27:45Z iteration 2 completed validation_status=0
+2026-06-18T08:27:45Z iteration 3 started remaining=17463s
+2026-06-18T08:28:30Z started Phase 10 Maven Central automation groundwork slice
+2026-06-18T08:31:00Z added Mill Sonatype Central publishing module support and manual GitHub Actions publish workflow with release-version guard
+2026-06-18T08:31:30Z updated README, RELEASE, CHANGELOG, and PLAN for Central Portal publishing prerequisites and workflow usage
+2026-06-18T08:32:00Z validation passed commands="git diff --check; ruby yaml parse for GitHub workflows; ./mill --no-server inspect core.publishSonatypeCentral; ./mill --no-server __.compile __.test it.test examples.run __.docJar __.sourceJar __.publishArtifacts; ./mill --no-server __.publishM2Local"

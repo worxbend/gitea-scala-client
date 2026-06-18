@@ -1,0 +1,70 @@
+name: Publish Central
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Automatically publish the validated Central Portal deployment"
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  publish:
+    name: Publish Maven Central artifacts
+    runs-on: ubuntu-latest
+    environment: maven-central
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Cache Scala dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/coursier
+            ~/.ivy2/cache
+            ~/.mill
+          key: ${{ runner.os }}-publish-central-${{ hashFiles('build.mill', 'mill') }}
+          restore-keys: |
+            ${{ runner.os }}-publish-central-
+
+      - name: Verify release version
+        run: |
+          if grep -q 'val library = ".*-SNAPSHOT"' build.mill; then
+            echo "Refusing to publish a SNAPSHOT version to Maven Central." >&2
+            exit 1
+          fi
+
+      - name: Validate build
+        run: |
+          ./mill __.compile
+          ./mill __.test
+          ./mill it.test
+          ./mill examples.run
+          ./mill __.docJar __.sourceJar __.publishArtifacts
+
+      - name: Publish to Sonatype Central Portal
+        env:
+          MILL_SONATYPE_USERNAME: ${{ secrets.MILL_SONATYPE_USERNAME }}
+          MILL_SONATYPE_PASSWORD: ${{ secrets.MILL_SONATYPE_PASSWORD }}
+          MILL_PGP_SECRET_BASE64: ${{ secrets.MILL_PGP_SECRET_BASE64 }}
+          MILL_PGP_PASSPHRASE: ${{ secrets.MILL_PGP_PASSPHRASE }}
+        run: |
+          ./mill mill.javalib.SonatypeCentralPublishModule/publishAll \
+            --publishArtifacts __.publishArtifacts \
+            --username "$MILL_SONATYPE_USERNAME" \
+            --password "$MILL_SONATYPE_PASSWORD" \
+            --gpgArgs "--passphrase=$MILL_PGP_PASSPHRASE,--no-tty,--pinentry-mode,loopback,--batch,--yes,--armor,--detach-sign" \
+            --readTimeout 36000 \
+            --awaitTimeout 36000 \
+            --connectTimeout 36000 \
+            --shouldRelease "${{ inputs.release }}" \
+            --bundleName "io.worxbend-gitea4s-${{ github.ref_name }}"

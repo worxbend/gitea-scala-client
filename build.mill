@@ -2,7 +2,7 @@
 package build
 
 import mill.*
-import javalib.PublishModule
+import javalib.SonatypeCentralPublishModule
 import javalib.publish.*
 import scalalib.*
 
@@ -36,7 +36,7 @@ trait Gitea4sModule extends ScalaModule:
 
     def testFramework = "zio.test.sbt.ZTestFramework"
 
-trait PublishableGitea4sModule extends Gitea4sModule, PublishModule:
+trait PublishableGitea4sModule extends Gitea4sModule, SonatypeCentralPublishModule:
   def publishVersion = Versions.library
 
   def pomSettings = PomSettings(

@@ -217,6 +217,12 @@ same license identifier.
 Release notes are tracked in `CHANGELOG.md`. Local release readiness checks and
 the pre-`1.0.0` version checklist are tracked in `RELEASE.md`.
 
+The build is wired for Sonatype Central Portal publishing through Mill's
+`SonatypeCentralPublishModule`. The manual GitHub Actions workflow
+`Publish Central` validates the build, refuses `-SNAPSHOT` versions, and then
+publishes the four library modules with `publishAll` when the Maven Central
+secrets described in `RELEASE.md` are configured.
+
 ## Examples
 
 The default example is hermetic when live credentials are absent:

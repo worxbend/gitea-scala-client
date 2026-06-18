@@ -20,6 +20,8 @@ surface is still being filled out.
   opt-in live integration tests.
 - Local Maven publishing metadata, source jars, and javadoc jars.
 - Java 21 CI validation and release-process documentation.
+- Sonatype Central Portal publishing groundwork through Mill and a manual
+  GitHub Actions workflow.
 
 ### Notes
 
