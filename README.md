@@ -11,7 +11,7 @@ and zio-json.
 - Version: `0.1.0-SNAPSHOT`
 - API reference: local `plugin-redoc-2.yaml` for Gitea API `1.26.2`
 - Implemented surface: typed core models/codecs plus users, organizations,
-  repositories, issue list/get/create/label/lock management, releases, pull requests, and notifications through a ZIO client API
+  repositories, issue list/get/create/deadline/label/lock management, releases, pull requests, and notifications through a ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -169,11 +169,12 @@ tags, releases, pull requests, and notification threads.
 
 ## Issue Writes
 
-The current write endpoints cover issue creation, editing, closing, labels, locks, and comments:
+The current write endpoints cover issue creation, editing, closing, deadlines, labels, locks, and comments:
 
 ```scala
-import io.worxbend.gitea4s.model.{CreateIssue, EditIssue, LockIssueOption}
+import io.worxbend.gitea4s.model.{CreateIssue, EditDeadlineOption, EditIssue, LockIssueOption}
 import zio.Chunk
+import java.time.Instant
 
 client.create(
   owner = "my-org",
@@ -189,6 +190,14 @@ client.edit(
 )
 
 client.close(owner = "my-org", repo = "my-repo", index = 12)
+
+client.editDeadline(
+  owner = "my-org",
+  repo = "my-repo",
+  index = 12,
+  body = EditDeadlineOption(dueDate = Some(Instant.parse("2026-07-03T00:00:00Z")))
+)
+client.editDeadline(owner = "my-org", repo = "my-repo", index = 12, body = EditDeadlineOption(dueDate = None))
 
 client.addLabels(owner = "my-org", repo = "my-repo", index = 12, labels = Chunk(1L, 2L))
 client.replaceLabels(owner = "my-org", repo = "my-repo", index = 12, labels = Chunk(3L))

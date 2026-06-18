@@ -2,7 +2,16 @@ package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.IssueListParams
-import io.worxbend.gitea4s.model.{Comment, CreateIssue, EditIssue, Issue, Label, LockIssueOption}
+import io.worxbend.gitea4s.model.{
+  Comment,
+  CreateIssue,
+  EditDeadlineOption,
+  EditIssue,
+  Issue,
+  IssueDeadline,
+  Label,
+  LockIssueOption
+}
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
@@ -34,5 +43,7 @@ trait IssuesApi:
   def lock(owner: String, repo: String, index: Long, body: LockIssueOption): IO[GiteaError, Unit]
 
   def unlock(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
+
+  def editDeadline(owner: String, repo: String, index: Long, body: EditDeadlineOption): IO[GiteaError, IssueDeadline]
 
   def comment(owner: String, repo: String, index: Long, body: String): IO[GiteaError, Comment]

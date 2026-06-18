@@ -10,7 +10,7 @@ import io.worxbend.gitea4s.http.{
   UserSearchParams
 }
 import io.worxbend.gitea4s.internal.GiteaRequestExecutor
-import io.worxbend.gitea4s.model.{Auth, CreateIssue, EditIssue, LockIssueOption}
+import io.worxbend.gitea4s.model.{Auth, CreateIssue, EditDeadlineOption, EditIssue, LockIssueOption}
 import sttp.capabilities.Effect
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -232,6 +232,22 @@ object GiteaClientSpec extends ZIOSpecDefault:
           locked == Right(()),
           unlocked == Right(())
         )
+      },
+      test("edits an issue deadline through the IssuesApi deadline method") {
+        val due = Instant.parse("2026-07-03T00:00:00Z")
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.POST &&
+              request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "deadline")) &&
+              (request.body match
+                case StringBody(body, _, _) => body.contains(""""due_date":"2026-07-03T00:00:00Z"""")
+                case _ => false)
+          }.thenRespond(ResponseStub.adjust("""{"due_date":"2026-07-03T00:00:00Z"}""", StatusCode.Created))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(
+          client.editDeadline("owner", "repo", 8, EditDeadlineOption(dueDate = Some(due))).map(_.dueDate)
+        )(Assertion.equalTo(Some(due)))
       },
       test("loads an organization through the OrgsApi facade") {
         val backend =

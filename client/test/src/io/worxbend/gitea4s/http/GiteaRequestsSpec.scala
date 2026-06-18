@@ -6,7 +6,9 @@ import io.worxbend.gitea4s.model.{
   Auth,
   CreateIssue,
   CreateIssueComment,
+  EditDeadlineOption,
   EditIssue,
+  IssueDeadline,
   IssueLabelsOption,
   IssueState,
   LockIssueOption,
@@ -474,6 +476,35 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           unlock.retryable == false
         )
       },
+      test("builds schema-traceable issue deadline request with JSON body") {
+        val built =
+          GiteaRequests.editIssueDeadline(
+            config,
+            "worx bend",
+            "gitea/scala",
+            99,
+            EditDeadlineOption(dueDate = Some(Instant.parse("2026-07-03T00:00:00Z")))
+          )
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.issueEditIssueDeadline,
+          endpoint.method == "POST",
+          endpoint.operationId == "issueEditIssueDeadline",
+          endpoint.path == "/repos/{owner}/{repo}/issues/{index}/deadline",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
+          endpoint.response == "#/responses/IssueDeadline",
+          request.method == Method.POST,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/deadline",
+          request.header("Content-Type").exists(_.startsWith("application/json")),
+          built.retryable == false,
+          request.body match
+            case StringBody(json, _, _) => json.contains(""""due_date":"2026-07-03T00:00:00Z"""")
+            case _ => false
+        )
+      },
       test("builds paginated follower and following list requests") {
         val followers = GiteaRequests.userFollowers(config, "space user/slash", page = 2)
         val following = GiteaRequests.userFollowing(config, "space user/slash", page = 3)
@@ -704,6 +735,19 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           lock.decode(lock.request.send(backend)) == Right(()),
           unlock.decode(unlock.request.send(backend)) == Right(())
+        )
+      },
+      test("decodes edited issue deadline responses") {
+        val due = Instant.parse("2026-07-03T00:00:00Z")
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"due_date":"2026-07-03T00:00:00Z"}""", StatusCode.Created)
+          )
+        val built =
+          GiteaRequests.editIssueDeadline(config, "owner", "repo", 12, EditDeadlineOption(Some(due)))
+
+        assertTrue(
+          built.decode(built.request.send(backend)) == Right(IssueDeadline(Some(due)))
         )
       },
       test("decodes single issue and paginated user list responses") {

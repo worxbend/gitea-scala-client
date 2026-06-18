@@ -16,8 +16,10 @@ import io.worxbend.gitea4s.model.{
   Comment,
   CreateIssue,
   CreateIssueComment,
+  EditDeadlineOption,
   EditIssue,
   Issue,
+  IssueDeadline,
   IssueLabelsOption,
   IssueState,
   Label,
@@ -189,6 +191,14 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def unlock(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.unlockIssue(config, owner, repo, index))
+
+  override def editDeadline(
+      owner: String,
+      repo: String,
+      index: Long,
+      body: EditDeadlineOption
+  ): IO[GiteaError, IssueDeadline] =
+    executor.send(GiteaRequests.editIssueDeadline(config, owner, repo, index, body))
 
   override def comment(owner: String, repo: String, index: Long, body: String): IO[GiteaError, Comment] =
     executor.send(GiteaRequests.createIssueComment(config, owner, repo, index, CreateIssueComment(body)))

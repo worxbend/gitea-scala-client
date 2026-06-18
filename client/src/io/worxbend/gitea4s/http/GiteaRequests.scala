@@ -7,8 +7,10 @@ import io.worxbend.gitea4s.model.{
   Comment,
   CreateIssue,
   CreateIssueComment,
+  EditDeadlineOption,
   EditIssue,
   Issue,
+  IssueDeadline,
   IssueLabelsOption,
   IssueState,
   Label,
@@ -331,6 +333,21 @@ object GiteaRequests:
       GiteaEndpoints.issueUnlockIssue,
       List("repos", owner, repo, "issues", index.toString, "lock"),
       GiteaResponseMapper.decodeUnit
+    )
+
+  def editIssueDeadline(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: EditDeadlineOption
+  ): GiteaRequest[IssueDeadline] =
+    postJson(
+      config,
+      GiteaEndpoints.issueEditIssueDeadline,
+      List("repos", owner, repo, "issues", index.toString, "deadline"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[IssueDeadline]
     )
 
   def notifications(config: GiteaConfig, params: NotificationListParams = NotificationListParams.default)

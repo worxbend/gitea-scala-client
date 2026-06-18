@@ -3,6 +3,7 @@ package io.worxbend.gitea4s.model
 import java.time.Instant
 
 import zio.json.*
+import zio.json.internal.Write
 
 final case class GiteaErrorPayload(
     message: Option[String] = None,
@@ -243,6 +244,33 @@ final case class LockIssueOption(
 
 object LockIssueOption:
   given JsonCodec[LockIssueOption] = DeriveJsonCodec.gen[LockIssueOption]
+
+final case class EditDeadlineOption(
+    @jsonField("due_date") dueDate: Option[Instant]
+)
+
+object EditDeadlineOption:
+  given JsonCodec[EditDeadlineOption] =
+    val decoder = DeriveJsonDecoder.gen[EditDeadlineOption]
+    val encoder =
+      new JsonEncoder[EditDeadlineOption]:
+        private val instantEncoder = summon[JsonEncoder[Instant]]
+
+        override def unsafeEncode(value: EditDeadlineOption, indent: Option[Int], out: Write): Unit =
+          out.write("""{"due_date":""")
+          value.dueDate match
+            case Some(dueDate) => instantEncoder.unsafeEncode(dueDate, indent, out)
+            case None => out.write("null")
+          out.write("}")
+
+    JsonCodec(encoder, decoder)
+
+final case class IssueDeadline(
+    @jsonField("due_date") dueDate: Option[Instant] = None
+)
+
+object IssueDeadline:
+  given JsonCodec[IssueDeadline] = DeriveJsonCodec.gen[IssueDeadline]
 
 final case class Comment(
     id: Option[Long] = None,

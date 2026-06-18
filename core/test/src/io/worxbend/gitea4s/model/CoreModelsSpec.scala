@@ -248,6 +248,24 @@ object CoreModelsSpec extends ZIOSpecDefault:
           decoded == Right(payload)
         )
       },
+      test("round-trips issue deadline payloads using schema JSON names") {
+        val due = Instant.parse("2026-07-03T00:00:00Z")
+        val edit = EditDeadlineOption(dueDate = Some(due))
+        val deadlineJson =
+          """{
+            |  "due_date": "2026-07-03T00:00:00Z"
+            |}""".stripMargin
+
+        val decodedDeadline = deadlineJson.fromJson[IssueDeadline]
+
+        assertTrue(
+          edit.toJson == """{"due_date":"2026-07-03T00:00:00Z"}""",
+          edit.toJson.fromJson[EditDeadlineOption] == Right(edit),
+          EditDeadlineOption(dueDate = None).toJson == """{"due_date":null}""",
+          """{"due_date":null}""".fromJson[IssueDeadline] == Right(IssueDeadline(dueDate = None)),
+          decodedDeadline == Right(IssueDeadline(dueDate = Some(due)))
+        )
+      },
       test("decodes pull request, release, branch, and tag payloads") {
         val pullRequestJson =
           """{
