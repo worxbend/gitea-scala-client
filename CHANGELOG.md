@@ -25,6 +25,8 @@ surface is still being filled out.
   construction.
 - Typed pull-request lookup by base and head with
   `repoGetPullRequestByBaseHead` request construction.
+- Typed pull-request changed-file streaming with `ChangedFile`,
+  `PullRequestFilesParams`, and `repoGetPullRequestFiles` request construction.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

@@ -406,6 +406,21 @@ final case class PullRequest(
 object PullRequest:
   given JsonCodec[PullRequest] = DeriveJsonCodec.gen[PullRequest]
 
+final case class ChangedFile(
+    additions: Option[Long] = None,
+    changes: Option[Long] = None,
+    @jsonField("contents_url") contentsUrl: Option[String] = None,
+    deletions: Option[Long] = None,
+    filename: Option[String] = None,
+    @jsonField("html_url") htmlUrl: Option[String] = None,
+    @jsonField("previous_filename") previousFilename: Option[String] = None,
+    @jsonField("raw_url") rawUrl: Option[String] = None,
+    status: Option[String] = None
+)
+
+object ChangedFile:
+  given JsonCodec[ChangedFile] = DeriveJsonCodec.gen[ChangedFile]
+
 final case class Release(
     id: Option[Long] = None,
     author: Option[User] = None,

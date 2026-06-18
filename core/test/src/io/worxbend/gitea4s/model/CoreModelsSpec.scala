@@ -450,10 +450,24 @@ object CoreModelsSpec extends ZIOSpecDefault:
             |  "tarball_url": "https://gitea.example/octo/gitea4s/archive/v0.1.0.tar.gz"
             |}""".stripMargin
 
+        val changedFileJson =
+          """{
+            |  "additions": 10,
+            |  "changes": 12,
+            |  "contents_url": "https://gitea.example/api/v1/repos/octo/gitea4s/contents/src/Main.scala",
+            |  "deletions": 2,
+            |  "filename": "src/Main.scala",
+            |  "html_url": "https://gitea.example/octo/gitea4s/pulls/1/files",
+            |  "previous_filename": "src/OldMain.scala",
+            |  "raw_url": "https://gitea.example/octo/gitea4s/raw/src/Main.scala",
+            |  "status": "renamed"
+            |}""".stripMargin
+
         val pullRequest = pullRequestJson.fromJson[PullRequest]
         val release = releaseJson.fromJson[Release]
         val branch = branchJson.fromJson[Branch]
         val tag = tagJson.fromJson[Tag]
+        val changedFile = changedFileJson.fromJson[ChangedFile]
 
         assertTrue(
           pullRequest.map(_.state) == Right(Some(IssueState.Closed)),
@@ -462,7 +476,10 @@ object CoreModelsSpec extends ZIOSpecDefault:
           release.map(_.publishedAt) == Right(Some(Instant.parse("2026-06-03T12:00:00Z"))),
           branch.map(_.isProtected) == Right(Some(true)),
           branch.map(_.commit.flatMap(_.verification.flatMap(_.verified))) == Right(Some(true)),
-          tag.map(_.commit.flatMap(_.sha)) == Right(Some("abc123"))
+          tag.map(_.commit.flatMap(_.sha)) == Right(Some("abc123")),
+          changedFile.map(_.contentsUrl) ==
+            Right(Some("https://gitea.example/api/v1/repos/octo/gitea4s/contents/src/Main.scala")),
+          changedFile.map(_.previousFilename) == Right(Some("src/OldMain.scala"))
         )
       },
       test("round-trips representative models through zio-json") {

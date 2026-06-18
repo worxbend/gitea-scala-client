@@ -5,6 +5,7 @@ import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
   Auth,
+  ChangedFile,
   CreateIssue,
   CreateIssueComment,
   EditDeadlineOption,
@@ -334,6 +335,34 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           endpoint.response == "#/responses/PullRequest",
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88"
+        )
+      },
+      test("builds schema-traceable paginated pull request files request") {
+        val params = PullRequestFilesParams(
+          skipTo = Some("src/Main.scala"),
+          whitespace = Some(PullRequestFileWhitespace.IgnoreEol),
+          page = Some(3),
+          limit = Some(9)
+        )
+        val built = GiteaRequests.repoPullRequestFiles(config, "worx bend", "gitea/scala", 88, params)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetPullRequestFiles,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetPullRequestFiles",
+          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/files",
+          endpoint.parameters.map(_.name) ==
+            List("owner", "repo", "index", "skip-to", "whitespace", "page", "limit"),
+          endpoint.response == "#/responses/ChangedFileList",
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/files?"),
+          request.uri.paramsMap.get("skip-to").contains("src/Main.scala"),
+          request.uri.paramsMap.get("whitespace").contains("ignore-eol"),
+          request.uri.paramsMap.get("page").contains("3"),
+          request.uri.paramsMap.get("limit").contains("9"),
+          built.retryable == true
         )
       },
       test("encodes issue list query parameters from typed params") {
@@ -1548,6 +1577,14 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             )
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2")))
             .thenRespond(ResponseStub.adjust(pullRequestResponse))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2", "files")))
+            .thenRespond(
+              ResponseStub.adjust(
+                """[{"filename":"src/Main.scala","status":"modified","additions":4,"deletions":1}]""",
+                StatusCode.Ok,
+                List(Header("x-total-count", "1"))
+              )
+            )
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "pinned")))
             .thenRespond(ResponseStub.adjust("""[{"id":3,"number":3,"title":"Pinned"}]"""))
         val repos = GiteaRequests.userRepos(config, "octo")
@@ -1560,6 +1597,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val pullRequests = GiteaRequests.repoPullRequests(config, "octo", "api")
         val pinnedPullRequests = GiteaRequests.pinnedPullRequests(config, "octo", "api")
         val pullRequest = GiteaRequests.repoPullRequest(config, "octo", "api", 2)
+        val pullRequestFiles = GiteaRequests.repoPullRequestFiles(config, "octo", "api", 2)
 
         assertTrue(
           repos.decode(repos.request.send(backend)).map(_.data.map(_.name)) ==
@@ -1582,7 +1620,10 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           pullRequests.decode(pullRequests.request.send(backend)).map(_.totalCount) == Right(Some(2L)),
           pinnedPullRequests.decode(pinnedPullRequests.request.send(backend)).map(_.map(_.title)) ==
             Right(Chunk(Some("Pinned"))),
-          pullRequest.decode(pullRequest.request.send(backend)).map(_.title) == Right(Some("Second"))
+          pullRequest.decode(pullRequest.request.send(backend)).map(_.title) == Right(Some("Second")),
+          pullRequestFiles.decode(pullRequestFiles.request.send(backend)).map(_.data.map(_.filename)) ==
+            Right(Chunk(Some("src/Main.scala"))),
+          pullRequestFiles.decode(pullRequestFiles.request.send(backend)).map(_.totalCount) == Right(Some(1L))
         )
       },
       test("decodes notification count, list, and thread responses") {
@@ -1690,6 +1731,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val pullRequests = GiteaRequests.repoPullRequests(config, "owner", "missing")
         val pinnedPullRequests = GiteaRequests.pinnedPullRequests(config, "owner", "missing")
         val pullRequest = GiteaRequests.repoPullRequest(config, "owner", "missing", 77)
+        val pullRequestFiles = GiteaRequests.repoPullRequestFiles(config, "owner", "missing", 77)
 
         assertTrue(
           pullRequests.decode(pullRequests.request.send(backend)) ==
@@ -1697,6 +1739,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           pinnedPullRequests.decode(pinnedPullRequests.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body)),
           pullRequest.decode(pullRequest.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing pull request", body)),
+          pullRequestFiles.decode(pullRequestFiles.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body))
         )
       },

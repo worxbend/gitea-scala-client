@@ -5,6 +5,7 @@ import io.worxbend.gitea4s.model.{
   AddTimeOption,
   Auth,
   Branch,
+  ChangedFile,
   Comment,
   CreateIssue,
   CreateIssueComment,
@@ -241,6 +242,24 @@ object GiteaRequests:
       List("repos", owner, repo, "pulls", index.toString),
       Nil,
       GiteaResponseMapper.decodeJson[PullRequest]
+    )
+
+  def repoPullRequestFiles(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      params: PullRequestFilesParams = PullRequestFilesParams.default
+  ): GiteaRequest[Page[ChangedFile]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
+
+    get(
+      config,
+      GiteaEndpoints.repoGetPullRequestFiles,
+      List("repos", owner, repo, "pulls", index.toString, "files"),
+      pullRequestFilesQuery(params, page, pageSize),
+      response => GiteaResponseMapper.decodePage[ChangedFile](response, page, pageSize)
     )
 
   def issues(config: GiteaConfig, owner: String, repo: String, params: IssueListParams = IssueListParams.default)
@@ -1084,6 +1103,18 @@ object GiteaRequests:
       Some("page" -> page.toString),
       Some("limit" -> pageSize.toString)
     ).flatten ++ params.labels.map(label => "labels" -> label.toString)
+
+  private def pullRequestFilesQuery(
+      params: PullRequestFilesParams,
+      page: Int,
+      pageSize: Int
+  ): List[(String, String)] =
+    List(
+      params.skipTo.map("skip-to" -> _),
+      params.whitespace.map(value => "whitespace" -> value.queryValue),
+      Some("page" -> page.toString),
+      Some("limit" -> pageSize.toString)
+    ).flatten
 
   private def notificationQuery(params: NotificationListParams, page: Int, pageSize: Int): List[(String, String)] =
     List(

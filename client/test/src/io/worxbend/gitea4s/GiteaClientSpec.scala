@@ -7,6 +7,7 @@ import io.worxbend.gitea4s.http.{
   IssueListParams,
   IssueTrackedTimeListParams,
   NotificationListParams,
+  PullRequestFilesParams,
   PullRequestListParams,
   RepoListParams,
   RepositoryCommentListParams,
@@ -943,6 +944,19 @@ object GiteaClientSpec extends ZIOSpecDefault:
             .thenRespond(ResponseStub.adjust("""[{"id":3,"number":3,"title":"Pinned","state":"open"}]"""))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "main", "feature")))
             .thenRespond(ResponseStub.adjust("""{"id":4,"number":4,"title":"By branch","state":"open"}"""))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "files")))
+            .thenRespondCyclic(
+              ResponseStub.adjust(
+                """[{"filename":"src/Main.scala","status":"modified","additions":4}]""",
+                StatusCode.Ok,
+                twoPageHeaders
+              ),
+              ResponseStub.adjust(
+                """[{"filename":"README.md","status":"added","additions":12}]""",
+                StatusCode.Ok,
+                twoPageHeaders
+              )
+            )
         val client = GiteaClient.fromBackend(config, backend)
 
         for
@@ -950,13 +964,15 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequest <- client.pullRequest("alice", "api", 2)
           pinnedPullRequests <- client.pinnedPullRequests("alice", "api")
           pullRequestByBaseHead <- client.pullRequestByBaseHead("alice", "api", "main", "feature")
+          changedFiles <- client.pullRequestFiles("alice", "api", 2, PullRequestFilesParams.default).runCollect
         yield assertTrue(
           pullRequests.map(_.number) == Chunk(Some(1L), Some(2L)),
           pullRequest.id.contains(2L),
           pullRequest.title.contains("Second"),
           pinnedPullRequests.map(_.number) == Chunk(Some(3L)),
           pullRequestByBaseHead.number.contains(4L),
-          pullRequestByBaseHead.title.contains("By branch")
+          pullRequestByBaseHead.title.contains("By branch"),
+          changedFiles.map(_.filename) == Chunk(Some("src/Main.scala"), Some("README.md"))
         )
       },
       test("loads notification count, streams notification threads, and fetches a single thread") {

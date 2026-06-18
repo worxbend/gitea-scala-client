@@ -351,3 +351,10 @@
 2026-06-18T11:38:00Z added typed pull-request base/head lookup with repoGetPullRequestByBaseHead endpoint metadata, request builder, PullRequestsApi facade wiring, stub-backed tests, README, CHANGELOG, PLAN, and API snapshots
 2026-06-18T11:38:58Z validation passed commands="./mill --no-server client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
 2026-06-18T11:38:58Z checkpoint commit created message="Add pull request base-head lookup API"
+2026-06-18T11:39:40Z iteration 7 no changes to commit
+2026-06-18T11:39:40Z iteration 7 completed validation_status=0
+2026-06-18T11:39:40Z iteration 8 started remaining=14857s
+2026-06-18T11:46:00Z added typed pull-request changed-file streaming with ChangedFile, PullRequestFilesParams, repoGetPullRequestFiles request builder, facade wiring, tests, README, CHANGELOG, and PLAN updates
+2026-06-18T11:47:00Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T11:47:30Z checkpoint commit created message="Add pull request changed files API"
+2026-06-18T11:48:00Z iteration 8 completed validation_status=0
