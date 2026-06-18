@@ -47,6 +47,12 @@ core/src/io/worxbend/gitea4s/model/ApiReference.scala
 core/test/src/io/worxbend/gitea4s/model/ApiReferenceSpec.scala
 client/src/io/worxbend/gitea4s/GiteaClient.scala
 client/src/io/worxbend/gitea4s/GiteaConfig.scala
+client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+client/src/io/worxbend/gitea4s/http/GiteaRequest.scala
+client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+client/src/io/worxbend/gitea4s/http/GiteaResponseMapper.scala
+client/src/io/worxbend/gitea4s/http/IssueListParams.scala
+client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 backend-zio/src/io/worxbend/gitea4s/backend/zio/ZioGiteaBackend.scala
 backend-okhttp/src/io/worxbend/gitea4s/backend/okhttp/OkHttpGiteaBackend.scala
 examples/src/io/worxbend/gitea4s/examples/ShowApiReference.scala
@@ -72,7 +78,12 @@ Current checkpoint:
 - Core now contains a schema-traceable first model/codecs slice for `User`, `Organization`, `Repository`, `Permission`, `Issue`, `Label`, `Milestone`, `Comment`, `PullRequest`, `Release`, `Branch`, `Tag`, and `GiteaErrorPayload`.
 - Core supporting types now include `Page`, `Auth`, and the `GiteaError` ADT.
 - `CoreModelsSpec` covers JSON decode and round-trip behavior for the first model slice, enum validation, pagination codec behavior, auth modes, and the error ADT.
-- Validation passed: `./mill core.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
+- `GiteaConfig` now carries typed sttp `Uri`, `Auth`, timeout, page size, user agent, OTP, and retry settings.
+- Client HTTP now has schema-traceable endpoint metadata and pure sttp request construction for `GET /user` (`userGetCurrent`), `GET /users/{username}` (`userGet`), `GET /repos/{owner}/{repo}` (`repoGet`), and `GET /repos/{owner}/{repo}/issues` (`issueListIssues`).
+- `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`.
+- `GiteaResponseMapper` decodes successful JSON responses, paginated issue lists, 204/unit responses, Gitea error payloads, raw failure bodies, pagination headers, and rate-limit reset headers.
+- `GiteaRequestsSpec` uses sttp `BackendStub` to cover path encoding, query params, auth/OTP/user-agent/JSON accept headers, JSON content type for body requests, successful decoding, pagination mapping, Gitea error mapping, and rate-limit mapping.
+- Validation passed: `./mill core.test`, `./mill client.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
 
@@ -610,8 +621,8 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- start Phase 3 by implementing pure request construction for `/user`, `/users/{username}`, `/repos/{owner}/{repo}`, and `/repos/{owner}/{repo}/issues`,
-- use `plugin-redoc-2.yaml` to record each implemented path, HTTP method, operation ID, parameters, and response schema,
-- add sttp `BackendStub` tests for path encoding, query parameters, auth headers, JSON accept/content headers, successful decoding, and Gitea error mapping.
+- start Phase 4 by adding a small request executor that sends `GiteaRequest[A]` through a sttp `Backend[Task]` and maps transport failures to `GiteaError.TransportError`,
+- define initial `UsersApi`, `ReposApi`, and `IssuesApi` traits and wire `me`, `get(username)`, `get(owner, repo)`, and paginated `list(owner, repo, IssueListParams)` through the existing pure request builders,
+- add stub-backed client API tests for success, decode failure, transport failure, and multi-page issue streaming.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.
