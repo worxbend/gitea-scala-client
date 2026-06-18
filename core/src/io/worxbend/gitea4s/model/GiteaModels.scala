@@ -231,6 +231,15 @@ final case class CreateIssueComment(
 object CreateIssueComment:
   given JsonCodec[CreateIssueComment] = DeriveJsonCodec.gen[CreateIssueComment]
 
+final case class IssueMeta(
+    index: Long,
+    owner: Option[String] = None,
+    repo: Option[String] = None
+)
+
+object IssueMeta:
+  given JsonCodec[IssueMeta] = DeriveJsonCodec.gen[IssueMeta]
+
 final case class IssueLabelsOption(
     labels: List[Long]
 )

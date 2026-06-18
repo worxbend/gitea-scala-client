@@ -21,6 +21,7 @@ import io.worxbend.gitea4s.model.{
   Issue,
   IssueDeadline,
   IssueLabelsOption,
+  IssueMeta,
   IssueState,
   Label,
   LockIssueOption,
@@ -202,3 +203,35 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def comment(owner: String, repo: String, index: Long, body: String): IO[GiteaError, Comment] =
     executor.send(GiteaRequests.createIssueComment(config, owner, repo, index, CreateIssueComment(body)))
+
+  override def blocks(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, Issue] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.issueBlocks(config, owner, repo, index, page))
+    }
+
+  override def block(owner: String, repo: String, index: Long, blockedIssue: IssueMeta): IO[GiteaError, Issue] =
+    executor.send(GiteaRequests.createIssueBlocking(config, owner, repo, index, blockedIssue))
+
+  override def unblock(owner: String, repo: String, index: Long, blockedIssue: IssueMeta): IO[GiteaError, Issue] =
+    executor.send(GiteaRequests.removeIssueBlocking(config, owner, repo, index, blockedIssue))
+
+  override def dependencies(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, Issue] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.issueDependencies(config, owner, repo, index, page))
+    }
+
+  override def addDependency(
+      owner: String,
+      repo: String,
+      index: Long,
+      dependency: IssueMeta
+  ): IO[GiteaError, Issue] =
+    executor.send(GiteaRequests.createIssueDependency(config, owner, repo, index, dependency))
+
+  override def removeDependency(
+      owner: String,
+      repo: String,
+      index: Long,
+      dependency: IssueMeta
+  ): IO[GiteaError, Issue] =
+    executor.send(GiteaRequests.removeIssueDependency(config, owner, repo, index, dependency))

@@ -10,7 +10,8 @@ import io.worxbend.gitea4s.model.{
   Issue,
   IssueDeadline,
   Label,
-  LockIssueOption
+  LockIssueOption,
+  IssueMeta
 }
 import zio.{Chunk, IO}
 import zio.stream.ZStream
@@ -47,3 +48,15 @@ trait IssuesApi:
   def editDeadline(owner: String, repo: String, index: Long, body: EditDeadlineOption): IO[GiteaError, IssueDeadline]
 
   def comment(owner: String, repo: String, index: Long, body: String): IO[GiteaError, Comment]
+
+  def blocks(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, Issue]
+
+  def block(owner: String, repo: String, index: Long, blockedIssue: IssueMeta): IO[GiteaError, Issue]
+
+  def unblock(owner: String, repo: String, index: Long, blockedIssue: IssueMeta): IO[GiteaError, Issue]
+
+  def dependencies(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, Issue]
+
+  def addDependency(owner: String, repo: String, index: Long, dependency: IssueMeta): IO[GiteaError, Issue]
+
+  def removeDependency(owner: String, repo: String, index: Long, dependency: IssueMeta): IO[GiteaError, Issue]

@@ -10,7 +10,7 @@ import io.worxbend.gitea4s.http.{
   UserSearchParams
 }
 import io.worxbend.gitea4s.internal.GiteaRequestExecutor
-import io.worxbend.gitea4s.model.{Auth, CreateIssue, EditDeadlineOption, EditIssue, LockIssueOption}
+import io.worxbend.gitea4s.model.{Auth, CreateIssue, EditDeadlineOption, EditIssue, IssueMeta, LockIssueOption}
 import sttp.capabilities.Effect
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -248,6 +248,86 @@ object GiteaClientSpec extends ZIOSpecDefault:
         assertZIO(
           client.editDeadline("owner", "repo", 8, EditDeadlineOption(dueDate = Some(due))).map(_.dueDate)
         )(Assertion.equalTo(Some(due)))
+      },
+      test("manages issue blocking relationships through the IssuesApi methods") {
+        val headers = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "blocks"))
+            }
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"id":13,"number":13,"title":"Blocked first"}]""", StatusCode.Ok, headers),
+              ResponseStub.adjust("""[{"id":14,"number":14,"title":"Blocked second"}]""", StatusCode.Ok, headers)
+            )
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "blocks")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""index":13""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":8,"number":8,"title":"Root"}""", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "blocks")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""index":13""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":8,"number":8,"title":"Root"}"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          blocked <- client.blocks("owner", "repo", 8).runCollect
+          afterBlock <- client.block("owner", "repo", 8, IssueMeta(index = 13L))
+          afterUnblock <- client.unblock("owner", "repo", 8, IssueMeta(index = 13L))
+        yield assertTrue(
+          blocked.map(_.number) == Chunk(Some(13L), Some(14L)),
+          afterBlock.number.contains(8L),
+          afterUnblock.title.contains("Root")
+        )
+      },
+      test("manages issue dependencies through the IssuesApi methods") {
+        val headers = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "dependencies"))
+            }
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"id":21,"number":21,"title":"Dependency first"}]""", StatusCode.Ok, headers),
+              ResponseStub.adjust("""[{"id":22,"number":22,"title":"Dependency second"}]""", StatusCode.Ok, headers)
+            )
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "dependencies")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""index":21""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":8,"number":8,"title":"Root"}""", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "dependencies")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""index":21""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":8,"number":8,"title":"Root"}"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          dependencies <- client.dependencies("owner", "repo", 8).runCollect
+          afterAdd <- client.addDependency("owner", "repo", 8, IssueMeta(index = 21L))
+          afterRemove <- client.removeDependency("owner", "repo", 8, IssueMeta(index = 21L))
+        yield assertTrue(
+          dependencies.map(_.number) == Chunk(Some(21L), Some(22L)),
+          afterAdd.number.contains(8L),
+          afterRemove.title.contains("Root")
+        )
       },
       test("loads an organization through the OrgsApi facade") {
         val backend =

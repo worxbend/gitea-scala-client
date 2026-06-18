@@ -26,6 +26,8 @@ surface is still being filled out.
   schema-traceable issue lock request construction.
 - Typed issue deadline editing and clearing with `EditDeadlineOption`,
   `IssueDeadline`, and schema-traceable deadline request construction.
+- Typed issue dependency and blocking relationship management with `IssueMeta`
+  and schema-traceable dependency/blocking request construction.
 - Primary Java `HttpClient` backend through sttp `HttpClientZioBackend`.
 - Optional OkHttp backend bridge isolated in `backend-okhttp`.
 - Environment and Typesafe config loading, retry handling, examples, and

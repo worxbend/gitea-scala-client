@@ -280,3 +280,9 @@
 2026-06-18T09:30:59Z added typed issue deadline editing with EditDeadlineOption explicit-null payloads, IssueDeadline response decoding, request builder, IssuesApi facade wiring, tests, README, changelog, PLAN, and API snapshots
 2026-06-18T09:30:59Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
 2026-06-18T09:31:30Z checkpoint commit created message="Add issue deadline API"
+2026-06-18T09:31:54Z iteration 11 no changes to commit
+2026-06-18T09:31:54Z iteration 11 completed validation_status=0
+2026-06-18T09:31:54Z iteration 12 started remaining=13613s
+2026-06-18T09:38:56Z added typed issue dependency and blocking relationship APIs with IssueMeta payloads, request builders, facade wiring, tests, README, changelog, PLAN, and API snapshots
+2026-06-18T09:39:18Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T09:39:42Z checkpoint commit created message="Add issue relationship APIs"

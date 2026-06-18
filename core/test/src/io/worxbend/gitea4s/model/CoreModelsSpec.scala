@@ -230,6 +230,17 @@ object CoreModelsSpec extends ZIOSpecDefault:
           decoded == Right(payload)
         )
       },
+      test("round-trips issue meta payloads for dependency and blocking requests") {
+        val sameRepo = IssueMeta(index = 13L)
+        val crossRepo = IssueMeta(index = 21L, owner = Some("other-owner"), repo = Some("other-repo"))
+
+        assertTrue(
+          sameRepo.toJson == """{"index":13}""",
+          sameRepo.toJson.fromJson[IssueMeta] == Right(sameRepo),
+          crossRepo.toJson == """{"index":21,"owner":"other-owner","repo":"other-repo"}""",
+          crossRepo.toJson.fromJson[IssueMeta] == Right(crossRepo)
+        )
+      },
       test("round-trips issue labels request payload") {
         val payload = IssueLabelsOption(labels = List(1L, 2L, 3L))
         val decoded = payload.toJson.fromJson[IssueLabelsOption]

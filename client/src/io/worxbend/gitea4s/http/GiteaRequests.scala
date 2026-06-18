@@ -12,6 +12,7 @@ import io.worxbend.gitea4s.model.{
   Issue,
   IssueDeadline,
   IssueLabelsOption,
+  IssueMeta,
   IssueState,
   Label,
   LockIssueOption,
@@ -26,7 +27,7 @@ import io.worxbend.gitea4s.model.{
   User
 }
 import sttp.client4.*
-import sttp.model.{MediaType, Uri}
+import sttp.model.{MediaType, Method, Uri}
 import zio.json.*
 
 import java.nio.charset.StandardCharsets
@@ -249,6 +250,90 @@ object GiteaRequests:
       List("repos", owner, repo, "issues", index.toString, "comments"),
       body.toJson,
       GiteaResponseMapper.decodeJson[Comment]
+    )
+
+  def issueBlocks(config: GiteaConfig, owner: String, repo: String, index: Long, page: Int = 1)
+      : GiteaRequest[Page[Issue]] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      GiteaEndpoints.issueListBlocks,
+      List("repos", owner, repo, "issues", index.toString, "blocks"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[Issue](response, page, pageSize)
+    )
+
+  def createIssueBlocking(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: IssueMeta
+  ): GiteaRequest[Issue] =
+    postJson(
+      config,
+      GiteaEndpoints.issueCreateIssueBlocking,
+      List("repos", owner, repo, "issues", index.toString, "blocks"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Issue]
+    )
+
+  def removeIssueBlocking(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: IssueMeta
+  ): GiteaRequest[Issue] =
+    deleteJson(
+      config,
+      GiteaEndpoints.issueRemoveIssueBlocking,
+      List("repos", owner, repo, "issues", index.toString, "blocks"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Issue]
+    )
+
+  def issueDependencies(config: GiteaConfig, owner: String, repo: String, index: Long, page: Int = 1)
+      : GiteaRequest[Page[Issue]] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      GiteaEndpoints.issueListIssueDependencies,
+      List("repos", owner, repo, "issues", index.toString, "dependencies"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[Issue](response, page, pageSize)
+    )
+
+  def createIssueDependency(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: IssueMeta
+  ): GiteaRequest[Issue] =
+    postJson(
+      config,
+      GiteaEndpoints.issueCreateIssueDependencies,
+      List("repos", owner, repo, "issues", index.toString, "dependencies"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Issue]
+    )
+
+  def removeIssueDependency(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: IssueMeta
+  ): GiteaRequest[Issue] =
+    deleteJson(
+      config,
+      GiteaEndpoints.issueRemoveIssueDependencies,
+      List("repos", owner, repo, "issues", index.toString, "dependencies"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Issue]
     )
 
   def issueLabels(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[zio.Chunk[Label]] =
@@ -491,6 +576,26 @@ object GiteaRequests:
       endpoint = endpoint,
       request = basicRequest
         .delete(apiUri(config.baseUrl, path, Nil))
+        .response(asStringAlways)
+        .readTimeout(config.timeout)
+        .headers(commonHeaders(config)),
+      decode = decode,
+      retryable = GiteaRequest.isReadOnly(endpoint)
+    )
+
+  private def deleteJson[A](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      json: String,
+      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+  ): GiteaRequest[A] =
+    GiteaRequest(
+      endpoint = endpoint,
+      request = basicRequest
+        .method(Method.DELETE, apiUri(config.baseUrl, path, Nil))
+        .body(json)
+        .contentType(MediaType.ApplicationJson)
         .response(asStringAlways)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),

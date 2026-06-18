@@ -10,6 +10,7 @@ import io.worxbend.gitea4s.model.{
   EditIssue,
   IssueDeadline,
   IssueLabelsOption,
+  IssueMeta,
   IssueState,
   LockIssueOption,
   NotificationSubjectType
@@ -505,6 +506,79 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             case _ => false
         )
       },
+      test("builds schema-traceable issue blocking and dependency requests") {
+        val body = IssueMeta(index = 13L, owner = Some("other"), repo = Some("project"))
+        val blocks = GiteaRequests.issueBlocks(config, "worx bend", "gitea/scala", 99, page = 2)
+        val block = GiteaRequests.createIssueBlocking(config, "worx bend", "gitea/scala", 99, body)
+        val unblock = GiteaRequests.removeIssueBlocking(config, "worx bend", "gitea/scala", 99, IssueMeta(13L))
+        val dependencies = GiteaRequests.issueDependencies(config, "worx bend", "gitea/scala", 99, page = 3)
+        val addDependency = GiteaRequests.createIssueDependency(config, "worx bend", "gitea/scala", 99, body)
+        val removeDependency =
+          GiteaRequests.removeIssueDependency(config, "worx bend", "gitea/scala", 99, IssueMeta(13L))
+
+        assertTrue(
+          blocks.endpoint == GiteaEndpoints.issueListBlocks,
+          blocks.endpoint.operationId == "issueListBlocks",
+          blocks.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/blocks",
+          blocks.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "page", "limit"),
+          blocks.endpoint.response == "#/responses/IssueList",
+          blocks.request.method == Method.GET,
+          blocks.request.uri.toString.contains(
+            "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/blocks?"
+          ),
+          blocks.request.uri.paramsMap.get("page").contains("2"),
+          blocks.request.uri.paramsMap.get("limit").contains("25"),
+          blocks.retryable == true,
+          block.endpoint == GiteaEndpoints.issueCreateIssueBlocking,
+          block.endpoint.method == "POST",
+          block.endpoint.operationId == "issueCreateIssueBlocking",
+          block.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
+          block.endpoint.response == "#/responses/Issue",
+          block.request.method == Method.POST,
+          block.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/blocks",
+          block.request.header("Content-Type").exists(_.startsWith("application/json")),
+          block.retryable == false,
+          block.request.body match
+            case StringBody(json, _, _) =>
+              json.contains(""""index":13""") &&
+                json.contains(""""owner":"other"""") &&
+                json.contains(""""repo":"project"""")
+            case _ => false,
+          unblock.endpoint == GiteaEndpoints.issueRemoveIssueBlocking,
+          unblock.endpoint.method == "DELETE",
+          unblock.endpoint.operationId == "issueRemoveIssueBlocking",
+          unblock.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/blocks",
+          unblock.request.method == Method.DELETE,
+          unblock.request.header("Content-Type").exists(_.startsWith("application/json")),
+          unblock.retryable == false,
+          unblock.request.body match
+            case StringBody(json, _, _) => json.contains(""""index":13""")
+            case _ => false,
+          dependencies.endpoint == GiteaEndpoints.issueListIssueDependencies,
+          dependencies.endpoint.operationId == "issueListIssueDependencies",
+          dependencies.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/dependencies",
+          dependencies.endpoint.response == "#/responses/IssueList",
+          dependencies.request.method == Method.GET,
+          dependencies.request.uri.toString.contains(
+            "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/dependencies?"
+          ),
+          dependencies.request.uri.paramsMap.get("page").contains("3"),
+          dependencies.retryable == true,
+          addDependency.endpoint == GiteaEndpoints.issueCreateIssueDependencies,
+          addDependency.endpoint.operationId == "issueCreateIssueDependencies",
+          addDependency.request.method == Method.POST,
+          addDependency.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/dependencies",
+          addDependency.request.header("Content-Type").exists(_.startsWith("application/json")),
+          addDependency.retryable == false,
+          removeDependency.endpoint == GiteaEndpoints.issueRemoveIssueDependencies,
+          removeDependency.endpoint.operationId == "issueRemoveIssueDependencies",
+          removeDependency.request.method == Method.DELETE,
+          removeDependency.request.header("Content-Type").exists(_.startsWith("application/json")),
+          removeDependency.retryable == false
+        )
+      },
       test("builds paginated follower and following list requests") {
         val followers = GiteaRequests.userFollowers(config, "space user/slash", page = 2)
         val following = GiteaRequests.userFollowing(config, "space user/slash", page = 3)
@@ -748,6 +822,30 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           built.decode(built.request.send(backend)) == Right(IssueDeadline(Some(due)))
+        )
+      },
+      test("decodes issue blocking and dependency responses") {
+        val listResponse = """[{"id":1,"number":13,"title":"Blocked"}]"""
+        val issueResponse = """{"id":2,"number":99,"title":"Root"}"""
+        val headers = List(Header("x-total-count", "1"))
+        val backend =
+          BackendStub.synchronous
+            .whenRequestMatches(_.method == Method.GET)
+            .thenRespond(ResponseStub.adjust(listResponse, StatusCode.Ok, headers))
+            .whenRequestMatches(_.method == Method.POST)
+            .thenRespond(ResponseStub.adjust(issueResponse, StatusCode.Created))
+            .whenRequestMatches(_.method == Method.DELETE)
+            .thenRespond(ResponseStub.adjust(issueResponse, StatusCode.Ok))
+        val blocks = GiteaRequests.issueBlocks(config, "owner", "repo", 99)
+        val dependencies = GiteaRequests.issueDependencies(config, "owner", "repo", 99)
+        val block = GiteaRequests.createIssueBlocking(config, "owner", "repo", 99, IssueMeta(13L))
+        val removeDependency = GiteaRequests.removeIssueDependency(config, "owner", "repo", 99, IssueMeta(13L))
+
+        assertTrue(
+          blocks.decode(blocks.request.send(backend)).map(_.data.headOption.flatMap(_.number)) == Right(Some(13L)),
+          dependencies.decode(dependencies.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
+          block.decode(block.request.send(backend)).map(_.number) == Right(Some(99L)),
+          removeDependency.decode(removeDependency.request.send(backend)).map(_.title) == Right(Some("Root"))
         )
       },
       test("decodes single issue and paginated user list responses") {

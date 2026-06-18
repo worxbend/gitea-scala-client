@@ -1202,6 +1202,49 @@ public final class io.worxbend.gitea4s.model.IssueLabelsOption$ implements scala
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.IssueMeta
+public final class io.worxbend.gitea4s.model.IssueMeta implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.IssueMeta(long, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public long index();
+  public scala.Option<java.lang.String> owner();
+  public scala.Option<java.lang.String> repo();
+  public io.worxbend.gitea4s.model.IssueMeta copy(long, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public long copy$default$1();
+  public scala.Option<java.lang.String> copy$default$2();
+  public scala.Option<java.lang.String> copy$default$3();
+  public long _1();
+  public scala.Option<java.lang.String> _2();
+  public scala.Option<java.lang.String> _3();
+  public static io.worxbend.gitea4s.model.IssueMeta apply(long, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.IssueMeta fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.IssueMeta> given_JsonCodec_IssueMeta();
+  public static io.worxbend.gitea4s.model.IssueMeta unapply(io.worxbend.gitea4s.model.IssueMeta);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$3();
+}
+
+## io.worxbend.gitea4s.model.IssueMeta$
+public final class io.worxbend.gitea4s.model.IssueMeta$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.IssueMeta$ MODULE$;
+  public io.worxbend.gitea4s.model.IssueMeta apply(long, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.IssueMeta unapply(io.worxbend.gitea4s.model.IssueMeta);
+  public scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.IssueMeta> given_JsonCodec_IssueMeta();
+  public io.worxbend.gitea4s.model.IssueMeta fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.IssueState
 public abstract class io.worxbend.gitea4s.model.IssueState implements scala.reflect.Enum {
   public io.worxbend.gitea4s.model.IssueState(java.lang.String);
