@@ -43,6 +43,12 @@ pipeline {
       }
     }
 
+    stage('Compatibility Check') {
+      steps {
+        sh './mill compatibility.check'
+      }
+    }
+
     stage('Publishable Artifacts') {
       steps {
         sh './mill __.docJar __.sourceJar __.publishArtifacts'

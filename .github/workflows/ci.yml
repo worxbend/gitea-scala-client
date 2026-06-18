@@ -56,5 +56,8 @@ jobs:
       - name: Examples
         run: ./mill examples.run
 
+      - name: Compatibility check
+        run: ./mill compatibility.check
+
       - name: Publishable artifacts
         run: ./mill __.docJar __.sourceJar __.publishArtifacts

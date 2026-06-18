@@ -153,7 +153,10 @@ Current checkpoint:
 - `README.md`, `RELEASE.md`, and `CHANGELOG.md` document the Sonatype Central workflow, required secrets, namespace/key prerequisites, and the release dispatch behavior.
 - Renovate now has explicit regex managers for the Mill build directive, checked-in Mill launcher fallback, Scala baseline, and central ZIO/zio-json/zio-config/sttp version pins in `build.mill`.
 - `README.md` and `RELEASE.md` document dependency-update validation and alignment expectations for Mill, Scala, and library dependency PRs.
-- Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, `./mill it.test`, `./mill examples.run`, `./mill __.docJar __.sourceJar __.publishArtifacts`, and `./mill __.publishM2Local`.
+- Phase 10 now includes a checked-in public API snapshot baseline under `api-snapshot/` for `core`, `client`, `backend-zio`, and `backend-okhttp`.
+- The Mill `compatibility.check` command compares current published-module JVM public signatures against the baseline; `compatibility.writeSnapshot` refreshes it for intentional API changes.
+- GitHub Actions CI, the Central publishing workflow, Jenkins, README, RELEASE, and CHANGELOG now include the compatibility check in release-readiness guidance.
+- Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, `./mill it.test`, `./mill examples.run`, `./mill compatibility.check`, `./mill __.docJar __.sourceJar __.publishArtifacts`, and `./mill __.publishM2Local`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
 
@@ -716,6 +719,7 @@ Tasks:
 - Renovate dependency updates. Complete for the current central Mill, Scala, ZIO, zio-json, zio-config, and sttp version pins through explicit regex managers.
 - Changelog. Complete as a checked-in starting changelog for unreleased pre-1.0 work.
 - Release checklist. Complete as `RELEASE.md` for local snapshot validation and versioning steps.
+- Compatibility-check baseline. Complete as checked-in `api-snapshot/` files and Mill `compatibility.check` / `compatibility.writeSnapshot` commands.
 
 Deliverable:
 
@@ -725,7 +729,7 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 10 publishing readiness with a compatibility-check baseline, or return to the next typed API slice if release infrastructure is sufficient for now,
+- return to the next typed API slice now that the release infrastructure has CI, Central publishing groundwork, Renovate tracking, and compatibility snapshots,
 - keep examples and README aligned with any build or publishing commands that become runnable,
 - keep `./mill __.test`, `./mill it.test`, and `./mill examples.run` passing without external services when live credentials are absent.
 

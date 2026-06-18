@@ -24,6 +24,8 @@ surface is still being filled out.
   GitHub Actions workflow.
 - Renovate regex managers for Mill, Scala, ZIO, zio-json, zio-config, and sttp
   version pins.
+- Checked-in public API snapshots and a Mill `compatibility.check` release
+  guard for the published modules.
 
 ### Notes
 

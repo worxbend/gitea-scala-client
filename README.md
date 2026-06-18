@@ -240,8 +240,14 @@ Dependency PRs should run the same local validation used for release readiness:
 ./mill __.test
 ./mill it.test
 ./mill examples.run
+./mill compatibility.check
 ./mill __.docJar __.sourceJar __.publishArtifacts
 ```
+
+`./mill compatibility.check` compares the JVM public signatures of the four
+published modules against the checked-in `api-snapshot/` baseline. Run
+`./mill compatibility.writeSnapshot` only when an API change is intentional and
+belongs in the next release notes.
 
 ## Examples
 
@@ -321,6 +327,7 @@ and makes no external calls.
 ./mill __.compile
 ./mill __.test
 ./mill it.test
+./mill compatibility.check
 ./mill __.docJar
 ./mill __.sourceJar
 ./mill __.publishArtifacts

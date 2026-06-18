@@ -26,6 +26,7 @@ Run these commands before a release checkpoint:
 ./mill __.test
 ./mill it.test
 ./mill examples.run
+./mill compatibility.check
 ./mill __.docJar __.sourceJar __.publishArtifacts
 ./mill __.publishM2Local
 ```
@@ -39,9 +40,11 @@ Run these commands before a release checkpoint:
 2. Update README dependency coordinates.
 3. Move the relevant `CHANGELOG.md` entries from `Unreleased` to the release
    version and add the release date.
-4. Regenerate local source and javadoc jars with Mill.
-5. Publish to the local Maven repository with `./mill __.publishM2Local`.
-6. Verify a sample application can resolve the local coordinates.
+4. Run `./mill compatibility.check`. For intentional API changes, update the
+   checked-in baseline with `./mill compatibility.writeSnapshot`.
+5. Regenerate local source and javadoc jars with Mill.
+6. Publish to the local Maven repository with `./mill __.publishM2Local`.
+7. Verify a sample application can resolve the local coordinates.
 
 ## Dependency Updates
 
@@ -53,6 +56,8 @@ keep related version values together:
 - Scala updates must keep CI's matrix value aligned with `Versions.scala`.
 - Library version updates must pass compile, tests, examples, and publishable
   artifact generation before merging.
+- Intentional public API changes must include refreshed `api-snapshot/`
+  baselines from `./mill compatibility.writeSnapshot`.
 
 Use the Local Validation commands for Renovate PRs unless the PR only changes
 documentation.
@@ -101,3 +106,8 @@ Before `1.0.0`, minor versions may add, rename, or reshape typed endpoints and
 models as the client converges on the Gitea API `1.26.2` contract. Patch
 versions should be limited to bug fixes, documentation updates, and build or
 publishing fixes.
+
+`./mill compatibility.check` compares the current published module JVM public
+signatures against the checked-in `api-snapshot/` baseline. The baseline covers
+`core`, `client`, `backend-zio`, and `backend-okhttp`, excluding implementation
+classes under `internal` and generated anonymous codec classes.

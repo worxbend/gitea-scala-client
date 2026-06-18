@@ -49,6 +49,7 @@ jobs:
           ./mill __.test
           ./mill it.test
           ./mill examples.run
+          ./mill compatibility.check
           ./mill __.docJar __.sourceJar __.publishArtifacts
 
       - name: Publish to Sonatype Central Portal
