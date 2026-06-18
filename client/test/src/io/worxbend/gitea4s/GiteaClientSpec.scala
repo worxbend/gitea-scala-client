@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.{IssueListParams, RepoListParams, UserSearchParams}
+import io.worxbend.gitea4s.http.{IssueListParams, PullRequestListParams, RepoListParams, UserSearchParams}
 import io.worxbend.gitea4s.model.Auth
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -207,6 +207,35 @@ object GiteaClientSpec extends ZIOSpecDefault:
           releases.map(_.tagName) == Chunk(Some("v1.0.0"), Some("v1.1.0")),
           release.id.contains(2L),
           release.name.contains("Second")
+        )
+      },
+      test("loads and streams repository pull requests") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub.whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls")))
+            .thenRespondCyclic(
+              ResponseStub.adjust(
+                """[{"id":1,"number":1,"title":"First","state":"open"}]""",
+                StatusCode.Ok,
+                twoPageHeaders
+              ),
+              ResponseStub.adjust(
+                """[{"id":2,"number":2,"title":"Second","state":"closed"}]""",
+                StatusCode.Ok,
+                twoPageHeaders
+              )
+            )
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2")))
+            .thenRespond(ResponseStub.adjust("""{"id":2,"number":2,"title":"Second","state":"closed"}"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          pullRequests <- client.pullRequests("alice", "api", PullRequestListParams.default).runCollect
+          pullRequest <- client.pullRequest("alice", "api", 2)
+        yield assertTrue(
+          pullRequests.map(_.number) == Chunk(Some(1L), Some(2L)),
+          pullRequest.id.contains(2L),
+          pullRequest.title.contains("Second")
         )
       },
       test("streams followers and following users across paginated endpoints") {

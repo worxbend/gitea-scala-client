@@ -187,6 +187,39 @@ object GiteaEndpoints:
       response = "#/responses/Release"
     )
 
+  val repoListPullRequests: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/pulls",
+      operationId = "repoListPullRequests",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("base_branch", "query", required = false),
+        GiteaParameter("state", "query", required = false),
+        GiteaParameter("sort", "query", required = false),
+        GiteaParameter("milestone", "query", required = false),
+        GiteaParameter("labels", "query", required = false),
+        GiteaParameter("poster", "query", required = false),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/PullRequestList"
+    )
+
+  val repoGetPullRequest: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/pulls/{index}",
+      operationId = "repoGetPullRequest",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "#/responses/PullRequest"
+    )
+
   val issueListIssues: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

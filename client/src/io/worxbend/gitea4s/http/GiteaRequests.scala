@@ -1,7 +1,19 @@
 package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.GiteaConfig
-import io.worxbend.gitea4s.model.{Auth, Branch, Issue, IssueState, Organization, Page, Release, Repository, Tag, User}
+import io.worxbend.gitea4s.model.{
+  Auth,
+  Branch,
+  Issue,
+  IssueState,
+  Organization,
+  Page,
+  PullRequest,
+  Release,
+  Repository,
+  Tag,
+  User
+}
 import sttp.client4.*
 import sttp.model.{MediaType, Uri}
 
@@ -140,6 +152,32 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Release]
     )
 
+  def repoPullRequests(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      params: PullRequestListParams = PullRequestListParams.default
+  ): GiteaRequest[Page[PullRequest]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
+
+    get(
+      config,
+      GiteaEndpoints.repoListPullRequests,
+      List("repos", owner, repo, "pulls"),
+      pullRequestQuery(params, page, pageSize),
+      response => GiteaResponseMapper.decodePage[PullRequest](response, page, pageSize)
+    )
+
+  def repoPullRequest(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[PullRequest] =
+    get(
+      config,
+      GiteaEndpoints.repoGetPullRequest,
+      List("repos", owner, repo, "pulls", index.toString),
+      Nil,
+      GiteaResponseMapper.decodeJson[PullRequest]
+    )
+
   def issues(config: GiteaConfig, owner: String, repo: String, params: IssueListParams = IssueListParams.default)
       : GiteaRequest[Page[Issue]] =
     val page = params.page.getOrElse(1)
@@ -243,6 +281,17 @@ object GiteaRequests:
       Some("page" -> page.toString),
       Some("limit" -> pageSize.toString)
     ).flatten
+
+  private def pullRequestQuery(params: PullRequestListParams, page: Int, pageSize: Int): List[(String, String)] =
+    List(
+      params.baseBranch.map("base_branch" -> _),
+      params.state.map(state => "state" -> state.queryValue),
+      params.sort.map(sort => "sort" -> sort.queryValue),
+      params.milestone.map(value => "milestone" -> value.toString),
+      params.poster.map("poster" -> _),
+      Some("page" -> page.toString),
+      Some("limit" -> pageSize.toString)
+    ).flatten ++ params.labels.map(label => "labels" -> label.toString)
 
   private def nonEmptyCsv(name: String, values: zio.Chunk[String]): Option[(String, String)] =
     Option.when(values.nonEmpty)(name -> values.mkString(","))

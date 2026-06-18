@@ -214,6 +214,56 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/77"
         )
       },
+      test("builds schema-traceable paginated repository pull request list request") {
+        val params = PullRequestListParams(
+          baseBranch = Some("main"),
+          state = Some(PullRequestListState.All),
+          sort = Some(PullRequestSort.RecentUpdate),
+          milestone = Some(12),
+          labels = Chunk(4, 5),
+          poster = Some("alice"),
+          page = Some(6),
+          limit = Some(11)
+        )
+        val built = GiteaRequests.repoPullRequests(config, "worx bend", "gitea/scala", params)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListPullRequests,
+          endpoint.operationId == "repoListPullRequests",
+          endpoint.path == "/repos/{owner}/{repo}/pulls",
+          endpoint.parameters.map(_.name) ==
+            List("owner", "repo", "base_branch", "state", "sort", "milestone", "labels", "poster", "page", "limit"),
+          endpoint.response == "#/responses/PullRequestList",
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/pulls?"),
+          request.uri.paramsMap.get("base_branch").contains("main"),
+          request.uri.paramsMap.get("state").contains("all"),
+          request.uri.paramsMap.get("sort").contains("recentupdate"),
+          request.uri.paramsMap.get("milestone").contains("12"),
+          request.uri.toString.contains("labels=4"),
+          request.uri.toString.contains("labels=5"),
+          request.uri.paramsMap.get("poster").contains("alice"),
+          request.uri.paramsMap.get("page").contains("6"),
+          request.uri.paramsMap.get("limit").contains("11")
+        )
+      },
+      test("builds schema-traceable get repository pull request request") {
+        val built = GiteaRequests.repoPullRequest(config, "worx bend", "gitea/scala", 88)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetPullRequest,
+          endpoint.operationId == "repoGetPullRequest",
+          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
+          endpoint.response == "#/responses/PullRequest",
+          request.method == Method.GET,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88"
+        )
+      },
       test("encodes issue list query parameters from typed params") {
         val params = IssueListParams(
           state = Some(IssueState.Open),
@@ -391,6 +441,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val releaseListResponse =
           """[{"id":20,"tag_name":"v1.0.0","name":"First"},{"id":21,"tag_name":"v1.1.0","name":"Second"}]"""
         val releaseResponse = """{"id":20,"tag_name":"v1.0.0","name":"First"}"""
+        val pullRequestListResponse =
+          """[{"id":30,"number":1,"state":"open","title":"First"},{"id":31,"number":2,"state":"closed","title":"Second"}]"""
+        val pullRequestResponse = """{"id":31,"number":2,"state":"closed","title":"Second"}"""
         val backend =
           BackendStub.synchronous
             .whenRequestMatches(_.uri.path.endsWith(List("users", "octo", "repos")))
@@ -407,6 +460,12 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             .thenRespond(ResponseStub.adjust(releaseListResponse, StatusCode.Ok, List(Header("x-total-count", "2"))))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "releases", "20")))
             .thenRespond(ResponseStub.adjust(releaseResponse))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls")))
+            .thenRespond(
+              ResponseStub.adjust(pullRequestListResponse, StatusCode.Ok, List(Header("x-total-count", "2")))
+            )
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2")))
+            .thenRespond(ResponseStub.adjust(pullRequestResponse))
         val repos = GiteaRequests.userRepos(config, "octo")
         val orgRepos = GiteaRequests.organizationRepos(config, "platform")
         val topics = GiteaRequests.repoTopics(config, "octo", "api")
@@ -414,6 +473,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val tags = GiteaRequests.repoTags(config, "octo", "api")
         val releases = GiteaRequests.repoReleases(config, "octo", "api")
         val release = GiteaRequests.repoRelease(config, "octo", "api", 20)
+        val pullRequests = GiteaRequests.repoPullRequests(config, "octo", "api")
+        val pullRequest = GiteaRequests.repoPullRequest(config, "octo", "api", 2)
 
         assertTrue(
           repos.decode(repos.request.send(backend)).map(_.data.map(_.name)) ==
@@ -430,7 +491,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           releases.decode(releases.request.send(backend)).map(_.data.map(_.tagName)) ==
             Right(Chunk(Some("v1.0.0"), Some("v1.1.0"))),
           releases.decode(releases.request.send(backend)).map(_.totalCount) == Right(Some(2L)),
-          release.decode(release.request.send(backend)).map(_.tagName) == Right(Some("v1.0.0"))
+          release.decode(release.request.send(backend)).map(_.tagName) == Right(Some("v1.0.0")),
+          pullRequests.decode(pullRequests.request.send(backend)).map(_.data.map(_.number)) ==
+            Right(Chunk(Some(1L), Some(2L))),
+          pullRequests.decode(pullRequests.request.send(backend)).map(_.totalCount) == Right(Some(2L)),
+          pullRequest.decode(pullRequest.request.send(backend)).map(_.title) == Right(Some("Second"))
         )
       },
       test("maps Gitea error responses while preserving raw body") {
@@ -503,6 +568,19 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           releases.decode(releases.request.send(backend)) == Left(GiteaError.NotFound("missing release", body)),
           release.decode(release.request.send(backend)) == Left(GiteaError.NotFound("missing release", body))
+        )
+      },
+      test("maps repository pull request not-found responses") {
+        val body = """{"message":"missing pull request"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val pullRequests = GiteaRequests.repoPullRequests(config, "owner", "missing")
+        val pullRequest = GiteaRequests.repoPullRequest(config, "owner", "missing", 77)
+
+        assertTrue(
+          pullRequests.decode(pullRequests.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing pull request", body)),
+          pullRequest.decode(pullRequest.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing pull request", body))
         )
       },
       test("maps rate limit reset headers") {
