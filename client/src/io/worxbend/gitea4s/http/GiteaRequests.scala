@@ -5,6 +5,7 @@ import io.worxbend.gitea4s.model.{
   Auth,
   Branch,
   CreateIssue,
+  EditIssue,
   Issue,
   IssueState,
   NotificationCount,
@@ -213,6 +214,21 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Issue]
     )
 
+  def editIssue(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: EditIssue
+  ): GiteaRequest[Issue] =
+    patchJson(
+      config,
+      GiteaEndpoints.issueEditIssue,
+      List("repos", owner, repo, "issues", index.toString),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Issue]
+    )
+
   def notifications(config: GiteaConfig, params: NotificationListParams = NotificationListParams.default)
       : GiteaRequest[Page[NotificationThread]] =
     val page = params.page.getOrElse(1)
@@ -295,6 +311,26 @@ object GiteaRequests:
       endpoint = endpoint,
       request = basicRequest
         .post(apiUri(config.baseUrl, path, Nil))
+        .body(json)
+        .contentType(MediaType.ApplicationJson)
+        .response(asStringAlways)
+        .readTimeout(config.timeout)
+        .headers(commonHeaders(config)),
+      decode = decode,
+      retryable = GiteaRequest.isReadOnly(endpoint)
+    )
+
+  private def patchJson[A](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      json: String,
+      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+  ): GiteaRequest[A] =
+    GiteaRequest(
+      endpoint = endpoint,
+      request = basicRequest
+        .patch(apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
         .response(asStringAlways)

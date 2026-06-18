@@ -2,7 +2,7 @@ package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{Auth, CreateIssue, IssueState, NotificationSubjectType}
+import io.worxbend.gitea4s.model.{Auth, CreateIssue, EditIssue, IssueState, NotificationSubjectType}
 import sttp.client4.*
 import sttp.client4.testing.{BackendStub, ResponseStub}
 import sttp.model.{Header, Method, StatusCode}
@@ -441,6 +441,40 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             case _ => false
         )
       },
+      test("builds schema-traceable edit issue request with JSON body") {
+        val body = EditIssue(
+          title = Some("Retitle"),
+          body = Some("Updated body"),
+          contentVersion = Some(2L),
+          state = Some(IssueState.Closed),
+          unsetDueDate = Some(true)
+        )
+        val built = GiteaRequests.editIssue(config, "worx bend", "gitea/scala", 99, body)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.issueEditIssue,
+          endpoint.method == "PATCH",
+          endpoint.operationId == "issueEditIssue",
+          endpoint.path == "/repos/{owner}/{repo}/issues/{index}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
+          endpoint.response == "#/responses/Issue",
+          request.method == Method.PATCH,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99",
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("Content-Type").exists(_.startsWith("application/json")),
+          built.retryable == false,
+          request.body match
+            case StringBody(json, _, _) =>
+              json.contains(""""title":"Retitle"""") &&
+                json.contains(""""content_version":2""") &&
+                json.contains(""""state":"closed"""") &&
+                json.contains(""""unset_due_date":true""")
+            case _ => false
+        )
+      },
       test("decodes a successful user response through BackendStub") {
         val response = """{"id":42,"login":"octo"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(response))
@@ -491,6 +525,21 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.decode(raw).map(_.id) == Right(Some(77L)),
           built.decode(raw).map(_.number) == Right(Some(12L)),
           built.decode(raw).map(_.title) == Right(Some("Created"))
+        )
+      },
+      test("decodes an edited issue response") {
+        val response = """{"id":77,"number":12,"state":"closed","title":"Retitle"}"""
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(response, StatusCode.Created))
+        val built =
+          GiteaRequests.editIssue(config, "owner", "repo", 12, EditIssue(title = Some("Retitle")))
+        val raw = built.request.send(backend)
+
+        assertTrue(
+          built.decode(raw).map(_.id) == Right(Some(77L)),
+          built.decode(raw).map(_.number) == Right(Some(12L)),
+          built.decode(raw).map(_.state) == Right(Some(IssueState.Closed)),
+          built.decode(raw).map(_.title) == Right(Some("Retitle"))
         )
       },
       test("decodes single issue and paginated user list responses") {

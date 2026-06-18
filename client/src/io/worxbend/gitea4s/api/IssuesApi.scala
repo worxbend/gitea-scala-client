@@ -2,7 +2,7 @@ package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.IssueListParams
-import io.worxbend.gitea4s.model.{CreateIssue, Issue}
+import io.worxbend.gitea4s.model.{CreateIssue, EditIssue, Issue}
 import zio.IO
 import zio.stream.ZStream
 
@@ -16,3 +16,7 @@ trait IssuesApi:
   ): ZStream[Any, GiteaError, Issue]
 
   def create(owner: String, repo: String, body: CreateIssue): IO[GiteaError, Issue]
+
+  def edit(owner: String, repo: String, index: Long, body: EditIssue): IO[GiteaError, Issue]
+
+  def close(owner: String, repo: String, index: Long): IO[GiteaError, Issue]

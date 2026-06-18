@@ -16,6 +16,8 @@ surface is still being filled out.
   releases, pull requests, and notifications.
 - Typed issue creation with `CreateIssue` and `issueCreateIssue` request
   construction.
+- Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
+  construction.
 - Primary Java `HttpClient` backend through sttp `HttpClientZioBackend`.
 - Optional OkHttp backend bridge isolated in `backend-okhttp`.
 - Environment and Typesafe config loading, retry handling, examples, and

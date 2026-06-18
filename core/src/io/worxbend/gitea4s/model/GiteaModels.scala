@@ -207,6 +207,22 @@ final case class CreateIssue(
 object CreateIssue:
   given JsonCodec[CreateIssue] = DeriveJsonCodec.gen[CreateIssue]
 
+final case class EditIssue(
+    assignee: Option[String] = None,
+    assignees: Option[List[String]] = None,
+    body: Option[String] = None,
+    @jsonField("content_version") contentVersion: Option[Long] = None,
+    @jsonField("due_date") dueDate: Option[Instant] = None,
+    milestone: Option[Long] = None,
+    ref: Option[String] = None,
+    state: Option[IssueState] = None,
+    title: Option[String] = None,
+    @jsonField("unset_due_date") unsetDueDate: Option[Boolean] = None
+)
+
+object EditIssue:
+  given JsonCodec[EditIssue] = DeriveJsonCodec.gen[EditIssue]
+
 final case class Comment(
     id: Option[Long] = None,
     body: Option[String] = None,

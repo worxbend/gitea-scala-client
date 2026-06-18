@@ -10,7 +10,7 @@ import io.worxbend.gitea4s.http.{
   UserSearchParams
 }
 import io.worxbend.gitea4s.internal.GiteaRequestExecutor
-import io.worxbend.gitea4s.model.{Auth, CreateIssue}
+import io.worxbend.gitea4s.model.{Auth, CreateIssue, EditIssue}
 import sttp.capabilities.Effect
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -110,6 +110,36 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(client.create("owner", "repo", CreateIssue(title = "Created")).map(_.number))(
           Assertion.equalTo(Some(8L))
+        )
+      },
+      test("edits an issue through the IssuesApi edit method") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.PATCH &&
+              request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8")) &&
+              (request.body match
+                case StringBody(body, _, _) => body.contains(""""title":"Retitle"""")
+                case _ => false)
+          }.thenRespond(ResponseStub.adjust("""{"id":18,"number":8,"title":"Retitle"}""", StatusCode.Created))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.edit("owner", "repo", 8, EditIssue(title = Some("Retitle"))).map(_.title))(
+          Assertion.equalTo(Some("Retitle"))
+        )
+      },
+      test("closes an issue through the IssuesApi close helper") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.PATCH &&
+              request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8")) &&
+              (request.body match
+                case StringBody(body, _, _) => body.contains(""""state":"closed"""")
+                case _ => false)
+          }.thenRespond(ResponseStub.adjust("""{"id":18,"number":8,"state":"closed"}""", StatusCode.Created))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.close("owner", "repo", 8).map(_.state.map(_.jsonValue)))(
+          Assertion.equalTo(Some("closed"))
         )
       },
       test("loads an organization through the OrgsApi facade") {

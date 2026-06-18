@@ -270,6 +270,20 @@ object GiteaEndpoints:
       response = "#/responses/Issue"
     )
 
+  val issueEditIssue: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "PATCH",
+      path = "/repos/{owner}/{repo}/issues/{index}",
+      operationId = "issueEditIssue",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("body", "body", required = false)
+      ),
+      response = "#/responses/Issue"
+    )
+
   val notifyGetList: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

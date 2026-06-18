@@ -167,18 +167,27 @@ Current stream-oriented APIs include user followers/following/search,
 user and organization repositories, organization members, issues, branches,
 tags, releases, pull requests, and notification threads.
 
-## Issue Creation
+## Issue Writes
 
-The first write endpoint is typed issue creation through `CreateIssue`:
+The current write endpoints cover issue creation and editing:
 
 ```scala
-import io.worxbend.gitea4s.model.CreateIssue
+import io.worxbend.gitea4s.model.{CreateIssue, EditIssue}
 
 client.create(
   owner = "my-org",
   repo = "my-repo",
   body = CreateIssue(title = "Bug report", body = Some("Observed behavior..."))
 )
+
+client.edit(
+  owner = "my-org",
+  repo = "my-repo",
+  index = 12,
+  body = EditIssue(title = Some("Updated title"))
+)
+
+client.close(owner = "my-org", repo = "my-repo", index = 12)
 ```
 
 Write requests are not retried by default.

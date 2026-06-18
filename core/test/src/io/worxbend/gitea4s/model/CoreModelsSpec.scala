@@ -199,6 +199,28 @@ object CoreModelsSpec extends ZIOSpecDefault:
           decoded == Right(payload)
         )
       },
+      test("round-trips edit issue request payloads using schema JSON names") {
+        val payload = EditIssue(
+          title = Some("Retitle issue"),
+          body = Some("Updated body"),
+          contentVersion = Some(12L),
+          dueDate = Some(Instant.parse("2026-07-02T00:00:00Z")),
+          milestone = Some(4L),
+          ref = Some("main"),
+          state = Some(IssueState.Closed),
+          unsetDueDate = Some(false)
+        )
+
+        val decoded = payload.toJson.fromJson[EditIssue]
+
+        assertTrue(
+          payload.toJson.contains(""""content_version":12"""),
+          payload.toJson.contains(""""due_date":"2026-07-02T00:00:00Z""""),
+          payload.toJson.contains(""""unset_due_date":false"""),
+          payload.toJson.contains(""""state":"closed""""),
+          decoded == Right(payload)
+        )
+      },
       test("decodes pull request, release, branch, and tag payloads") {
         val pullRequestJson =
           """{
