@@ -151,6 +151,8 @@ Current checkpoint:
 - Publishing modules now extend Mill's `SonatypeCentralPublishModule`, so `core`, `client`, `backend-zio`, and `backend-okhttp` expose `publishSonatypeCentral` while preserving local publish tasks.
 - Maven Central automation groundwork now includes `.github/workflows/publish-central.yml`, a manual GitHub Actions workflow that validates the build, rejects `-SNAPSHOT` versions, and publishes all library artifacts through `mill.javalib.SonatypeCentralPublishModule/publishAll` when Central Portal and PGP secrets are configured.
 - `README.md`, `RELEASE.md`, and `CHANGELOG.md` document the Sonatype Central workflow, required secrets, namespace/key prerequisites, and the release dispatch behavior.
+- Renovate now has explicit regex managers for the Mill build directive, checked-in Mill launcher fallback, Scala baseline, and central ZIO/zio-json/zio-config/sttp version pins in `build.mill`.
+- `README.md` and `RELEASE.md` document dependency-update validation and alignment expectations for Mill, Scala, and library dependency PRs.
 - Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, `./mill it.test`, `./mill examples.run`, `./mill __.docJar __.sourceJar __.publishArtifacts`, and `./mill __.publishM2Local`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
@@ -711,7 +713,7 @@ Tasks:
 - Source and doc jars. Complete for local Mill artifact generation.
 - CI matrix for Java 21 and supported Scala versions. Complete for the current Scala `3.8.4` baseline through GitHub Actions; Jenkins has the same core Mill validation flow.
 - Maven Central automation groundwork. Complete as an opt-in manual GitHub Actions workflow using Mill's Sonatype Central Portal publisher; final release execution still requires verified namespace and repository secrets.
-- Renovate dependency updates. Initial config exists; richer Mill dependency extraction remains an improvement.
+- Renovate dependency updates. Complete for the current central Mill, Scala, ZIO, zio-json, zio-config, and sttp version pins through explicit regex managers.
 - Changelog. Complete as a checked-in starting changelog for unreleased pre-1.0 work.
 - Release checklist. Complete as `RELEASE.md` for local snapshot validation and versioning steps.
 
@@ -723,7 +725,7 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 10 publishing readiness with a compatibility-check baseline or richer dependency-update automation, or return to the next typed API slice if release infrastructure is sufficient for now,
+- continue Phase 10 publishing readiness with a compatibility-check baseline, or return to the next typed API slice if release infrastructure is sufficient for now,
 - keep examples and README aligned with any build or publishing commands that become runnable,
 - keep `./mill __.test`, `./mill it.test`, and `./mill examples.run` passing without external services when live credentials are absent.
 

@@ -2,6 +2,7 @@
 
 set -e
 
+# renovate: datasource=github-releases depName=com-lihaoyi/mill versioning=semver
 if [ -z "${DEFAULT_MILL_VERSION}" ] ; then DEFAULT_MILL_VERSION="1.1.6"; fi
 
 if [ -z "${GITHUB_RELEASE_CDN}" ] ; then GITHUB_RELEASE_CDN=""; fi

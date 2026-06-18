@@ -223,6 +223,26 @@ The build is wired for Sonatype Central Portal publishing through Mill's
 publishes the four library modules with `publishAll` when the Maven Central
 secrets described in `RELEASE.md` are configured.
 
+## Dependency Updates
+
+Renovate is configured with regex managers for the version pins that Mill keeps
+outside standard dependency manifests:
+
+- `//| mill-version` in `build.mill`
+- `DEFAULT_MILL_VERSION` in the checked-in `mill` launcher
+- `Versions.scala`, `Versions.zio`, `Versions.zioJson`,
+  `Versions.zioConfig`, and `Versions.sttp` in `build.mill`
+
+Dependency PRs should run the same local validation used for release readiness:
+
+```bash
+./mill __.compile
+./mill __.test
+./mill it.test
+./mill examples.run
+./mill __.docJar __.sourceJar __.publishArtifacts
+```
+
 ## Examples
 
 The default example is hermetic when live credentials are absent:
@@ -319,5 +339,5 @@ CI runs the Java 21 Mill validation flow in `.github/workflows/ci.yml`. The
 checked-in `Jenkinsfile` runs the same core commands for Jenkins-based
 environments.
 
-The rewrite is still in progress. Maven Central publishing automation,
-compatibility checks, and write endpoints remain planned work.
+The rewrite is still in progress. Compatibility checks and write endpoints
+remain planned work.

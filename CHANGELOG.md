@@ -22,6 +22,8 @@ surface is still being filled out.
 - Java 21 CI validation and release-process documentation.
 - Sonatype Central Portal publishing groundwork through Mill and a manual
   GitHub Actions workflow.
+- Renovate regex managers for Mill, Scala, ZIO, zio-json, zio-config, and sttp
+  version pins.
 
 ### Notes
 

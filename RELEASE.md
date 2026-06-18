@@ -10,6 +10,8 @@ the manual Central publishing path for the pre-`1.0.0` line.
 - Keep `./mill` as the build entrypoint.
 - Keep the supported Scala version aligned across `build.mill`, CI, README
   coordinates, and this document.
+- Keep the Mill version aligned between the `build.mill` `//| mill-version`
+  directive and the checked-in `mill` launcher's `DEFAULT_MILL_VERSION`.
 - Do not require live Gitea credentials for default validation. Live integration
   tests must remain opt-in through `GITEA_URL` and `GITEA_TOKEN`.
 - Configure the GitHub Actions `maven-central` environment before publishing.
@@ -40,6 +42,20 @@ Run these commands before a release checkpoint:
 4. Regenerate local source and javadoc jars with Mill.
 5. Publish to the local Maven repository with `./mill __.publishM2Local`.
 6. Verify a sample application can resolve the local coordinates.
+
+## Dependency Updates
+
+Renovate tracks the central dependency pins in `build.mill` and the checked-in
+Mill launcher fallback through explicit regex managers. Dependency PRs should
+keep related version values together:
+
+- Mill updates must change both `//| mill-version` and `DEFAULT_MILL_VERSION`.
+- Scala updates must keep CI's matrix value aligned with `Versions.scala`.
+- Library version updates must pass compile, tests, examples, and publishable
+  artifact generation before merging.
+
+Use the Local Validation commands for Renovate PRs unless the PR only changes
+documentation.
 
 ## Maven Central Publishing
 

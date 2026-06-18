@@ -1,5 +1,59 @@
 {
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended"
+  ],
+  "dependencyDashboard": true,
+  "labels": [
+    "dependencies"
+  ],
+  "rangeStrategy": "bump",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update version constants annotated with renovate comments in build.mill.",
+      "managerFilePatterns": [
+        "/(^|/)build\\.mill$/"
+      ],
+      "matchStrings": [
+        "//\\s*renovate: datasource=(?<datasource>[a-zA-Z0-9-._]+) depName=(?<depName>[^\\s]+)(?: versioning=(?<versioning>[^\\s]+))?\\s+val\\s+[A-Za-z0-9_]+\\s*=\\s*\"(?<currentValue>[^\"]+)\"",
+        "//\\|\\s*mill-version:\\s*(?<currentValue>[^\\s]+)\\s+//\\s*renovate: datasource=(?<datasource>[a-zA-Z0-9-._]+) depName=(?<depName>[^\\s]+)(?: versioning=(?<versioning>[^\\s]+))?"
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Keep the checked-in Mill launcher fallback version aligned with the Mill build directive.",
+      "managerFilePatterns": [
+        "/(^|/)mill$/"
+      ],
+      "matchStrings": [
+        "#\\s*renovate: datasource=(?<datasource>[a-zA-Z0-9-._]+) depName=(?<depName>[^\\s]+)(?: versioning=(?<versioning>[^\\s]+))?\\s+if \\[ -z \"\\$\\{DEFAULT_MILL_VERSION\\}\" \\] ; then DEFAULT_MILL_VERSION=\"(?<currentValue>[^\"]+)\"; fi"
+      ]
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Keep Mill launcher and build directive updates together.",
+      "matchDepNames": [
+        "com-lihaoyi/mill"
+      ],
+      "groupName": "Mill"
+    },
+    {
+      "description": "Keep the ZIO core modules on the same version.",
+      "matchDepNames": [
+        "dev.zio:zio_3",
+        "dev.zio:zio-test_3",
+        "dev.zio:zio-test-sbt_3"
+      ],
+      "groupName": "ZIO"
+    },
+    {
+      "description": "Keep sttp client4 modules on the same version.",
+      "matchDepNames": [
+        "com.softwaremill.sttp.client4:core_3"
+      ],
+      "groupName": "sttp client4"
+    }
   ]
 }
