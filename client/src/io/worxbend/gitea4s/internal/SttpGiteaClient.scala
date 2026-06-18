@@ -4,7 +4,7 @@ import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.api.OrgsApi
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{GiteaRequests, IssueListParams, RepoListParams, UserSearchParams}
-import io.worxbend.gitea4s.model.{Issue, Organization, Repository, User}
+import io.worxbend.gitea4s.model.{Branch, Issue, Organization, Repository, Tag, User}
 import sttp.client4.Backend
 import zio.{Chunk, IO, Task}
 import zio.stream.ZStream
@@ -68,6 +68,16 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
     Pagination.paginated { page =>
       executor.send(GiteaRequests.repoTopics(config, owner, repo, page))
     }.runCollect
+
+  override def branches(owner: String, repo: String): ZStream[Any, GiteaError, Branch] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoBranches(config, owner, repo, page))
+    }
+
+  override def tags(owner: String, repo: String): ZStream[Any, GiteaError, Tag] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoTags(config, owner, repo, page))
+    }
 
   override def get(owner: String, repo: String, index: Long): IO[GiteaError, Issue] =
     executor.send(GiteaRequests.issue(config, owner, repo, index))

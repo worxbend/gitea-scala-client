@@ -130,6 +130,34 @@ object GiteaEndpoints:
       response = "#/responses/TopicNames"
     )
 
+  val repoListBranches: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/branches",
+      operationId = "repoListBranches",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/BranchList"
+    )
+
+  val repoListTags: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/tags",
+      operationId = "repoListTags",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/TagList"
+    )
+
   val issueListIssues: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

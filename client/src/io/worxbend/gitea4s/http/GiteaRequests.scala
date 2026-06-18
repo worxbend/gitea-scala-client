@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.GiteaConfig
-import io.worxbend.gitea4s.model.{Auth, Issue, IssueState, Organization, Page, Repository, User}
+import io.worxbend.gitea4s.model.{Auth, Branch, Issue, IssueState, Organization, Page, Repository, Tag, User}
 import sttp.client4.*
 import sttp.model.{MediaType, Uri}
 
@@ -96,6 +96,28 @@ object GiteaRequests:
       List("repos", owner, repo, "topics"),
       pageQuery(page, pageSize),
       response => GiteaResponseMapper.decodeTopicNamesPage(response, page, pageSize)
+    )
+
+  def repoBranches(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Branch]] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      GiteaEndpoints.repoListBranches,
+      List("repos", owner, repo, "branches"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[Branch](response, page, pageSize)
+    )
+
+  def repoTags(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Tag]] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      GiteaEndpoints.repoListTags,
+      List("repos", owner, repo, "tags"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[Tag](response, page, pageSize)
     )
 
   def issues(config: GiteaConfig, owner: String, repo: String, params: IssueListParams = IssueListParams.default)
