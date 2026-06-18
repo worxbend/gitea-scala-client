@@ -4,6 +4,7 @@ import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.model.{
   Auth,
   Branch,
+  CreateIssue,
   Issue,
   IssueState,
   NotificationCount,
@@ -18,6 +19,7 @@ import io.worxbend.gitea4s.model.{
 }
 import sttp.client4.*
 import sttp.model.{MediaType, Uri}
+import zio.json.*
 
 import java.nio.charset.StandardCharsets
 import java.util.Base64
@@ -202,6 +204,15 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Issue]
     )
 
+  def createIssue(config: GiteaConfig, owner: String, repo: String, body: CreateIssue): GiteaRequest[Issue] =
+    postJson(
+      config,
+      GiteaEndpoints.issueCreateIssue,
+      List("repos", owner, repo, "issues"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Issue]
+    )
+
   def notifications(config: GiteaConfig, params: NotificationListParams = NotificationListParams.default)
       : GiteaRequest[Page[NotificationThread]] =
     val page = params.page.getOrElse(1)
@@ -266,6 +277,26 @@ object GiteaRequests:
       endpoint = endpoint,
       request = basicRequest
         .get(apiUri(config.baseUrl, path, query))
+        .response(asStringAlways)
+        .readTimeout(config.timeout)
+        .headers(commonHeaders(config)),
+      decode = decode,
+      retryable = GiteaRequest.isReadOnly(endpoint)
+    )
+
+  private def postJson[A](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      json: String,
+      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+  ): GiteaRequest[A] =
+    GiteaRequest(
+      endpoint = endpoint,
+      request = basicRequest
+        .post(apiUri(config.baseUrl, path, Nil))
+        .body(json)
+        .contentType(MediaType.ApplicationJson)
         .response(asStringAlways)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),

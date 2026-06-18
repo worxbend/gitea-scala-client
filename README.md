@@ -10,8 +10,8 @@ and zio-json.
 - JVM target: Java 21
 - Version: `0.1.0-SNAPSHOT`
 - API reference: local `plugin-redoc-2.yaml` for Gitea API `1.26.2`
-- Implemented surface: typed core models/codecs plus read-only users, organizations,
-  repositories, issues, releases, pull requests, and notifications through a ZIO client API
+- Implemented surface: typed core models/codecs plus users, organizations,
+  repositories, issue list/get/create, releases, pull requests, and notifications through a ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -166,6 +166,22 @@ client
 Current stream-oriented APIs include user followers/following/search,
 user and organization repositories, organization members, issues, branches,
 tags, releases, pull requests, and notification threads.
+
+## Issue Creation
+
+The first write endpoint is typed issue creation through `CreateIssue`:
+
+```scala
+import io.worxbend.gitea4s.model.CreateIssue
+
+client.create(
+  owner = "my-org",
+  repo = "my-repo",
+  body = CreateIssue(title = "Bug report", body = Some("Observed behavior..."))
+)
+```
+
+Write requests are not retried by default.
 
 ## Error Handling
 
@@ -346,5 +362,5 @@ CI runs the Java 21 Mill validation flow in `.github/workflows/ci.yml`. The
 checked-in `Jenkinsfile` runs the same core commands for Jenkins-based
 environments.
 
-The rewrite is still in progress. Compatibility checks and write endpoints
-remain planned work.
+The rewrite is still in progress. Additional typed write endpoints remain
+planned work.

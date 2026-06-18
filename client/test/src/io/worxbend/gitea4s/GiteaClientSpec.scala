@@ -10,7 +10,7 @@ import io.worxbend.gitea4s.http.{
   UserSearchParams
 }
 import io.worxbend.gitea4s.internal.GiteaRequestExecutor
-import io.worxbend.gitea4s.model.Auth
+import io.worxbend.gitea4s.model.{Auth, CreateIssue}
 import sttp.capabilities.Effect
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -95,6 +95,21 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(client.get("owner", "repo", 7).map(issue => issue.id -> issue.number -> issue.title))(
           Assertion.equalTo(Some(17L) -> Some(7L) -> Some("tracked"))
+        )
+      },
+      test("creates an issue through the IssuesApi create method") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.POST &&
+              request.uri.path.endsWith(List("repos", "owner", "repo", "issues")) &&
+              (request.body match
+                case StringBody(body, _, _) => body.contains(""""title":"Created"""")
+                case _ => false)
+          }.thenRespond(ResponseStub.adjust("""{"id":18,"number":8,"title":"Created"}""", StatusCode.Created))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.create("owner", "repo", CreateIssue(title = "Created")).map(_.number))(
+          Assertion.equalTo(Some(8L))
         )
       },
       test("loads an organization through the OrgsApi facade") {

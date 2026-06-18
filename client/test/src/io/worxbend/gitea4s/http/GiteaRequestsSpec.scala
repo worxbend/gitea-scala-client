@@ -2,7 +2,7 @@ package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{Auth, IssueState, NotificationSubjectType}
+import io.worxbend.gitea4s.model.{Auth, CreateIssue, IssueState, NotificationSubjectType}
 import sttp.client4.*
 import sttp.client4.testing.{BackendStub, ResponseStub}
 import sttp.model.{Header, Method, StatusCode}
@@ -306,6 +306,39 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99"
         )
       },
+      test("builds schema-traceable create issue request with JSON body") {
+        val body = CreateIssue(
+          title = "Implement POST",
+          body = Some("Create typed issue"),
+          dueDate = Some(Instant.parse("2026-07-01T00:00:00Z")),
+          labels = Some(List(1L, 2L)),
+          milestone = Some(3L)
+        )
+        val built = GiteaRequests.createIssue(config, "worx bend", "gitea/scala", body)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.issueCreateIssue,
+          endpoint.method == "POST",
+          endpoint.operationId == "issueCreateIssue",
+          endpoint.path == "/repos/{owner}/{repo}/issues",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "body"),
+          endpoint.response == "#/responses/Issue",
+          request.method == Method.POST,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues",
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("Content-Type").exists(_.startsWith("application/json")),
+          built.retryable == false,
+          request.body match
+            case StringBody(json, _, _) =>
+              json.contains(""""title":"Implement POST"""") &&
+                json.contains(""""due_date":"2026-07-01T00:00:00Z"""") &&
+                json.contains(""""labels":[1,2]""")
+            case _ => false
+        )
+      },
       test("builds paginated follower and following list requests") {
         val followers = GiteaRequests.userFollowers(config, "space user/slash", page = 2)
         val following = GiteaRequests.userFollowing(config, "space user/slash", page = 3)
@@ -445,6 +478,19 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.decode(raw).map(_.page) == Right(1),
           built.decode(raw).map(_.pageSize) == Right(25),
           built.decode(raw).map(_.hasNext) == Right(true)
+        )
+      },
+      test("decodes a created issue response") {
+        val response = """{"id":77,"number":12,"state":"open","title":"Created"}"""
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(response, StatusCode.Created))
+        val built = GiteaRequests.createIssue(config, "owner", "repo", CreateIssue(title = "Created"))
+        val raw = built.request.send(backend)
+
+        assertTrue(
+          built.decode(raw).map(_.id) == Right(Some(77L)),
+          built.decode(raw).map(_.number) == Right(Some(12L)),
+          built.decode(raw).map(_.title) == Right(Some("Created"))
         )
       },
       test("decodes single issue and paginated user list responses") {

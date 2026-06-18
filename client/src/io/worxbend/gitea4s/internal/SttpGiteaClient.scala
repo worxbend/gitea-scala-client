@@ -13,6 +13,7 @@ import io.worxbend.gitea4s.http.{
 }
 import io.worxbend.gitea4s.model.{
   Branch,
+  CreateIssue,
   Issue,
   NotificationCount,
   NotificationThread,
@@ -141,3 +142,6 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
     Pagination.paginated { page =>
       executor.send(GiteaRequests.issues(config, owner, repo, params.copy(page = Some(page))))
     }
+
+  override def create(owner: String, repo: String, body: CreateIssue): IO[GiteaError, Issue] =
+    executor.send(GiteaRequests.createIssue(config, owner, repo, body))

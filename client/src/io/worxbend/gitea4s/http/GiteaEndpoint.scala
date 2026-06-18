@@ -257,6 +257,19 @@ object GiteaEndpoints:
       response = "#/responses/Issue"
     )
 
+  val issueCreateIssue: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "POST",
+      path = "/repos/{owner}/{repo}/issues",
+      operationId = "issueCreateIssue",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("body", "body", required = false)
+      ),
+      response = "#/responses/Issue"
+    )
+
   val notifyGetList: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

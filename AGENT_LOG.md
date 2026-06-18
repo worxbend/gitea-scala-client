@@ -241,3 +241,9 @@
 2026-06-18T08:46:55Z validation passed commands="git diff --check; ruby yaml parse for GitHub workflows; ./mill --no-server compatibility.check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts; ./mill --no-server __.publishM2Local"
 2026-06-18T08:47:48Z checkpoint commit created message="Add public API compatibility snapshots"
 2026-06-18T08:47:48Z iteration 5 completed validation_status=0
+2026-06-18T08:48:12Z iteration 5 no changes to commit
+2026-06-18T08:48:12Z iteration 5 completed validation_status=0
+2026-06-18T08:48:12Z iteration 6 started remaining=16236s
+2026-06-18T08:56:10Z added first typed write API slice for issueCreateIssue with CreateIssue payload, POST request builder, IssuesApi facade wiring, tests, README, changelog, PLAN, and API snapshots
+2026-06-18T08:56:10Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts; ./mill --no-server __.publishM2Local"
+2026-06-18T08:56:30Z checkpoint commit created message="Add issue creation API"

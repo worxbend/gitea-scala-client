@@ -14,6 +14,8 @@ surface is still being filled out.
 - Typed core models, zio-json codecs, and the `GiteaError` ADT.
 - Read-only ZIO client APIs for users, organizations, repositories, issues,
   releases, pull requests, and notifications.
+- Typed issue creation with `CreateIssue` and `issueCreateIssue` request
+  construction.
 - Primary Java `HttpClient` backend through sttp `HttpClientZioBackend`.
 - Optional OkHttp backend bridge isolated in `backend-okhttp`.
 - Environment and Typesafe config loading, retry handling, examples, and

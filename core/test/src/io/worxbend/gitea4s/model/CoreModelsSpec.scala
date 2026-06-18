@@ -179,6 +179,26 @@ object CoreModelsSpec extends ZIOSpecDefault:
           comment.map(_.issueUrl) == Right(Some("https://gitea.example/api/v1/repos/octo/gitea4s/issues/12"))
         )
       },
+      test("round-trips create issue request payloads using schema JSON names") {
+        val payload = CreateIssue(
+          title = "Implement write path",
+          assignee = Some("octo"),
+          assignees = Some(List("octo", "reviewer")),
+          body = Some("First POST slice"),
+          closed = Some(false),
+          dueDate = Some(Instant.parse("2026-07-01T00:00:00Z")),
+          labels = Some(List(1L, 2L)),
+          milestone = Some(3L),
+          ref = Some("main")
+        )
+
+        val decoded = payload.toJson.fromJson[CreateIssue]
+
+        assertTrue(
+          payload.toJson.contains(""""due_date":"2026-07-01T00:00:00Z""""),
+          decoded == Right(payload)
+        )
+      },
       test("decodes pull request, release, branch, and tag payloads") {
         val pullRequestJson =
           """{
