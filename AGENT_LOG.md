@@ -358,3 +358,9 @@
 2026-06-18T11:47:00Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
 2026-06-18T11:47:30Z checkpoint commit created message="Add pull request changed files API"
 2026-06-18T11:48:00Z iteration 8 completed validation_status=0
+2026-06-18T11:45:10Z iteration 8 no changes to commit
+2026-06-18T11:45:10Z iteration 8 completed validation_status=0
+2026-06-18T11:45:10Z iteration 9 started remaining=14527s
+2026-06-18T11:49:15Z added typed pull-request commit streaming with Commit model family, PullRequestCommitsParams, repoGetPullRequestCommits request builder, facade wiring, tests, README, CHANGELOG, PLAN, and API snapshots
+2026-06-18T11:51:28Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile; ./mill --no-server __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T11:51:45Z checkpoint commit created message="Add pull request commits API"

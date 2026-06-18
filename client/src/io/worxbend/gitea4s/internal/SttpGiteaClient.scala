@@ -9,6 +9,7 @@ import io.worxbend.gitea4s.http.{
   IssueListParams,
   IssueTrackedTimeListParams,
   NotificationListParams,
+  PullRequestCommitsParams,
   PullRequestFilesParams,
   PullRequestListParams,
   RepoListParams,
@@ -20,6 +21,7 @@ import io.worxbend.gitea4s.model.{
   Branch,
   ChangedFile,
   Comment,
+  Commit,
   CreateIssue,
   CreateIssueComment,
   EditDeadlineOption,
@@ -168,6 +170,16 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   ): ZStream[Any, GiteaError, ChangedFile] =
     Pagination.paginated { page =>
       executor.send(GiteaRequests.repoPullRequestFiles(config, owner, repo, index, params.copy(page = Some(page))))
+    }
+
+  override def pullRequestCommits(
+      owner: String,
+      repo: String,
+      index: Long,
+      params: PullRequestCommitsParams
+  ): ZStream[Any, GiteaError, Commit] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoPullRequestCommits(config, owner, repo, index, params.copy(page = Some(page))))
     }
 
   override def notificationThreads(

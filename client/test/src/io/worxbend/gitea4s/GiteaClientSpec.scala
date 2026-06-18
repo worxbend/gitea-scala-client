@@ -7,6 +7,7 @@ import io.worxbend.gitea4s.http.{
   IssueListParams,
   IssueTrackedTimeListParams,
   NotificationListParams,
+  PullRequestCommitsParams,
   PullRequestFilesParams,
   PullRequestListParams,
   RepoListParams,
@@ -957,6 +958,19 @@ object GiteaClientSpec extends ZIOSpecDefault:
                 twoPageHeaders
               )
             )
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "commits")))
+            .thenRespondCyclic(
+              ResponseStub.adjust(
+                """[{"sha":"abc123","commit":{"message":"First commit"}}]""",
+                StatusCode.Ok,
+                twoPageHeaders
+              ),
+              ResponseStub.adjust(
+                """[{"sha":"def456","commit":{"message":"Second commit"}}]""",
+                StatusCode.Ok,
+                twoPageHeaders
+              )
+            )
         val client = GiteaClient.fromBackend(config, backend)
 
         for
@@ -965,6 +979,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pinnedPullRequests <- client.pinnedPullRequests("alice", "api")
           pullRequestByBaseHead <- client.pullRequestByBaseHead("alice", "api", "main", "feature")
           changedFiles <- client.pullRequestFiles("alice", "api", 2, PullRequestFilesParams.default).runCollect
+          commits <- client.pullRequestCommits("alice", "api", 2, PullRequestCommitsParams.default).runCollect
         yield assertTrue(
           pullRequests.map(_.number) == Chunk(Some(1L), Some(2L)),
           pullRequest.id.contains(2L),
@@ -972,7 +987,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pinnedPullRequests.map(_.number) == Chunk(Some(3L)),
           pullRequestByBaseHead.number.contains(4L),
           pullRequestByBaseHead.title.contains("By branch"),
-          changedFiles.map(_.filename) == Chunk(Some("src/Main.scala"), Some("README.md"))
+          changedFiles.map(_.filename) == Chunk(Some("src/Main.scala"), Some("README.md")),
+          commits.map(_.sha) == Chunk(Some("abc123"), Some("def456"))
         )
       },
       test("loads notification count, streams notification threads, and fetches a single thread") {

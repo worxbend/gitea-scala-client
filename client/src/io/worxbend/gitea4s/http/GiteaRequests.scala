@@ -7,6 +7,7 @@ import io.worxbend.gitea4s.model.{
   Branch,
   ChangedFile,
   Comment,
+  Commit,
   CreateIssue,
   CreateIssueComment,
   EditDeadlineOption,
@@ -260,6 +261,24 @@ object GiteaRequests:
       List("repos", owner, repo, "pulls", index.toString, "files"),
       pullRequestFilesQuery(params, page, pageSize),
       response => GiteaResponseMapper.decodePage[ChangedFile](response, page, pageSize)
+    )
+
+  def repoPullRequestCommits(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      params: PullRequestCommitsParams = PullRequestCommitsParams.default
+  ): GiteaRequest[Page[Commit]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
+
+    get(
+      config,
+      GiteaEndpoints.repoGetPullRequestCommits,
+      List("repos", owner, repo, "pulls", index.toString, "commits"),
+      pullRequestCommitsQuery(params, page, pageSize),
+      response => GiteaResponseMapper.decodePage[Commit](response, page, pageSize)
     )
 
   def issues(config: GiteaConfig, owner: String, repo: String, params: IssueListParams = IssueListParams.default)
@@ -1114,6 +1133,18 @@ object GiteaRequests:
       params.whitespace.map(value => "whitespace" -> value.queryValue),
       Some("page" -> page.toString),
       Some("limit" -> pageSize.toString)
+    ).flatten
+
+  private def pullRequestCommitsQuery(
+      params: PullRequestCommitsParams,
+      page: Int,
+      pageSize: Int
+  ): List[(String, String)] =
+    List(
+      Some("page" -> page.toString),
+      Some("limit" -> pageSize.toString),
+      params.verification.map(value => "verification" -> value.toString),
+      params.files.map(value => "files" -> value.toString)
     ).flatten
 
   private def notificationQuery(params: NotificationListParams, page: Int, pageSize: Int): List[(String, String)] =

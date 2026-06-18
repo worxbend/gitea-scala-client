@@ -1,8 +1,8 @@
 package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.{PullRequestFilesParams, PullRequestListParams}
-import io.worxbend.gitea4s.model.{ChangedFile, PullRequest}
+import io.worxbend.gitea4s.http.{PullRequestCommitsParams, PullRequestFilesParams, PullRequestListParams}
+import io.worxbend.gitea4s.model.{ChangedFile, Commit, PullRequest}
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
@@ -25,3 +25,10 @@ trait PullRequestsApi:
       index: Long,
       params: PullRequestFilesParams = PullRequestFilesParams.default
   ): ZStream[Any, GiteaError, ChangedFile]
+
+  def pullRequestCommits(
+      owner: String,
+      repo: String,
+      index: Long,
+      params: PullRequestCommitsParams = PullRequestCommitsParams.default
+  ): ZStream[Any, GiteaError, Commit]

@@ -421,6 +421,51 @@ final case class ChangedFile(
 object ChangedFile:
   given JsonCodec[ChangedFile] = DeriveJsonCodec.gen[ChangedFile]
 
+final case class Commit(
+    author: Option[User] = None,
+    commit: Option[RepoCommit] = None,
+    committer: Option[User] = None,
+    created: Option[Instant] = None,
+    files: Option[List[CommitAffectedFile]] = None,
+    @jsonField("html_url") htmlUrl: Option[String] = None,
+    parents: Option[List[CommitMeta]] = None,
+    sha: Option[String] = None,
+    stats: Option[CommitStats] = None,
+    url: Option[String] = None
+)
+
+object Commit:
+  given JsonCodec[Commit] = DeriveJsonCodec.gen[Commit]
+
+final case class RepoCommit(
+    author: Option[CommitUser] = None,
+    committer: Option[CommitUser] = None,
+    message: Option[String] = None,
+    tree: Option[CommitMeta] = None,
+    url: Option[String] = None,
+    verification: Option[PayloadCommitVerification] = None
+)
+
+object RepoCommit:
+  given JsonCodec[RepoCommit] = DeriveJsonCodec.gen[RepoCommit]
+
+final case class CommitAffectedFile(
+    filename: Option[String] = None,
+    status: Option[String] = None
+)
+
+object CommitAffectedFile:
+  given JsonCodec[CommitAffectedFile] = DeriveJsonCodec.gen[CommitAffectedFile]
+
+final case class CommitStats(
+    additions: Option[Long] = None,
+    deletions: Option[Long] = None,
+    total: Option[Long] = None
+)
+
+object CommitStats:
+  given JsonCodec[CommitStats] = DeriveJsonCodec.gen[CommitStats]
+
 final case class Release(
     id: Option[Long] = None,
     author: Option[User] = None,
@@ -537,6 +582,15 @@ final case class CommitMeta(
 
 object CommitMeta:
   given JsonCodec[CommitMeta] = DeriveJsonCodec.gen[CommitMeta]
+
+final case class CommitUser(
+    date: Option[String] = None,
+    email: Option[String] = None,
+    name: Option[String] = None
+)
+
+object CommitUser:
+  given JsonCodec[CommitUser] = DeriveJsonCodec.gen[CommitUser]
 
 final case class PayloadUser(
     name: Option[String] = None,

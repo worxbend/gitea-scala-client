@@ -275,6 +275,23 @@ object GiteaEndpoints:
       response = "#/responses/ChangedFileList"
     )
 
+  val repoGetPullRequestCommits: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/pulls/{index}/commits",
+      operationId = "repoGetPullRequestCommits",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false),
+        GiteaParameter("verification", "query", required = false),
+        GiteaParameter("files", "query", required = false)
+      ),
+      response = "#/responses/CommitList"
+    )
+
   val issueListIssues: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

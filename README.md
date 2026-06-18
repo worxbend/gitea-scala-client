@@ -279,14 +279,15 @@ Write requests are not retried by default.
 
 ## Pull Requests
 
-Pull-request reads include paginated list/get methods, changed-file streams,
-and the repository pinned pull-request list:
+Pull-request reads include paginated list/get methods, changed-file and commit
+streams, and the repository pinned pull-request list:
 
 ```scala
 client.pullRequests(owner = "my-org", repo = "my-repo").take(25).runCollect
 client.pullRequest(owner = "my-org", repo = "my-repo", index = 7)
 client.pullRequestByBaseHead(owner = "my-org", repo = "my-repo", base = "main", head = "feature")
 client.pullRequestFiles(owner = "my-org", repo = "my-repo", index = 7).take(50).runCollect
+client.pullRequestCommits(owner = "my-org", repo = "my-repo", index = 7).take(50).runCollect
 client.pinnedPullRequests(owner = "my-org", repo = "my-repo")
 ```
 

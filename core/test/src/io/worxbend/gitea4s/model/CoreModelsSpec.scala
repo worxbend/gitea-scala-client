@@ -463,11 +463,29 @@ object CoreModelsSpec extends ZIOSpecDefault:
             |  "status": "renamed"
             |}""".stripMargin
 
+        val commitJson =
+          """{
+            |  "sha": "abc123",
+            |  "created": "2026-06-01T08:00:00Z",
+            |  "html_url": "https://gitea.example/octo/gitea4s/commit/abc123",
+            |  "author": { "id": 42, "login": "octo" },
+            |  "commit": {
+            |    "message": "Implement pull request commits",
+            |    "author": { "name": "Octo", "email": "octo@example.test", "date": "2026-06-01T08:00:00Z" },
+            |    "tree": { "sha": "tree123" },
+            |    "verification": { "verified": true, "reason": "gpg" }
+            |  },
+            |  "files": [{ "filename": "src/Main.scala", "status": "modified" }],
+            |  "parents": [{ "sha": "parent123" }],
+            |  "stats": { "additions": 10, "deletions": 2, "total": 12 }
+            |}""".stripMargin
+
         val pullRequest = pullRequestJson.fromJson[PullRequest]
         val release = releaseJson.fromJson[Release]
         val branch = branchJson.fromJson[Branch]
         val tag = tagJson.fromJson[Tag]
         val changedFile = changedFileJson.fromJson[ChangedFile]
+        val commit = commitJson.fromJson[Commit]
 
         assertTrue(
           pullRequest.map(_.state) == Right(Some(IssueState.Closed)),
@@ -479,7 +497,11 @@ object CoreModelsSpec extends ZIOSpecDefault:
           tag.map(_.commit.flatMap(_.sha)) == Right(Some("abc123")),
           changedFile.map(_.contentsUrl) ==
             Right(Some("https://gitea.example/api/v1/repos/octo/gitea4s/contents/src/Main.scala")),
-          changedFile.map(_.previousFilename) == Right(Some("src/OldMain.scala"))
+          changedFile.map(_.previousFilename) == Right(Some("src/OldMain.scala")),
+          commit.map(_.commit.flatMap(_.message)) == Right(Some("Implement pull request commits")),
+          commit.map(_.commit.flatMap(_.verification.flatMap(_.verified))) == Right(Some(true)),
+          commit.map(_.files.flatMap(_.headOption).flatMap(_.filename)) == Right(Some("src/Main.scala")),
+          commit.map(_.stats.flatMap(_.total)) == Right(Some(12L))
         )
       },
       test("round-trips representative models through zio-json") {
