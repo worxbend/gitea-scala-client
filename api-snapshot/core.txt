@@ -964,6 +964,39 @@ public final class io.worxbend.gitea4s.model.EditIssue$ implements scala.derivin
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.EditIssueComment
+public final class io.worxbend.gitea4s.model.EditIssueComment implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.EditIssueComment(java.lang.String);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public java.lang.String body();
+  public io.worxbend.gitea4s.model.EditIssueComment copy(java.lang.String);
+  public java.lang.String copy$default$1();
+  public java.lang.String _1();
+  public static io.worxbend.gitea4s.model.EditIssueComment apply(java.lang.String);
+  public static io.worxbend.gitea4s.model.EditIssueComment fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.EditIssueComment> given_JsonCodec_EditIssueComment();
+  public static io.worxbend.gitea4s.model.EditIssueComment unapply(io.worxbend.gitea4s.model.EditIssueComment);
+}
+
+## io.worxbend.gitea4s.model.EditIssueComment$
+public final class io.worxbend.gitea4s.model.EditIssueComment$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.EditIssueComment$ MODULE$;
+  public io.worxbend.gitea4s.model.EditIssueComment apply(java.lang.String);
+  public io.worxbend.gitea4s.model.EditIssueComment unapply(io.worxbend.gitea4s.model.EditIssueComment);
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.EditIssueComment> given_JsonCodec_EditIssueComment();
+  public io.worxbend.gitea4s.model.EditIssueComment fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.GiteaErrorPayload
 public final class io.worxbend.gitea4s.model.GiteaErrorPayload implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.GiteaErrorPayload(scala.Option<java.lang.String>, scala.Option<java.lang.String>);

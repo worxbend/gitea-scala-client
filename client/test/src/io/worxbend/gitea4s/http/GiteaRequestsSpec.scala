@@ -7,6 +7,7 @@ import io.worxbend.gitea4s.model.{
   CreateIssue,
   CreateIssueComment,
   EditDeadlineOption,
+  EditIssueComment,
   EditIssue,
   IssueDeadline,
   IssueLabelsOption,
@@ -380,6 +381,93 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.body match
             case StringBody(json, _, _) => json.contains(""""body":"Looks good"""")
             case _ => false
+        )
+      },
+      test("builds schema-traceable issue comment management requests") {
+        val since = Instant.parse("2026-06-01T00:00:00Z")
+        val before = Instant.parse("2026-06-18T00:00:00Z")
+        val issueComments =
+          GiteaRequests.issueComments(
+            config,
+            "worx bend",
+            "gitea/scala",
+            99,
+            IssueCommentListParams(since = Some(since), before = Some(before))
+          )
+        val repoComments =
+          GiteaRequests.repoIssueComments(
+            config,
+            "worx bend",
+            "gitea/scala",
+            RepositoryCommentListParams(since = Some(since), before = Some(before), page = Some(2), limit = Some(9))
+          )
+        val getComment = GiteaRequests.issueComment(config, "worx bend", "gitea/scala", 30)
+        val editComment =
+          GiteaRequests.editIssueComment(
+            config,
+            "worx bend",
+            "gitea/scala",
+            30,
+            EditIssueComment("Updated")
+          )
+        val deleteComment = GiteaRequests.deleteIssueComment(config, "worx bend", "gitea/scala", 30)
+
+        assertTrue(
+          issueComments.endpoint == GiteaEndpoints.issueGetComments,
+          issueComments.endpoint.method == "GET",
+          issueComments.endpoint.operationId == "issueGetComments",
+          issueComments.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/comments",
+          issueComments.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "since", "before"),
+          issueComments.endpoint.response == "#/responses/CommentList",
+          issueComments.request.method == Method.GET,
+          issueComments.request.uri.toString.contains(
+            "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/comments?"
+          ),
+          issueComments.request.uri.paramsMap.get("since").contains("2026-06-01T00:00:00Z"),
+          issueComments.request.uri.paramsMap.get("before").contains("2026-06-18T00:00:00Z"),
+          issueComments.retryable == true,
+          repoComments.endpoint == GiteaEndpoints.issueGetRepoComments,
+          repoComments.endpoint.method == "GET",
+          repoComments.endpoint.operationId == "issueGetRepoComments",
+          repoComments.endpoint.path == "/repos/{owner}/{repo}/issues/comments",
+          repoComments.endpoint.parameters.map(_.name) == List("owner", "repo", "since", "before", "page", "limit"),
+          repoComments.endpoint.response == "#/responses/CommentList",
+          repoComments.request.method == Method.GET,
+          repoComments.request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/issues/comments?"),
+          repoComments.request.uri.paramsMap.get("page").contains("2"),
+          repoComments.request.uri.paramsMap.get("limit").contains("9"),
+          repoComments.retryable == true,
+          getComment.endpoint == GiteaEndpoints.issueGetComment,
+          getComment.endpoint.method == "GET",
+          getComment.endpoint.operationId == "issueGetComment",
+          getComment.endpoint.path == "/repos/{owner}/{repo}/issues/comments/{id}",
+          getComment.endpoint.response == "#/responses/Comment",
+          getComment.request.method == Method.GET,
+          getComment.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/comments/30",
+          getComment.retryable == true,
+          editComment.endpoint == GiteaEndpoints.issueEditComment,
+          editComment.endpoint.method == "PATCH",
+          editComment.endpoint.operationId == "issueEditComment",
+          editComment.endpoint.path == "/repos/{owner}/{repo}/issues/comments/{id}",
+          editComment.endpoint.parameters.map(_.name) == List("owner", "repo", "id", "body"),
+          editComment.endpoint.response == "#/responses/Comment",
+          editComment.request.method == Method.PATCH,
+          editComment.request.header("Content-Type").exists(_.startsWith("application/json")),
+          editComment.retryable == false,
+          editComment.request.body match
+            case StringBody(json, _, _) => json.contains(""""body":"Updated"""")
+            case _ => false,
+          deleteComment.endpoint == GiteaEndpoints.issueDeleteComment,
+          deleteComment.endpoint.method == "DELETE",
+          deleteComment.endpoint.operationId == "issueDeleteComment",
+          deleteComment.endpoint.path == "/repos/{owner}/{repo}/issues/comments/{id}",
+          deleteComment.endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
+          deleteComment.endpoint.response == "#/responses/empty",
+          deleteComment.request.method == Method.DELETE,
+          deleteComment.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/comments/30",
+          deleteComment.retryable == false
         )
       },
       test("builds schema-traceable issue label requests") {

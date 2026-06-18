@@ -1,11 +1,12 @@
 package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.IssueListParams
+import io.worxbend.gitea4s.http.{IssueCommentListParams, IssueListParams, RepositoryCommentListParams}
 import io.worxbend.gitea4s.model.{
   Comment,
   CreateIssue,
   EditDeadlineOption,
+  EditIssueComment,
   EditIssue,
   Issue,
   IssueDeadline,
@@ -48,6 +49,25 @@ trait IssuesApi:
   def editDeadline(owner: String, repo: String, index: Long, body: EditDeadlineOption): IO[GiteaError, IssueDeadline]
 
   def comment(owner: String, repo: String, index: Long, body: String): IO[GiteaError, Comment]
+
+  def comments(
+      owner: String,
+      repo: String,
+      index: Long,
+      params: IssueCommentListParams = IssueCommentListParams.default
+  ): IO[GiteaError, Chunk[Comment]]
+
+  def repositoryComments(
+      owner: String,
+      repo: String,
+      params: RepositoryCommentListParams = RepositoryCommentListParams.default
+  ): ZStream[Any, GiteaError, Comment]
+
+  def comment(owner: String, repo: String, id: Long): IO[GiteaError, Comment]
+
+  def editComment(owner: String, repo: String, id: Long, body: EditIssueComment): IO[GiteaError, Comment]
+
+  def deleteComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit]
 
   def blocks(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, Issue]
 

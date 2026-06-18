@@ -164,15 +164,24 @@ client
 ```
 
 Current stream-oriented APIs include user followers/following/search,
-user and organization repositories, organization members, issues, branches,
-tags, releases, pull requests, and notification threads.
+user and organization repositories, organization members, issues,
+repository-wide issue comments, branches, tags, releases, pull requests, and
+notification threads.
 
 ## Issue Writes
 
 The current write endpoints cover issue creation, editing, closing, deadlines, labels, locks, comments, dependencies, and blocking relationships:
 
 ```scala
-import io.worxbend.gitea4s.model.{CreateIssue, EditDeadlineOption, EditIssue, IssueMeta, LockIssueOption}
+import io.worxbend.gitea4s.http.{IssueCommentListParams, RepositoryCommentListParams}
+import io.worxbend.gitea4s.model.{
+  CreateIssue,
+  EditDeadlineOption,
+  EditIssue,
+  EditIssueComment,
+  IssueMeta,
+  LockIssueOption
+}
 import zio.Chunk
 import java.time.Instant
 
@@ -213,6 +222,11 @@ client.lock(
 client.unlock(owner = "my-org", repo = "my-repo", index = 12)
 
 client.comment(owner = "my-org", repo = "my-repo", index = 12, body = "Confirmed")
+client.comments(owner = "my-org", repo = "my-repo", index = 12, params = IssueCommentListParams.default)
+client.repositoryComments(owner = "my-org", repo = "my-repo", params = RepositoryCommentListParams.default)
+client.comment(owner = "my-org", repo = "my-repo", id = 42)
+client.editComment(owner = "my-org", repo = "my-repo", id = 42, body = EditIssueComment("Updated"))
+client.deleteComment(owner = "my-org", repo = "my-repo", id = 42)
 
 client.addDependency(owner = "my-org", repo = "my-repo", index = 12, dependency = IssueMeta(index = 10))
 client.removeDependency(owner = "my-org", repo = "my-repo", index = 12, dependency = IssueMeta(index = 10))

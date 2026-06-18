@@ -8,6 +8,7 @@ import io.worxbend.gitea4s.model.{
   CreateIssue,
   CreateIssueComment,
   EditDeadlineOption,
+  EditIssueComment,
   EditIssue,
   Issue,
   IssueDeadline,
@@ -250,6 +251,70 @@ object GiteaRequests:
       List("repos", owner, repo, "issues", index.toString, "comments"),
       body.toJson,
       GiteaResponseMapper.decodeJson[Comment]
+    )
+
+  def issueComments(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      params: IssueCommentListParams = IssueCommentListParams.default
+  ): GiteaRequest[zio.Chunk[Comment]] =
+    get(
+      config,
+      GiteaEndpoints.issueGetComments,
+      List("repos", owner, repo, "issues", index.toString, "comments"),
+      issueCommentQuery(params),
+      GiteaResponseMapper.decodeChunk[Comment]
+    )
+
+  def repoIssueComments(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      params: RepositoryCommentListParams = RepositoryCommentListParams.default
+  ): GiteaRequest[Page[Comment]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
+
+    get(
+      config,
+      GiteaEndpoints.issueGetRepoComments,
+      List("repos", owner, repo, "issues", "comments"),
+      repositoryCommentQuery(params, page, pageSize),
+      response => GiteaResponseMapper.decodePage[Comment](response, page, pageSize)
+    )
+
+  def issueComment(config: GiteaConfig, owner: String, repo: String, id: Long): GiteaRequest[Comment] =
+    get(
+      config,
+      GiteaEndpoints.issueGetComment,
+      List("repos", owner, repo, "issues", "comments", id.toString),
+      Nil,
+      GiteaResponseMapper.decodeJson[Comment]
+    )
+
+  def editIssueComment(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      id: Long,
+      body: EditIssueComment
+  ): GiteaRequest[Comment] =
+    patchJson(
+      config,
+      GiteaEndpoints.issueEditComment,
+      List("repos", owner, repo, "issues", "comments", id.toString),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Comment]
+    )
+
+  def deleteIssueComment(config: GiteaConfig, owner: String, repo: String, id: Long): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.issueDeleteComment,
+      List("repos", owner, repo, "issues", "comments", id.toString),
+      GiteaResponseMapper.decodeUnit
     )
 
   def issueBlocks(config: GiteaConfig, owner: String, repo: String, index: Long, page: Int = 1)
@@ -667,6 +732,24 @@ object GiteaRequests:
     ).flatten ++
       params.statusTypes.map(statusType => "status-types" -> statusType.queryValue) ++
       params.subjectTypes.map(subjectType => "subject-type" -> subjectType.queryValue)
+
+  private def issueCommentQuery(params: IssueCommentListParams): List[(String, String)] =
+    List(
+      params.since.map(value => "since" -> value.toString),
+      params.before.map(value => "before" -> value.toString)
+    ).flatten
+
+  private def repositoryCommentQuery(
+      params: RepositoryCommentListParams,
+      page: Int,
+      pageSize: Int
+  ): List[(String, String)] =
+    List(
+      params.since.map(value => "since" -> value.toString),
+      params.before.map(value => "before" -> value.toString),
+      Some("page" -> page.toString),
+      Some("limit" -> pageSize.toString)
+    ).flatten
 
   private def nonEmptyCsv(name: String, values: zio.Chunk[String]): Option[(String, String)] =
     Option.when(values.nonEmpty)(name -> values.mkString(","))

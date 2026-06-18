@@ -430,6 +430,15 @@ public interface io.worxbend.gitea4s.api.IssuesApi {
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> unlock(java.lang.String, java.lang.String, long);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.IssueDeadline> editDeadline(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditDeadlineOption);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Comment> comment(java.lang.String, java.lang.String, long, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.Comment>> comments(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.IssueCommentListParams);
+  public static io.worxbend.gitea4s.http.IssueCommentListParams comments$default$4$(io.worxbend.gitea4s.api.IssuesApi);
+  public default io.worxbend.gitea4s.http.IssueCommentListParams comments$default$4();
+  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Comment> repositoryComments(java.lang.String, java.lang.String, io.worxbend.gitea4s.http.RepositoryCommentListParams);
+  public static io.worxbend.gitea4s.http.RepositoryCommentListParams repositoryComments$default$3$(io.worxbend.gitea4s.api.IssuesApi);
+  public default io.worxbend.gitea4s.http.RepositoryCommentListParams repositoryComments$default$3();
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Comment> comment(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Comment> editComment(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssueComment);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteComment(java.lang.String, java.lang.String, long);
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> blocks(java.lang.String, java.lang.String, long);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> block(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.IssueMeta);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> unblock(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.IssueMeta);
@@ -542,10 +551,15 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueCreateIssue();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueCreateIssueBlocking();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueCreateIssueDependencies();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteComment();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueEditComment();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueEditIssue();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueEditIssueDeadline();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueGetComment();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueGetComments();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueGetIssue();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueGetLabels();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueGetRepoComments();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueListBlocks();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueListIssueDependencies();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueListIssues();
@@ -603,6 +617,11 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint issueCreateIssue();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueEditIssue();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueCreateComment();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueGetComments();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueGetRepoComments();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueGetComment();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueEditComment();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteComment();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueListBlocks();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueCreateIssueBlocking();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueRemoveIssueBlocking();
@@ -715,10 +734,14 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> createIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.CreateIssueComment);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> createIssueDependency(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.IssueMeta);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.User> currentUser(io.worxbend.gitea4s.GiteaConfig);
+  public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> editIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssue);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> editIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssueComment);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.IssueDeadline> editIssueDeadline(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditDeadlineOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> issue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Issue>> issueBlocks(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, int);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> issueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.Comment>> issueComments(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.IssueCommentListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Issue>> issueDependencies(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.Label>> issueLabels(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Issue>> issues(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.IssueListParams);
@@ -735,6 +758,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> removeIssueLabel(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.Label>> replaceIssueLabels(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.IssueLabelsOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Branch>> repoBranches(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Comment>> repoIssueComments(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.RepositoryCommentListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> repoPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.PullRequest>> repoPullRequests(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.PullRequestListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Release> repoRelease(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
@@ -759,11 +783,13 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.RepoListParams userRepos$default$3();
   public static io.worxbend.gitea4s.http.IssueListParams issues$default$4();
   public static int repoBranches$default$4();
+  public static io.worxbend.gitea4s.http.RepositoryCommentListParams repoIssueComments$default$4();
   public static io.worxbend.gitea4s.http.PullRequestListParams repoPullRequests$default$4();
   public static int repoReleases$default$4();
   public static int repoTags$default$4();
   public static int repoTopics$default$4();
   public static int issueBlocks$default$5();
+  public static io.worxbend.gitea4s.http.IssueCommentListParams issueComments$default$5();
   public static int issueDependencies$default$5();
 }
 
@@ -803,6 +829,13 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> createIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateIssue);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> editIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssue);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> createIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.CreateIssueComment);
+  public io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.Comment>> issueComments(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.IssueCommentListParams);
+  public io.worxbend.gitea4s.http.IssueCommentListParams issueComments$default$5();
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Comment>> repoIssueComments(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.RepositoryCommentListParams);
+  public io.worxbend.gitea4s.http.RepositoryCommentListParams repoIssueComments$default$4();
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> issueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> editIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssueComment);
+  public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Issue>> issueBlocks(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, int);
   public int issueBlocks$default$5();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> createIssueBlocking(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.IssueMeta);
@@ -895,6 +928,47 @@ public final class io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResult
   public scala.Option<java.lang.Object> $lessinit$greater$default$2();
   public final zio.json.JsonDecoder<io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults> given_JsonDecoder_UserSearchResults();
   public io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.http.IssueCommentListParams
+public final class io.worxbend.gitea4s.http.IssueCommentListParams implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.http.IssueCommentListParams(scala.Option<java.time.Instant>, scala.Option<java.time.Instant>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.time.Instant> since();
+  public scala.Option<java.time.Instant> before();
+  public io.worxbend.gitea4s.http.IssueCommentListParams copy(scala.Option<java.time.Instant>, scala.Option<java.time.Instant>);
+  public scala.Option<java.time.Instant> copy$default$1();
+  public scala.Option<java.time.Instant> copy$default$2();
+  public scala.Option<java.time.Instant> _1();
+  public scala.Option<java.time.Instant> _2();
+  public static io.worxbend.gitea4s.http.IssueCommentListParams apply(scala.Option<java.time.Instant>, scala.Option<java.time.Instant>);
+  public static io.worxbend.gitea4s.http.IssueCommentListParams default();
+  public static io.worxbend.gitea4s.http.IssueCommentListParams fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.http.IssueCommentListParams unapply(io.worxbend.gitea4s.http.IssueCommentListParams);
+  public static scala.Option<java.time.Instant> $lessinit$greater$default$1();
+  public static scala.Option<java.time.Instant> $lessinit$greater$default$2();
+}
+
+## io.worxbend.gitea4s.http.IssueCommentListParams$
+public final class io.worxbend.gitea4s.http.IssueCommentListParams$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.http.IssueCommentListParams$ MODULE$;
+  public static {};
+  public io.worxbend.gitea4s.http.IssueCommentListParams apply(scala.Option<java.time.Instant>, scala.Option<java.time.Instant>);
+  public io.worxbend.gitea4s.http.IssueCommentListParams unapply(io.worxbend.gitea4s.http.IssueCommentListParams);
+  public scala.Option<java.time.Instant> $lessinit$greater$default$1();
+  public scala.Option<java.time.Instant> $lessinit$greater$default$2();
+  public io.worxbend.gitea4s.http.IssueCommentListParams default();
+  public io.worxbend.gitea4s.http.IssueCommentListParams fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 
@@ -1275,6 +1349,57 @@ public final class io.worxbend.gitea4s.http.RepoListParams$ implements scala.der
   public scala.Option<java.lang.Object> $lessinit$greater$default$2();
   public io.worxbend.gitea4s.http.RepoListParams default();
   public io.worxbend.gitea4s.http.RepoListParams fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.http.RepositoryCommentListParams
+public final class io.worxbend.gitea4s.http.RepositoryCommentListParams implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.http.RepositoryCommentListParams(scala.Option<java.time.Instant>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.time.Instant> since();
+  public scala.Option<java.time.Instant> before();
+  public scala.Option<java.lang.Object> page();
+  public scala.Option<java.lang.Object> limit();
+  public io.worxbend.gitea4s.http.RepositoryCommentListParams copy(scala.Option<java.time.Instant>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.time.Instant> copy$default$1();
+  public scala.Option<java.time.Instant> copy$default$2();
+  public scala.Option<java.lang.Object> copy$default$3();
+  public scala.Option<java.lang.Object> copy$default$4();
+  public scala.Option<java.time.Instant> _1();
+  public scala.Option<java.time.Instant> _2();
+  public scala.Option<java.lang.Object> _3();
+  public scala.Option<java.lang.Object> _4();
+  public static io.worxbend.gitea4s.http.RepositoryCommentListParams apply(scala.Option<java.time.Instant>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.http.RepositoryCommentListParams default();
+  public static io.worxbend.gitea4s.http.RepositoryCommentListParams fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.http.RepositoryCommentListParams unapply(io.worxbend.gitea4s.http.RepositoryCommentListParams);
+  public static scala.Option<java.time.Instant> $lessinit$greater$default$1();
+  public static scala.Option<java.time.Instant> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$4();
+}
+
+## io.worxbend.gitea4s.http.RepositoryCommentListParams$
+public final class io.worxbend.gitea4s.http.RepositoryCommentListParams$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.http.RepositoryCommentListParams$ MODULE$;
+  public static {};
+  public io.worxbend.gitea4s.http.RepositoryCommentListParams apply(scala.Option<java.time.Instant>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.http.RepositoryCommentListParams unapply(io.worxbend.gitea4s.http.RepositoryCommentListParams);
+  public scala.Option<java.time.Instant> $lessinit$greater$default$1();
+  public scala.Option<java.time.Instant> $lessinit$greater$default$2();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public io.worxbend.gitea4s.http.RepositoryCommentListParams default();
+  public io.worxbend.gitea4s.http.RepositoryCommentListParams fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 

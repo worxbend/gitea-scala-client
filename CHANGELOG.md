@@ -20,6 +20,9 @@ surface is still being filled out.
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request
   construction.
+- Typed issue comment listing, lookup, editing, and deletion with
+  `IssueCommentListParams`, `RepositoryCommentListParams`, `EditIssueComment`,
+  and schema-traceable issue comment request construction.
 - Typed issue label listing, replacement, addition, clearing, and removal with
   `IssueLabelsOption` and schema-traceable issue label request construction.
 - Typed issue locking and unlocking with `LockIssueOption` and

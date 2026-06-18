@@ -3,14 +3,24 @@ package io.worxbend.gitea4s
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
   GiteaRequests,
+  IssueCommentListParams,
   IssueListParams,
   NotificationListParams,
   PullRequestListParams,
   RepoListParams,
+  RepositoryCommentListParams,
   UserSearchParams
 }
 import io.worxbend.gitea4s.internal.GiteaRequestExecutor
-import io.worxbend.gitea4s.model.{Auth, CreateIssue, EditDeadlineOption, EditIssue, IssueMeta, LockIssueOption}
+import io.worxbend.gitea4s.model.{
+  Auth,
+  CreateIssue,
+  EditDeadlineOption,
+  EditIssue,
+  EditIssueComment,
+  IssueMeta,
+  LockIssueOption
+}
 import sttp.capabilities.Effect
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -155,6 +165,66 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(client.comment("owner", "repo", 8, "Looks good").map(comment => comment.id -> comment.body))(
           Assertion.equalTo(Some(30L) -> Some("Looks good"))
+        )
+      },
+      test("lists, loads, edits, and deletes issue comments through the IssuesApi comment methods") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "comments")) &&
+                request.uri.paramsMap.get("since").contains("2026-06-01T00:00:00Z")
+            }
+            .thenRespond(ResponseStub.adjust("""[{"id":30,"body":"First"}]"""))
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "comments")) &&
+                request.uri.paramsMap.contains("page")
+            }
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"id":30,"body":"First repo"}]""", StatusCode.Ok, twoPageHeaders),
+              ResponseStub.adjust("""[{"id":31,"body":"Second repo"}]""", StatusCode.Ok, twoPageHeaders)
+            )
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "comments", "30"))
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":30,"body":"First"}"""))
+            .whenRequestMatches { request =>
+              request.method == Method.PATCH &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "comments", "30")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""body":"Updated"""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":30,"body":"Updated"}"""))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "comments", "30"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          issueComments <- client.comments(
+            "owner",
+            "repo",
+            8,
+            IssueCommentListParams(since = Some(Instant.parse("2026-06-01T00:00:00Z")))
+          )
+          repoComments <- client
+            .repositoryComments("owner", "repo", RepositoryCommentListParams(limit = Some(1)))
+            .runCollect
+          loaded <- client.comment("owner", "repo", 30)
+          edited <- client.editComment("owner", "repo", 30, EditIssueComment("Updated"))
+          deleted <- client.deleteComment("owner", "repo", 30).either
+        yield assertTrue(
+          issueComments.map(_.body) == Chunk(Some("First")),
+          repoComments.map(_.id) == Chunk(Some(30L), Some(31L)),
+          loaded.body.contains("First"),
+          edited.body.contains("Updated"),
+          deleted == Right(())
         )
       },
       test("manages issue labels through the IssuesApi label methods") {

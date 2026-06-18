@@ -5,10 +5,12 @@ import io.worxbend.gitea4s.api.OrgsApi
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
   GiteaRequests,
+  IssueCommentListParams,
   IssueListParams,
   NotificationListParams,
   PullRequestListParams,
   RepoListParams,
+  RepositoryCommentListParams,
   UserSearchParams
 }
 import io.worxbend.gitea4s.model.{
@@ -17,6 +19,7 @@ import io.worxbend.gitea4s.model.{
   CreateIssue,
   CreateIssueComment,
   EditDeadlineOption,
+  EditIssueComment,
   EditIssue,
   Issue,
   IssueDeadline,
@@ -203,6 +206,32 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def comment(owner: String, repo: String, index: Long, body: String): IO[GiteaError, Comment] =
     executor.send(GiteaRequests.createIssueComment(config, owner, repo, index, CreateIssueComment(body)))
+
+  override def comments(
+      owner: String,
+      repo: String,
+      index: Long,
+      params: IssueCommentListParams
+  ): IO[GiteaError, Chunk[Comment]] =
+    executor.send(GiteaRequests.issueComments(config, owner, repo, index, params))
+
+  override def repositoryComments(
+      owner: String,
+      repo: String,
+      params: RepositoryCommentListParams
+  ): ZStream[Any, GiteaError, Comment] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoIssueComments(config, owner, repo, params.copy(page = Some(page))))
+    }
+
+  override def comment(owner: String, repo: String, id: Long): IO[GiteaError, Comment] =
+    executor.send(GiteaRequests.issueComment(config, owner, repo, id))
+
+  override def editComment(owner: String, repo: String, id: Long, body: EditIssueComment): IO[GiteaError, Comment] =
+    executor.send(GiteaRequests.editIssueComment(config, owner, repo, id, body))
+
+  override def deleteComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteIssueComment(config, owner, repo, id))
 
   override def blocks(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, Issue] =
     Pagination.paginated { page =>

@@ -298,6 +298,77 @@ object GiteaEndpoints:
       response = "#/responses/Comment"
     )
 
+  val issueGetComments: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/issues/{index}/comments",
+      operationId = "issueGetComments",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("since", "query", required = false),
+        GiteaParameter("before", "query", required = false)
+      ),
+      response = "#/responses/CommentList"
+    )
+
+  val issueGetRepoComments: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/issues/comments",
+      operationId = "issueGetRepoComments",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("since", "query", required = false),
+        GiteaParameter("before", "query", required = false),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/CommentList"
+    )
+
+  val issueGetComment: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/issues/comments/{id}",
+      operationId = "issueGetComment",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("id", "path", required = true)
+      ),
+      response = "#/responses/Comment"
+    )
+
+  val issueEditComment: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "PATCH",
+      path = "/repos/{owner}/{repo}/issues/comments/{id}",
+      operationId = "issueEditComment",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("id", "path", required = true),
+        GiteaParameter("body", "body", required = false)
+      ),
+      response = "#/responses/Comment"
+    )
+
+  val issueDeleteComment: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/issues/comments/{id}",
+      operationId = "issueDeleteComment",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("id", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
   val issueListBlocks: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

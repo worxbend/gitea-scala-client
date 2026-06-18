@@ -230,6 +230,15 @@ object CoreModelsSpec extends ZIOSpecDefault:
           decoded == Right(payload)
         )
       },
+      test("round-trips edit issue comment request payload") {
+        val payload = EditIssueComment(body = "Updated comment")
+        val decoded = payload.toJson.fromJson[EditIssueComment]
+
+        assertTrue(
+          payload.toJson == """{"body":"Updated comment"}""",
+          decoded == Right(payload)
+        )
+      },
       test("round-trips issue meta payloads for dependency and blocking requests") {
         val sameRepo = IssueMeta(index = 13L)
         val crossRepo = IssueMeta(index = 21L, owner = Some("other-owner"), repo = Some("other-repo"))
