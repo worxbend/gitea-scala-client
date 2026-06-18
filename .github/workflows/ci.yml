@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  mill:
+    name: Java ${{ matrix.java }} / Scala ${{ matrix.scala }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - java: "21"
+            scala: "3.8.4"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Cache Scala dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/coursier
+            ~/.ivy2/cache
+            ~/.mill
+          key: ${{ runner.os }}-java-${{ matrix.java }}-scala-${{ matrix.scala }}-${{ hashFiles('build.mill', 'mill') }}
+          restore-keys: |
+            ${{ runner.os }}-java-${{ matrix.java }}-scala-${{ matrix.scala }}-
+
+      - name: Verify build configuration
+        run: |
+          test -x ./mill
+          grep -q 'val scala = "${{ matrix.scala }}"' build.mill
+          java -version
+          ./mill --version
+
+      - name: Compile
+        run: ./mill __.compile
+
+      - name: Unit tests
+        run: ./mill __.test
+
+      - name: Integration tests
+        run: ./mill it.test
+
+      - name: Examples
+        run: ./mill examples.run
+
+      - name: Publishable artifacts
+        run: ./mill __.docJar __.sourceJar __.publishArtifacts

@@ -212,3 +212,11 @@
 2026-06-18T08:22:47Z validation passed commands="./mill core.docJar core.sourceJar __.publishArtifacts; ./mill __.publishM2Local; ./mill __.docJar __.sourceJar __.publishArtifacts __.compile __.test it.test examples.run"
 2026-06-18T08:22:47Z checkpoint commit created message="Add Mill publishing metadata"
 2026-06-18T08:22:47Z iteration 1 completed validation_status=0
+2026-06-18T08:24:00Z iteration 1 no changes to commit
+2026-06-18T08:24:00Z iteration 1 completed validation_status=0
+2026-06-18T08:24:00Z iteration 2 started remaining=17688s
+2026-06-18T08:30:00Z started Phase 10 release-process and CI readiness slice
+2026-06-18T08:34:00Z added Java 21 GitHub Actions CI, real Jenkins Mill validation stages, changelog, and release checklist
+2026-06-18T08:34:00Z validation passed commands="git diff --check; ./mill __.compile __.test it.test examples.run __.docJar __.sourceJar __.publishArtifacts; ./mill __.publishM2Local"
+2026-06-18T08:35:00Z checkpoint commit created message="Add release process and CI readiness"
+2026-06-18T08:35:00Z iteration 2 completed validation_status=0

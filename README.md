@@ -214,6 +214,9 @@ except for bug fixes; minor releases may add endpoints, models, and parameters.
 The checked-in license is GPL-2.0-only, and the generated POM metadata uses the
 same license identifier.
 
+Release notes are tracked in `CHANGELOG.md`. Local release readiness checks and
+the pre-`1.0.0` version checklist are tracked in `RELEASE.md`.
+
 ## Examples
 
 The default example is hermetic when live credentials are absent:
@@ -306,6 +309,9 @@ and makes no external calls.
 ./mill examples.runMain io.worxbend.gitea4s.examples.ListBranchesAndTags
 ```
 
-The rewrite is still in progress. Maven Central publishing automation, CI,
-compatibility checks, changelog workflow, and write endpoints remain planned
-work.
+CI runs the Java 21 Mill validation flow in `.github/workflows/ci.yml`. The
+checked-in `Jenkinsfile` runs the same core commands for Jenkins-based
+environments.
+
+The rewrite is still in progress. Maven Central publishing automation,
+compatibility checks, and write endpoints remain planned work.

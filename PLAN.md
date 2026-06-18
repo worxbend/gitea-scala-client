@@ -145,7 +145,10 @@ Current checkpoint:
 - Local source and javadoc jar generation works through Mill `sourceJar` and `docJar` targets.
 - Local Maven publishing works through `./mill __.publishM2Local` and publishes `gitea4s-core_3`, `gitea4s-client_3`, `gitea4s-backend-zio_3`, and `gitea4s-backend-okhttp_3`.
 - README documents local snapshot coordinates, local publish/doc/source commands, and the initial pre-1.0 compatibility policy.
-- Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, `./mill it.test`, and `./mill examples.run`.
+- Phase 10 now includes Java 21 CI validation through `.github/workflows/ci.yml`, with a matrix entry for the pinned Scala `3.8.4` baseline and Mill commands for compile, tests, integration-test gating, examples, and publishable artifacts.
+- The checked-in `Jenkinsfile` now runs the same Mill validation flow instead of a placeholder stage.
+- Release-process documentation now includes `CHANGELOG.md` and `RELEASE.md` with pre-1.0 versioning, local validation, artifact, and changelog checklist guidance.
+- Validation passed: `./mill backend-zio.test`, `./mill backend-okhttp.test`, `./mill __.compile`, `./mill __.test`, `./mill it.test`, `./mill examples.run`, `./mill __.docJar __.sourceJar __.publishArtifacts`, and `./mill __.publishM2Local`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
 
@@ -703,9 +706,10 @@ Tasks:
 - API compatibility policy. Started in README for the pre-1.0 snapshot line.
 - Scaladoc generation. Complete for local Mill doc jars.
 - Source and doc jars. Complete for local Mill artifact generation.
-- CI matrix for Java 21 and supported Scala versions.
-- Renovate dependency updates.
-- Changelog.
+- CI matrix for Java 21 and supported Scala versions. Complete for the current Scala `3.8.4` baseline through GitHub Actions; Jenkins has the same core Mill validation flow.
+- Renovate dependency updates. Initial config exists; richer Mill dependency extraction remains an improvement.
+- Changelog. Complete as a checked-in starting changelog for unreleased pre-1.0 work.
+- Release checklist. Complete as `RELEASE.md` for local snapshot validation and versioning steps.
 
 Deliverable:
 
@@ -715,7 +719,7 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 10 publishing readiness with a small release-process slice, such as a checked-in changelog plus release/versioning notes or a CI matrix for Java 21,
+- continue Phase 10 publishing readiness with compatibility-check or Maven Central automation groundwork, or return to the next typed API slice if release infrastructure is sufficient for now,
 - keep examples and README aligned with any build or publishing commands that become runnable,
 - keep `./mill __.test`, `./mill it.test`, and `./mill examples.run` passing without external services when live credentials are absent.
 
