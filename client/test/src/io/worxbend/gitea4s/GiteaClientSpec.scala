@@ -2,19 +2,25 @@ package io.worxbend.gitea4s
 
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
+  GiteaRequests,
   IssueListParams,
   NotificationListParams,
   PullRequestListParams,
   RepoListParams,
   UserSearchParams
 }
+import io.worxbend.gitea4s.internal.GiteaRequestExecutor
 import io.worxbend.gitea4s.model.Auth
+import sttp.capabilities.Effect
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
 import sttp.client4.testing.{BackendStub, ResponseStub}
-import sttp.model.{Header, StatusCode}
-import zio.{Chunk, Task}
+import sttp.model.{Header, Method, RequestMetadata, StatusCode}
+import sttp.monad.MonadError
+import zio.{Chunk, Ref, Task, ZIO}
 import zio.test.*
+
+import java.time.{Duration, Instant}
 
 object GiteaClientSpec extends ZIOSpecDefault:
   private val config =
@@ -22,6 +28,37 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
   private def taskStub =
     BackendStub[Task](new RIOMonadAsyncError[Any])
+
+  private def stringResponse(
+      body: String,
+      status: StatusCode = StatusCode.Ok,
+      headers: List[Header] = Nil
+  ): Response[String] =
+    Response(
+      body = body,
+      code = status,
+      statusText = "",
+      headers = headers,
+      history = Nil,
+      request = RequestMetadata(Method.GET, uri"https://gitea.example/api/v1/user", Nil)
+    )
+
+  private final class ScriptedBackend(responses: Ref[List[Task[Response[String]]]]) extends Backend[Task]:
+    private val taskMonad = new RIOMonadAsyncError[Any]
+
+    override def send[T](request: GenericRequest[T, Effect[Task]]): Task[Response[T]] =
+      responses.modify {
+        case next :: rest =>
+          (next.map(_.asInstanceOf[Response[T]]), rest)
+        case Nil =>
+          (ZIO.fail(IllegalStateException("scripted backend has no remaining responses")), Nil)
+      }.flatten
+
+    override def close(): Task[Unit] =
+      ZIO.unit
+
+    override def monad: MonadError[Task] =
+      taskMonad
 
   def spec =
     suite("GiteaClient")(
@@ -134,6 +171,101 @@ object GiteaClientSpec extends ZIOSpecDefault:
             }
           )
         }
+      },
+      test("retries transport failures for read-only requests") {
+        val failure = RuntimeException("connection reset")
+
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.fail(failure),
+              ZIO.succeed(stringResponse("""{"id":42,"login":"retry"}"""))
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.me.fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          user <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          user.login.contains("retry"),
+          remaining.isEmpty
+        )
+      },
+      test("retries selected 5xx responses for read-only requests") {
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"temporarily unavailable"}""",
+                  StatusCode.ServiceUnavailable
+                )
+              ),
+              ZIO.succeed(stringResponse("""{"id":43,"login":"server-retry"}"""))
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.me.fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          user <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          user.login.contains("server-retry"),
+          remaining.isEmpty
+        )
+      },
+      test("uses rate-limit reset headers for retry delay") {
+        val now = Instant.parse("2030-01-01T00:00:00Z")
+        val resetAt = now.plusSeconds(2)
+
+        for
+          _ <- TestClock.setTime(now)
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"rate limited"}""",
+                  StatusCode.TooManyRequests,
+                  List(Header("x-ratelimit-reset", resetAt.getEpochSecond.toString))
+                )
+              ),
+              ZIO.succeed(stringResponse("""{"id":44,"login":"limited"}"""))
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.me.fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          early <- fiber.poll
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          user <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          early.isEmpty,
+          user.login.contains("limited"),
+          remaining.isEmpty
+        )
+      },
+      test("does not retry requests marked non-retryable") {
+        val failure = RuntimeException("connection reset")
+
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.fail(failure),
+              ZIO.succeed(stringResponse("""{"id":45,"login":"unused"}"""))
+            )
+          )
+          executor = GiteaRequestExecutor(ScriptedBackend(responses), maxRetries = 2)
+          result <- executor.send(GiteaRequests.currentUser(config).copy(retryable = false)).either
+          remaining <- responses.get
+        yield assertTrue(
+          result.left.exists {
+            case GiteaError.TransportError(cause) => cause eq failure
+            case _ => false
+          },
+          remaining.size == 1
+        )
       },
       test("streams all issues from multiple pages") {
         val headers = List(Header("x-total-count", "2"))

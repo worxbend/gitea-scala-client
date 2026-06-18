@@ -18,6 +18,8 @@ Current checkpoint:
 - Config: `GiteaConfig` supports programmatic constructors plus hermetic environment
   parsing for `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`,
   `GITEA_PAGE_SIZE`, and `GITEA_TIMEOUT`
+- Retry: read-only requests honor `GiteaConfig.maxRetries` for transport failures,
+  `429` rate limits, and selected `5xx` responses without retrying write requests by default
 
 Useful commands:
 
@@ -34,4 +36,4 @@ username/password variables are set. Config validation errors mention variable n
 not credential values.
 
 The rewrite is still in progress. Implemented APIs are covered by hermetic stub-backed tests;
-retry, integration tests, additional examples, and publishing polish remain planned work.
+integration tests, additional examples, and publishing polish remain planned work.

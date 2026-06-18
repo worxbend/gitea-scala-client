@@ -269,7 +269,8 @@ object GiteaRequests:
         .response(asStringAlways)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),
-      decode = decode
+      decode = decode,
+      retryable = GiteaRequest.isReadOnly(endpoint)
     )
 
   private def apiUri(baseUrl: Uri, path: List[String], query: List[(String, String)]): Uri =

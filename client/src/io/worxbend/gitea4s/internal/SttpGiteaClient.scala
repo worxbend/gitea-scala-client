@@ -28,7 +28,7 @@ import zio.{Chunk, IO, Task}
 import zio.stream.ZStream
 
 final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends GiteaClient:
-  private val executor = GiteaRequestExecutor(backend)
+  private val executor = GiteaRequestExecutor(backend, config.maxRetries)
 
   override val orgs: OrgsApi =
     new OrgsApi:

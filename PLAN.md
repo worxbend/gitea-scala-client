@@ -94,7 +94,9 @@ Current checkpoint:
 - Environment config supports `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`, `GITEA_PAGE_SIZE`, and `GITEA_TIMEOUT`; `GITEA_TOKEN` has precedence over basic auth, basic auth requires both username and password, and validation errors avoid credential values.
 - `GiteaConfigSpec` covers token/basic/anonymous env loading, credential precedence, invalid URL/page-size handling, incomplete basic credentials, safe error messages, and hermetic ZLayer construction without reading real environment variables.
 - Phase 4 has a small ZIO API facade: `UsersApi`, `ReposApi`, `IssuesApi`, `ReleasesApi`, `PullRequestsApi`, `NotificationsApi`, and a nested `OrgsApi` namespace are wired through `GiteaClient.fromBackend`.
-- `GiteaRequestExecutor` sends `GiteaRequest[A]` through a sttp `Backend[Task]`, decodes responses through the existing mapper, and maps backend failures to `GiteaError.TransportError`.
+- `GiteaRequest` carries read-only retry eligibility derived from endpoint HTTP method metadata.
+- `GiteaRequestExecutor` sends `GiteaRequest[A]` through a sttp `Backend[Task]`, decodes responses through the existing mapper, maps backend failures to `GiteaError.TransportError`, and honors `GiteaConfig.maxRetries` for retryable read-only requests.
+- Retry behavior covers transport failures, `429 RateLimited` responses using reset headers when present, and selected `500`/`502`/`503`/`504` responses with exponential backoff and jitter.
 - `IssuesApi.get(owner, repo, index)` fetches a single issue and `IssuesApi.list(owner, repo, IssueListParams)` streams paginated issues with `ZStream.paginateChunkZIO`.
 - `UsersApi.followers(username)`, `UsersApi.following(username)`, and `UsersApi.search(params)` stream paginated users through the shared pagination helper.
 - `ReposApi.list(owner, RepoListParams)` streams repositories from `userListRepos`, `ReposApi.topics(owner, repo)` collects all topic pages from `repoListTopics`, and `ReposApi.branches(owner, repo)` / `ReposApi.tags(owner, repo)` stream paginated repository branches and tags.
@@ -110,7 +112,7 @@ Current checkpoint:
 - `OrgsApi.members(org)` streams paginated organization members from `orgListMembers` through the shared pagination helper.
 - `OrgsApi.publicMembers(org)` streams paginated public organization members from `orgListPublicMembers` through the shared pagination helper.
 - `OrgsApi.repos(org, RepoListParams)` streams paginated organization repositories from `orgListRepos` through the shared pagination helper.
-- `GiteaClientSpec` covers current-user success, user/repository/issue `get`, organization lookup through `client.orgs.get`, decode failure, transport failure, multi-page issue/repository/topic/branch/tag/search/org-member/public-org-member/org-repository streaming, and follower/following stream pagination through a `BackendStub[Task]`.
+- `GiteaClientSpec` covers current-user success, user/repository/issue `get`, organization lookup through `client.orgs.get`, decode failure, transport failure, retry behavior with ZIO Test clocks, multi-page issue/repository/topic/branch/tag/search/org-member/public-org-member/org-repository streaming, and follower/following stream pagination through a `BackendStub[Task]`.
 - `GiteaClientSpec` also covers multi-page release streaming and single-release lookup through a `BackendStub[Task]`.
 - `GiteaClientSpec` also covers multi-page pull request streaming and single-pull-request lookup through a `BackendStub[Task]`.
 - `GiteaClientSpec` also covers multi-page notification thread streaming, unread notification counts, and single-notification lookup through a `BackendStub[Task]`.
@@ -544,6 +546,8 @@ Completed subset:
 - Environment-based config parsing and ZLayer construction for `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`, `GITEA_PAGE_SIZE`, and `GITEA_TIMEOUT`.
 - Explicit credential precedence: token auth wins; otherwise basic auth is used only when username and password are both set; otherwise auth is anonymous.
 - Hermetic config tests under `client.test` without requiring real environment variables.
+- Safe read-only retry infrastructure under `GiteaRequestExecutor`, controlled by `GiteaConfig.maxRetries`.
+- Retry handling for transport failures, `429 RateLimited` responses, and selected `5xx` responses without real sleeps in tests.
 
 Config sources:
 
@@ -562,12 +566,12 @@ GITEA_PAGE_SIZE
 GITEA_TIMEOUT
 ```
 
-Retry rules:
+Implemented retry rules:
 
 - Retry safe transport failures.
 - Retry `429 RateLimited` based on rate-limit headers when available.
 - Retry selected 5xx responses with exponential backoff and jitter.
-- Do not retry non-idempotent requests by default unless explicitly configured.
+- Do not retry non-read-only requests by default.
 - Redact secrets from errors and logs.
 
 Deliverable:
@@ -669,9 +673,9 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 7 with retry and resilience infrastructure for safe read-only requests,
-- retry transport failures, `429 RateLimited`, and selected 5xx responses only for idempotent requests by default,
-- keep retry schedules testable with ZIO Test clocks and avoid real sleeps,
-- add hermetic retry tests under `./mill client.test` without external services.
+- continue Phase 7 by adding the Typesafe config source for `GiteaConfig`,
+- include `maxRetries` in non-secret config loading while preserving safe credential precedence and validation messages,
+- document the retry knob and config source precedence in README,
+- keep config tests hermetic under `./mill client.test`.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.
