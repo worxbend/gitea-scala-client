@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.examples
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{ApiReference, NotificationThread, Repository, User}
+import io.worxbend.gitea4s.model.{ApiReference, NotificationThread, Release, Repository, User}
 import io.worxbend.gitea4s.{GiteaConfig, GiteaConfigError}
 
 private[examples] object ExampleSupport:
@@ -40,6 +40,20 @@ private[examples] object ExampleSupport:
     val repo = thread.repository.map(repositoryName).getOrElse("<unknown repository>")
     val title = thread.subject.flatMap(_.title).getOrElse("<untitled notification>")
     s"#$id [$state] $repo - $title"
+
+  def releaseSummary(release: Release): String =
+    val title =
+      release.name
+        .orElse(release.tagName)
+        .orElse(release.id.map(id => s"release#$id"))
+        .getOrElse("<untitled release>")
+    val tag = release.tagName.filterNot(_ == title).fold("")(value => s" ($value)")
+    val state =
+      if release.draft.contains(true) then "draft"
+      else if release.prerelease.contains(true) then "prerelease"
+      else "published"
+    val published = release.publishedAt.fold("")(instant => s" at $instant")
+    s"$title$tag [$state$published]"
 
   private def hasNoCredentials(env: Map[String, String]): Boolean =
     nonBlank(env, GiteaConfig.Env.token).isEmpty &&

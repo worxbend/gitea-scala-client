@@ -206,6 +206,12 @@ GITEA_URL=https://gitea.example \
 GITEA_TOKEN=... \
 GITEA_ORG=my-org \
 ./mill examples.runMain io.worxbend.gitea4s.examples.OrgMembers
+
+GITEA_URL=https://gitea.example \
+GITEA_TOKEN=... \
+GITEA_OWNER=my-org \
+GITEA_REPO=my-repo \
+./mill examples.runMain io.worxbend.gitea4s.examples.ListReleases
 ```
 
 If `GITEA_URL`, credentials, or example-specific inputs such as `GITEA_ORG` are
@@ -242,6 +248,7 @@ and makes no external calls.
 ./mill examples.runMain io.worxbend.gitea4s.examples.ListMyRepos
 ./mill examples.runMain io.worxbend.gitea4s.examples.WatchNotifications
 ./mill examples.runMain io.worxbend.gitea4s.examples.OrgMembers
+./mill examples.runMain io.worxbend.gitea4s.examples.ListReleases
 ```
 
 The rewrite is still in progress. Publishing metadata, generated docs, and write
