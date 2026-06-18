@@ -30,6 +30,8 @@ surface is still being filled out.
 - Typed issue tracked-time listing, addition, reset, and deletion with
   `TrackedTime`, `AddTimeOption`, `IssueTrackedTimeListParams`, and
   schema-traceable tracked-time request construction.
+- Typed current-user stopwatch listing and issue stopwatch start/stop/delete
+  commands with `StopWatch` and schema-traceable stopwatch request construction.
 - Typed issue label listing, replacement, addition, clearing, and removal with
   `IssueLabelsOption` and schema-traceable issue label request construction.
 - Typed issue locking and unlocking with `LockIssueOption` and

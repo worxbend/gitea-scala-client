@@ -885,6 +885,58 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           remove.retryable == false
         )
       },
+      test("builds schema-traceable issue stopwatch requests") {
+        val start = GiteaRequests.startIssueStopwatch(config, "worx bend", "gitea/scala", 99)
+        val stop = GiteaRequests.stopIssueStopwatch(config, "worx bend", "gitea/scala", 99)
+        val remove = GiteaRequests.deleteIssueStopwatch(config, "worx bend", "gitea/scala", 99)
+
+        assertTrue(
+          start.endpoint == GiteaEndpoints.issueStartStopWatch,
+          start.endpoint.method == "POST",
+          start.endpoint.operationId == "issueStartStopWatch",
+          start.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/stopwatch/start",
+          start.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
+          start.endpoint.response == "#/responses/empty",
+          start.request.method == Method.POST,
+          start.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/stopwatch/start",
+          start.request.header("Content-Type").isEmpty,
+          start.retryable == false,
+          stop.endpoint == GiteaEndpoints.issueStopStopWatch,
+          stop.endpoint.method == "POST",
+          stop.endpoint.operationId == "issueStopStopWatch",
+          stop.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/stopwatch/stop",
+          stop.request.method == Method.POST,
+          stop.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/stopwatch/stop",
+          stop.retryable == false,
+          remove.endpoint == GiteaEndpoints.issueDeleteStopWatch,
+          remove.endpoint.method == "DELETE",
+          remove.endpoint.operationId == "issueDeleteStopWatch",
+          remove.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/stopwatch/delete",
+          remove.request.method == Method.DELETE,
+          remove.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/stopwatch/delete",
+          remove.retryable == false
+        )
+      },
+      test("builds schema-traceable paginated current-user stopwatch request") {
+        val built = GiteaRequests.userStopwatches(config, page = 4)
+
+        assertTrue(
+          built.endpoint == GiteaEndpoints.userGetStopWatches,
+          built.endpoint.method == "GET",
+          built.endpoint.operationId == "userGetStopWatches",
+          built.endpoint.path == "/user/stopwatches",
+          built.endpoint.parameters.map(_.name) == List("page", "limit"),
+          built.endpoint.response == "#/responses/StopWatchList",
+          built.request.method == Method.GET,
+          built.request.uri.toString.contains("/api/v1/user/stopwatches?"),
+          built.request.uri.paramsMap.get("page").contains("4"),
+          built.request.uri.paramsMap.get("limit").contains("25"),
+          built.retryable == true
+        )
+      },
       test("builds paginated follower and following list requests") {
         val followers = GiteaRequests.userFollowers(config, "space user/slash", page = 2)
         val following = GiteaRequests.userFollowing(config, "space user/slash", page = 3)
@@ -1243,6 +1295,32 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           list.decode(list.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
           add.decode(add.request.send(backend)).map(_.time) == Right(Some(1800L)),
           reset.decode(reset.request.send(backend)) == Right(()),
+          remove.decode(remove.request.send(backend)) == Right(())
+        )
+      },
+      test("decodes stopwatch responses") {
+        val stopwatchListResponse =
+          """[{"created":"2026-06-18T10:30:00Z","issue_index":12,"repo_name":"gitea4s","seconds":3723}]"""
+        val headers = List(Header("x-total-count", "1"))
+        val backend =
+          BackendStub.synchronous
+            .whenRequestMatches(_.method == Method.GET)
+            .thenRespond(ResponseStub.adjust(stopwatchListResponse, StatusCode.Ok, headers))
+            .whenRequestMatches(_.method == Method.POST)
+            .thenRespond(ResponseStub.adjust("", StatusCode.Created))
+            .whenRequestMatches(_.method == Method.DELETE)
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val list = GiteaRequests.userStopwatches(config)
+        val start = GiteaRequests.startIssueStopwatch(config, "owner", "repo", 99)
+        val stop = GiteaRequests.stopIssueStopwatch(config, "owner", "repo", 99)
+        val remove = GiteaRequests.deleteIssueStopwatch(config, "owner", "repo", 99)
+
+        assertTrue(
+          list.decode(list.request.send(backend)).map(_.data.headOption.flatMap(_.issueIndex)) == Right(Some(12L)),
+          list.decode(list.request.send(backend)).map(_.data.headOption.flatMap(_.seconds)) == Right(Some(3723L)),
+          list.decode(list.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
+          start.decode(start.request.send(backend)) == Right(()),
+          stop.decode(stop.request.send(backend)) == Right(()),
           remove.decode(remove.request.send(backend)) == Right(())
         )
       },

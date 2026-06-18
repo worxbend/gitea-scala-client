@@ -391,6 +391,48 @@ object GiteaClientSpec extends ZIOSpecDefault:
           reset == Right(())
         )
       },
+      test("manages issue stopwatches through the IssuesApi and UsersApi methods") {
+        val headers = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("user", "stopwatches"))
+            }
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"issue_index":8,"repo_name":"repo","seconds":60}]""", StatusCode.Ok, headers),
+              ResponseStub.adjust("""[{"issue_index":9,"repo_name":"repo","seconds":120}]""", StatusCode.Ok, headers)
+            )
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "stopwatch", "start"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "stopwatch", "stop"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "stopwatch", "delete"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          stopwatches <- client.stopwatches.runCollect
+          started <- client.startStopwatch("owner", "repo", 8).either
+          stopped <- client.stopStopwatch("owner", "repo", 8).either
+          deleted <- client.deleteStopwatch("owner", "repo", 8).either
+        yield assertTrue(
+          stopwatches.map(_.issueIndex) == Chunk(Some(8L), Some(9L)),
+          stopwatches.map(_.seconds) == Chunk(Some(60L), Some(120L)),
+          started == Right(()),
+          stopped == Right(()),
+          deleted == Right(())
+        )
+      },
       test("manages issue labels through the IssuesApi label methods") {
         val backend =
           taskStub

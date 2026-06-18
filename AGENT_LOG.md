@@ -311,3 +311,9 @@
 2026-06-18T10:47:16Z iteration 1 started remaining=18000s
 2026-06-18T10:55:13Z added typed issue tracked-time APIs with TrackedTime/AddTimeOption models, IssueTrackedTimeListParams, request builders, facade wiring, tests, README, changelog, PLAN, and API snapshots
 2026-06-18T10:55:13Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T10:55:59Z iteration 1 no changes to commit
+2026-06-18T10:55:59Z iteration 1 completed validation_status=0
+2026-06-18T10:55:59Z iteration 2 started remaining=17478s
+2026-06-18T11:01:22Z added typed issue stopwatch APIs and current-user stopwatch stream with StopWatch model, request builders, facade wiring, tests, README, CHANGELOG, and PLAN updates
+2026-06-18T11:01:22Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
+2026-06-18T11:01:22Z checkpoint commit created message="Add issue stopwatch API"

@@ -124,3 +124,9 @@ trait IssuesApi:
   def resetTrackedTime(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
 
   def deleteTrackedTime(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit]
+
+  def startStopwatch(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
+
+  def stopStopwatch(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
+
+  def deleteStopwatch(owner: String, repo: String, index: Long): IO[GiteaError, Unit]

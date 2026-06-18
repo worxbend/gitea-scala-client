@@ -309,6 +309,30 @@ object CoreModelsSpec extends ZIOSpecDefault:
           payload.toJson.fromJson[AddTimeOption] == Right(payload)
         )
       },
+      test("decodes stopwatch payloads using schema JSON names") {
+        val stopwatchJson =
+          """{
+            |  "created": "2026-06-18T10:30:00Z",
+            |  "duration": "1h2m3s",
+            |  "issue_index": 12,
+            |  "issue_title": "Implement stopwatch support",
+            |  "repo_name": "gitea4s",
+            |  "repo_owner_name": "worxbend",
+            |  "seconds": 3723
+            |}""".stripMargin
+
+        val stopwatch = stopwatchJson.fromJson[StopWatch]
+
+        assertTrue(
+          stopwatch.map(_.created) == Right(Some(Instant.parse("2026-06-18T10:30:00Z"))),
+          stopwatch.map(_.duration) == Right(Some("1h2m3s")),
+          stopwatch.map(_.issueIndex) == Right(Some(12L)),
+          stopwatch.map(_.issueTitle) == Right(Some("Implement stopwatch support")),
+          stopwatch.map(_.repoName) == Right(Some("gitea4s")),
+          stopwatch.map(_.repoOwnerName) == Right(Some("worxbend")),
+          stopwatch.map(_.seconds) == Right(Some(3723L))
+        )
+      },
       test("round-trips issue meta payloads for dependency and blocking requests") {
         val sameRepo = IssueMeta(index = 13L)
         val crossRepo = IssueMeta(index = 21L, owner = Some("other-owner"), repo = Some("other-repo"))

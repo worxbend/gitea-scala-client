@@ -461,6 +461,9 @@ public interface io.worxbend.gitea4s.api.IssuesApi {
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.TrackedTime> addTrackedTime(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.AddTimeOption);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> resetTrackedTime(java.lang.String, java.lang.String, long);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteTrackedTime(java.lang.String, java.lang.String, long, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> startStopwatch(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> stopStopwatch(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteStopwatch(java.lang.String, java.lang.String, long);
 }
 
 ## io.worxbend.gitea4s.api.NotificationsApi
@@ -512,6 +515,7 @@ public interface io.worxbend.gitea4s.api.UsersApi {
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.User> followers(java.lang.String);
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.User> following(java.lang.String);
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.User> search(io.worxbend.gitea4s.http.UserSearchParams);
+  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.StopWatch> stopwatches();
 }
 
 ## io.worxbend.gitea4s.http.GiteaEndpoint
@@ -573,6 +577,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteComment();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteCommentReaction();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteIssueReaction();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteStopWatch();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteSubscription();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteTime();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueEditComment();
@@ -596,6 +601,8 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueRemoveLabel();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueReplaceLabels();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueResetTime();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueStartStopWatch();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueStopStopWatch();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueSubscriptions();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueTrackedTimes();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueUnlockIssue();
@@ -616,6 +623,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListTopics();
   public static io.worxbend.gitea4s.http.GiteaEndpoint userGet();
   public static io.worxbend.gitea4s.http.GiteaEndpoint userGetCurrent();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint userGetStopWatches();
   public static io.worxbend.gitea4s.http.GiteaEndpoint userListFollowers();
   public static io.worxbend.gitea4s.http.GiteaEndpoint userListFollowing();
   public static io.worxbend.gitea4s.http.GiteaEndpoint userListRepos();
@@ -672,6 +680,9 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint issueGetIssueReactions();
   public io.worxbend.gitea4s.http.GiteaEndpoint issuePostIssueReaction();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteIssueReaction();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteStopWatch();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueStartStopWatch();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueStopStopWatch();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueSubscriptions();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueCheckSubscription();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueAddSubscription();
@@ -680,6 +691,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint issueAddTime();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueResetTime();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteTime();
+  public io.worxbend.gitea4s.http.GiteaEndpoint userGetStopWatches();
   public io.worxbend.gitea4s.http.GiteaEndpoint notifyGetList();
   public io.worxbend.gitea4s.http.GiteaEndpoint notifyNewAvailable();
   public io.worxbend.gitea4s.http.GiteaEndpoint notifyGetThread();
@@ -783,6 +795,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueCommentReaction(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditReactionOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueReaction(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditReactionOption);
+  public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueStopwatch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueSubscription(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> editIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssue);
@@ -824,15 +837,19 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<java.lang.String>> repoTopics(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> repository(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> resetIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> startIssueStopwatch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> stopIssueStopwatch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> unlockIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.User> user(io.worxbend.gitea4s.GiteaConfig, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> userFollowers(io.worxbend.gitea4s.GiteaConfig, java.lang.String, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> userFollowing(io.worxbend.gitea4s.GiteaConfig, java.lang.String, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Repository>> userRepos(io.worxbend.gitea4s.GiteaConfig, java.lang.String, io.worxbend.gitea4s.http.RepoListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> userSearch(io.worxbend.gitea4s.GiteaConfig, io.worxbend.gitea4s.http.UserSearchParams);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.StopWatch>> userStopwatches(io.worxbend.gitea4s.GiteaConfig, int);
   public static sttp.client4.Request<java.lang.String> withJsonBody(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Request<java.lang.String>, java.lang.String);
   public static io.worxbend.gitea4s.http.NotificationListParams notifications$default$2();
   public static io.worxbend.gitea4s.http.UserSearchParams userSearch$default$2();
+  public static int userStopwatches$default$2();
   public static int organizationMembers$default$3();
   public static int organizationPublicMembers$default$3();
   public static io.worxbend.gitea4s.http.RepoListParams organizationRepos$default$3();
@@ -862,6 +879,8 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.User> user(io.worxbend.gitea4s.GiteaConfig, java.lang.String);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> userSearch(io.worxbend.gitea4s.GiteaConfig, io.worxbend.gitea4s.http.UserSearchParams);
   public io.worxbend.gitea4s.http.UserSearchParams userSearch$default$2();
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.StopWatch>> userStopwatches(io.worxbend.gitea4s.GiteaConfig, int);
+  public int userStopwatches$default$2();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> repository(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Organization> organization(io.worxbend.gitea4s.GiteaConfig, java.lang.String);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> organizationMembers(io.worxbend.gitea4s.GiteaConfig, java.lang.String, int);
@@ -930,6 +949,9 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.TrackedTime> addIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.AddTimeOption);
   public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> resetIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
+  public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> startIssueStopwatch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> stopIssueStopwatch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueStopwatch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.NotificationThread>> notifications(io.worxbend.gitea4s.GiteaConfig, io.worxbend.gitea4s.http.NotificationListParams);
   public io.worxbend.gitea4s.http.NotificationListParams notifications$default$2();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.NotificationCount> notificationCount(io.worxbend.gitea4s.GiteaConfig);

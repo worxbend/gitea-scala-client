@@ -7,6 +7,7 @@ dist
 /.idea
 /*.iml
 /out
+/.bsp
 /.idea_modules
 /.classpath
 /.project
@@ -466,4 +467,3 @@ project/plugins/project/
 .history
 .cache
 .lib/
-

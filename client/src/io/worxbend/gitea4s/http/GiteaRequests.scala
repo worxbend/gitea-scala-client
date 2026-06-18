@@ -27,6 +27,7 @@ import io.worxbend.gitea4s.model.{
   Reaction,
   Release,
   Repository,
+  StopWatch,
   Tag,
   TrackedTime,
   User,
@@ -56,6 +57,17 @@ object GiteaRequests:
       List("users", "search"),
       userSearchQuery(params, page, pageSize),
       response => GiteaResponseMapper.decodeUserSearchPage(response, page, pageSize)
+    )
+
+  def userStopwatches(config: GiteaConfig, page: Int = 1): GiteaRequest[Page[StopWatch]] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      GiteaEndpoints.userGetStopWatches,
+      List("user", "stopwatches"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[StopWatch](response, page, pageSize)
     )
 
   def repository(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Repository] =
@@ -695,6 +707,30 @@ object GiteaRequests:
       GiteaResponseMapper.decodeUnit
     )
 
+  def startIssueStopwatch(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Unit] =
+    post(
+      config,
+      GiteaEndpoints.issueStartStopWatch,
+      List("repos", owner, repo, "issues", index.toString, "stopwatch", "start"),
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def stopIssueStopwatch(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Unit] =
+    post(
+      config,
+      GiteaEndpoints.issueStopStopWatch,
+      List("repos", owner, repo, "issues", index.toString, "stopwatch", "stop"),
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def deleteIssueStopwatch(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.issueDeleteStopWatch,
+      List("repos", owner, repo, "issues", index.toString, "stopwatch", "delete"),
+      GiteaResponseMapper.decodeUnit
+    )
+
   def notifications(config: GiteaConfig, params: NotificationListParams = NotificationListParams.default)
       : GiteaRequest[Page[NotificationThread]] =
     val page = params.page.getOrElse(1)
@@ -759,6 +795,23 @@ object GiteaRequests:
       endpoint = endpoint,
       request = basicRequest
         .get(apiUri(config.baseUrl, path, query))
+        .response(asStringAlways)
+        .readTimeout(config.timeout)
+        .headers(commonHeaders(config)),
+      decode = decode,
+      retryable = GiteaRequest.isReadOnly(endpoint)
+    )
+
+  private def post[A](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+  ): GiteaRequest[A] =
+    GiteaRequest(
+      endpoint = endpoint,
+      request = basicRequest
+        .post(apiUri(config.baseUrl, path, Nil))
         .response(asStringAlways)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),

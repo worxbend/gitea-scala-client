@@ -648,6 +648,45 @@ object GiteaEndpoints:
       response = "#/responses/empty"
     )
 
+  val issueDeleteStopWatch: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/issues/{index}/stopwatch/delete",
+      operationId = "issueDeleteStopWatch",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
+  val issueStartStopWatch: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "POST",
+      path = "/repos/{owner}/{repo}/issues/{index}/stopwatch/start",
+      operationId = "issueStartStopWatch",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
+  val issueStopStopWatch: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "POST",
+      path = "/repos/{owner}/{repo}/issues/{index}/stopwatch/stop",
+      operationId = "issueStopStopWatch",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
   val issueSubscriptions: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",
@@ -761,6 +800,18 @@ object GiteaEndpoints:
         GiteaParameter("id", "path", required = true)
       ),
       response = "#/responses/empty"
+    )
+
+  val userGetStopWatches: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/user/stopwatches",
+      operationId = "userGetStopWatches",
+      parameters = List(
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/StopWatchList"
     )
 
   val notifyGetList: GiteaEndpoint =

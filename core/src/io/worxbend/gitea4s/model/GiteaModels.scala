@@ -288,6 +288,19 @@ final case class TrackedTime(
 object TrackedTime:
   given JsonCodec[TrackedTime] = DeriveJsonCodec.gen[TrackedTime]
 
+final case class StopWatch(
+    created: Option[Instant] = None,
+    duration: Option[String] = None,
+    @jsonField("issue_index") issueIndex: Option[Long] = None,
+    @jsonField("issue_title") issueTitle: Option[String] = None,
+    @jsonField("repo_name") repoName: Option[String] = None,
+    @jsonField("repo_owner_name") repoOwnerName: Option[String] = None,
+    seconds: Option[Long] = None
+)
+
+object StopWatch:
+  given JsonCodec[StopWatch] = DeriveJsonCodec.gen[StopWatch]
+
 final case class IssueMeta(
     index: Long,
     owner: Option[String] = None,

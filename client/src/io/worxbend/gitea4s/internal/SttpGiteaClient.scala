@@ -38,6 +38,7 @@ import io.worxbend.gitea4s.model.{
   Reaction,
   Release,
   Repository,
+  StopWatch,
   Tag,
   TrackedTime,
   User,
@@ -89,6 +90,11 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override def search(params: UserSearchParams): ZStream[Any, GiteaError, User] =
     Pagination.paginated { page =>
       executor.send(GiteaRequests.userSearch(config, params.copy(page = Some(page))))
+    }
+
+  override def stopwatches: ZStream[Any, GiteaError, StopWatch] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.userStopwatches(config, page))
     }
 
   override def get(owner: String, repo: String): IO[GiteaError, Repository] =
@@ -348,3 +354,12 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def deleteTrackedTime(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.deleteIssueTrackedTime(config, owner, repo, index, id))
+
+  override def startStopwatch(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.startIssueStopwatch(config, owner, repo, index))
+
+  override def stopStopwatch(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.stopIssueStopwatch(config, owner, repo, index))
+
+  override def deleteStopwatch(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteIssueStopwatch(config, owner, repo, index))
