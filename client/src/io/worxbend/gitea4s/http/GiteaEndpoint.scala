@@ -258,6 +258,19 @@ object GiteaEndpoints:
       response = "#/responses/PullRequest"
     )
 
+  val repoPullRequestIsMerged: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/pulls/{index}/merge",
+      operationId = "repoPullRequestIsMerged",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "204 merged / 404 not merged"
+    )
+
   val repoDownloadPullDiffOrPatch: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

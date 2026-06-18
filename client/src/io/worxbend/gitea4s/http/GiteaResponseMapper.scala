@@ -3,6 +3,7 @@ package io.worxbend.gitea4s.http
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.{GiteaErrorPayload, Page, TopicNames, User}
 import sttp.client4.Response
+import sttp.model.StatusCode
 import zio.Chunk
 import zio.json.*
 
@@ -20,6 +21,13 @@ object GiteaResponseMapper:
 
   def decodeString(response: Response[String]): Either[GiteaError, String] =
     if response.isSuccess then Right(response.body) else Left(toError(response))
+
+  def decodeNoContentOrNotFoundBoolean(response: Response[String]): Either[GiteaError, Boolean] =
+    response.code match
+      case StatusCode.NoContent => Right(true)
+      case StatusCode.NotFound => Right(false)
+      case _ if response.isSuccess => Right(true)
+      case _ => Left(toError(response))
 
   def decodeChunk[A: JsonDecoder](response: Response[String]): Either[GiteaError, Chunk[A]] =
     decodeJson[List[A]](response).map(Chunk.fromIterable)

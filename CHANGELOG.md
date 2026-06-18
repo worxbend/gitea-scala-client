@@ -32,6 +32,8 @@ surface is still being filled out.
   construction.
 - Typed pull-request diff/patch downloads with `PullRequestDiffType` and
   `repoDownloadPullDiffOrPatch` request construction.
+- Typed pull-request merge status checks with `repoPullRequestIsMerged` request
+  construction and endpoint-specific 204/404 boolean decoding.
 - Typed issue editing and closing with `EditIssue` and `issueEditIssue` request
   construction.
 - Typed issue comments with `CreateIssueComment` and `issueCreateComment` request

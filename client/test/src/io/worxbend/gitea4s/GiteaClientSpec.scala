@@ -942,6 +942,10 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2")))
             .thenRespond(ResponseStub.adjust("""{"id":2,"number":2,"title":"Second","state":"closed"}"""))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "merge")))
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "3", "merge")))
+            .thenRespond(ResponseStub.adjust("", StatusCode.NotFound))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2.patch")))
             .thenRespond(ResponseStub.adjust("From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001"))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "pinned")))
@@ -979,6 +983,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         for
           pullRequests <- client.pullRequests("alice", "api", PullRequestListParams.default).runCollect
           pullRequest <- client.pullRequest("alice", "api", 2)
+          merged <- client.pullRequestIsMerged("alice", "api", 2)
+          notMerged <- client.pullRequestIsMerged("alice", "api", 3)
           pullRequestPatch <- client.pullRequestDiffOrPatch("alice", "api", 2, PullRequestDiffType.Patch)
           pinnedPullRequests <- client.pinnedPullRequests("alice", "api")
           pullRequestByBaseHead <- client.pullRequestByBaseHead("alice", "api", "main", "feature")
@@ -988,6 +994,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequests.map(_.number) == Chunk(Some(1L), Some(2L)),
           pullRequest.id.contains(2L),
           pullRequest.title.contains("Second"),
+          merged,
+          !notMerged,
           pullRequestPatch.startsWith("From 0000000000000000000000000000000000000000"),
           pinnedPullRequests.map(_.number) == Chunk(Some(3L)),
           pullRequestByBaseHead.number.contains(4L),

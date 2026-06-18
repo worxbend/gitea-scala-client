@@ -337,6 +337,30 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88"
         )
       },
+      test("builds and decodes schema-traceable pull request merge status request") {
+        val built = GiteaRequests.repoPullRequestIsMerged(config, "worx bend", "gitea/scala", 88)
+        val endpoint = built.endpoint
+        val request = built.request
+        val mergedBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val unmergedBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.NotFound))
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoPullRequestIsMerged,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoPullRequestIsMerged",
+          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/merge",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
+          endpoint.response == "204 merged / 404 not merged",
+          request.method == Method.GET,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/merge",
+          request.header("Accept").contains("application/json"),
+          built.retryable == true,
+          built.decode(request.send(mergedBackend)) == Right(true),
+          built.decode(request.send(unmergedBackend)) == Right(false)
+        )
+      },
       test("builds schema-traceable pull request diff or patch request") {
         val built =
           GiteaRequests.repoPullRequestDiffOrPatch(
@@ -1807,6 +1831,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val pullRequest = GiteaRequests.repoPullRequest(config, "owner", "missing", 77)
         val pullRequestDiff =
           GiteaRequests.repoPullRequestDiffOrPatch(config, "owner", "missing", 77, PullRequestDiffType.Diff)
+        val pullRequestIsMerged = GiteaRequests.repoPullRequestIsMerged(config, "owner", "missing", 77)
         val pullRequestFiles = GiteaRequests.repoPullRequestFiles(config, "owner", "missing", 77)
         val pullRequestCommits = GiteaRequests.repoPullRequestCommits(config, "owner", "missing", 77)
 
@@ -1819,6 +1844,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.NotFound("missing pull request", body)),
           pullRequestDiff.decode(pullRequestDiff.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body)),
+          pullRequestIsMerged.decode(pullRequestIsMerged.request.send(backend)) == Right(false),
           pullRequestFiles.decode(pullRequestFiles.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body)),
           pullRequestCommits.decode(pullRequestCommits.request.send(backend)) ==

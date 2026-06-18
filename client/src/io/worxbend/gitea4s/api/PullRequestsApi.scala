@@ -24,6 +24,8 @@ trait PullRequestsApi:
 
   def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest]
 
+  def pullRequestIsMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean]
+
   def pullRequestDiffOrPatch(
       owner: String,
       repo: String,

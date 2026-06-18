@@ -245,6 +245,15 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[PullRequest]
     )
 
+  def repoPullRequestIsMerged(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Boolean] =
+    get(
+      config,
+      GiteaEndpoints.repoPullRequestIsMerged,
+      List("repos", owner, repo, "pulls", index.toString, "merge"),
+      Nil,
+      GiteaResponseMapper.decodeNoContentOrNotFoundBoolean
+    )
+
   def repoPullRequestDiffOrPatch(
       config: GiteaConfig,
       owner: String,

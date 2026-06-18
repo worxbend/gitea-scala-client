@@ -163,6 +163,9 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.repoPullRequest(config, owner, repo, index))
 
+  override def pullRequestIsMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean] =
+    executor.send(GiteaRequests.repoPullRequestIsMerged(config, owner, repo, index))
+
   override def pullRequestDiffOrPatch(
       owner: String,
       repo: String,
