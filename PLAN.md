@@ -89,10 +89,12 @@ Current checkpoint:
 - `RepoListParams` covers page/limit for `userListRepos` and `orgListRepos`; `UserSearchParams` covers `q`/page/limit for `userSearch`; `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`; `PullRequestListParams` covers `base_branch`, `state`, `sort`, `milestone`, multi-value `labels`, `poster`, page, and limit for `repoListPullRequests`; `NotificationListParams` covers `all`, multi-value `status-types`, multi-value `subject-type`, `since`, `before`, page, and limit for `notifyGetList`.
 - `GiteaResponseMapper` decodes successful JSON responses, paginated issue/repository/branch/tag/release/pull-request/notification lists, object-shaped user-search and topic-name pages, 204/unit responses, Gitea error payloads, raw failure bodies, pagination headers, and rate-limit reset headers.
 - `GiteaRequestsSpec` uses sttp `BackendStub` to cover path encoding, query params, auth/OTP/user-agent/JSON accept headers, JSON content type for body requests, successful decoding, pagination mapping for issue/user/repository/topic/branch/tag/search/release/pull-request/notification lists, organization and notification decoding, Gitea error mapping, and rate-limit mapping.
-- Phase 7 has begun with programmatic and environment-based `GiteaConfig` loading.
+- Phase 7 has config and retry foundations in place.
 - `GiteaConfig` now exposes `withToken`, `withBasic`, `anonymous`, pure `fromEnv(Map[String, String])`, `fromEnvironment`, `layerFromEnv`, and `environmentLayer`.
-- Environment config supports `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`, `GITEA_PAGE_SIZE`, and `GITEA_TIMEOUT`; `GITEA_TOKEN` has precedence over basic auth, basic auth requires both username and password, and validation errors avoid credential values.
-- `GiteaConfigSpec` covers token/basic/anonymous env loading, credential precedence, invalid URL/page-size handling, incomplete basic credentials, safe error messages, and hermetic ZLayer construction without reading real environment variables.
+- `GiteaConfig` now also exposes `fromTypesafeConfig`, `fromTypesafeString`, `layerFromTypesafeConfig`, `layerFromTypesafeString`, and `typesafeLayer`.
+- Environment config supports `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`, `GITEA_PAGE_SIZE`, `GITEA_TIMEOUT`, and `GITEA_MAX_RETRIES`; `GITEA_TOKEN` has precedence over basic auth, basic auth requires both username and password, and validation errors avoid credential values.
+- Typesafe config supports `gitea4s.url`, `token`, `username`, `password`, `page-size`, `timeout`, `user-agent`, `otp`, and `max-retries` under the `gitea4s` path with the same credential precedence and safe validation behavior.
+- `GiteaConfigSpec` covers token/basic/anonymous env loading, Typesafe config loading, credential precedence, invalid URL/page-size/retry handling, incomplete basic credentials, safe error messages, and hermetic ZLayer construction without reading real environment variables.
 - Phase 4 has a small ZIO API facade: `UsersApi`, `ReposApi`, `IssuesApi`, `ReleasesApi`, `PullRequestsApi`, `NotificationsApi`, and a nested `OrgsApi` namespace are wired through `GiteaClient.fromBackend`.
 - `GiteaRequest` carries read-only retry eligibility derived from endpoint HTTP method metadata.
 - `GiteaRequestExecutor` sends `GiteaRequest[A]` through a sttp `Backend[Task]`, decodes responses through the existing mapper, maps backend failures to `GiteaError.TransportError`, and honors `GiteaConfig.maxRetries` for retryable read-only requests.
@@ -544,6 +546,8 @@ Completed subset:
 
 - Programmatic `GiteaConfig` constructors for token, basic, and anonymous auth.
 - Environment-based config parsing and ZLayer construction for `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`, `GITEA_PAGE_SIZE`, and `GITEA_TIMEOUT`.
+- Environment-based retry parsing through `GITEA_MAX_RETRIES`.
+- Typesafe config parsing and ZLayer construction under the `gitea4s` path, including `max-retries`, `user-agent`, and `otp`.
 - Explicit credential precedence: token auth wins; otherwise basic auth is used only when username and password are both set; otherwise auth is anonymous.
 - Hermetic config tests under `client.test` without requiring real environment variables.
 - Safe read-only retry infrastructure under `GiteaRequestExecutor`, controlled by `GiteaConfig.maxRetries`.
@@ -564,6 +568,7 @@ GITEA_USERNAME
 GITEA_PASSWORD
 GITEA_PAGE_SIZE
 GITEA_TIMEOUT
+GITEA_MAX_RETRIES
 ```
 
 Implemented retry rules:
@@ -673,9 +678,9 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 7 by adding the Typesafe config source for `GiteaConfig`,
-- include `maxRetries` in non-secret config loading while preserving safe credential precedence and validation messages,
-- document the retry knob and config source precedence in README,
-- keep config tests hermetic under `./mill client.test`.
+- start Phase 8 by replacing the placeholder integration module with opt-in tests that only run when `GITEA_URL` and `GITEA_TOKEN` are present,
+- cover a small live read-only slice such as `GET /user` and one paginated stream through the live ZIO backend,
+- document how to run or skip integration tests without requiring external services for default unit validation,
+- keep `./mill __.test` hermetic when integration credentials are absent.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.

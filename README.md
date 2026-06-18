@@ -17,7 +17,8 @@ Current checkpoint:
   async `OkHttpFutureBackend` adapted to ZIO
 - Config: `GiteaConfig` supports programmatic constructors plus hermetic environment
   parsing for `GITEA_URL`, `GITEA_TOKEN`, `GITEA_USERNAME`, `GITEA_PASSWORD`,
-  `GITEA_PAGE_SIZE`, and `GITEA_TIMEOUT`
+  `GITEA_PAGE_SIZE`, `GITEA_TIMEOUT`, and `GITEA_MAX_RETRIES`; it also supports
+  Typesafe config under the `gitea4s` path
 - Retry: read-only requests honor `GiteaConfig.maxRetries` for transport failures,
   `429` rate limits, and selected `5xx` responses without retrying write requests by default
 
@@ -34,6 +35,23 @@ Useful commands:
 ZIO backend and calls `GET /user`. Token auth has precedence when both token and
 username/password variables are set. Config validation errors mention variable names but
 not credential values.
+
+Config source precedence is explicit: programmatic `GiteaConfig` values are preferred,
+then environment loading, then Typesafe config. The environment retry knob is
+`GITEA_MAX_RETRIES`; the Typesafe config key is `gitea4s.max-retries`. Both accept
+zero or a positive integer.
+
+Example Typesafe config:
+
+```hocon
+gitea4s {
+  url = "https://gitea.example"
+  token = "..."
+  page-size = 50
+  timeout = 30s
+  max-retries = 2
+}
+```
 
 The rewrite is still in progress. Implemented APIs are covered by hermetic stub-backed tests;
 integration tests, additional examples, and publishing polish remain planned work.
