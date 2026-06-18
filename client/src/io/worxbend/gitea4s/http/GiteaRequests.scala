@@ -61,6 +61,19 @@ object GiteaRequests:
       page = page
     )
 
+  def organizationRepos(config: GiteaConfig, org: String, params: RepoListParams = RepoListParams.default)
+      : GiteaRequest[Page[Repository]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
+
+    get(
+      config,
+      GiteaEndpoints.orgListRepos,
+      List("orgs", org, "repos"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[Repository](response, page, pageSize)
+    )
+
   def userRepos(config: GiteaConfig, username: String, params: RepoListParams = RepoListParams.default)
       : GiteaRequest[Page[Repository]] =
     val page = params.page.getOrElse(1)

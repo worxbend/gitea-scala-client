@@ -97,6 +97,24 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.paramsMap.get("limit").contains("25")
         )
       },
+      test("builds schema-traceable paginated organization repository list request") {
+        val built =
+          GiteaRequests.organizationRepos(config, "space org/slash", RepoListParams(page = Some(4), limit = Some(15)))
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.orgListRepos,
+          endpoint.operationId == "orgListRepos",
+          endpoint.path == "/orgs/{org}/repos",
+          endpoint.parameters.map(_.name) == List("org", "page", "limit"),
+          endpoint.response == "#/responses/RepositoryList",
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/orgs/space%20org%2Fslash/repos?"),
+          request.uri.paramsMap.get("page").contains("4"),
+          request.uri.paramsMap.get("limit").contains("15")
+        )
+      },
       test("builds schema-traceable paginated user repository list request") {
         val built =
           GiteaRequests.userRepos(config, "space user/slash", RepoListParams(page = Some(2), limit = Some(15)))
@@ -300,19 +318,26 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
       },
       test("decodes paginated repository list and topic names responses") {
         val repoListResponse = """[{"id":10,"name":"api"},{"id":11,"name":"client"}]"""
+        val orgRepoListResponse = """[{"id":12,"name":"org-api"},{"id":13,"name":"org-client"}]"""
         val topicsResponse = """{"topics":["scala","zio"]}"""
         val backend =
           BackendStub.synchronous
             .whenRequestMatches(_.uri.path.endsWith(List("users", "octo", "repos")))
             .thenRespond(ResponseStub.adjust(repoListResponse, StatusCode.Ok, List(Header("x-total-count", "2"))))
+            .whenRequestMatches(_.uri.path.endsWith(List("orgs", "platform", "repos")))
+            .thenRespond(ResponseStub.adjust(orgRepoListResponse, StatusCode.Ok, List(Header("x-total-count", "2"))))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "topics")))
             .thenRespond(ResponseStub.adjust(topicsResponse, StatusCode.Ok, List(Header("x-total-count", "2"))))
         val repos = GiteaRequests.userRepos(config, "octo")
+        val orgRepos = GiteaRequests.organizationRepos(config, "platform")
         val topics = GiteaRequests.repoTopics(config, "octo", "api")
 
         assertTrue(
           repos.decode(repos.request.send(backend)).map(_.data.map(_.name)) ==
             Right(Chunk(Some("api"), Some("client"))),
+          orgRepos.decode(orgRepos.request.send(backend)).map(_.data.map(_.name)) ==
+            Right(Chunk(Some("org-api"), Some("org-client"))),
+          orgRepos.decode(orgRepos.request.send(backend)).map(_.hasNext) == Right(false),
           topics.decode(topics.request.send(backend)).map(_.data) == Right(Chunk("scala", "zio"))
         )
       },
@@ -350,6 +375,16 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val body = """{"message":"missing org"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val built = GiteaRequests.organizationPublicMembers(config, "missing")
+        val raw = built.request.send(backend)
+
+        assertTrue(
+          built.decode(raw) == Left(GiteaError.NotFound("missing org", body))
+        )
+      },
+      test("maps organization repository-list not-found responses") {
+        val body = """{"message":"missing org"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val built = GiteaRequests.organizationRepos(config, "missing")
         val raw = built.request.send(backend)
 
         assertTrue(

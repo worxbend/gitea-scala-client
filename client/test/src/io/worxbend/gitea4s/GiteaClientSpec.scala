@@ -92,6 +92,20 @@ object GiteaClientSpec extends ZIOSpecDefault:
           assertTrue(users.map(_.login) == Chunk(Some("alice"), Some("bob")))
         }
       },
+      test("streams organization repositories across pages") {
+        val headers = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub.whenRequestMatches(_.uri.path.endsWith(List("orgs", "platform", "repos")))
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"id":10,"name":"api"}]""", StatusCode.Ok, headers),
+              ResponseStub.adjust("""[{"id":11,"name":"client"}]""", StatusCode.Ok, headers)
+            )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        client.orgs.repos("platform").runCollect.map { repos =>
+          assertTrue(repos.map(_.name) == Chunk(Some("api"), Some("client")))
+        }
+      },
       test("returns decode failures as GiteaError") {
         val backend =
           taskStub.whenAnyRequest.thenRespond(ResponseStub.adjust("""{"id":"not-a-number"}"""))
