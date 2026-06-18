@@ -97,6 +97,43 @@ object CoreModelsSpec extends ZIOSpecDefault:
           topics.map(_.topics) == Right(Some(List("scala", "zio", "gitea")))
         )
       },
+      test("decodes notification count, subject, and thread payloads") {
+        val countJson =
+          """{
+            |  "new": 3
+            |}""".stripMargin
+
+        val threadJson =
+          """{
+            |  "id": 900,
+            |  "pinned": true,
+            |  "repository": { "id": 100, "name": "gitea4s", "full_name": "octo/gitea4s" },
+            |  "subject": {
+            |    "html_url": "https://gitea.example/octo/gitea4s/issues/12",
+            |    "latest_comment_html_url": "https://gitea.example/octo/gitea4s/issues/12#comment-300",
+            |    "latest_comment_url": "https://gitea.example/api/v1/repos/octo/gitea4s/issues/comments/300",
+            |    "state": "merged",
+            |    "title": "Add notification support",
+            |    "type": "Pull",
+            |    "url": "https://gitea.example/api/v1/repos/octo/gitea4s/pulls/12"
+            |  },
+            |  "unread": true,
+            |  "updated_at": "2026-06-18T06:00:00Z",
+            |  "url": "https://gitea.example/api/v1/notifications/threads/900"
+            |}""".stripMargin
+
+        val count = countJson.fromJson[NotificationCount]
+        val thread = threadJson.fromJson[NotificationThread]
+
+        assertTrue(
+          count == Right(NotificationCount(unread = Some(3L))),
+          thread.map(_.id) == Right(Some(900L)),
+          thread.map(_.repository.flatMap(_.fullName)) == Right(Some("octo/gitea4s")),
+          thread.map(_.subject.flatMap(_.state)) == Right(Some(NotificationSubjectState.Merged)),
+          thread.map(_.subject.flatMap(_.subjectType)) == Right(Some(NotificationSubjectType.Pull)),
+          thread.map(_.updatedAt) == Right(Some(Instant.parse("2026-06-18T06:00:00Z")))
+        )
+      },
       test("decodes issue, label, milestone, and comment payloads") {
         val issueJson =
           """{
@@ -247,8 +284,10 @@ object CoreModelsSpec extends ZIOSpecDefault:
       test("rejects unknown closed-set enum values") {
         val issue = """{ "id": 1, "state": "paused" }""".fromJson[Issue]
         val repository = """{ "id": 1, "object_format_name": "md5" }""".fromJson[Repository]
+        val notificationSubject =
+          """{ "title": "Invalid", "state": "stale", "type": "Message" }""".fromJson[NotificationSubject]
 
-        assertTrue(issue.isLeft, repository.isLeft)
+        assertTrue(issue.isLeft, repository.isLeft, notificationSubject.isLeft)
       },
       test("models auth modes and core error ADT values") {
         val auth: Auth = Auth.Basic("octo", "secret")

@@ -6,11 +6,23 @@ import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
   GiteaRequests,
   IssueListParams,
+  NotificationListParams,
   PullRequestListParams,
   RepoListParams,
   UserSearchParams
 }
-import io.worxbend.gitea4s.model.{Branch, Issue, Organization, PullRequest, Release, Repository, Tag, User}
+import io.worxbend.gitea4s.model.{
+  Branch,
+  Issue,
+  NotificationCount,
+  NotificationThread,
+  Organization,
+  PullRequest,
+  Release,
+  Repository,
+  Tag,
+  User
+}
 import sttp.client4.Backend
 import zio.{Chunk, IO, Task}
 import zio.stream.ZStream
@@ -104,6 +116,19 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.repoPullRequest(config, owner, repo, index))
+
+  override def notificationThreads(
+      params: NotificationListParams
+  ): ZStream[Any, GiteaError, NotificationThread] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.notifications(config, params.copy(page = Some(page))))
+    }
+
+  override def unreadNotificationCount: IO[GiteaError, NotificationCount] =
+    executor.send(GiteaRequests.notificationCount(config))
+
+  override def notificationThread(id: String): IO[GiteaError, NotificationThread] =
+    executor.send(GiteaRequests.notificationThread(config, id))
 
   override def get(owner: String, repo: String, index: Long): IO[GiteaError, Issue] =
     executor.send(GiteaRequests.issue(config, owner, repo, index))

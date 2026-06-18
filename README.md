@@ -8,6 +8,8 @@ Current checkpoint:
 - Package root: `io.worxbend.gitea4s`
 - JVM target: Java 21
 - API reference: local `plugin-redoc-2.yaml` for Gitea API `1.26.2`
+- Implemented surface: typed core models/codecs plus read-only users, organizations,
+  repositories, issues, releases, pull requests, and notifications through a ZIO client API
 
 Useful commands:
 
@@ -17,4 +19,5 @@ Useful commands:
 ./mill examples.run
 ```
 
-The implementation is in the early rewrite skeleton stage. Core models and codecs are next.
+The rewrite is still in progress. Implemented APIs are covered by hermetic stub-backed tests;
+live backend, config, retry, integration tests, and publishing polish remain planned work.

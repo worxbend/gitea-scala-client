@@ -2,12 +2,14 @@ package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{Auth, IssueState}
+import io.worxbend.gitea4s.model.{Auth, IssueState, NotificationSubjectType}
 import sttp.client4.*
 import sttp.client4.testing.{BackendStub, ResponseStub}
 import sttp.model.{Header, Method, StatusCode}
 import zio.Chunk
 import zio.test.*
+
+import java.time.Instant
 
 object GiteaRequestsSpec extends ZIOSpecDefault:
   private val config =
@@ -339,6 +341,61 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.paramsMap.get("limit").contains("5")
         )
       },
+      test("builds schema-traceable notification list request with filters") {
+        val params = NotificationListParams(
+          all = Some(true),
+          statusTypes = Chunk(NotificationStatusType.Unread, NotificationStatusType.Pinned),
+          subjectTypes = Chunk(NotificationSubjectType.Issue, NotificationSubjectType.Repository),
+          since = Some(Instant.parse("2026-06-01T00:00:00Z")),
+          before = Some(Instant.parse("2026-06-18T00:00:00Z")),
+          page = Some(3),
+          limit = Some(9)
+        )
+        val built = GiteaRequests.notifications(config, params)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.notifyGetList,
+          endpoint.operationId == "notifyGetList",
+          endpoint.path == "/notifications",
+          endpoint.parameters.map(_.name) ==
+            List("all", "status-types", "subject-type", "since", "before", "page", "limit"),
+          endpoint.response == "#/responses/NotificationThreadList",
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/notifications?"),
+          request.uri.paramsMap.get("all").contains("true"),
+          request.uri.toString.contains("status-types=unread"),
+          request.uri.toString.contains("status-types=pinned"),
+          request.uri.toString.contains("subject-type=issue"),
+          request.uri.toString.contains("subject-type=repository"),
+          request.uri.paramsMap.get("since").contains("2026-06-01T00:00:00Z"),
+          request.uri.paramsMap.get("before").contains("2026-06-18T00:00:00Z"),
+          request.uri.paramsMap.get("page").contains("3"),
+          request.uri.paramsMap.get("limit").contains("9")
+        )
+      },
+      test("builds schema-traceable notification count and thread requests") {
+        val count = GiteaRequests.notificationCount(config)
+        val thread = GiteaRequests.notificationThread(config, "thread id/slash")
+
+        assertTrue(
+          count.endpoint == GiteaEndpoints.notifyNewAvailable,
+          count.endpoint.operationId == "notifyNewAvailable",
+          count.endpoint.path == "/notifications/new",
+          count.endpoint.response == "#/responses/NotificationCount",
+          count.request.method == Method.GET,
+          count.request.uri.toString == "https://gitea.example/root/api/v1/notifications/new",
+          thread.endpoint == GiteaEndpoints.notifyGetThread,
+          thread.endpoint.operationId == "notifyGetThread",
+          thread.endpoint.path == "/notifications/threads/{id}",
+          thread.endpoint.parameters.map(_.name) == List("id"),
+          thread.endpoint.response == "#/responses/NotificationThread",
+          thread.request.method == Method.GET,
+          thread.request.uri.toString ==
+            "https://gitea.example/root/api/v1/notifications/threads/thread%20id%2Fslash"
+        )
+      },
       test("adds JSON content type only when a JSON body is attached") {
         val base = GiteaRequests.currentUser(config).request
         val withBody = GiteaRequests.withJsonBody(config, base, """{"name":"repo"}""")
@@ -498,6 +555,33 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           pullRequest.decode(pullRequest.request.send(backend)).map(_.title) == Right(Some("Second"))
         )
       },
+      test("decodes notification count, list, and thread responses") {
+        val countResponse = """{"new":2}"""
+        val listResponse =
+          """[{"id":40,"unread":true,"subject":{"title":"First","state":"open","type":"Issue"}}]"""
+        val threadResponse =
+          """{"id":41,"unread":false,"subject":{"title":"Second","state":"closed","type":"Pull"}}"""
+        val backend =
+          BackendStub.synchronous
+            .whenRequestMatches(_.uri.path.endsWith(List("notifications", "new")))
+            .thenRespond(ResponseStub.adjust(countResponse))
+            .whenRequestMatches(_.uri.path.endsWith(List("notifications")))
+            .thenRespond(ResponseStub.adjust(listResponse, StatusCode.Ok, List(Header("x-total-count", "1"))))
+            .whenRequestMatches(_.uri.path.endsWith(List("notifications", "threads", "41")))
+            .thenRespond(ResponseStub.adjust(threadResponse))
+        val count = GiteaRequests.notificationCount(config)
+        val notifications = GiteaRequests.notifications(config)
+        val thread = GiteaRequests.notificationThread(config, "41")
+
+        assertTrue(
+          count.decode(count.request.send(backend)).map(_.unread) == Right(Some(2L)),
+          notifications.decode(notifications.request.send(backend)).map(_.data.headOption.flatMap(_.id)) ==
+            Right(Some(40L)),
+          notifications.decode(notifications.request.send(backend)).map(_.data.headOption.flatMap(_.subject.flatMap(_.subjectType))) ==
+            Right(Some(NotificationSubjectType.Issue)),
+          thread.decode(thread.request.send(backend)).map(_.subject.flatMap(_.title)) == Right(Some("Second"))
+        )
+      },
       test("maps Gitea error responses while preserving raw body") {
         val body = """{"message":"missing repo","url":"https://docs.gitea.com/api"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
@@ -581,6 +665,16 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.NotFound("missing pull request", body)),
           pullRequest.decode(pullRequest.request.send(backend)) ==
             Left(GiteaError.NotFound("missing pull request", body))
+        )
+      },
+      test("maps notification thread not-found responses") {
+        val body = """{"message":"missing notification thread"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val thread = GiteaRequests.notificationThread(config, "missing")
+
+        assertTrue(
+          thread.decode(thread.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing notification thread", body))
         )
       },
       test("maps rate limit reset headers") {

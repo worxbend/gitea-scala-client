@@ -80,16 +80,16 @@ Current checkpoint:
 - ZIO Test is wired into the shared module trait.
 - The old `io.kzonix.gitea.core.dto` prototype sources have been deleted from the compile path.
 - `ApiReference.gitea1262` records that `plugin-redoc-2.yaml` is the local Gitea API `1.26.2` contract.
-- Core now contains a schema-traceable first model/codecs slice for `User`, `Organization`, `Repository`, `Permission`, `Issue`, `Label`, `Milestone`, `Comment`, `PullRequest`, `Release`, `Branch`, `Tag`, `TopicNames`, and `GiteaErrorPayload`.
+- Core now contains a schema-traceable first model/codecs slice for `User`, `Organization`, `Repository`, `Permission`, `Issue`, `Label`, `Milestone`, `Comment`, `PullRequest`, `Release`, `Branch`, `Tag`, `TopicNames`, `NotificationCount`, `NotificationSubject`, `NotificationThread`, and `GiteaErrorPayload`.
 - Core supporting types now include `Page`, `Auth`, and the `GiteaError` ADT.
-- `CoreModelsSpec` covers JSON decode and round-trip behavior for the first model slice, enum validation, pagination codec behavior, auth modes, and the error ADT.
+- `CoreModelsSpec` covers JSON decode and round-trip behavior for the first model slice, notification codecs, enum validation, pagination codec behavior, auth modes, and the error ADT.
 - `GiteaConfig` now carries typed sttp `Uri`, `Auth`, timeout, page size, user agent, OTP, and retry settings.
-- Client HTTP now has schema-traceable endpoint metadata and pure sttp request construction for `GET /user` (`userGetCurrent`), `GET /users/{username}` (`userGet`), `GET /users/search` (`userSearch`), `GET /users/{username}/followers` (`userListFollowers`), `GET /users/{username}/following` (`userListFollowing`), `GET /users/{username}/repos` (`userListRepos`), `GET /orgs/{org}` (`orgGet`), `GET /orgs/{org}/members` (`orgListMembers`), `GET /orgs/{org}/public_members` (`orgListPublicMembers`), `GET /orgs/{org}/repos` (`orgListRepos`), `GET /repos/{owner}/{repo}` (`repoGet`), `GET /repos/{owner}/{repo}/topics` (`repoListTopics`), `GET /repos/{owner}/{repo}/branches` (`repoListBranches`), `GET /repos/{owner}/{repo}/tags` (`repoListTags`), `GET /repos/{owner}/{repo}/issues` (`issueListIssues`), `GET /repos/{owner}/{repo}/issues/{index}` (`issueGetIssue`), `GET /repos/{owner}/{repo}/pulls` (`repoListPullRequests`), and `GET /repos/{owner}/{repo}/pulls/{index}` (`repoGetPullRequest`).
+- Client HTTP now has schema-traceable endpoint metadata and pure sttp request construction for `GET /user` (`userGetCurrent`), `GET /users/{username}` (`userGet`), `GET /users/search` (`userSearch`), `GET /users/{username}/followers` (`userListFollowers`), `GET /users/{username}/following` (`userListFollowing`), `GET /users/{username}/repos` (`userListRepos`), `GET /orgs/{org}` (`orgGet`), `GET /orgs/{org}/members` (`orgListMembers`), `GET /orgs/{org}/public_members` (`orgListPublicMembers`), `GET /orgs/{org}/repos` (`orgListRepos`), `GET /repos/{owner}/{repo}` (`repoGet`), `GET /repos/{owner}/{repo}/topics` (`repoListTopics`), `GET /repos/{owner}/{repo}/branches` (`repoListBranches`), `GET /repos/{owner}/{repo}/tags` (`repoListTags`), `GET /repos/{owner}/{repo}/issues` (`issueListIssues`), `GET /repos/{owner}/{repo}/issues/{index}` (`issueGetIssue`), `GET /repos/{owner}/{repo}/pulls` (`repoListPullRequests`), `GET /repos/{owner}/{repo}/pulls/{index}` (`repoGetPullRequest`), `GET /notifications` (`notifyGetList`), `GET /notifications/new` (`notifyNewAvailable`), and `GET /notifications/threads/{id}` (`notifyGetThread`).
 - `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`.
-- `RepoListParams` covers page/limit for `userListRepos` and `orgListRepos`; `UserSearchParams` covers `q`/page/limit for `userSearch`; `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`; `PullRequestListParams` covers `base_branch`, `state`, `sort`, `milestone`, multi-value `labels`, `poster`, page, and limit for `repoListPullRequests`.
-- `GiteaResponseMapper` decodes successful JSON responses, paginated issue/repository/branch/tag/release/pull-request lists, object-shaped user-search and topic-name pages, 204/unit responses, Gitea error payloads, raw failure bodies, pagination headers, and rate-limit reset headers.
-- `GiteaRequestsSpec` uses sttp `BackendStub` to cover path encoding, query params, auth/OTP/user-agent/JSON accept headers, JSON content type for body requests, successful decoding, pagination mapping for issue/user/repository/topic/branch/tag/search/release/pull-request lists, organization decoding, Gitea error mapping, and rate-limit mapping.
-- Phase 4 has started with a small ZIO API facade: `UsersApi`, `ReposApi`, `IssuesApi`, `ReleasesApi`, `PullRequestsApi`, and a nested `OrgsApi` namespace are wired through `GiteaClient.fromBackend`.
+- `RepoListParams` covers page/limit for `userListRepos` and `orgListRepos`; `UserSearchParams` covers `q`/page/limit for `userSearch`; `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`; `PullRequestListParams` covers `base_branch`, `state`, `sort`, `milestone`, multi-value `labels`, `poster`, page, and limit for `repoListPullRequests`; `NotificationListParams` covers `all`, multi-value `status-types`, multi-value `subject-type`, `since`, `before`, page, and limit for `notifyGetList`.
+- `GiteaResponseMapper` decodes successful JSON responses, paginated issue/repository/branch/tag/release/pull-request/notification lists, object-shaped user-search and topic-name pages, 204/unit responses, Gitea error payloads, raw failure bodies, pagination headers, and rate-limit reset headers.
+- `GiteaRequestsSpec` uses sttp `BackendStub` to cover path encoding, query params, auth/OTP/user-agent/JSON accept headers, JSON content type for body requests, successful decoding, pagination mapping for issue/user/repository/topic/branch/tag/search/release/pull-request/notification lists, organization and notification decoding, Gitea error mapping, and rate-limit mapping.
+- Phase 4 has a small ZIO API facade: `UsersApi`, `ReposApi`, `IssuesApi`, `ReleasesApi`, `PullRequestsApi`, `NotificationsApi`, and a nested `OrgsApi` namespace are wired through `GiteaClient.fromBackend`.
 - `GiteaRequestExecutor` sends `GiteaRequest[A]` through a sttp `Backend[Task]`, decodes responses through the existing mapper, and maps backend failures to `GiteaError.TransportError`.
 - `IssuesApi.get(owner, repo, index)` fetches a single issue and `IssuesApi.list(owner, repo, IssueListParams)` streams paginated issues with `ZStream.paginateChunkZIO`.
 - `UsersApi.followers(username)`, `UsersApi.following(username)`, and `UsersApi.search(params)` stream paginated users through the shared pagination helper.
@@ -99,6 +99,8 @@ Current checkpoint:
 - Release list responses decode through the existing paginated JSON mapper as `#/responses/ReleaseList`; single release responses decode as `#/responses/Release`.
 - `PullRequestsApi` is mixed into `GiteaClient` with unambiguous `client.pullRequests(owner, repo, params)` and `client.pullRequest(owner, repo, index)` facade methods.
 - Pull request list responses decode through the existing paginated JSON mapper as `#/responses/PullRequestList`; single pull request responses decode as `#/responses/PullRequest`.
+- `NotificationsApi` is mixed into `GiteaClient` with unambiguous `client.notificationThreads(params)`, `client.unreadNotificationCount`, and `client.notificationThread(id)` facade methods.
+- Notification thread list responses decode through the existing paginated JSON mapper as `#/responses/NotificationThreadList`; unread counts decode as `#/responses/NotificationCount`; single notification threads decode as `#/responses/NotificationThread`.
 - `ReposApi.list` intentionally requires an explicit `RepoListParams` argument for now because Scala cannot generate default arguments for both overloaded `list` methods on `ReposApi` and `IssuesApi`.
 - `OrgsApi.get(org)` is exposed as `client.orgs.get(org)` to avoid colliding with the existing single-argument `UsersApi.get(username)` method on `GiteaClient`.
 - `OrgsApi.members(org)` streams paginated organization members from `orgListMembers` through the shared pagination helper.
@@ -107,7 +109,9 @@ Current checkpoint:
 - `GiteaClientSpec` covers current-user success, user/repository/issue `get`, organization lookup through `client.orgs.get`, decode failure, transport failure, multi-page issue/repository/topic/branch/tag/search/org-member/public-org-member/org-repository streaming, and follower/following stream pagination through a `BackendStub[Task]`.
 - `GiteaClientSpec` also covers multi-page release streaming and single-release lookup through a `BackendStub[Task]`.
 - `GiteaClientSpec` also covers multi-page pull request streaming and single-pull-request lookup through a `BackendStub[Task]`.
-- `GiteaRequestsSpec` covers release and pull request endpoint metadata, path encoding, page/limit and pull-request filter query parameters, JSON decoding, and not-found mapping.
+- `GiteaClientSpec` also covers multi-page notification thread streaming, unread notification counts, and single-notification lookup through a `BackendStub[Task]`.
+- `GiteaRequestsSpec` covers release, pull request, and notification endpoint metadata, path encoding, page/limit and filter query parameters, JSON decoding, and not-found mapping.
+- README now describes the currently implemented typed read-only API surface instead of the initial skeleton state.
 - Validation passed: `./mill core.test`, `./mill client.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
@@ -646,10 +650,10 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 4 by adding a small read-only notifications API from `plugin-redoc-2.yaml`,
-- add core models/codecs for `NotificationCount`, `NotificationSubject`, and `NotificationThread` from the local Swagger definitions,
-- add schema-traceable endpoint metadata and pure request builders for `GET /notifications` (`notifyGetList`), `GET /notifications/new` (`notifyNewAvailable`), and `GET /notifications/threads/{id}` (`notifyGetThread`) that decode the local Swagger response definitions,
-- expose an unambiguous `NotificationsApi` facade that streams notification threads and fetches unread counts/single threads without colliding with existing `get/list` methods,
-- add stub-backed tests that verify endpoint metadata, path encoding, query params, notification decoding, not-found mapping, and multi-page facade streaming.
+- start Phase 5 by implementing the `backend-zio` live layer around sttp4 `HttpClientZioBackend`,
+- add `GiteaClient.live` / token-based layer constructors or equivalent public constructors without coupling `core` or `client` to the concrete backend,
+- support custom Java `HttpClient` creation through `ZioGiteaBackend.usingClient`,
+- add a small runnable example that reads `GITEA_URL` and `GITEA_TOKEN` and calls `client.me` or streams repositories when those variables are present,
+- keep live integration behavior opt-in and make unit validation remain hermetic.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.

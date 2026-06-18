@@ -257,6 +257,41 @@ object GiteaEndpoints:
       response = "#/responses/Issue"
     )
 
+  val notifyGetList: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/notifications",
+      operationId = "notifyGetList",
+      parameters = List(
+        GiteaParameter("all", "query", required = false),
+        GiteaParameter("status-types", "query", required = false),
+        GiteaParameter("subject-type", "query", required = false),
+        GiteaParameter("since", "query", required = false),
+        GiteaParameter("before", "query", required = false),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/NotificationThreadList"
+    )
+
+  val notifyNewAvailable: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/notifications/new",
+      operationId = "notifyNewAvailable",
+      parameters = Nil,
+      response = "#/responses/NotificationCount"
+    )
+
+  val notifyGetThread: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/notifications/threads/{id}",
+      operationId = "notifyGetThread",
+      parameters = List(GiteaParameter("id", "path", required = true)),
+      response = "#/responses/NotificationThread"
+    )
+
   val userListFollowers: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

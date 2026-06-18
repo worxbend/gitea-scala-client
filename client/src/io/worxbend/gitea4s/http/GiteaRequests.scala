@@ -6,6 +6,8 @@ import io.worxbend.gitea4s.model.{
   Branch,
   Issue,
   IssueState,
+  NotificationCount,
+  NotificationThread,
   Organization,
   Page,
   PullRequest,
@@ -200,6 +202,37 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Issue]
     )
 
+  def notifications(config: GiteaConfig, params: NotificationListParams = NotificationListParams.default)
+      : GiteaRequest[Page[NotificationThread]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
+
+    get(
+      config,
+      GiteaEndpoints.notifyGetList,
+      List("notifications"),
+      notificationQuery(params, page, pageSize),
+      response => GiteaResponseMapper.decodePage[NotificationThread](response, page, pageSize)
+    )
+
+  def notificationCount(config: GiteaConfig): GiteaRequest[NotificationCount] =
+    get(
+      config,
+      GiteaEndpoints.notifyNewAvailable,
+      List("notifications", "new"),
+      Nil,
+      GiteaResponseMapper.decodeJson[NotificationCount]
+    )
+
+  def notificationThread(config: GiteaConfig, id: String): GiteaRequest[NotificationThread] =
+    get(
+      config,
+      GiteaEndpoints.notifyGetThread,
+      List("notifications", "threads", id),
+      Nil,
+      GiteaResponseMapper.decodeJson[NotificationThread]
+    )
+
   def userFollowers(config: GiteaConfig, username: String, page: Int = 1): GiteaRequest[Page[User]] =
     paginatedUsers(
       config = config,
@@ -292,6 +325,17 @@ object GiteaRequests:
       Some("page" -> page.toString),
       Some("limit" -> pageSize.toString)
     ).flatten ++ params.labels.map(label => "labels" -> label.toString)
+
+  private def notificationQuery(params: NotificationListParams, page: Int, pageSize: Int): List[(String, String)] =
+    List(
+      params.all.map(value => "all" -> value.toString),
+      params.since.map(value => "since" -> value.toString),
+      params.before.map(value => "before" -> value.toString),
+      Some("page" -> page.toString),
+      Some("limit" -> pageSize.toString)
+    ).flatten ++
+      params.statusTypes.map(statusType => "status-types" -> statusType.queryValue) ++
+      params.subjectTypes.map(subjectType => "subject-type" -> subjectType.queryValue)
 
   private def nonEmptyCsv(name: String, values: zio.Chunk[String]): Option[(String, String)] =
     Option.when(values.nonEmpty)(name -> values.mkString(","))

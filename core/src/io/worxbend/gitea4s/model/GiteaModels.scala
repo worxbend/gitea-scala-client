@@ -104,6 +104,39 @@ final case class TopicNames(
 object TopicNames:
   given JsonCodec[TopicNames] = DeriveJsonCodec.gen[TopicNames]
 
+final case class NotificationCount(
+    @jsonField("new") unread: Option[Long] = None
+)
+
+object NotificationCount:
+  given JsonCodec[NotificationCount] = DeriveJsonCodec.gen[NotificationCount]
+
+final case class NotificationSubject(
+    @jsonField("html_url") htmlUrl: Option[String] = None,
+    @jsonField("latest_comment_html_url") latestCommentHtmlUrl: Option[String] = None,
+    @jsonField("latest_comment_url") latestCommentUrl: Option[String] = None,
+    state: Option[NotificationSubjectState] = None,
+    title: Option[String] = None,
+    @jsonField("type") subjectType: Option[NotificationSubjectType] = None,
+    url: Option[String] = None
+)
+
+object NotificationSubject:
+  given JsonCodec[NotificationSubject] = DeriveJsonCodec.gen[NotificationSubject]
+
+final case class NotificationThread(
+    id: Option[Long] = None,
+    pinned: Option[Boolean] = None,
+    repository: Option[Repository] = None,
+    subject: Option[NotificationSubject] = None,
+    unread: Option[Boolean] = None,
+    @jsonField("updated_at") updatedAt: Option[Instant] = None,
+    url: Option[String] = None
+)
+
+object NotificationThread:
+  given JsonCodec[NotificationThread] = DeriveJsonCodec.gen[NotificationThread]
+
 final case class Label(
     id: Option[Long] = None,
     name: Option[String] = None,

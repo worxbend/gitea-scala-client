@@ -43,3 +43,32 @@ object TeamPermission:
 
   given JsonCodec[TeamPermission] =
     summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+
+enum NotificationSubjectState(val jsonValue: String):
+  case Open extends NotificationSubjectState("open")
+  case Closed extends NotificationSubjectState("closed")
+  case Merged extends NotificationSubjectState("merged")
+
+object NotificationSubjectState:
+  private val byJsonValue = NotificationSubjectState.values.map(state => state.jsonValue -> state).toMap
+
+  def fromString(value: String): Either[String, NotificationSubjectState] =
+    byJsonValue.get(value).toRight(s"Unknown notification subject state: $value")
+
+  given JsonCodec[NotificationSubjectState] =
+    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+
+enum NotificationSubjectType(val jsonValue: String, val queryValue: String):
+  case Issue extends NotificationSubjectType("Issue", "issue")
+  case Pull extends NotificationSubjectType("Pull", "pull")
+  case Commit extends NotificationSubjectType("Commit", "commit")
+  case Repository extends NotificationSubjectType("Repository", "repository")
+
+object NotificationSubjectType:
+  private val byJsonValue = NotificationSubjectType.values.map(subjectType => subjectType.jsonValue -> subjectType).toMap
+
+  def fromString(value: String): Either[String, NotificationSubjectType] =
+    byJsonValue.get(value).toRight(s"Unknown notification subject type: $value")
+
+  given JsonCodec[NotificationSubjectType] =
+    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)

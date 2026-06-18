@@ -1,7 +1,13 @@
 package io.worxbend.gitea4s
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.{IssueListParams, PullRequestListParams, RepoListParams, UserSearchParams}
+import io.worxbend.gitea4s.http.{
+  IssueListParams,
+  NotificationListParams,
+  PullRequestListParams,
+  RepoListParams,
+  UserSearchParams
+}
 import io.worxbend.gitea4s.model.Auth
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -236,6 +242,40 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequests.map(_.number) == Chunk(Some(1L), Some(2L)),
           pullRequest.id.contains(2L),
           pullRequest.title.contains("Second")
+        )
+      },
+      test("loads notification count, streams notification threads, and fetches a single thread") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub.whenRequestMatches(_.uri.path.endsWith(List("notifications")))
+            .thenRespondCyclic(
+              ResponseStub.adjust(
+                """[{"id":1,"unread":true,"subject":{"title":"First","state":"open","type":"Issue"}}]""",
+                StatusCode.Ok,
+                twoPageHeaders
+              ),
+              ResponseStub.adjust(
+                """[{"id":2,"unread":false,"subject":{"title":"Second","state":"closed","type":"Pull"}}]""",
+                StatusCode.Ok,
+                twoPageHeaders
+              )
+            )
+            .whenRequestMatches(_.uri.path.endsWith(List("notifications", "new")))
+            .thenRespond(ResponseStub.adjust("""{"new":5}"""))
+            .whenRequestMatches(_.uri.path.endsWith(List("notifications", "threads", "2")))
+            .thenRespond(
+              ResponseStub.adjust("""{"id":2,"unread":false,"subject":{"title":"Second","type":"Pull"}}""")
+            )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          threads <- client.notificationThreads(NotificationListParams.default).runCollect
+          count <- client.unreadNotificationCount
+          thread <- client.notificationThread("2")
+        yield assertTrue(
+          threads.map(_.id) == Chunk(Some(1L), Some(2L)),
+          count.unread.contains(5L),
+          thread.subject.flatMap(_.title).contains("Second")
         )
       },
       test("streams followers and following users across paginated endpoints") {
