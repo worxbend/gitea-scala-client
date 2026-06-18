@@ -47,11 +47,18 @@ core/src/io/worxbend/gitea4s/model/ApiReference.scala
 core/test/src/io/worxbend/gitea4s/model/ApiReferenceSpec.scala
 client/src/io/worxbend/gitea4s/GiteaClient.scala
 client/src/io/worxbend/gitea4s/GiteaConfig.scala
+client/src/io/worxbend/gitea4s/api/UsersApi.scala
+client/src/io/worxbend/gitea4s/api/ReposApi.scala
+client/src/io/worxbend/gitea4s/api/IssuesApi.scala
 client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
 client/src/io/worxbend/gitea4s/http/GiteaRequest.scala
 client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
 client/src/io/worxbend/gitea4s/http/GiteaResponseMapper.scala
 client/src/io/worxbend/gitea4s/http/IssueListParams.scala
+client/src/io/worxbend/gitea4s/internal/GiteaRequestExecutor.scala
+client/src/io/worxbend/gitea4s/internal/Pagination.scala
+client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
 client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 backend-zio/src/io/worxbend/gitea4s/backend/zio/ZioGiteaBackend.scala
 backend-okhttp/src/io/worxbend/gitea4s/backend/okhttp/OkHttpGiteaBackend.scala
@@ -83,6 +90,10 @@ Current checkpoint:
 - `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`.
 - `GiteaResponseMapper` decodes successful JSON responses, paginated issue lists, 204/unit responses, Gitea error payloads, raw failure bodies, pagination headers, and rate-limit reset headers.
 - `GiteaRequestsSpec` uses sttp `BackendStub` to cover path encoding, query params, auth/OTP/user-agent/JSON accept headers, JSON content type for body requests, successful decoding, pagination mapping, Gitea error mapping, and rate-limit mapping.
+- Phase 4 has started with a small ZIO API facade: `UsersApi`, `ReposApi`, and `IssuesApi` are wired through `GiteaClient.fromBackend`.
+- `GiteaRequestExecutor` sends `GiteaRequest[A]` through a sttp `Backend[Task]`, decodes responses through the existing mapper, and maps backend failures to `GiteaError.TransportError`.
+- `IssuesApi.list(owner, repo, IssueListParams)` streams paginated issues with `ZStream.paginateChunkZIO`.
+- `GiteaClientSpec` covers current-user success, user/repository `get`, decode failure, transport failure, and multi-page issue streaming through a `BackendStub[Task]`.
 - Validation passed: `./mill core.test`, `./mill client.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
@@ -621,8 +632,8 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- start Phase 4 by adding a small request executor that sends `GiteaRequest[A]` through a sttp `Backend[Task]` and maps transport failures to `GiteaError.TransportError`,
-- define initial `UsersApi`, `ReposApi`, and `IssuesApi` traits and wire `me`, `get(username)`, `get(owner, repo)`, and paginated `list(owner, repo, IssueListParams)` through the existing pure request builders,
-- add stub-backed client API tests for success, decode failure, transport failure, and multi-page issue streaming.
+- continue Phase 4 by adding schema-traceable request builders for the next read-only endpoints needed by the planned API traits, starting with `GET /repos/{owner}/{repo}/issues/{index}` and user follower/following list endpoints from `plugin-redoc-2.yaml`,
+- extend `IssuesApi` with `get(owner, repo, index)` and `UsersApi` with follower/following streams, using the existing executor and pagination helper,
+- add stub-backed tests that verify endpoint metadata, path/query encoding, successful decoding, error mapping, and stream pagination for the new methods.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.

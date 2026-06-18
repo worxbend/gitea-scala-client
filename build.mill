@@ -14,6 +14,8 @@ object Versions:
 trait Gitea4sModule extends ScalaModule:
   def scalaVersion = Versions.scala
 
+  def extraTestMvnDeps = Seq.empty[Dep]
+
   def scalacOptions = Seq(
     "-deprecation",
     "-feature",
@@ -27,7 +29,7 @@ trait Gitea4sModule extends ScalaModule:
     def mvnDeps = Seq(
       mvn"dev.zio::zio-test:${Versions.zio}",
       mvn"dev.zio::zio-test-sbt:${Versions.zio}"
-    )
+    ) ++ Gitea4sModule.this.extraTestMvnDeps
 
     def testFramework = "zio.test.sbt.ZTestFramework"
 
@@ -40,6 +42,10 @@ object core extends Gitea4sModule:
 
 object client extends Gitea4sModule:
   def moduleDeps = Seq(core)
+
+  def extraTestMvnDeps = Seq(
+    mvn"com.softwaremill.sttp.client4::zio:${Versions.sttp}"
+  )
 
   def mvnDeps = Seq(
     mvn"com.softwaremill.sttp.client4::core:${Versions.sttp}",
