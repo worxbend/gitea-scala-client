@@ -17,6 +17,11 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       override def get(org: String): IO[GiteaError, Organization] =
         executor.send(GiteaRequests.organization(config, org))
 
+      override def members(org: String): ZStream[Any, GiteaError, User] =
+        Pagination.paginated { page =>
+          executor.send(GiteaRequests.organizationMembers(config, org, page))
+        }
+
   override def me: IO[GiteaError, User] =
     executor.send(GiteaRequests.currentUser(config))
 

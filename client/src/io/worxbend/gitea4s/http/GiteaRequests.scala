@@ -45,6 +45,14 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Organization]
     )
 
+  def organizationMembers(config: GiteaConfig, org: String, page: Int = 1): GiteaRequest[Page[User]] =
+    paginatedUsers(
+      config = config,
+      endpoint = GiteaEndpoints.orgListMembers,
+      path = List("orgs", org, "members"),
+      page = page
+    )
+
   def userRepos(config: GiteaConfig, username: String, params: RepoListParams = RepoListParams.default)
       : GiteaRequest[Page[Repository]] =
     val page = params.page.getOrElse(1)

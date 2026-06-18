@@ -64,6 +64,20 @@ object GiteaClientSpec extends ZIOSpecDefault:
           Assertion.equalTo(Some(9L) -> Some("platform") -> Some("Platform Team"))
         )
       },
+      test("streams organization members across pages") {
+        val headers = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub.whenRequestMatches(_.uri.path.endsWith(List("orgs", "platform", "members")))
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"id":1,"login":"alice"}]""", StatusCode.Ok, headers),
+              ResponseStub.adjust("""[{"id":2,"login":"bob"}]""", StatusCode.Ok, headers)
+            )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        client.orgs.members("platform").runCollect.map { users =>
+          assertTrue(users.map(_.login) == Chunk(Some("alice"), Some("bob")))
+        }
+      },
       test("returns decode failures as GiteaError") {
         val backend =
           taskStub.whenAnyRequest.thenRespond(ResponseStub.adjust("""{"id":"not-a-number"}"""))

@@ -63,6 +63,23 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("Accept").contains("application/json")
         )
       },
+      test("builds schema-traceable paginated organization members request") {
+        val built = GiteaRequests.organizationMembers(config, "space org/slash", page = 2)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.orgListMembers,
+          endpoint.operationId == "orgListMembers",
+          endpoint.path == "/orgs/{org}/members",
+          endpoint.parameters.map(_.name) == List("org", "page", "limit"),
+          endpoint.response == "#/responses/UserList",
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/orgs/space%20org%2Fslash/members?"),
+          request.uri.paramsMap.get("page").contains("2"),
+          request.uri.paramsMap.get("limit").contains("25")
+        )
+      },
       test("builds schema-traceable paginated user repository list request") {
         val built =
           GiteaRequests.userRepos(config, "space user/slash", RepoListParams(page = Some(2), limit = Some(15)))
@@ -225,6 +242,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
       test("decodes single issue and paginated user list responses") {
         val issueResponse = """{"id":1,"number":7,"state":"open","title":"First"}"""
         val userListResponse = """[{"id":2,"login":"alice"}]"""
+        val orgMembersResponse = """[{"id":4,"login":"member"}]"""
         val userSearchResponse = """{"ok":true,"data":[{"id":3,"login":"search-hit"}]}"""
         val backend =
           BackendStub.synchronous
@@ -232,10 +250,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             .thenRespond(ResponseStub.adjust(issueResponse))
             .whenRequestMatches(_.uri.path.endsWith(List("followers")))
             .thenRespond(ResponseStub.adjust(userListResponse, StatusCode.Ok, List(Header("x-total-count", "1"))))
+            .whenRequestMatches(_.uri.path.endsWith(List("orgs", "platform", "members")))
+            .thenRespond(ResponseStub.adjust(orgMembersResponse, StatusCode.Ok, List(Header("x-total-count", "1"))))
             .whenRequestMatches(_.uri.path.endsWith(List("users", "search")))
             .thenRespond(ResponseStub.adjust(userSearchResponse, StatusCode.Ok, List(Header("x-total-count", "1"))))
         val issue = GiteaRequests.issue(config, "owner", "repo", 7)
         val followers = GiteaRequests.userFollowers(config, "octo")
+        val orgMembers = GiteaRequests.organizationMembers(config, "platform")
         val search = GiteaRequests.userSearch(config, UserSearchParams(q = Some("search")))
 
         assertTrue(
@@ -243,6 +264,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           followers.decode(followers.request.send(backend)).map(_.data.headOption.flatMap(_.login)) ==
             Right(Some("alice")),
           followers.decode(followers.request.send(backend)).map(_.hasNext) == Right(false),
+          orgMembers.decode(orgMembers.request.send(backend)).map(_.data.headOption.flatMap(_.login)) ==
+            Right(Some("member")),
+          orgMembers.decode(orgMembers.request.send(backend)).map(_.hasNext) == Right(false),
           search.decode(search.request.send(backend)).map(_.data.headOption.flatMap(_.login)) ==
             Right(Some("search-hit")),
           search.decode(search.request.send(backend)).map(_.hasNext) == Right(false)
@@ -280,6 +304,16 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val body = """{"message":"missing org"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val built = GiteaRequests.organization(config, "missing")
+        val raw = built.request.send(backend)
+
+        assertTrue(
+          built.decode(raw) == Left(GiteaError.NotFound("missing org", body))
+        )
+      },
+      test("maps organization member-list not-found responses") {
+        val body = """{"message":"missing org"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val built = GiteaRequests.organizationMembers(config, "missing")
         val raw = built.request.send(backend)
 
         assertTrue(
