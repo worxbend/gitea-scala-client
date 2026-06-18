@@ -704,6 +704,65 @@ object GiteaEndpoints:
       response = "#/responses/empty"
     )
 
+  val issueTrackedTimes: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/issues/{index}/times",
+      operationId = "issueTrackedTimes",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("user", "query", required = false),
+        GiteaParameter("since", "query", required = false),
+        GiteaParameter("before", "query", required = false),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/TrackedTimeList"
+    )
+
+  val issueAddTime: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "POST",
+      path = "/repos/{owner}/{repo}/issues/{index}/times",
+      operationId = "issueAddTime",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("body", "body", required = false)
+      ),
+      response = "#/responses/TrackedTime"
+    )
+
+  val issueResetTime: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/issues/{index}/times",
+      operationId = "issueResetTime",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
+  val issueDeleteTime: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "DELETE",
+      path = "/repos/{owner}/{repo}/issues/{index}/times/{id}",
+      operationId = "issueDeleteTime",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("id", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
   val notifyGetList: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

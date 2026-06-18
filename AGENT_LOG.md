@@ -304,3 +304,10 @@
 2026-06-18T10:02:40Z added typed issue subscription APIs with WatchInfo, paginated subscriber listing, subscription check, subscribe/unsubscribe request builders, facade wiring, tests, README, changelog, PLAN, and API snapshots
 2026-06-18T10:02:40Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"
 2026-06-18T10:03:04Z checkpoint commit created message="Add issue subscription APIs"
+2026-06-18T10:03:28Z iteration 15 no changes to commit
+2026-06-18T10:03:28Z iteration 15 completed validation_status=0
+2026-06-18T10:03:28Z iteration limit reached iterations=15
+2026-06-18T10:47:16Z agent loop started provider=codex budget=18000s iterations=15 dangerous=True
+2026-06-18T10:47:16Z iteration 1 started remaining=18000s
+2026-06-18T10:55:13Z added typed issue tracked-time APIs with TrackedTime/AddTimeOption models, IssueTrackedTimeListParams, request builders, facade wiring, tests, README, changelog, PLAN, and API snapshots
+2026-06-18T10:55:13Z validation passed commands="./mill --no-server core.test client.test; ./mill --no-server compatibility.writeSnapshot; git diff --check; ./mill --no-server __.compile __.test it.test examples.run compatibility.check __.docJar __.sourceJar __.publishArtifacts __.publishM2Local"

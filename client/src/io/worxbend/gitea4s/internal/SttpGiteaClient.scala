@@ -7,6 +7,7 @@ import io.worxbend.gitea4s.http.{
   GiteaRequests,
   IssueCommentListParams,
   IssueListParams,
+  IssueTrackedTimeListParams,
   NotificationListParams,
   PullRequestListParams,
   RepoListParams,
@@ -14,6 +15,7 @@ import io.worxbend.gitea4s.http.{
   UserSearchParams
 }
 import io.worxbend.gitea4s.model.{
+  AddTimeOption,
   Branch,
   Comment,
   CreateIssue,
@@ -37,6 +39,7 @@ import io.worxbend.gitea4s.model.{
   Release,
   Repository,
   Tag,
+  TrackedTime,
   User,
   WatchInfo
 }
@@ -321,3 +324,27 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def unsubscribe(owner: String, repo: String, index: Long, user: String): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.deleteIssueSubscription(config, owner, repo, index, user))
+
+  override def trackedTimes(
+      owner: String,
+      repo: String,
+      index: Long,
+      params: IssueTrackedTimeListParams
+  ): ZStream[Any, GiteaError, TrackedTime] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.issueTrackedTimes(config, owner, repo, index, params.copy(page = Some(page))))
+    }
+
+  override def addTrackedTime(
+      owner: String,
+      repo: String,
+      index: Long,
+      body: AddTimeOption
+  ): IO[GiteaError, TrackedTime] =
+    executor.send(GiteaRequests.addIssueTrackedTime(config, owner, repo, index, body))
+
+  override def resetTrackedTime(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.resetIssueTrackedTime(config, owner, repo, index))
+
+  override def deleteTrackedTime(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteIssueTrackedTime(config, owner, repo, index, id))

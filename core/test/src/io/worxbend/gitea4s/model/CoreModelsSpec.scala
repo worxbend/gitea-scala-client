@@ -278,6 +278,37 @@ object CoreModelsSpec extends ZIOSpecDefault:
           watch.map(_.ignored) == Right(Some(false))
         )
       },
+      test("decodes tracked time and round-trips add time request payload") {
+        val trackedTimeJson =
+          """{
+            |  "created": "2026-06-18T10:15:00Z",
+            |  "id": 44,
+            |  "issue": { "id": 200, "number": 12, "title": "Implement models" },
+            |  "issue_id": 200,
+            |  "time": 3600,
+            |  "user_id": 42,
+            |  "user_name": "octo"
+            |}""".stripMargin
+        val payload = AddTimeOption(
+          time = 1800L,
+          created = Some(Instant.parse("2026-06-18T10:00:00Z")),
+          userName = Some("octo")
+        )
+
+        val trackedTime = trackedTimeJson.fromJson[TrackedTime]
+
+        assertTrue(
+          trackedTime.map(_.id) == Right(Some(44L)),
+          trackedTime.map(_.issue.flatMap(_.number)) == Right(Some(12L)),
+          trackedTime.map(_.issueId) == Right(Some(200L)),
+          trackedTime.map(_.time) == Right(Some(3600L)),
+          trackedTime.map(_.userName) == Right(Some("octo")),
+          payload.toJson.contains(""""time":1800"""),
+          payload.toJson.contains(""""created":"2026-06-18T10:00:00Z""""),
+          payload.toJson.contains(""""user_name":"octo""""),
+          payload.toJson.fromJson[AddTimeOption] == Right(payload)
+        )
+      },
       test("round-trips issue meta payloads for dependency and blocking requests") {
         val sameRepo = IssueMeta(index = 13L)
         val crossRepo = IssueMeta(index = 21L, owner = Some("other-owner"), repo = Some("other-repo"))

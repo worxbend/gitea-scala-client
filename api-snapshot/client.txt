@@ -455,6 +455,12 @@ public interface io.worxbend.gitea4s.api.IssuesApi {
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.WatchInfo> subscription(java.lang.String, java.lang.String, long);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> subscribe(java.lang.String, java.lang.String, long, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> unsubscribe(java.lang.String, java.lang.String, long, java.lang.String);
+  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.TrackedTime> trackedTimes(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.IssueTrackedTimeListParams);
+  public static io.worxbend.gitea4s.http.IssueTrackedTimeListParams trackedTimes$default$4$(io.worxbend.gitea4s.api.IssuesApi);
+  public default io.worxbend.gitea4s.http.IssueTrackedTimeListParams trackedTimes$default$4();
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.TrackedTime> addTrackedTime(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.AddTimeOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> resetTrackedTime(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteTrackedTime(java.lang.String, java.lang.String, long, long);
 }
 
 ## io.worxbend.gitea4s.api.NotificationsApi
@@ -557,6 +563,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoint$ implements scala.deri
 public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueAddLabel();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueAddSubscription();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueAddTime();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueCheckSubscription();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueClearLabels();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueCreateComment();
@@ -567,6 +574,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteCommentReaction();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteIssueReaction();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteSubscription();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteTime();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueEditComment();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueEditIssue();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueEditIssueDeadline();
@@ -587,7 +595,9 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueRemoveIssueDependencies();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueRemoveLabel();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueReplaceLabels();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueResetTime();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueSubscriptions();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint issueTrackedTimes();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueUnlockIssue();
   public static io.worxbend.gitea4s.http.GiteaEndpoint notifyGetList();
   public static io.worxbend.gitea4s.http.GiteaEndpoint notifyGetThread();
@@ -666,6 +676,10 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint issueCheckSubscription();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueAddSubscription();
   public io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteSubscription();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueTrackedTimes();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueAddTime();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueResetTime();
+  public io.worxbend.gitea4s.http.GiteaEndpoint issueDeleteTime();
   public io.worxbend.gitea4s.http.GiteaEndpoint notifyGetList();
   public io.worxbend.gitea4s.http.GiteaEndpoint notifyNewAvailable();
   public io.worxbend.gitea4s.http.GiteaEndpoint notifyGetThread();
@@ -759,6 +773,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequest$ implements scala.deriv
 public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.Label>> addIssueLabels(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.IssueLabelsOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> addIssueSubscription(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, java.lang.String);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.TrackedTime> addIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.AddTimeOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> clearIssueLabels(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> createIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateIssue);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> createIssueBlocking(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.IssueMeta);
@@ -769,6 +784,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueCommentReaction(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditReactionOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueReaction(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditReactionOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueSubscription(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, java.lang.String);
+  public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> editIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssue);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> editIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssueComment);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.IssueDeadline> editIssueDeadline(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditDeadlineOption);
@@ -782,6 +798,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Reaction>> issueReactions(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.WatchInfo> issueSubscription(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> issueSubscriptions(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, int);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.TrackedTime>> issueTrackedTimes(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.IssueTrackedTimeListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Issue>> issues(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.IssueListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> lockIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.LockIssueOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.NotificationCount> notificationCount(io.worxbend.gitea4s.GiteaConfig);
@@ -806,6 +823,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Tag>> repoTags(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<java.lang.String>> repoTopics(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> repository(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);
+  public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> resetIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> unlockIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.User> user(io.worxbend.gitea4s.GiteaConfig, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> userFollowers(io.worxbend.gitea4s.GiteaConfig, java.lang.String, int);
@@ -833,6 +851,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static int issueDependencies$default$5();
   public static int issueReactions$default$5();
   public static int issueSubscriptions$default$5();
+  public static io.worxbend.gitea4s.http.IssueTrackedTimeListParams issueTrackedTimes$default$5();
 }
 
 ## io.worxbend.gitea4s.http.GiteaRequests$
@@ -906,6 +925,11 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.WatchInfo> issueSubscription(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> addIssueSubscription(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, java.lang.String);
   public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueSubscription(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, java.lang.String);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.TrackedTime>> issueTrackedTimes(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.IssueTrackedTimeListParams);
+  public io.worxbend.gitea4s.http.IssueTrackedTimeListParams issueTrackedTimes$default$5();
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.TrackedTime> addIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.AddTimeOption);
+  public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> resetIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.NotificationThread>> notifications(io.worxbend.gitea4s.GiteaConfig, io.worxbend.gitea4s.http.NotificationListParams);
   public io.worxbend.gitea4s.http.NotificationListParams notifications$default$2();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.NotificationCount> notificationCount(io.worxbend.gitea4s.GiteaConfig);
@@ -1141,6 +1165,62 @@ public final class io.worxbend.gitea4s.http.IssueListType$ implements scala.deri
   public io.worxbend.gitea4s.http.IssueListType fromOrdinal(int);
   public int ordinal(io.worxbend.gitea4s.http.IssueListType);
   public int ordinal(java.lang.Object);
+}
+
+## io.worxbend.gitea4s.http.IssueTrackedTimeListParams
+public final class io.worxbend.gitea4s.http.IssueTrackedTimeListParams implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.http.IssueTrackedTimeListParams(scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.String> user();
+  public scala.Option<java.time.Instant> since();
+  public scala.Option<java.time.Instant> before();
+  public scala.Option<java.lang.Object> page();
+  public scala.Option<java.lang.Object> limit();
+  public io.worxbend.gitea4s.http.IssueTrackedTimeListParams copy(scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.lang.String> copy$default$1();
+  public scala.Option<java.time.Instant> copy$default$2();
+  public scala.Option<java.time.Instant> copy$default$3();
+  public scala.Option<java.lang.Object> copy$default$4();
+  public scala.Option<java.lang.Object> copy$default$5();
+  public scala.Option<java.lang.String> _1();
+  public scala.Option<java.time.Instant> _2();
+  public scala.Option<java.time.Instant> _3();
+  public scala.Option<java.lang.Object> _4();
+  public scala.Option<java.lang.Object> _5();
+  public static io.worxbend.gitea4s.http.IssueTrackedTimeListParams apply(scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.http.IssueTrackedTimeListParams default();
+  public static io.worxbend.gitea4s.http.IssueTrackedTimeListParams fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.http.IssueTrackedTimeListParams unapply(io.worxbend.gitea4s.http.IssueTrackedTimeListParams);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public static scala.Option<java.time.Instant> $lessinit$greater$default$2();
+  public static scala.Option<java.time.Instant> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$5();
+}
+
+## io.worxbend.gitea4s.http.IssueTrackedTimeListParams$
+public final class io.worxbend.gitea4s.http.IssueTrackedTimeListParams$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.http.IssueTrackedTimeListParams$ MODULE$;
+  public static {};
+  public io.worxbend.gitea4s.http.IssueTrackedTimeListParams apply(scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.http.IssueTrackedTimeListParams unapply(io.worxbend.gitea4s.http.IssueTrackedTimeListParams);
+  public scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public scala.Option<java.time.Instant> $lessinit$greater$default$2();
+  public scala.Option<java.time.Instant> $lessinit$greater$default$3();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public io.worxbend.gitea4s.http.IssueTrackedTimeListParams default();
+  public io.worxbend.gitea4s.http.IssueTrackedTimeListParams fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
 }
 
 ## io.worxbend.gitea4s.http.NotificationListParams

@@ -2,6 +2,7 @@ package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.model.{
+  AddTimeOption,
   Auth,
   Branch,
   Comment,
@@ -27,6 +28,7 @@ import io.worxbend.gitea4s.model.{
   Release,
   Repository,
   Tag,
+  TrackedTime,
   User,
   WatchInfo
 }
@@ -638,6 +640,61 @@ object GiteaRequests:
       GiteaResponseMapper.decodeUnit
     )
 
+  def issueTrackedTimes(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      params: IssueTrackedTimeListParams = IssueTrackedTimeListParams.default
+  ): GiteaRequest[Page[TrackedTime]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
+
+    get(
+      config,
+      GiteaEndpoints.issueTrackedTimes,
+      List("repos", owner, repo, "issues", index.toString, "times"),
+      trackedTimeQuery(params, page, pageSize),
+      response => GiteaResponseMapper.decodePage[TrackedTime](response, page, pageSize)
+    )
+
+  def addIssueTrackedTime(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: AddTimeOption
+  ): GiteaRequest[TrackedTime] =
+    postJson(
+      config,
+      GiteaEndpoints.issueAddTime,
+      List("repos", owner, repo, "issues", index.toString, "times"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[TrackedTime]
+    )
+
+  def resetIssueTrackedTime(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.issueResetTime,
+      List("repos", owner, repo, "issues", index.toString, "times"),
+      GiteaResponseMapper.decodeUnit
+    )
+
+  def deleteIssueTrackedTime(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      id: Long
+  ): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.issueDeleteTime,
+      List("repos", owner, repo, "issues", index.toString, "times", id.toString),
+      GiteaResponseMapper.decodeUnit
+    )
+
   def notifications(config: GiteaConfig, params: NotificationListParams = NotificationListParams.default)
       : GiteaRequest[Page[NotificationThread]] =
     val page = params.page.getOrElse(1)
@@ -900,6 +957,19 @@ object GiteaRequests:
       pageSize: Int
   ): List[(String, String)] =
     List(
+      params.since.map(value => "since" -> value.toString),
+      params.before.map(value => "before" -> value.toString),
+      Some("page" -> page.toString),
+      Some("limit" -> pageSize.toString)
+    ).flatten
+
+  private def trackedTimeQuery(
+      params: IssueTrackedTimeListParams,
+      page: Int,
+      pageSize: Int
+  ): List[(String, String)] =
+    List(
+      params.user.map("user" -> _),
       params.since.map(value => "since" -> value.toString),
       params.before.map(value => "before" -> value.toString),
       Some("page" -> page.toString),

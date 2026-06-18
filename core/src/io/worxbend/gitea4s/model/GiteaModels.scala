@@ -266,6 +266,28 @@ final case class WatchInfo(
 object WatchInfo:
   given JsonCodec[WatchInfo] = DeriveJsonCodec.gen[WatchInfo]
 
+final case class AddTimeOption(
+    time: Long,
+    created: Option[Instant] = None,
+    @jsonField("user_name") userName: Option[String] = None
+)
+
+object AddTimeOption:
+  given JsonCodec[AddTimeOption] = DeriveJsonCodec.gen[AddTimeOption]
+
+final case class TrackedTime(
+    created: Option[Instant] = None,
+    id: Option[Long] = None,
+    issue: Option[Issue] = None,
+    @jsonField("issue_id") issueId: Option[Long] = None,
+    time: Option[Long] = None,
+    @jsonField("user_id") userId: Option[Long] = None,
+    @jsonField("user_name") userName: Option[String] = None
+)
+
+object TrackedTime:
+  given JsonCodec[TrackedTime] = DeriveJsonCodec.gen[TrackedTime]
+
 final case class IssueMeta(
     index: Long,
     owner: Option[String] = None,

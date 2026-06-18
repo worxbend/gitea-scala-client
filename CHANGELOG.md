@@ -27,6 +27,9 @@ surface is still being filled out.
   and schema-traceable reaction request construction.
 - Typed issue subscriptions with `WatchInfo`, paginated subscriber listing, and
   schema-traceable subscription request construction.
+- Typed issue tracked-time listing, addition, reset, and deletion with
+  `TrackedTime`, `AddTimeOption`, `IssueTrackedTimeListParams`, and
+  schema-traceable tracked-time request construction.
 - Typed issue label listing, replacement, addition, clearing, and removal with
   `IssueLabelsOption` and schema-traceable issue label request construction.
 - Typed issue locking and unlocking with `LockIssueOption` and

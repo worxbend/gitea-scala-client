@@ -3,6 +3,7 @@ package io.worxbend.gitea4s.http
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.{
+  AddTimeOption,
   Auth,
   CreateIssue,
   CreateIssueComment,
@@ -802,6 +803,88 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           remove.retryable == false
         )
       },
+      test("builds schema-traceable issue tracked-time requests") {
+        val since = Instant.parse("2026-06-01T00:00:00Z")
+        val before = Instant.parse("2026-06-18T00:00:00Z")
+        val list =
+          GiteaRequests.issueTrackedTimes(
+            config,
+            "worx bend",
+            "gitea/scala",
+            99,
+            IssueTrackedTimeListParams(
+              user = Some("octo"),
+              since = Some(since),
+              before = Some(before),
+              page = Some(6),
+              limit = Some(7)
+            )
+          )
+        val add =
+          GiteaRequests.addIssueTrackedTime(
+            config,
+            "worx bend",
+            "gitea/scala",
+            99,
+            AddTimeOption(time = 3600L, created = Some(since), userName = Some("octo"))
+          )
+        val reset = GiteaRequests.resetIssueTrackedTime(config, "worx bend", "gitea/scala", 99)
+        val remove = GiteaRequests.deleteIssueTrackedTime(config, "worx bend", "gitea/scala", 99, 44)
+
+        assertTrue(
+          list.endpoint == GiteaEndpoints.issueTrackedTimes,
+          list.endpoint.method == "GET",
+          list.endpoint.operationId == "issueTrackedTimes",
+          list.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/times",
+          list.endpoint.parameters.map(_.name) ==
+            List("owner", "repo", "index", "user", "since", "before", "page", "limit"),
+          list.endpoint.response == "#/responses/TrackedTimeList",
+          list.request.method == Method.GET,
+          list.request.uri.toString.contains(
+            "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/times?"
+          ),
+          list.request.uri.paramsMap.get("user").contains("octo"),
+          list.request.uri.paramsMap.get("since").contains("2026-06-01T00:00:00Z"),
+          list.request.uri.paramsMap.get("before").contains("2026-06-18T00:00:00Z"),
+          list.request.uri.paramsMap.get("page").contains("6"),
+          list.request.uri.paramsMap.get("limit").contains("7"),
+          list.retryable == true,
+          add.endpoint == GiteaEndpoints.issueAddTime,
+          add.endpoint.method == "POST",
+          add.endpoint.operationId == "issueAddTime",
+          add.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
+          add.endpoint.response == "#/responses/TrackedTime",
+          add.request.method == Method.POST,
+          add.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/times",
+          add.request.header("Content-Type").exists(_.startsWith("application/json")),
+          add.retryable == false,
+          add.request.body match
+            case StringBody(json, _, _) =>
+              json.contains(""""time":3600""") &&
+                json.contains(""""created":"2026-06-01T00:00:00Z"""") &&
+                json.contains(""""user_name":"octo"""")
+            case _ => false,
+          reset.endpoint == GiteaEndpoints.issueResetTime,
+          reset.endpoint.method == "DELETE",
+          reset.endpoint.operationId == "issueResetTime",
+          reset.endpoint.response == "#/responses/empty",
+          reset.request.method == Method.DELETE,
+          reset.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/times",
+          reset.retryable == false,
+          remove.endpoint == GiteaEndpoints.issueDeleteTime,
+          remove.endpoint.method == "DELETE",
+          remove.endpoint.operationId == "issueDeleteTime",
+          remove.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/times/{id}",
+          remove.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "id"),
+          remove.endpoint.response == "#/responses/empty",
+          remove.request.method == Method.DELETE,
+          remove.request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/times/44",
+          remove.retryable == false
+        )
+      },
       test("builds paginated follower and following list requests") {
         val followers = GiteaRequests.userFollowers(config, "space user/slash", page = 2)
         val following = GiteaRequests.userFollowing(config, "space user/slash", page = 3)
@@ -1133,6 +1216,33 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           check.decode(check.request.send(backend)).map(_.createdAt) ==
             Right(Some(Instant.parse("2026-06-18T10:00:00Z"))),
           add.decode(add.request.send(backend)) == Right(()),
+          remove.decode(remove.request.send(backend)) == Right(())
+        )
+      },
+      test("decodes issue tracked-time responses") {
+        val listResponse = """[{"id":44,"time":3600,"user_name":"octo","issue":{"number":12}}]"""
+        val trackedTimeResponse = """{"id":45,"time":1800,"user_name":"octo"}"""
+        val headers = List(Header("x-total-count", "1"))
+        val backend =
+          BackendStub.synchronous
+            .whenRequestMatches(_.method == Method.GET)
+            .thenRespond(ResponseStub.adjust(listResponse, StatusCode.Ok, headers))
+            .whenRequestMatches(_.method == Method.POST)
+            .thenRespond(ResponseStub.adjust(trackedTimeResponse, StatusCode.Ok))
+            .whenRequestMatches(_.method == Method.DELETE)
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val list = GiteaRequests.issueTrackedTimes(config, "owner", "repo", 99)
+        val add = GiteaRequests.addIssueTrackedTime(config, "owner", "repo", 99, AddTimeOption(1800L))
+        val reset = GiteaRequests.resetIssueTrackedTime(config, "owner", "repo", 99)
+        val remove = GiteaRequests.deleteIssueTrackedTime(config, "owner", "repo", 99, 44)
+
+        assertTrue(
+          list.decode(list.request.send(backend)).map(_.data.headOption.flatMap(_.id)) == Right(Some(44L)),
+          list.decode(list.request.send(backend)).map(_.data.headOption.flatMap(_.issue.flatMap(_.number))) ==
+            Right(Some(12L)),
+          list.decode(list.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
+          add.decode(add.request.send(backend)).map(_.time) == Right(Some(1800L)),
+          reset.decode(reset.request.send(backend)) == Right(()),
           remove.decode(remove.request.send(backend)) == Right(())
         )
       },

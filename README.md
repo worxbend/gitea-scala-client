@@ -12,7 +12,7 @@ and zio-json.
 - API reference: local `plugin-redoc-2.yaml` for Gitea API `1.26.2`
 - Implemented surface: typed core models/codecs plus users, organizations,
   repositories, issue list/get/create/deadline/label/lock/dependency/blocking/reaction/
-  subscription management, releases, pull requests, and notifications through a ZIO client API
+  subscription/tracked-time management, releases, pull requests, and notifications through a ZIO client API
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -166,16 +166,17 @@ client
 
 Current stream-oriented APIs include user followers/following/search,
 user and organization repositories, organization members, issues, issue
-reactions, issue subscribers, repository-wide issue comments, branches, tags, releases, pull
+reactions, issue subscribers, issue tracked times, repository-wide issue comments, branches, tags, releases, pull
 requests, and notification threads.
 
 ## Issue Writes
 
-The current write endpoints cover issue creation, editing, closing, deadlines, labels, locks, comments, reactions, subscriptions, dependencies, and blocking relationships:
+The current write endpoints cover issue creation, editing, closing, deadlines, labels, locks, comments, reactions, subscriptions, tracked times, dependencies, and blocking relationships:
 
 ```scala
-import io.worxbend.gitea4s.http.{IssueCommentListParams, RepositoryCommentListParams}
+import io.worxbend.gitea4s.http.{IssueCommentListParams, IssueTrackedTimeListParams, RepositoryCommentListParams}
 import io.worxbend.gitea4s.model.{
+  AddTimeOption,
   CreateIssue,
   EditDeadlineOption,
   EditIssue,
@@ -241,6 +242,11 @@ client.subscribers(owner = "my-org", repo = "my-repo", index = 12)
 client.subscription(owner = "my-org", repo = "my-repo", index = 12)
 client.subscribe(owner = "my-org", repo = "my-repo", index = 12, user = "octo")
 client.unsubscribe(owner = "my-org", repo = "my-repo", index = 12, user = "octo")
+
+client.trackedTimes(owner = "my-org", repo = "my-repo", index = 12, params = IssueTrackedTimeListParams.default)
+client.addTrackedTime(owner = "my-org", repo = "my-repo", index = 12, body = AddTimeOption(time = 1800L))
+client.deleteTrackedTime(owner = "my-org", repo = "my-repo", index = 12, id = 44L)
+client.resetTrackedTime(owner = "my-org", repo = "my-repo", index = 12)
 
 client.addDependency(owner = "my-org", repo = "my-repo", index = 12, dependency = IssueMeta(index = 10))
 client.removeDependency(owner = "my-org", repo = "my-repo", index = 12, dependency = IssueMeta(index = 10))

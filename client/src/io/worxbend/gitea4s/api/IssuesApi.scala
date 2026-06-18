@@ -1,8 +1,14 @@
 package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.{IssueCommentListParams, IssueListParams, RepositoryCommentListParams}
+import io.worxbend.gitea4s.http.{
+  IssueCommentListParams,
+  IssueListParams,
+  IssueTrackedTimeListParams,
+  RepositoryCommentListParams
+}
 import io.worxbend.gitea4s.model.{
+  AddTimeOption,
   Comment,
   CreateIssue,
   EditDeadlineOption,
@@ -15,6 +21,7 @@ import io.worxbend.gitea4s.model.{
   LockIssueOption,
   IssueMeta,
   Reaction,
+  TrackedTime,
   User,
   WatchInfo
 }
@@ -104,3 +111,16 @@ trait IssuesApi:
   def subscribe(owner: String, repo: String, index: Long, user: String): IO[GiteaError, Unit]
 
   def unsubscribe(owner: String, repo: String, index: Long, user: String): IO[GiteaError, Unit]
+
+  def trackedTimes(
+      owner: String,
+      repo: String,
+      index: Long,
+      params: IssueTrackedTimeListParams = IssueTrackedTimeListParams.default
+  ): ZStream[Any, GiteaError, TrackedTime]
+
+  def addTrackedTime(owner: String, repo: String, index: Long, body: AddTimeOption): IO[GiteaError, TrackedTime]
+
+  def resetTrackedTime(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
+
+  def deleteTrackedTime(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit]

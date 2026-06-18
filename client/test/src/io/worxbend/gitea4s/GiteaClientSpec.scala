@@ -5,6 +5,7 @@ import io.worxbend.gitea4s.http.{
   GiteaRequests,
   IssueCommentListParams,
   IssueListParams,
+  IssueTrackedTimeListParams,
   NotificationListParams,
   PullRequestListParams,
   RepoListParams,
@@ -13,6 +14,7 @@ import io.worxbend.gitea4s.http.{
 }
 import io.worxbend.gitea4s.internal.GiteaRequestExecutor
 import io.worxbend.gitea4s.model.{
+  AddTimeOption,
   Auth,
   CreateIssue,
   EditDeadlineOption,
@@ -339,6 +341,54 @@ object GiteaClientSpec extends ZIOSpecDefault:
           watch.subscribed.contains(true),
           subscribed == Right(()),
           unsubscribed == Right(())
+        )
+      },
+      test("manages issue tracked times through the IssuesApi methods") {
+        val headers = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "times")) &&
+                request.uri.paramsMap.get("user").contains("octo")
+            }
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"id":44,"time":3600,"user_name":"octo"}]""", StatusCode.Ok, headers),
+              ResponseStub.adjust("""[{"id":45,"time":1800,"user_name":"octo"}]""", StatusCode.Ok, headers)
+            )
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "times")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""time":900""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":46,"time":900,"user_name":"octo"}"""))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "times", "44"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+            .whenRequestMatches { request =>
+              request.method == Method.DELETE &&
+                request.uri.path.endsWith(List("repos", "owner", "repo", "issues", "8", "times"))
+            }
+            .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          times <- client
+            .trackedTimes("owner", "repo", 8, IssueTrackedTimeListParams(user = Some("octo")))
+            .runCollect
+          added <- client.addTrackedTime("owner", "repo", 8, AddTimeOption(time = 900L))
+          deleted <- client.deleteTrackedTime("owner", "repo", 8, 44).either
+          reset <- client.resetTrackedTime("owner", "repo", 8).either
+        yield assertTrue(
+          times.map(_.id) == Chunk(Some(44L), Some(45L)),
+          times.map(_.time) == Chunk(Some(3600L), Some(1800L)),
+          added.time.contains(900L),
+          deleted == Right(()),
+          reset == Right(())
         )
       },
       test("manages issue labels through the IssuesApi label methods") {
