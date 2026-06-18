@@ -53,6 +53,14 @@ object GiteaRequests:
       page = page
     )
 
+  def organizationPublicMembers(config: GiteaConfig, org: String, page: Int = 1): GiteaRequest[Page[User]] =
+    paginatedUsers(
+      config = config,
+      endpoint = GiteaEndpoints.orgListPublicMembers,
+      path = List("orgs", org, "public_members"),
+      page = page
+    )
+
   def userRepos(config: GiteaConfig, username: String, params: RepoListParams = RepoListParams.default)
       : GiteaRequest[Page[Repository]] =
     val page = params.page.getOrElse(1)

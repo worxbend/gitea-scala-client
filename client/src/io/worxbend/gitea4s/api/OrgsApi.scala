@@ -9,3 +9,5 @@ trait OrgsApi:
   def get(org: String): IO[GiteaError, Organization]
 
   def members(org: String): ZStream[Any, GiteaError, User]
+
+  def publicMembers(org: String): ZStream[Any, GiteaError, User]

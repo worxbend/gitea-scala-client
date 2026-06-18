@@ -82,7 +82,7 @@ Current checkpoint:
 - Core supporting types now include `Page`, `Auth`, and the `GiteaError` ADT.
 - `CoreModelsSpec` covers JSON decode and round-trip behavior for the first model slice, enum validation, pagination codec behavior, auth modes, and the error ADT.
 - `GiteaConfig` now carries typed sttp `Uri`, `Auth`, timeout, page size, user agent, OTP, and retry settings.
-- Client HTTP now has schema-traceable endpoint metadata and pure sttp request construction for `GET /user` (`userGetCurrent`), `GET /users/{username}` (`userGet`), `GET /users/search` (`userSearch`), `GET /users/{username}/followers` (`userListFollowers`), `GET /users/{username}/following` (`userListFollowing`), `GET /users/{username}/repos` (`userListRepos`), `GET /orgs/{org}` (`orgGet`), `GET /orgs/{org}/members` (`orgListMembers`), `GET /repos/{owner}/{repo}` (`repoGet`), `GET /repos/{owner}/{repo}/topics` (`repoListTopics`), `GET /repos/{owner}/{repo}/issues` (`issueListIssues`), and `GET /repos/{owner}/{repo}/issues/{index}` (`issueGetIssue`).
+- Client HTTP now has schema-traceable endpoint metadata and pure sttp request construction for `GET /user` (`userGetCurrent`), `GET /users/{username}` (`userGet`), `GET /users/search` (`userSearch`), `GET /users/{username}/followers` (`userListFollowers`), `GET /users/{username}/following` (`userListFollowing`), `GET /users/{username}/repos` (`userListRepos`), `GET /orgs/{org}` (`orgGet`), `GET /orgs/{org}/members` (`orgListMembers`), `GET /orgs/{org}/public_members` (`orgListPublicMembers`), `GET /repos/{owner}/{repo}` (`repoGet`), `GET /repos/{owner}/{repo}/topics` (`repoListTopics`), `GET /repos/{owner}/{repo}/issues` (`issueListIssues`), and `GET /repos/{owner}/{repo}/issues/{index}` (`issueGetIssue`).
 - `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`.
 - `RepoListParams` covers page/limit for `userListRepos`; `UserSearchParams` covers `q`/page/limit for `userSearch`; `IssueListParams` covers the implemented issue-list query parameters from `plugin-redoc-2.yaml`.
 - `GiteaResponseMapper` decodes successful JSON responses, paginated issue/repository lists, object-shaped user-search and topic-name pages, 204/unit responses, Gitea error payloads, raw failure bodies, pagination headers, and rate-limit reset headers.
@@ -95,7 +95,8 @@ Current checkpoint:
 - `ReposApi.list` intentionally requires an explicit `RepoListParams` argument for now because Scala cannot generate default arguments for both overloaded `list` methods on `ReposApi` and `IssuesApi`.
 - `OrgsApi.get(org)` is exposed as `client.orgs.get(org)` to avoid colliding with the existing single-argument `UsersApi.get(username)` method on `GiteaClient`.
 - `OrgsApi.members(org)` streams paginated organization members from `orgListMembers` through the shared pagination helper.
-- `GiteaClientSpec` covers current-user success, user/repository/issue `get`, organization lookup through `client.orgs.get`, decode failure, transport failure, multi-page issue/repository/topic/search/org-member streaming, and follower/following stream pagination through a `BackendStub[Task]`.
+- `OrgsApi.publicMembers(org)` streams paginated public organization members from `orgListPublicMembers` through the shared pagination helper.
+- `GiteaClientSpec` covers current-user success, user/repository/issue `get`, organization lookup through `client.orgs.get`, decode failure, transport failure, multi-page issue/repository/topic/search/org-member/public-org-member streaming, and follower/following stream pagination through a `BackendStub[Task]`.
 - Validation passed: `./mill core.test`, `./mill client.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
@@ -634,9 +635,9 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 4 by extending `OrgsApi` with paginated public organization members from `GET /orgs/{org}/public_members` (`orgListPublicMembers`) in `plugin-redoc-2.yaml`,
-- add schema-traceable endpoint metadata and a pure request builder that decodes `#/responses/UserList` through the existing pagination mapper,
-- add `client.orgs.publicMembers(org)` as a `ZStream[GiteaError, User]` using the shared pagination helper,
+- continue Phase 4 by extending `OrgsApi` with paginated organization repositories from `GET /orgs/{org}/repos` (`orgListRepos`) in `plugin-redoc-2.yaml`,
+- add schema-traceable endpoint metadata and a pure request builder that decodes `#/responses/RepositoryList` through the existing pagination mapper,
+- add `client.orgs.repos(org)` or another unambiguous nested-org method as a `ZStream[GiteaError, Repository]` using the shared pagination helper,
 - add stub-backed tests that verify endpoint metadata, path encoding, page/limit query params, pagination decoding, error mapping, and multi-page facade streaming.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.
