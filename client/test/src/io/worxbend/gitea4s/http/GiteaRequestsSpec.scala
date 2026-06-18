@@ -657,18 +657,24 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
       test("maps documented pull request merge/update failures") {
         val forbiddenBody = """{"message":"forbidden"}"""
         val notFoundBody = """{"message":"missing pull request"}"""
+        val methodNotAllowedBody = """{"message":"merge method is not allowed"}"""
         val conflictBody = """{"message":"merge conflict"}"""
         val validationBody = """{"message":"invalid update"}"""
+        val lockedBody = """{"message":"repository is archived"}"""
         val forbiddenBackend =
           BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(forbiddenBody, StatusCode.Forbidden))
         val notFoundBackend =
           BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val methodNotAllowedBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(methodNotAllowedBody, StatusCode(405)))
         val conflictBackend =
           BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(conflictBody, StatusCode.Conflict))
         val validationBackend =
           BackendStub.synchronous.whenAnyRequest.thenRespond(
             ResponseStub.adjust(validationBody, StatusCode.UnprocessableEntity)
           )
+        val lockedBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(lockedBody, StatusCode(423)))
         val merge = GiteaRequests.mergePullRequest(
           config,
           "owner",
@@ -684,10 +690,14 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
           cancel.decode(cancel.request.send(notFoundBackend)) ==
             Left(GiteaError.NotFound("missing pull request", notFoundBody)),
+          merge.decode(merge.request.send(methodNotAllowedBackend)) ==
+            Left(GiteaError.MethodNotAllowed("merge method is not allowed", methodNotAllowedBody)),
           merge.decode(merge.request.send(conflictBackend)) ==
             Left(GiteaError.Conflict("merge conflict", conflictBody)),
           update.decode(update.request.send(validationBackend)) ==
-            Left(GiteaError.UnprocessableEntity("invalid update", validationBody))
+            Left(GiteaError.UnprocessableEntity("invalid update", validationBody)),
+          update.decode(update.request.send(lockedBackend)) ==
+            Left(GiteaError.Locked("repository is archived", lockedBody))
         )
       },
       test("builds and decodes schema-traceable pull review request creation and cancellation") {

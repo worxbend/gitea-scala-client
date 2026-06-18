@@ -627,3 +627,72 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 M  core/src/io/worxbend/gitea4s/model/Enums.scala
 M  core/src/io/worxbend/gitea4s/model/GiteaModels.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-18T22:09:39Z iteration 4 started remaining=15053s
+2026-06-18T22:09:39Z iteration 4 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-18T22:09:39Z iteration 4 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-oquw2v8j/repo copied_entries=84
+2026-06-18T22:09:39Z iteration 4 ideator phase started count=3
+2026-06-18T22:09:39Z iteration 4 ideator phase concurrency workers=3
+2026-06-18T22:09:39Z iteration 4 ideator 1 role="the pragmatist" started
+2026-06-18T22:09:39Z iteration 4 ideator 2 role="the architect" started
+2026-06-18T22:09:39Z iteration 4 ideator 3 role="the contrarian" started
+2026-06-18T22:09:48Z iteration 4 ideator 3 role="the contrarian" completed status=0
+2026-06-18T22:09:50Z iteration 4 ideator 2 role="the architect" completed status=0
+2026-06-18T22:09:51Z iteration 4 ideator 1 role="the pragmatist" completed status=0
+2026-06-18T22:09:51Z iteration 4 ideator phase completed approaches=3
+2026-06-18T22:09:51Z iteration 4 selector started approaches=3
+2026-06-18T22:10:01Z iteration 4 selector completed status=0
+2026-06-18T22:10:01Z iteration 4 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-oquw2v8j/repo
+2026-06-18T22:10:01Z iteration 4 selector rejected alternative role="the contrarian" approach="Contract Gate First: pause feature expansion until the Swagger audit and error taxonomy become the mandatory acceptance boundary for every write endpoint" reason="Strong directionally, but too absolute as stated. Pausing feature expansion is useful only if the audit/error work stays bounded and directly enables the next slice rather than becoming an open-ended quality campaign."
+2026-06-18T22:10:01Z iteration 4 selector rejected alternative role="the architect" approach="Contract-Hardening Gate: pause new endpoint expansion until merge/update audit and resource-state error taxonomy become reusable guardrails, then resume with the smallest adjace..." reason="Very close to the selected strategy, but it leans more toward architectural guardrails than planner-level prioritization. The selected hybrid keeps the same gate while emphasizing tight scope and quick return to vertical slices."
+2026-06-18T22:10:01Z iteration 4 selector rejected alternative role="the pragmatist" approach="Audit-First Error Taxonomy Gate: pause feature expansion long enough to turn the merge/update slice into a reusable correctness gate, then let the next pull-request write slice..." reason="Also close, but it frames the work mainly around confidence and error taxonomy. The selected strategy gives equal weight to Swagger audit reuse, documented failure semantics, and preventing future handwritten endpoint drift."
+2026-06-18T22:10:01Z iteration 4 selector alternatives persisted count=3
+2026-06-18T22:10:01Z iteration 4 planner started
+2026-06-18T22:10:33Z iteration 4 plan: 4 task(s) in 3 phase(s). The next iteration should complete the bounded contract-hardening gate before expanding the write API surface. Phase 1 splits audit hardening and error taxonomy because they can be implemented independently in mostly separate files. Validation and documentation depend on both results, so they are sequential.
+2026-06-18T22:10:33Z iteration 4 phase 1 started parallel=True tasks=2
+2026-06-18T22:14:04Z iteration 4 task t1 ('Harden pull-request merge/update endpoint audit') status=0
+2026-06-18T22:14:10Z iteration 4 task t2 ('Model documented resource-state errors') status=0
+2026-06-18T22:14:10Z iteration 4 phase 2 started parallel=False tasks=1
+2026-06-18T22:15:01Z iteration 4 task t3 ('Validate bounded hardening gate') status=0
+2026-06-18T22:15:01Z iteration 4 phase 3 started parallel=False tasks=1
+2026-06-18T22:17:13Z iteration 4 task t4 ('Update planning and release notes') status=0
+2026-06-18T22:17:13Z iteration 4 reviewer started
+
+## Reviewer Summary - Iteration 4 - 2026-06-18T22:18:41Z
+
+What was done:
+- Inspected the full uncommitted patch for the bounded pull-request merge/update hardening gate across source, tests, public API snapshots, README, CHANGELOG, PLAN, and AGENT_LOG.
+- Cross-checked `repoMergePullRequest`, `repoCancelScheduledAutoMerge`, and `repoUpdatePullRequest` against `plugin-redoc-2.yaml`; methods, paths, operation IDs, required path parameters, success refs, documented non-2xx refs, optional merge body, and update `style` enum match the local Swagger contract.
+- Ran focused validation: `git diff --check` and `./mill --no-server core.test client.test compatibility.check`.
+
+What was found:
+- No functional blocker or request-construction regression was found.
+- The merge/update audit now checks documented non-2xx response labels and reports missing path/method/parameter lookups with actionable messages.
+- `GiteaError.MethodNotAllowed` and `GiteaError.Locked` are modeled and mapped globally for 405/423 while preserving decoded messages and raw bodies; endpoint and facade tests cover representative merge/update failures.
+- The plan previously overstated documented non-2xx audit coverage for all audited endpoint groups. In the actual code, non-2xx label comparison is complete for merge/update, while pull-review lifecycle and commit-status groups still rely on success/body/retry/query checks.
+- The new `GiteaResponseLabel` and `GiteaEndpoint.nonSuccessResponses` are public API because endpoint metadata lives in main sources, which may be acceptable but should be an explicit release decision.
+
+Top improvement proposals:
+- Add mapper-level tests for global 405/423 behavior, including empty-body or non-JSON responses, so resource-state taxonomy is not only protected through merge/update scenarios.
+- Decide whether endpoint audit metadata should remain public; if not, move or restrict `GiteaResponseLabel`/`nonSuccessResponses` before release.
+- Expand documented non-2xx response-label checks to pull-review lifecycle and commit-status endpoint groups before describing those groups as fully hardened.
+- Continue with the next pull-request write slice only after carrying the audit pattern forward from the start.
+2026-06-18T22:19:56Z iteration 4 reviewer completed status=0
+2026-06-18T22:19:56Z iteration 4 memory updated
+2026-06-18T22:19:56Z iteration 4 completed validation_status=0
+2026-06-18T22:19:56Z iteration 4 checkpoint started
+2026-06-18T22:19:56Z iteration 4 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaResponseMapper.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+M  core/src/io/worxbend/gitea4s/error/GiteaError.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

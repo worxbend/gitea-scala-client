@@ -713,7 +713,7 @@ public final class io.worxbend.gitea4s.http.CommitStatusSort$ implements scala.d
 
 ## io.worxbend.gitea4s.http.GiteaEndpoint
 public final class io.worxbend.gitea4s.http.GiteaEndpoint implements scala.Product,java.io.Serializable {
-  public io.worxbend.gitea4s.http.GiteaEndpoint(java.lang.String, java.lang.String, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter>, java.lang.String);
+  public io.worxbend.gitea4s.http.GiteaEndpoint(java.lang.String, java.lang.String, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter>, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaResponseLabel>);
   public scala.collection.Iterator<java.lang.Object> productIterator();
   public scala.collection.Iterator<java.lang.String> productElementNames();
   public int hashCode();
@@ -729,29 +729,34 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoint implements scala.Produ
   public java.lang.String operationId();
   public scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter> parameters();
   public java.lang.String response();
-  public io.worxbend.gitea4s.http.GiteaEndpoint copy(java.lang.String, java.lang.String, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter>, java.lang.String);
+  public scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaResponseLabel> nonSuccessResponses();
+  public io.worxbend.gitea4s.http.GiteaEndpoint copy(java.lang.String, java.lang.String, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter>, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaResponseLabel>);
   public java.lang.String copy$default$1();
   public java.lang.String copy$default$2();
   public java.lang.String copy$default$3();
   public scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter> copy$default$4();
   public java.lang.String copy$default$5();
+  public scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaResponseLabel> copy$default$6();
   public java.lang.String _1();
   public java.lang.String _2();
   public java.lang.String _3();
   public scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter> _4();
   public java.lang.String _5();
-  public static io.worxbend.gitea4s.http.GiteaEndpoint apply(java.lang.String, java.lang.String, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter>, java.lang.String);
+  public scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaResponseLabel> _6();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint apply(java.lang.String, java.lang.String, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter>, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaResponseLabel>);
   public static io.worxbend.gitea4s.http.GiteaEndpoint fromProduct(scala.Product);
   public static io.worxbend.gitea4s.http.GiteaEndpoint unapply(io.worxbend.gitea4s.http.GiteaEndpoint);
+  public static scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaResponseLabel> $lessinit$greater$default$6();
 }
 
 ## io.worxbend.gitea4s.http.GiteaEndpoint$
 public final class io.worxbend.gitea4s.http.GiteaEndpoint$ implements scala.deriving.Mirror$Product,java.io.Serializable {
   public static final io.worxbend.gitea4s.http.GiteaEndpoint$ MODULE$;
   public static {};
-  public io.worxbend.gitea4s.http.GiteaEndpoint apply(java.lang.String, java.lang.String, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter>, java.lang.String);
+  public io.worxbend.gitea4s.http.GiteaEndpoint apply(java.lang.String, java.lang.String, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter>, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaResponseLabel>);
   public io.worxbend.gitea4s.http.GiteaEndpoint unapply(io.worxbend.gitea4s.http.GiteaEndpoint);
   public java.lang.String toString();
+  public scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaResponseLabel> $lessinit$greater$default$6();
   public io.worxbend.gitea4s.http.GiteaEndpoint fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
@@ -1292,6 +1297,42 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> userFollowing(io.worxbend.gitea4s.GiteaConfig, java.lang.String, int);
   public int userFollowing$default$3();
   public sttp.client4.Request<java.lang.String> withJsonBody(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Request<java.lang.String>, java.lang.String);
+}
+
+## io.worxbend.gitea4s.http.GiteaResponseLabel
+public final class io.worxbend.gitea4s.http.GiteaResponseLabel implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.http.GiteaResponseLabel(java.lang.String, java.lang.String);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public java.lang.String status();
+  public java.lang.String label();
+  public io.worxbend.gitea4s.http.GiteaResponseLabel copy(java.lang.String, java.lang.String);
+  public java.lang.String copy$default$1();
+  public java.lang.String copy$default$2();
+  public java.lang.String _1();
+  public java.lang.String _2();
+  public static io.worxbend.gitea4s.http.GiteaResponseLabel apply(java.lang.String, java.lang.String);
+  public static io.worxbend.gitea4s.http.GiteaResponseLabel fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.http.GiteaResponseLabel unapply(io.worxbend.gitea4s.http.GiteaResponseLabel);
+}
+
+## io.worxbend.gitea4s.http.GiteaResponseLabel$
+public final class io.worxbend.gitea4s.http.GiteaResponseLabel$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.http.GiteaResponseLabel$ MODULE$;
+  public static {};
+  public io.worxbend.gitea4s.http.GiteaResponseLabel apply(java.lang.String, java.lang.String);
+  public io.worxbend.gitea4s.http.GiteaResponseLabel unapply(io.worxbend.gitea4s.http.GiteaResponseLabel);
+  public java.lang.String toString();
+  public io.worxbend.gitea4s.http.GiteaResponseLabel fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
 }
 
 ## io.worxbend.gitea4s.http.GiteaResponseMapper

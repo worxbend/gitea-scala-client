@@ -13,8 +13,10 @@ public final class io.worxbend.gitea4s.error.GiteaError$ implements scala.derivi
   public static final io.worxbend.gitea4s.error.GiteaError$Unauthorized$ Unauthorized;
   public static final io.worxbend.gitea4s.error.GiteaError$Forbidden$ Forbidden;
   public static final io.worxbend.gitea4s.error.GiteaError$NotFound$ NotFound;
+  public static final io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed$ MethodNotAllowed;
   public static final io.worxbend.gitea4s.error.GiteaError$Conflict$ Conflict;
   public static final io.worxbend.gitea4s.error.GiteaError$UnprocessableEntity$ UnprocessableEntity;
+  public static final io.worxbend.gitea4s.error.GiteaError$Locked$ Locked;
   public static final io.worxbend.gitea4s.error.GiteaError$RateLimited$ RateLimited;
   public static final io.worxbend.gitea4s.error.GiteaError$ServerError$ ServerError;
   public static final io.worxbend.gitea4s.error.GiteaError$DecodeError$ DecodeError;
@@ -170,6 +172,80 @@ public final class io.worxbend.gitea4s.error.GiteaError$Forbidden$ implements sc
   public io.worxbend.gitea4s.error.GiteaError$Forbidden unapply(io.worxbend.gitea4s.error.GiteaError$Forbidden);
   public java.lang.String toString();
   public io.worxbend.gitea4s.error.GiteaError$Forbidden fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.error.GiteaError$Locked
+public final class io.worxbend.gitea4s.error.GiteaError$Locked implements io.worxbend.gitea4s.error.GiteaError {
+  public io.worxbend.gitea4s.error.GiteaError$Locked(java.lang.String, java.lang.String);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public java.lang.String message();
+  public java.lang.String body();
+  public io.worxbend.gitea4s.error.GiteaError$Locked copy(java.lang.String, java.lang.String);
+  public java.lang.String copy$default$1();
+  public java.lang.String copy$default$2();
+  public java.lang.String _1();
+  public java.lang.String _2();
+  public static io.worxbend.gitea4s.error.GiteaError$Locked apply(java.lang.String, java.lang.String);
+  public static io.worxbend.gitea4s.error.GiteaError$Locked fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.error.GiteaError$Locked unapply(io.worxbend.gitea4s.error.GiteaError$Locked);
+}
+
+## io.worxbend.gitea4s.error.GiteaError$Locked$
+public final class io.worxbend.gitea4s.error.GiteaError$Locked$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.error.GiteaError$Locked$ MODULE$;
+  public io.worxbend.gitea4s.error.GiteaError$Locked$();
+  public static {};
+  public io.worxbend.gitea4s.error.GiteaError$Locked apply(java.lang.String, java.lang.String);
+  public io.worxbend.gitea4s.error.GiteaError$Locked unapply(io.worxbend.gitea4s.error.GiteaError$Locked);
+  public java.lang.String toString();
+  public io.worxbend.gitea4s.error.GiteaError$Locked fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed
+public final class io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed implements io.worxbend.gitea4s.error.GiteaError {
+  public io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed(java.lang.String, java.lang.String);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public java.lang.String message();
+  public java.lang.String body();
+  public io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed copy(java.lang.String, java.lang.String);
+  public java.lang.String copy$default$1();
+  public java.lang.String copy$default$2();
+  public java.lang.String _1();
+  public java.lang.String _2();
+  public static io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed apply(java.lang.String, java.lang.String);
+  public static io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed unapply(io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed);
+}
+
+## io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed$
+public final class io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed$ MODULE$;
+  public io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed$();
+  public static {};
+  public io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed apply(java.lang.String, java.lang.String);
+  public io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed unapply(io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed);
+  public java.lang.String toString();
+  public io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 

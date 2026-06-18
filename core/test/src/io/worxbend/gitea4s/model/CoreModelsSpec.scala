@@ -759,10 +759,19 @@ object CoreModelsSpec extends ZIOSpecDefault:
         val auth: Auth = Auth.Basic("octo", "secret")
         val error: GiteaError =
           GiteaError.RateLimited(Some(Instant.parse("2026-06-18T00:00:00Z")), "rate limited")
+        val methodNotAllowed: GiteaError =
+          GiteaError.MethodNotAllowed("merge method is not allowed", """{"message":"merge method is not allowed"}""")
+        val locked: GiteaError =
+          GiteaError.Locked("repository is archived", """{"message":"repository is archived"}""")
 
         assertTrue(
           auth == Auth.Basic("octo", "secret"),
-          error == GiteaError.RateLimited(Some(Instant.parse("2026-06-18T00:00:00Z")), "rate limited")
+          error == GiteaError.RateLimited(Some(Instant.parse("2026-06-18T00:00:00Z")), "rate limited"),
+          methodNotAllowed == GiteaError.MethodNotAllowed(
+            "merge method is not allowed",
+            """{"message":"merge method is not allowed"}"""
+          ),
+          locked == GiteaError.Locked("repository is archived", """{"message":"repository is archived"}""")
         )
       },
       test("decodes Gitea error payload") {

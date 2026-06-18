@@ -1369,6 +1369,18 @@ object GiteaClientSpec extends ZIOSpecDefault:
                 request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "4", "update"))
             )
             .thenRespond(ResponseStub.adjust("""{"message":"pull request has conflicts"}""", StatusCode.Conflict))
+            .whenRequestMatches(request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "5", "merge"))
+            )
+            .thenRespond(
+              ResponseStub.adjust("""{"message":"merge method is not allowed"}""", StatusCode(405))
+            )
+            .whenRequestMatches(request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "6", "update"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"repository is archived"}""", StatusCode(423)))
         val client = GiteaClient.fromBackend(config, backend)
 
         for
@@ -1377,10 +1389,21 @@ object GiteaClientSpec extends ZIOSpecDefault:
             .either
           notFound <- client.cancelScheduledAutoMerge("alice", "api", 3).either
           conflict <- client.updatePullRequest("alice", "api", 4, PullRequestUpdateStyle.Merge).either
+          methodNotAllowed <- client
+            .mergePullRequest("alice", "api", 5, MergePullRequestOption(MergePullRequestMethod.Rebase))
+            .either
+          locked <- client.updatePullRequest("alice", "api", 6, PullRequestUpdateStyle.Rebase).either
         yield assertTrue(
           forbidden.left.exists(_.isInstanceOf[GiteaError.Forbidden]),
           notFound.left.exists(_.isInstanceOf[GiteaError.NotFound]),
-          conflict.left.exists(_.isInstanceOf[GiteaError.Conflict])
+          conflict.left.exists(_.isInstanceOf[GiteaError.Conflict]),
+          methodNotAllowed == Left(
+            GiteaError.MethodNotAllowed(
+              "merge method is not allowed",
+              """{"message":"merge method is not allowed"}"""
+            )
+          ),
+          locked == Left(GiteaError.Locked("repository is archived", """{"message":"repository is archived"}"""))
         )
       },
       test("does not retry pull-request merge and update write requests") {

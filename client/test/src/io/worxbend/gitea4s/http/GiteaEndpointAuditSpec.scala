@@ -7,6 +7,8 @@ import io.worxbend.gitea4s.model.{
   CreatePullReviewOptions,
   CreateStatusOption,
   DismissPullReviewOptions,
+  MergePullRequestMethod,
+  MergePullRequestOption,
   PullReviewRequestOptions,
   PullReviewState,
   SubmitPullReviewOptions
@@ -157,6 +159,27 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val pullRequestMergeUpdateRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.mergePullRequest(
+        config,
+        "owner",
+        "repo",
+        index = 12,
+        MergePullRequestOption(mergeMethod = MergePullRequestMethod.Merge)
+      ),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.cancelScheduledAutoMerge(config, "owner", "repo", index = 12),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.updatePullRequest(config, "owner", "repo", index = 12, PullRequestUpdateStyle.Rebase),
+      noBodyLifecyclePost = true
+    )
+  )
+
   def spec =
     suite("Gitea endpoint metadata audit")(
       test("pull-review lifecycle metadata matches plugin-redoc-2.yaml") {
@@ -171,11 +194,17 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
+      test("pull-request merge/update metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = pullRequestMergeUpdateRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
       test("commit-status query enums match plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures =
           List(
-            compare(
+            compareSwagger(
               "repoListStatusesByRef sort enum",
               CommitStatusSort.values.map(_.queryValue).toList,
               swagger.parameterEnumValues(
@@ -184,7 +213,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
                 "sort"
               )
             ),
-            compare(
+            compareSwagger(
               "repoListStatusesByRef state enum",
               CommitStatusListState.values.map(_.queryValue).toList,
               swagger.parameterEnumValues(
@@ -193,7 +222,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
                 "state"
               )
             ),
-            compare(
+            compareSwagger(
               "repoListStatuses sort enum",
               CommitStatusSort.values.map(_.queryValue).toList,
               swagger.parameterEnumValues(
@@ -202,7 +231,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
                 "sort"
               )
             ),
-            compare(
+            compareSwagger(
               "repoListStatuses state enum",
               CommitStatusListState.values.map(_.queryValue).toList,
               swagger.parameterEnumValues(
@@ -212,6 +241,21 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
               )
             )
           ).flatten
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("pull-request update query enums match plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures =
+          compareSwagger(
+            "repoUpdatePullRequest style enum",
+            PullRequestUpdateStyle.values.map(_.queryValue).toList,
+            swagger.parameterEnumValues(
+              "/repos/{owner}/{repo}/pulls/{index}/update",
+              "POST",
+              "style"
+            )
+          )
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       }
@@ -236,6 +280,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           compare("path", endpoint.path, operation.path),
           compare("required path parameters", requiredPathParameterNames, operation.requiredPathParameters),
           compare("success response labels", List(endpoint.response), operation.successResponseLabels),
+          Option.when(endpoint.nonSuccessResponses.nonEmpty)(
+            compare("non-2xx response labels", endpoint.nonSuccessResponses, operation.nonSuccessResponses)
+          ).flatten,
           compare("endpoint body presence", endpointHasBody, operation.hasRequestBody),
           compare("request body presence", requestHasBody, operation.hasRequestBody),
           compare("retryable", audited.request.retryable, expectedRetryable),
@@ -248,6 +295,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   private def compare[A](label: String, actual: A, expected: A): Option[String] =
     Option.when(actual != expected)(s"$label actual=$actual expected=$expected")
 
+  private def compareSwagger[A](label: String, actual: A, expected: Either[String, A]): List[String] =
+    expected.fold(
+      message => List(s"$label: $message"),
+      value => compare(label, actual, value).toList
+    )
+
   private final case class AuditedRequest(
       request: GiteaRequest[?],
       noBodyLifecyclePost: Boolean
@@ -259,6 +312,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       operationId: String,
       requiredPathParameters: List[String],
       successResponseLabels: List[String],
+      nonSuccessResponses: List[GiteaResponseLabel],
       hasRequestBody: Boolean
   )
 
@@ -268,9 +322,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
         pathIndex <- findPath(path)
         methodIndex <- findMethod(pathIndex, method)
         methodBlock = blockAfter(methodIndex, minimumIndent = 6)
-        operationId <- findValue(methodBlock, "operationId")
+        operationId <- findValue(methodBlock, "operationId", s"${method.toUpperCase} $path")
         parameters = parseParameters(methodBlock)
-        responses = parseSuccessResponseLabels(methodBlock)
+        responses = parseResponseLabels(methodBlock)
       yield SwaggerOperation(
         path = path,
         method = method.toUpperCase,
@@ -278,47 +332,52 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
         requiredPathParameters = parameters.collect {
           case SwaggerParameter(name, "path", true, _) => name
         },
-        successResponseLabels = responses,
+        successResponseLabels = responses.collect {
+          case GiteaResponseLabel(status, label) if status.startsWith("2") => label
+        },
+        nonSuccessResponses = responses.filterNot(_.status.startsWith("2")),
         hasRequestBody = parameters.exists(_.in == "body")
       )
 
-    def parameterEnumValues(path: String, method: String, name: String): List[String] =
-      val operationParameters =
-        for
-          pathIndex <- findPath(path)
-          methodIndex <- findMethod(pathIndex, method)
-          methodBlock = blockAfter(methodIndex, minimumIndent = 6)
-        yield parseParameters(methodBlock)
-
-      operationParameters.toOption
-        .flatMap(_.find(_.name == name))
-        .map(_.enumValues)
-        .getOrElse(Nil)
+    def parameterEnumValues(path: String, method: String, name: String): Either[String, List[String]] =
+      for
+        pathIndex <- findPath(path)
+        methodIndex <- findMethod(pathIndex, method)
+        methodBlock = blockAfter(methodIndex, minimumIndent = 6)
+        parameters = parseParameters(methodBlock)
+        parameter <- parameters
+          .find(_.name == name)
+          .toRight {
+            val available = parameters.map(parameter => s"${parameter.name}:${parameter.in}").mkString(", ")
+            s"Swagger parameter lookup failed: parameter '$name' not found in ${method.toUpperCase} $path; available parameters: [$available]"
+          }
+      yield parameter.enumValues
 
     private def findPath(path: String): Either[String, Int] =
       lines.indexWhere(_.trim == s"$path:") match
-        case -1    => Left(s"path not found in plugin-redoc-2.yaml: $path")
+        case -1    => Left(s"Swagger path lookup failed: path not found in plugin-redoc-2.yaml: $path")
         case index => Right(index)
 
     private def findMethod(pathIndex: Int, method: String): Either[String, Int] =
       val needle = s"${method.toLowerCase}:"
+      val path = lines(pathIndex).trim.stripSuffix(":")
       val nextPathIndex = lines.indexWhere(line => line.startsWith("  /") && line.trim.endsWith(":"), pathIndex + 1)
       val end = if nextPathIndex == -1 then lines.length else nextPathIndex
       val index = lines.indexWhere(_.trim == needle, pathIndex + 1)
       Option
         .when(index != -1 && index < end)(index)
-        .toRight(s"method not found for $method ${lines(pathIndex).trim.stripSuffix(":")}")
+        .toRight(s"Swagger method lookup failed: method ${method.toUpperCase} not found for path $path")
 
     private def blockAfter(index: Int, minimumIndent: Int): Vector[String] =
       lines
         .drop(index + 1)
         .takeWhile(line => line.trim.isEmpty || indentation(line) >= minimumIndent)
 
-    private def findValue(block: Vector[String], key: String): Either[String, String] =
+    private def findValue(block: Vector[String], key: String, context: String): Either[String, String] =
       block
         .find(_.trim.startsWith(s"$key: "))
         .map(_.trim.stripPrefix(s"$key: ").trim)
-        .toRight(s"$key not found")
+        .toRight(s"Swagger operation lookup failed: $key not found for $context")
 
     private def parseParameters(block: Vector[String]): List[SwaggerParameter] =
       val parameterLines = section(block, "parameters:", "responses:")
@@ -334,11 +393,11 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
         )
       }
 
-    private def parseSuccessResponseLabels(block: Vector[String]): List[String] =
+    private def parseResponseLabels(block: Vector[String]): List[GiteaResponseLabel] =
       val responseLines = block.dropWhile(_.trim != "responses:").drop(1)
       responseEntries(responseLines).flatMap {
-        case (status, entry) if status.startsWith("2") => entryValue(entry, "$ref")
-        case _                                         => None
+        case (status, entry) =>
+          responseLabel(entry).map(label => GiteaResponseLabel(status, label))
       }
 
     private def section(block: Vector[String], start: String, end: String): Vector[String] =
@@ -371,6 +430,10 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
             .find(_.trim.startsWith(s"- $key:"))
             .map(_.trim.stripPrefix(s"- $key:").trim.stripPrefix("'").stripSuffix("'"))
         }
+
+    private def responseLabel(entry: Vector[String]): Option[String] =
+      entryValue(entry, "$ref")
+        .orElse(entryValue(entry, "description").map(description => s"description: $description"))
 
     private def enumValues(entry: Vector[String]): List[String] =
       entry

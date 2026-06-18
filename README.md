@@ -16,6 +16,10 @@ and zio-json.
   commit statuses, releases, pull requests including reviews, pinned
   pull-request reads, diff/patch downloads, merge-status checks, merge/update commands,
   review-comment resolution, and notifications through a ZIO client API
+- Contract checks: implemented endpoint metadata is audited against
+  `plugin-redoc-2.yaml`, including documented non-2xx response labels for the
+  pull-request merge/update commands and clear path/method/parameter mismatch
+  failures
 - Primary backend: `backend-zio`, using sttp's Java `HttpClientZioBackend`
 - Optional backend: `backend-okhttp`, using sttp's async `OkHttpFutureBackend` adapted to ZIO
 
@@ -430,7 +434,9 @@ client.me.foldZIO(
 
 HTTP failures preserve response bodies where available. Decode failures include
 the raw body, transport failures preserve the cause, and rate-limit errors carry
-the reset time when Gitea sends one.
+the reset time when Gitea sends one. Documented resource-state failures map to
+explicit cases where supported, including `GiteaError.MethodNotAllowed` for
+`405` and `GiteaError.Locked` for `423`.
 
 ## Retry And Rate Limits
 

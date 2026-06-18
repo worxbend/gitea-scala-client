@@ -5,10 +5,12 @@ final case class GiteaEndpoint(
     path: String,
     operationId: String,
     parameters: List[GiteaParameter],
-    response: String
+    response: String,
+    nonSuccessResponses: List[GiteaResponseLabel] = Nil
 )
 
 final case class GiteaParameter(name: String, in: String, required: Boolean)
+final case class GiteaResponseLabel(status: String, label: String)
 
 object GiteaEndpoints:
   val userGetCurrent: GiteaEndpoint =
@@ -345,7 +347,14 @@ object GiteaEndpoints:
         GiteaParameter("index", "path", required = true),
         GiteaParameter("body", "body", required = false)
       ),
-      response = "#/responses/empty"
+      response = "#/responses/empty",
+      nonSuccessResponses = List(
+        GiteaResponseLabel("403", "#/responses/forbidden"),
+        GiteaResponseLabel("404", "#/responses/notFound"),
+        GiteaResponseLabel("405", "#/responses/empty"),
+        GiteaResponseLabel("409", "#/responses/error"),
+        GiteaResponseLabel("423", "#/responses/repoArchivedError")
+      )
     )
 
   val repoCancelScheduledAutoMerge: GiteaEndpoint =
@@ -358,7 +367,12 @@ object GiteaEndpoints:
         GiteaParameter("repo", "path", required = true),
         GiteaParameter("index", "path", required = true)
       ),
-      response = "#/responses/empty"
+      response = "#/responses/empty",
+      nonSuccessResponses = List(
+        GiteaResponseLabel("403", "#/responses/forbidden"),
+        GiteaResponseLabel("404", "#/responses/notFound"),
+        GiteaResponseLabel("423", "#/responses/repoArchivedError")
+      )
     )
 
   val repoUpdatePullRequest: GiteaEndpoint =
@@ -372,7 +386,13 @@ object GiteaEndpoints:
         GiteaParameter("index", "path", required = true),
         GiteaParameter("style", "query", required = false)
       ),
-      response = "#/responses/empty"
+      response = "#/responses/empty",
+      nonSuccessResponses = List(
+        GiteaResponseLabel("403", "#/responses/forbidden"),
+        GiteaResponseLabel("404", "#/responses/notFound"),
+        GiteaResponseLabel("409", "#/responses/error"),
+        GiteaResponseLabel("422", "#/responses/validationError")
+      )
     )
 
   val repoResolvePullReviewComment: GiteaEndpoint =
