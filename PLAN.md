@@ -92,12 +92,17 @@ Current checkpoint:
 - `IssuesApi.get(owner, repo, index)` fetches a single issue and `IssuesApi.list(owner, repo, IssueListParams)` streams paginated issues with `ZStream.paginateChunkZIO`.
 - `UsersApi.followers(username)`, `UsersApi.following(username)`, and `UsersApi.search(params)` stream paginated users through the shared pagination helper.
 - `ReposApi.list(owner, RepoListParams)` streams repositories from `userListRepos`, `ReposApi.topics(owner, repo)` collects all topic pages from `repoListTopics`, and `ReposApi.branches(owner, repo)` / `ReposApi.tags(owner, repo)` stream paginated repository branches and tags.
+- `ReleasesApi` is mixed into `GiteaClient` with unambiguous `client.releases(owner, repo)` and `client.release(owner, repo, id)` facade methods.
+- Client HTTP now has schema-traceable endpoint metadata and pure sttp request construction for `GET /repos/{owner}/{repo}/releases` (`repoListReleases`) and `GET /repos/{owner}/{repo}/releases/{id}` (`repoGetRelease`).
+- Release list responses decode through the existing paginated JSON mapper as `#/responses/ReleaseList`; single release responses decode as `#/responses/Release`.
 - `ReposApi.list` intentionally requires an explicit `RepoListParams` argument for now because Scala cannot generate default arguments for both overloaded `list` methods on `ReposApi` and `IssuesApi`.
 - `OrgsApi.get(org)` is exposed as `client.orgs.get(org)` to avoid colliding with the existing single-argument `UsersApi.get(username)` method on `GiteaClient`.
 - `OrgsApi.members(org)` streams paginated organization members from `orgListMembers` through the shared pagination helper.
 - `OrgsApi.publicMembers(org)` streams paginated public organization members from `orgListPublicMembers` through the shared pagination helper.
 - `OrgsApi.repos(org, RepoListParams)` streams paginated organization repositories from `orgListRepos` through the shared pagination helper.
 - `GiteaClientSpec` covers current-user success, user/repository/issue `get`, organization lookup through `client.orgs.get`, decode failure, transport failure, multi-page issue/repository/topic/branch/tag/search/org-member/public-org-member/org-repository streaming, and follower/following stream pagination through a `BackendStub[Task]`.
+- `GiteaClientSpec` also covers multi-page release streaming and single-release lookup through a `BackendStub[Task]`.
+- `GiteaRequestsSpec` covers release endpoint metadata, path encoding, page/limit query parameters, release JSON decoding, and not-found mapping.
 - Validation passed: `./mill core.test`, `./mill client.test`, `./mill __.compile`, `./mill __.test`, and `./mill examples.run`.
 
 Use the existing code only as rough naming inspiration. The rewrite should create a new, coherent project structure.
@@ -636,9 +641,9 @@ Local publish and generated docs work from Mill.
 
 Continue with the next small vertical slice:
 
-- continue Phase 4 by adding a small read-only releases API from `plugin-redoc-2.yaml`,
-- add schema-traceable endpoint metadata and pure request builders for `GET /repos/{owner}/{repo}/releases` (`repoListReleases`) and `GET /repos/{owner}/{repo}/releases/{id}` (`repoGetRelease`) that decode `#/responses/ReleaseList` and `#/responses/Release`,
-- expose unambiguous facade methods such as `client.releases(owner, repo)` as `ZStream[GiteaError, Release]` and `client.release(owner, repo, id)` as `IO[GiteaError, Release]`,
-- add stub-backed tests that verify endpoint metadata, path encoding, page/limit query params, release decoding, not-found mapping, and multi-page facade streaming.
+- continue Phase 4 by adding a small read-only pull request API from `plugin-redoc-2.yaml`,
+- add schema-traceable endpoint metadata and pure request builders for `GET /repos/{owner}/{repo}/pulls` (`repoListPullRequests`) and `GET /repos/{owner}/{repo}/pulls/{index}` (`repoGetPullRequest`) that decode the local Swagger response definitions,
+- expose unambiguous facade methods that avoid colliding with repository and issue `get/list` overloads,
+- add stub-backed tests that verify endpoint metadata, path encoding, query params, pull request decoding, not-found mapping, and multi-page facade streaming.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.

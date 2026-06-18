@@ -188,6 +188,27 @@ object GiteaClientSpec extends ZIOSpecDefault:
           tags.map(_.name) == Chunk(Some("v1.0.0"), Some("v1.1.0"))
         )
       },
+      test("loads and streams repository releases") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub.whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "releases")))
+            .thenRespondCyclic(
+              ResponseStub.adjust("""[{"id":1,"tag_name":"v1.0.0"}]""", StatusCode.Ok, twoPageHeaders),
+              ResponseStub.adjust("""[{"id":2,"tag_name":"v1.1.0"}]""", StatusCode.Ok, twoPageHeaders)
+            )
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "releases", "2")))
+            .thenRespond(ResponseStub.adjust("""{"id":2,"tag_name":"v1.1.0","name":"Second"}"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          releases <- client.releases("alice", "api").runCollect
+          release <- client.release("alice", "api", 2)
+        yield assertTrue(
+          releases.map(_.tagName) == Chunk(Some("v1.0.0"), Some("v1.1.0")),
+          release.id.contains(2L),
+          release.name.contains("Second")
+        )
+      },
       test("streams followers and following users across paginated endpoints") {
         val twoPageHeaders = List(Header("x-total-count", "2"))
         val onePageHeaders = List(Header("x-total-count", "1"))

@@ -182,6 +182,38 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.paramsMap.get("limit").contains("25")
         )
       },
+      test("builds schema-traceable paginated repository releases request") {
+        val built = GiteaRequests.repoReleases(config, "worx bend", "gitea/scala", page = 5)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListReleases,
+          endpoint.operationId == "repoListReleases",
+          endpoint.path == "/repos/{owner}/{repo}/releases",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "draft", "pre-release", "page", "limit"),
+          endpoint.response == "#/responses/ReleaseList",
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/releases?"),
+          request.uri.paramsMap.get("page").contains("5"),
+          request.uri.paramsMap.get("limit").contains("25")
+        )
+      },
+      test("builds schema-traceable get repository release request") {
+        val built = GiteaRequests.repoRelease(config, "worx bend", "gitea/scala", 77)
+        val endpoint = built.endpoint
+        val request = built.request
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetRelease,
+          endpoint.operationId == "repoGetRelease",
+          endpoint.path == "/repos/{owner}/{repo}/releases/{id}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
+          endpoint.response == "#/responses/Release",
+          request.method == Method.GET,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/77"
+        )
+      },
       test("encodes issue list query parameters from typed params") {
         val params = IssueListParams(
           state = Some(IssueState.Open),
@@ -356,6 +388,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val topicsResponse = """{"topics":["scala","zio"]}"""
         val branchListResponse = """[{"name":"main","protected":true},{"name":"release"}]"""
         val tagListResponse = """[{"name":"v1.0.0"},{"name":"v1.1.0"}]"""
+        val releaseListResponse =
+          """[{"id":20,"tag_name":"v1.0.0","name":"First"},{"id":21,"tag_name":"v1.1.0","name":"Second"}]"""
+        val releaseResponse = """{"id":20,"tag_name":"v1.0.0","name":"First"}"""
         val backend =
           BackendStub.synchronous
             .whenRequestMatches(_.uri.path.endsWith(List("users", "octo", "repos")))
@@ -368,11 +403,17 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             .thenRespond(ResponseStub.adjust(branchListResponse, StatusCode.Ok, List(Header("x-total-count", "2"))))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "tags")))
             .thenRespond(ResponseStub.adjust(tagListResponse, StatusCode.Ok, List(Header("x-total-count", "2"))))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "releases")))
+            .thenRespond(ResponseStub.adjust(releaseListResponse, StatusCode.Ok, List(Header("x-total-count", "2"))))
+            .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "releases", "20")))
+            .thenRespond(ResponseStub.adjust(releaseResponse))
         val repos = GiteaRequests.userRepos(config, "octo")
         val orgRepos = GiteaRequests.organizationRepos(config, "platform")
         val topics = GiteaRequests.repoTopics(config, "octo", "api")
         val branches = GiteaRequests.repoBranches(config, "octo", "api")
         val tags = GiteaRequests.repoTags(config, "octo", "api")
+        val releases = GiteaRequests.repoReleases(config, "octo", "api")
+        val release = GiteaRequests.repoRelease(config, "octo", "api", 20)
 
         assertTrue(
           repos.decode(repos.request.send(backend)).map(_.data.map(_.name)) ==
@@ -385,7 +426,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Right(Chunk(Some("main"), Some("release"))),
           branches.decode(branches.request.send(backend)).map(_.totalCount) == Right(Some(2L)),
           tags.decode(tags.request.send(backend)).map(_.data.map(_.name)) ==
-            Right(Chunk(Some("v1.0.0"), Some("v1.1.0")))
+            Right(Chunk(Some("v1.0.0"), Some("v1.1.0"))),
+          releases.decode(releases.request.send(backend)).map(_.data.map(_.tagName)) ==
+            Right(Chunk(Some("v1.0.0"), Some("v1.1.0"))),
+          releases.decode(releases.request.send(backend)).map(_.totalCount) == Right(Some(2L)),
+          release.decode(release.request.send(backend)).map(_.tagName) == Right(Some("v1.0.0"))
         )
       },
       test("maps Gitea error responses while preserving raw body") {
@@ -447,6 +492,17 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           branches.decode(branches.request.send(backend)) == Left(GiteaError.NotFound("missing repo", body)),
           tags.decode(tags.request.send(backend)) == Left(GiteaError.NotFound("missing repo", body))
+        )
+      },
+      test("maps repository release not-found responses") {
+        val body = """{"message":"missing release"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val releases = GiteaRequests.repoReleases(config, "owner", "missing")
+        val release = GiteaRequests.repoRelease(config, "owner", "missing", 77)
+
+        assertTrue(
+          releases.decode(releases.request.send(backend)) == Left(GiteaError.NotFound("missing release", body)),
+          release.decode(release.request.send(backend)) == Left(GiteaError.NotFound("missing release", body))
         )
       },
       test("maps rate limit reset headers") {
