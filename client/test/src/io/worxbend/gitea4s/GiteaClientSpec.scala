@@ -18,6 +18,7 @@ import io.worxbend.gitea4s.http.{
   PullRequestUpdateStyle,
   RepoListParams,
   RepositoryCommentListParams,
+  SingleCommitParams,
   UserSearchParams
 }
 import io.worxbend.gitea4s.internal.GiteaRequestExecutor
@@ -129,6 +130,118 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(client.newIssuePinsAllowed("owner", "repo").map(value => value.issues -> value.pullRequests))(
           Assertion.equalTo(Some(true) -> Some(false))
+        )
+      },
+      test("loads a repository commit through the ReposApi commit method") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "commits", "abc123")) &&
+              request.uri.paramsMap.isEmpty
+          }.thenRespond(
+            ResponseStub.adjust(
+              """{"sha":"abc123","commit":{"message":"Add single commit facade test"},"stats":{"total":3}}"""
+            )
+          )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.commit("alice", "api", "abc123").map(commit => commit.sha -> commit.commit.flatMap(_.message)))(
+          Assertion.equalTo(Some("abc123") -> Some("Add single commit facade test"))
+        )
+      },
+      test("forwards single commit query parameters through the ReposApi commit method") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "commits", "abc123")) &&
+              request.uri.paramsMap.get("stat").contains("true") &&
+              request.uri.paramsMap.get("verification").contains("false") &&
+              request.uri.paramsMap.get("files").contains("true")
+          }.thenRespond(ResponseStub.adjust("""{"sha":"abc123","files":[{"filename":"README.md","status":"modified"}]}"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(
+          client
+            .commit(
+              "alice",
+              "api",
+              "abc123",
+              SingleCommitParams(stat = Some(true), verification = Some(false), files = Some(true))
+            )
+            .map(_.files.flatMap(_.headOption.flatMap(_.filename)))
+        )(Assertion.equalTo(Some("README.md")))
+      },
+      test("propagates single commit documented 404 and 422 errors through the facade") {
+        val notFoundBody = """{"message":"commit not found"}"""
+        val validationBody = """{"message":"validation failed"}"""
+        val notFoundBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "commits", "missing-sha"))
+          ).thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val validationBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "commits", "bad-sha"))
+          ).thenRespond(ResponseStub.adjust(validationBody, StatusCode.UnprocessableEntity))
+        val notFoundClient = GiteaClient.fromBackend(config, notFoundBackend)
+        val validationClient = GiteaClient.fromBackend(config, validationBackend)
+
+        for
+          notFound <- notFoundClient.commit("alice", "api", "missing-sha").either
+          validation <- validationClient.commit("alice", "api", "bad-sha").either
+        yield assertTrue(
+          notFound == Left(GiteaError.NotFound("commit not found", notFoundBody)),
+          validation == Left(GiteaError.UnprocessableEntity("validation failed", validationBody))
+        )
+      },
+      test("propagates single commit transport failures through the facade") {
+        val failure = RuntimeException("connection refused")
+        val backend = taskStub.whenAnyRequest.thenThrow(failure)
+        val client = GiteaClient.fromBackend(config, backend)
+
+        client.commit("alice", "api", "abc123").either.map { result =>
+          assertTrue(
+            result.left.exists {
+              case GiteaError.TransportError(cause) => cause eq failure
+              case _ => false
+            }
+          )
+        }
+      },
+      test("retries single commit lookup because it is a read-only GET") {
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "commits", "abc123"))
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""{"sha":"abc123","commit":{"message":"Retried commit"}}""")
+          )
+        val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
+
+        for
+          fiber <- client.commit("alice", "api", "abc123").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          commit <- fiber.join
+        yield assertTrue(
+          commit.sha.contains("abc123"),
+          commit.commit.flatMap(_.message).contains("Retried commit")
+        )
+      },
+      test("loads a repository commit through a stub without live environment credentials") {
+        val hermeticConfig =
+          GiteaConfig.default(uri"https://gitea.example", Auth.Anonymous).copy(pageSize = 1)
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "commits", "abc123")) &&
+              request.header("Authorization").isEmpty
+          }.thenRespond(ResponseStub.adjust("""{"sha":"abc123"}"""))
+        val client = GiteaClient.fromBackend(hermeticConfig, backend)
+
+        assertZIO(client.commit("alice", "api", "abc123").map(_.sha))(
+          Assertion.equalTo(Some("abc123"))
         )
       },
       test("loads an issue through the IssuesApi get method") {

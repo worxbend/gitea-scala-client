@@ -285,6 +285,21 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[PullRequest]
     )
 
+  def repoSingleCommit(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      sha: String,
+      params: SingleCommitParams = SingleCommitParams.default
+  ): GiteaRequest[Commit] =
+    get(
+      config,
+      GiteaEndpoints.repoGetSingleCommit,
+      List("repos", owner, repo, "git", "commits", sha),
+      singleCommitQuery(params),
+      GiteaResponseMapper.decodeJson[Commit]
+    )
+
   def repoPullRequests(
       config: GiteaConfig,
       owner: String,
@@ -1518,6 +1533,13 @@ object GiteaRequests:
       params.state.map(state => "state" -> state.queryValue),
       Some("page" -> page.toString),
       Some("limit" -> pageSize.toString)
+    ).flatten
+
+  private def singleCommitQuery(params: SingleCommitParams): List[(String, String)] =
+    List(
+      params.stat.map(value => "stat" -> value.toString),
+      params.verification.map(value => "verification" -> value.toString),
+      params.files.map(value => "files" -> value.toString)
     ).flatten
 
   private def notificationQuery(params: NotificationListParams, page: Int, pageSize: Int): List[(String, String)] =

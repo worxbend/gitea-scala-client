@@ -1,9 +1,10 @@
 package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.{CombinedStatusParams, CommitStatusListParams, RepoListParams}
+import io.worxbend.gitea4s.http.{CombinedStatusParams, CommitStatusListParams, RepoListParams, SingleCommitParams}
 import io.worxbend.gitea4s.model.{
   Branch,
+  Commit,
   CombinedStatus,
   CommitStatus,
   CreateStatusOption,
@@ -16,6 +17,13 @@ import zio.stream.ZStream
 
 trait ReposApi:
   def get(owner: String, repo: String): IO[GiteaError, Repository]
+
+  def commit(
+      owner: String,
+      repo: String,
+      sha: String,
+      params: SingleCommitParams = SingleCommitParams.default
+  ): IO[GiteaError, Commit]
 
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 

@@ -13,15 +13,16 @@ and zio-json.
 - Implemented surface: typed core models/codecs plus users, organizations,
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
-  commit statuses, commit-to-pull-request lookup, releases, pull requests
-  including reviews, pinned pull-request reads, pull-request create/edit writes,
-  diff/patch downloads, merge-status checks, merge/update commands,
-  review-comment resolution, and notifications through a ZIO client API
+  commit statuses, single-commit lookup, commit-to-pull-request lookup,
+  releases, pull requests including reviews, pinned pull-request reads,
+  pull-request create/edit writes, diff/patch downloads, merge-status checks,
+  merge/update commands, review-comment resolution, and notifications through a
+  ZIO client API
 - Contract checks: implemented endpoint metadata is audited against
-  `plugin-redoc-2.yaml` for pull-request review lifecycle, commit-status, and
-  pull-request create/edit, merge/update, and commit-to-pull-request endpoints,
-  including documented non-2xx response labels and clear path/method/parameter
-  mismatch failures
+  `plugin-redoc-2.yaml` for pull-request review lifecycle, commit-status,
+  pull-request create/edit, merge/update, commit-to-pull-request, and
+  single-commit endpoints, including documented non-2xx response labels and
+  clear path/method/parameter mismatch failures
 - Endpoint audit-only non-success response labels live in test scope; the
   published client endpoint metadata exposes operation method, path, operation
   ID, parameters, and success response labels only
@@ -231,6 +232,30 @@ client.createStatus(
     context = Some("ci/build"),
     targetUrl = Some("https://ci.example/build/123"),
     description = Some("Build passed")
+  )
+)
+```
+
+## Repository Commits
+
+Repository commit lookup covers `GET /repos/{owner}/{repo}/git/commits/{sha}`
+through `client.commit`. By default the client omits the documented `stat`,
+`verification`, and `files` query parameters. Use `SingleCommitParams` when a
+call needs to explicitly enable or disable those response details.
+
+```scala
+import io.worxbend.gitea4s.http.SingleCommitParams
+
+client.commit(owner = "my-org", repo = "my-repo", sha = "abc123")
+
+client.commit(
+  owner = "my-org",
+  repo = "my-repo",
+  sha = "abc123",
+  params = SingleCommitParams(
+    stat = Some(true),
+    verification = Some(false),
+    files = Some(true)
   )
 )
 ```
@@ -603,7 +628,8 @@ tests, and pagination tests:
 ```
 
 Endpoint audit tests compare the current pull-request review lifecycle,
-commit-status, and pull-request create/edit and merge/update endpoint groups against
+commit-status, pull-request create/edit, pull-request merge/update,
+commit-to-pull-request, and single-commit endpoint groups against
 `plugin-redoc-2.yaml`, including documented non-2xx response status/ref labels.
 
 Live integration tests are opt-in:

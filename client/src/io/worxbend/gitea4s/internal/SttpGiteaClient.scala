@@ -18,6 +18,7 @@ import io.worxbend.gitea4s.http.{
   PullRequestUpdateStyle,
   RepoListParams,
   RepositoryCommentListParams,
+  SingleCommitParams,
   UserSearchParams
 }
 import io.worxbend.gitea4s.model.{
@@ -120,6 +121,14 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def get(owner: String, repo: String): IO[GiteaError, Repository] =
     executor.send(GiteaRequests.repository(config, owner, repo))
+
+  override def commit(
+      owner: String,
+      repo: String,
+      sha: String,
+      params: SingleCommitParams
+  ): IO[GiteaError, Commit] =
+    executor.send(GiteaRequests.repoSingleCommit(config, owner, repo, sha, params))
 
   override def list(
       owner: String,

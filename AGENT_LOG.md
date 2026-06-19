@@ -1104,3 +1104,74 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaResponseMapperSpec.scala
 M  core/src/io/worxbend/gitea4s/error/GiteaError.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
 M  examples/src/io/worxbend/gitea4s/examples/ExampleSupport.scala
+2026-06-19T11:51:25Z iteration 4 started remaining=14482s
+2026-06-19T11:51:25Z iteration 4 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T11:51:25Z iteration 4 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-am554xwt/repo copied_entries=85
+2026-06-19T11:51:25Z iteration 4 ideator phase started count=3
+2026-06-19T11:51:25Z iteration 4 ideator phase concurrency workers=3
+2026-06-19T11:51:25Z iteration 4 ideator 1 role="the pragmatist" started
+2026-06-19T11:51:25Z iteration 4 ideator 2 role="the architect" started
+2026-06-19T11:51:25Z iteration 4 ideator 3 role="the contrarian" started
+2026-06-19T11:51:34Z iteration 4 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T11:51:34Z iteration 4 ideator 3 role="the contrarian" completed status=0
+2026-06-19T11:51:35Z iteration 4 ideator 2 role="the architect" completed status=0
+2026-06-19T11:51:35Z iteration 4 ideator phase completed approaches=3
+2026-06-19T11:51:35Z iteration 4 selector started approaches=3
+2026-06-19T11:51:45Z iteration 4 selector completed status=0
+2026-06-19T11:51:45Z iteration 4 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-am554xwt/repo
+2026-06-19T11:51:45Z iteration 4 selector rejected alternative role="the pragmatist" approach="Audit-First Vertical Slice: treat repoGetSingleCommit as a contract-hardening slice before a feature slice, anchoring the work in Swagger metadata and audit expectations before..." reason="Strong and practical, but selected too much as an audit-first implementation sequence rather than a broader planning principle covering facade, docs, and compatibility alignment."
+2026-06-19T11:51:45Z iteration 4 selector rejected alternative role="the contrarian" approach="Contract-First Freeze Gate: treat repoGetSingleCommit as a public-contract stabilization exercise before adding surface area, using Swagger/audit/API-snapshot alignment as the p..." reason="Useful emphasis on public-contract stabilization, but it risks making this small read endpoint feel heavier than necessary if taken as a freeze gate."
+2026-06-19T11:51:45Z iteration 4 selector rejected alternative role="the architect" approach="Contract-First Micro-Slice: treat repoGetSingleCommit as a narrow contract-hardening probe rather than just another endpoint addition, using the Swagger audit as the primary des..." reason="Closest to the selected strategy, but the synthesized version makes the planner guidance more explicit about keeping the slice narrow and preventing audit-only metadata from leaking into public API."
+2026-06-19T11:51:45Z iteration 4 selector alternatives persisted count=3
+2026-06-19T11:51:45Z iteration 4 planner started
+2026-06-19T11:52:27Z iteration 4 plan: 5 task(s) in 4 phase(s). The first two phases establish the shared API surface and request implementation before any dependent tests or snapshots. Phase 3 is parallel because request/audit tests and facade tests touch different test files after the implementation exists. Documentation and compatibility snapshots are last because they depend on the final public signature.
+2026-06-19T11:52:27Z iteration 4 phase 1 started parallel=False tasks=1
+2026-06-19T11:54:43Z iteration 4 task t1 ('Implement single commit request slice') status=0
+2026-06-19T11:54:43Z iteration 4 phase 2 started parallel=False tasks=1
+2026-06-19T11:56:03Z iteration 4 task t2 ('Expose repository facade method') status=0
+2026-06-19T11:56:03Z iteration 4 phase 3 started parallel=True tasks=2
+2026-06-19T11:58:28Z iteration 4 task t4 ('Add facade and retry tests') status=0
+2026-06-19T11:58:37Z iteration 4 task t3 ('Add request and endpoint audit tests') status=0
+2026-06-19T11:58:37Z iteration 4 phase 4 started parallel=False tasks=1
+2026-06-19T12:03:58Z iteration 4 task t5 ('Update docs, snapshots, and plan') status=0
+2026-06-19T12:03:58Z iteration 4 reviewer started
+
+## Reviewer Summary - Iteration 4 - 2026-06-19T12:23:00Z
+
+What was done:
+- Inspected every file changed in the single-commit slice: endpoint metadata, request builder, `SingleCommitParams`, `ReposApi` facade wiring, `SttpGiteaClient`, request/client/audit tests, README, CHANGELOG, PLAN, AGENT_LOG, and the public API snapshot.
+- Cross-checked `repoGetSingleCommit` against `plugin-redoc-2.yaml`; method, path, operation ID, required owner/repo/sha path parameters, optional `stat`/`verification`/`files` query parameters, success response, and documented 404/422 responses match the local Swagger contract.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, and `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`.
+
+What was found:
+- No functional blocker or regression was found.
+- `SingleCommitParams` correctly models all three optional boolean toggles and omits them by default; explicit true and false values are encoded as query parameters.
+- `GiteaRequests.repoSingleCommit` uses safe owner/repo/sha path encoding, shared JSON/auth/OTP/user-agent headers, no request body or content type, `Commit` decoding, read-only retry eligibility, and documented 404/422 error propagation.
+- `ReposApi.commit` and `SttpGiteaClient` expose the endpoint through the public facade, and tests cover success, explicit query forwarding, documented failures, transport failure propagation, hermetic anonymous use, and retry behavior.
+- `GiteaEndpointAuditSpec` now compares optional query parameter names against Swagger in addition to path/method/body/response/retry metadata, and the new single-commit audit keeps non-2xx labels test-private.
+- Residual API-design risk is naming: `ReposApi.commit` is compact, but adjacent commit diff/patch methods should be named deliberately so the repository commit read surface remains coherent before the next API snapshot refresh.
+
+Top improvement proposals:
+- Implement `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` next with a typed `CommitDiffType`, `Accept: text/plain`, raw string decoding, documented 404 propagation, retryability, and Swagger audit coverage from the start.
+- Use the next diff/patch slice to settle repository-commit facade naming while the public surface is still small; avoid adding multiple ambiguous `commit*` methods that require churn later.
+- Keep the optional-query-parameter audit in place for new audited endpoints, and make future audits prove absence as well as presence of query/body parameters.
+2026-06-19T12:06:51Z iteration 4 reviewer completed status=0
+2026-06-19T12:06:51Z iteration 4 memory updated
+2026-06-19T12:06:51Z iteration 4 completed validation_status=0
+2026-06-19T12:06:51Z iteration 4 checkpoint started
+2026-06-19T12:06:51Z iteration 4 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+A  client/src/io/worxbend/gitea4s/http/SingleCommitParams.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala

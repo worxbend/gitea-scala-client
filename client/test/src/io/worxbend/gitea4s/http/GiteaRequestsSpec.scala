@@ -433,6 +433,72 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.decode(request.send(backend)).map(_.title) == Right(Some("Commit pull"))
         )
       },
+      test("builds and decodes schema-traceable single commit lookup") {
+        val built =
+          GiteaRequests.repoSingleCommit(config, "worx bend", "gitea/scala", "feature/commit abc")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """{"sha":"abc123","commit":{"message":"Implement single commit"},"stats":{"total":7},"files":[{"filename":"src/Main.scala","status":"modified"}]}"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetSingleCommit,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetSingleCommit",
+          endpoint.path == "/repos/{owner}/{repo}/git/commits/{sha}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "stat", "verification", "files"),
+          endpoint.response == "#/responses/Commit",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/commits/feature%2Fcommit%20abc",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "git", "commits", "feature/commit abc"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)).map(_.sha) == Right(Some("abc123")),
+          built.decode(request.send(backend)).map(_.commit.flatMap(_.message)) == Right(Some("Implement single commit")),
+          built.decode(request.send(backend)).map(_.stats.flatMap(_.total)) == Right(Some(7L)),
+          built.decode(request.send(backend)).map(_.files.flatMap(_.headOption.flatMap(_.filename))) ==
+            Right(Some("src/Main.scala"))
+        )
+      },
+      test("encodes explicit single commit boolean query parameters") {
+        val allTrue =
+          GiteaRequests.repoSingleCommit(
+            config,
+            "owner",
+            "repo",
+            "abc123",
+            SingleCommitParams(stat = Some(true), verification = Some(true), files = Some(true))
+          )
+        val allFalse =
+          GiteaRequests.repoSingleCommit(
+            config,
+            "owner",
+            "repo",
+            "abc123",
+            SingleCommitParams(stat = Some(false), verification = Some(false), files = Some(false))
+          )
+
+        assertTrue(
+          allTrue.request.uri.toString.contains("/api/v1/repos/owner/repo/git/commits/abc123?"),
+          allTrue.request.uri.paramsMap.get("stat").contains("true"),
+          allTrue.request.uri.paramsMap.get("verification").contains("true"),
+          allTrue.request.uri.paramsMap.get("files").contains("true"),
+          allFalse.request.uri.paramsMap.get("stat").contains("false"),
+          allFalse.request.uri.paramsMap.get("verification").contains("false"),
+          allFalse.request.uri.paramsMap.get("files").contains("false")
+        )
+      },
       test("builds schema-traceable paginated repository pull request list request") {
         val params = PullRequestListParams(
           baseBranch = Some("main"),
@@ -2727,6 +2793,25 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           built.decode(built.request.send(backend)) ==
             Left(GiteaError.NotFound("missing commit pull request", body))
+        )
+      },
+      test("maps documented single commit 404 and 422 responses") {
+        val notFoundBody = """{"message":"missing commit"}"""
+        val validationBody = """{"message":"invalid commit ref"}"""
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val validationBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(validationBody, StatusCode.UnprocessableEntity)
+          )
+        val missing = GiteaRequests.repoSingleCommit(config, "owner", "repo", "missing-sha")
+        val invalid = GiteaRequests.repoSingleCommit(config, "owner", "repo", "bad ref")
+
+        assertTrue(
+          missing.decode(missing.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing commit", notFoundBody)),
+          invalid.decode(invalid.request.send(validationBackend)) ==
+            Left(GiteaError.UnprocessableEntity("invalid commit ref", validationBody))
         )
       },
       test("maps repository pull request not-found responses") {

@@ -275,6 +275,22 @@ object GiteaEndpoints:
       response = "#/responses/PullRequest"
     )
 
+  val repoGetSingleCommit: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/git/commits/{sha}",
+      operationId = "repoGetSingleCommit",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("sha", "path", required = true),
+        GiteaParameter("stat", "query", required = false),
+        GiteaParameter("verification", "query", required = false),
+        GiteaParameter("files", "query", required = false)
+      ),
+      response = "#/responses/Commit"
+    )
+
   val repoListPullRequests: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

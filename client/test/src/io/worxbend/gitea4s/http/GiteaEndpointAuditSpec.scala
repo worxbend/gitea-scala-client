@@ -168,6 +168,19 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val singleCommitRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoSingleCommit(
+        config,
+        "owner",
+        "repo",
+        sha = "abc123",
+        SingleCommitParams(stat = Some(true), verification = Some(false), files = Some(true))
+      ),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val pullRequestMergeUpdateRequests = List(
     AuditedRequest(
       request = GiteaRequests.mergePullRequest(
@@ -316,6 +329,10 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     ),
     "repoGetCommitPullRequest" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoGetSingleCommit" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
     )
   )
 
@@ -336,6 +353,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("commit pull-request metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = commitPullRequestRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("single commit metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = singleCommitRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
@@ -422,6 +445,10 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           endpoint.parameters.collect {
             case GiteaParameter(name, "path", true) => name
           }
+        val optionalQueryParameterNames =
+          endpoint.parameters.collect {
+            case GiteaParameter(name, "query", false) => name
+          }
         val endpointHasBody = endpoint.parameters.exists(_.in == "body")
         val requestHasBody = audited.request.request.body != NoBody
         val expectedRetryable = endpoint.method.equalsIgnoreCase("GET") || endpoint.method.equalsIgnoreCase("HEAD")
@@ -431,6 +458,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           compare("method", endpoint.method.toUpperCase, operation.method),
           compare("path", endpoint.path, operation.path),
           compare("required path parameters", requiredPathParameterNames, operation.requiredPathParameters),
+          compare("optional query parameters", optionalQueryParameterNames, operation.optionalQueryParameters),
           compare("success response labels", List(endpoint.response), operation.successResponseLabels),
           expectedNonSuccessResponses.fold(
             Some("non-2xx response label lookup failed: no expected labels registered for audited endpoint")
@@ -463,6 +491,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       method: String,
       operationId: String,
       requiredPathParameters: List[String],
+      optionalQueryParameters: List[String],
       successResponseLabels: List[String],
       nonSuccessResponses: List[GiteaResponseLabel],
       hasRequestBody: Boolean
@@ -485,6 +514,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
         operationId = operationId,
         requiredPathParameters = parameters.collect {
           case SwaggerParameter(name, "path", true, _) => name
+        },
+        optionalQueryParameters = parameters.collect {
+          case SwaggerParameter(name, "query", false, _) => name
         },
         successResponseLabels = responses.collect {
           case GiteaResponseLabel(status, label) if status.startsWith("2") => label

@@ -8,3 +8,5 @@
 [process] Each endpoint added to an audited group must register expected documented non-2xx labels, and the audit should fail when that registration is missing.
 [pattern] Documented conditional-write failures such as HTTP 412 should get explicit `GiteaError` taxonomy instead of falling through to `ServerError`, even when raw bodies are preserved.
 [learning] `repoGetSingleCommit` documents three optional boolean query toggles: `stat`, `verification`, and `files`; include all three when modeling that endpoint.
+[pattern] Endpoint metadata audits should compare optional query parameter names against Swagger so omissions and accidental public query drift fail early.
+[learning] Commit diff/patch downloads use a dot-suffixed `{sha}.{diffType}` path and `text/plain`; model `diffType` as a typed path value, not as a query parameter.

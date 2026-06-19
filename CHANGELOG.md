@@ -38,12 +38,22 @@ surface is still being filled out.
   `repoGetCommitPullRequest`, `GiteaRequests.repoCommitPullRequest`, and
   `PullRequestsApi.commitPullRequest`; the read-only request is retryable and
   decodes a single `PullRequest`.
+- Typed single-commit lookup for
+  `GET /repos/{owner}/{repo}/git/commits/{sha}` with
+  `SingleCommitParams`, `repoGetSingleCommit`,
+  `GiteaRequests.repoSingleCommit`, and `ReposApi.commit`; the read-only
+  request is retryable, omits `stat`, `verification`, and `files` by default,
+  and encodes explicitly supplied boolean controls.
 - Pull-request create/edit endpoint metadata audit coverage for operation IDs,
   methods, paths, required path parameters, success responses, request-body
   presence, retryability, and documented non-2xx response status/ref labels.
 - Commit-to-pull-request endpoint metadata audit coverage for operation ID,
   method, path, required path parameters, success response, request-body
   absence, retryability, and documented non-2xx response status/ref labels.
+- Single-commit endpoint metadata audit coverage for operation ID, method, path,
+  required path parameters, optional `stat`/`verification`/`files` query
+  parameters, success response, request-body absence, retryability, and
+  documented 404/422 response status/ref labels.
 - Pull-request merge/update endpoint metadata audit coverage for operation IDs,
   methods, paths, required path parameters, success responses, request-body
   presence, retryability, `repoUpdatePullRequest` `style` enum values, and
