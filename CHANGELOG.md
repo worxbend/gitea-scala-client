@@ -214,6 +214,14 @@ surface is still being filled out.
 - Optional OkHttp backend bridge isolated in `backend-okhttp`.
 - Environment and Typesafe config loading, retry handling, examples, and
   opt-in live integration tests.
+- Opt-in live integration probes for slash-containing Git refs and annotated
+  tag lookup. The Git ref probe requires `GITEA_URL`, `GITEA_TOKEN`,
+  `GITEA_OWNER`, `GITEA_REPO`, and `GITEA_REF` such as `heads/main`; the
+  annotated tag probe requires `GITEA_ANNOTATED_TAG_SHA` and does not infer
+  annotated tag object SHAs from repository tag listings.
+- Test-side schema-field checklist coverage for recent Swagger Git response
+  models: `Reference`, `GitObject`, `AnnotatedTag`, `AnnotatedTagObject`, and
+  `GitBlobResponse`.
 - Local Maven publishing metadata, source jars, and javadoc jars.
 - Java 21 CI validation and release-process documentation.
 - Sonatype Central Portal publishing groundwork through Mill and a manual
@@ -231,3 +239,8 @@ surface is still being filled out.
   `./mill compatibility.check`, and
   `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill __.test it.test examples.run`;
   the credential-stripped run reported live integration tests as ignored.
+- Live-probe and schema-checklist validation for this slice is expected through
+  `git diff --check`, `./mill --no-server core.test client.test compatibility.check`,
+  and
+  `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill --no-server it.test`;
+  the live probes should remain ignored without their required variables.

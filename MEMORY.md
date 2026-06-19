@@ -17,3 +17,4 @@
 [learning] `repoListGitRefs` accepts a part or full ref name, and real Git refs contain slashes; request tests should make encoded slash behavior explicit.
 [process] For slash-bearing path parameters, pair unit-level encoded-segment assertions with opt-in live validation before generalizing the routing assumption to more endpoints.
 [learning] `GetAnnotatedTag` only returns annotated tag objects by tag SHA and must stay distinct from repository tag-list/lightweight tag semantics.
+[pattern] Test-side schema-field checklists complement endpoint audits by proving encoded fixture field names, but they should stay visibly anchored to Swagger definitions or be generated from the local spec.

@@ -1625,3 +1625,69 @@ M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
 2026-06-19T13:51:10Z iteration final-10 checkpoint started
 2026-06-19T13:51:10Z iteration final-10 checkpoint status before commit:
 M  AGENT_LOG.md
+2026-06-19T18:53:14Z orchestrator started provider=codex budget=18000s iterations=15 max_workers=4
+2026-06-19T18:53:14Z iteration 1 started remaining=18000s
+2026-06-19T18:53:14Z iteration 1 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T18:53:14Z iteration 1 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-gdtcg8id/repo copied_entries=94
+2026-06-19T18:53:14Z iteration 1 ideator phase started count=3
+2026-06-19T18:53:14Z iteration 1 ideator phase concurrency workers=3
+2026-06-19T18:53:14Z iteration 1 ideator 1 role="the pragmatist" started
+2026-06-19T18:53:14Z iteration 1 ideator 2 role="the architect" started
+2026-06-19T18:53:14Z iteration 1 ideator 3 role="the contrarian" started
+2026-06-19T18:53:23Z iteration 1 ideator 2 role="the architect" completed status=0
+2026-06-19T18:53:32Z iteration 1 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T18:53:39Z iteration 1 ideator 3 role="the contrarian" completed status=0
+2026-06-19T18:53:39Z iteration 1 ideator phase completed approaches=3
+2026-06-19T18:53:39Z iteration 1 selector started approaches=3
+2026-06-19T18:53:50Z iteration 1 selector completed status=0
+2026-06-19T18:53:50Z iteration 1 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-gdtcg8id/repo
+2026-06-19T18:53:50Z iteration 1 selector rejected alternative role="the architect" approach="Live-Confidence Gate Before Surface Expansion: pause broad endpoint growth briefly to validate the highest-uncertainty Git routing assumptions, then resume with schema-field dis..." reason="Strong overall, but selected as part of a hybrid because it slightly over-emphasizes pausing endpoint growth; the planner should still leave room for one narrow Swagger-backed read slice after the confidence checks are established."
+2026-06-19T18:53:50Z iteration 1 selector rejected alternative role="the pragmatist" approach="Live-Confidence First, Then Small Contract Slice: stabilize the known routing uncertainty with opt-in live probes before expanding the repository API surface, then pick one low-..." reason="Closest to the selected direction, but not selected as-is because the synthesized version makes the schema-field checklist and private audit-boundary discipline equally explicit, not merely secondary to the live probe."
+2026-06-19T18:53:50Z iteration 1 selector rejected alternative role="the contrarian" approach="Live-Truth Gate Before Surface Expansion: pause endpoint growth and use the next slice to validate assumptions that only real Gitea can confirm, especially slash-bearing Git ref..." reason="Useful framing of live truth as the scarce resource, but too heavily weighted toward pausing surface expansion. The planner should reduce uncertainty without turning the iteration into only live validation."
+2026-06-19T18:53:50Z iteration 1 selector alternatives persisted count=3
+2026-06-19T18:53:50Z iteration 1 selector structured alternatives persisted count=3
+2026-06-19T18:53:50Z iteration 1 planner started
+2026-06-19T18:54:21Z iteration 1 plan: 5 task(s) in 3 phase(s). The first phase contains independent implementation work in separate test modules. Documentation and plan updates depend on the exact behavior implemented, so they follow in phase 2. Validation is last because it depends on all source and documentation changes being complete.
+2026-06-19T18:54:21Z iteration 1 phase 1 started parallel=True tasks=2
+2026-06-19T18:56:11Z iteration 1 task t1 ('Add opt-in live Git routing probes') status=0
+2026-06-19T18:57:49Z iteration 1 task t2 ('Add schema-field checklist coverage') status=0
+2026-06-19T18:57:49Z iteration 1 phase 2 started parallel=False tasks=2
+2026-06-19T18:58:23Z iteration 1 task t3 ('Document live probe configuration') status=0
+2026-06-19T19:00:59Z iteration 1 task t4 ('Update changelog and plan continuation') status=0
+2026-06-19T19:00:59Z iteration 1 phase 3 started parallel=False tasks=1
+2026-06-19T19:01:27Z iteration 1 task t5 ('Validate confidence gate') status=0
+2026-06-19T19:01:27Z iteration 1 reviewer started
+
+## Reviewer Summary - Iteration 1 - 2026-06-19T19:03:15Z
+
+What was done:
+- Inspected every file changed in the live-confidence and schema-field checklist slice: `LiveGiteaIntegrationSpec.scala`, `CoreModelsSpec.scala`, `README.md`, `CHANGELOG.md`, `PLAN.md`, `AGENT_LOG.md`, plus the untracked `ALTERNATIVES.jsonl` workspace artifact.
+- Cross-checked the new live probes against `plugin-redoc-2.yaml` for `repoListGitRefs` and `GetAnnotatedTag`, and cross-checked the new checklist field names against the Swagger definitions for `Reference`, `GitObject`, `AnnotatedTag`, `AnnotatedTagObject`, and `GitBlobResponse`.
+- Ran focused validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, and `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill --no-server it.test`.
+
+What was found:
+- No functional blocker or regression was found.
+- The slash-containing Git ref probe and annotated tag probe are read-only, remain gated by the base `GITEA_URL`/`GITEA_TOKEN` live-test requirements, and additionally require their endpoint-specific owner/repo/ref or annotated-tag SHA variables before they run.
+- The credential-stripped integration validation reported all four live tests as ignored and made no live call.
+- The schema-field checklist correctly records the recent Git response model fields and proves the encoded JSON fixtures include those fields without adding schema metadata to public production APIs.
+- The checklist is still hand-maintained in test code rather than parsed from Swagger, so it complements codec coverage but does not independently prove the copied field list is current.
+- The workspace contains an untracked `ALTERNATIVES.jsonl` orchestration artifact; it is not part of the source patch and should be removed or deliberately ignored before committing.
+
+Top improvement proposals:
+- Implement the repository contents read slice next with `ContentsResponse`, `FileLinksResponse`, `repoGetContentsList`, and `repoGetContents`, using schema-field checklist coverage before request/facade coding.
+- For `repoGetContents`, test slash-containing `filepath` values as one encoded path parameter and consider an opt-in live routing probe before copying that convention to more contents-like endpoints.
+- Either keep schema-field checklist entries visibly copied from `plugin-redoc-2.yaml` or refactor the test helper to parse Swagger definitions directly; avoid a second unanchored duplicate list as the checklist grows.
+2026-06-19T19:04:24Z iteration 1 reviewer completed status=0
+2026-06-19T19:04:24Z iteration 1 memory updated
+2026-06-19T19:04:24Z iteration 1 completed validation_status=0
+2026-06-19T19:04:24Z iteration 1 checkpoint started
+2026-06-19T19:04:24Z iteration 1 checkpoint status before commit:
+M  AGENT_LOG.md
+A  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+M  it/test/src/io/worxbend/gitea4s/it/LiveGiteaIntegrationSpec.scala

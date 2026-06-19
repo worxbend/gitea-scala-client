@@ -3,13 +3,140 @@ package io.worxbend.gitea4s.model
 import io.worxbend.gitea4s.error.GiteaError
 import zio.Chunk
 import zio.json.*
+import zio.json.ast.Json
 import zio.test.*
 
 import java.time.Instant
 
 object CoreModelsSpec extends ZIOSpecDefault:
+  private final case class SchemaFieldChecklist(
+      swaggerDefinition: String,
+      jsonFields: Set[String]
+  )
+
+  private val recentGitResponseSwaggerFields = Map(
+    "Reference" -> Set("object", "ref", "url"),
+    "GitObject" -> Set("sha", "type", "url"),
+    "AnnotatedTag" -> Set("message", "object", "sha", "tag", "tagger", "url", "verification"),
+    "AnnotatedTagObject" -> Set("sha", "type", "url"),
+    "GitBlobResponse" -> Set("content", "encoding", "lfs_oid", "lfs_size", "sha", "size", "url")
+  )
+
+  private val recentGitResponseSchemaChecklist = List(
+    SchemaFieldChecklist("Reference", Set("object", "ref", "url")),
+    SchemaFieldChecklist("GitObject", Set("sha", "type", "url")),
+    SchemaFieldChecklist(
+      "AnnotatedTag",
+      Set("message", "object", "sha", "tag", "tagger", "url", "verification")
+    ),
+    SchemaFieldChecklist("AnnotatedTagObject", Set("sha", "type", "url")),
+    SchemaFieldChecklist(
+      "GitBlobResponse",
+      Set("content", "encoding", "lfs_oid", "lfs_size", "sha", "size", "url")
+    )
+  )
+
+  private val recentGitResponseEncodedFixtures = Map(
+    "Reference" ->
+      Reference(
+        gitObject = Some(
+          GitObject(
+            sha = Some("abc123"),
+            `type` = Some("commit"),
+            url = Some("https://gitea.example/git/abc123")
+          )
+        ),
+        ref = Some("refs/heads/main"),
+        url = Some("https://gitea.example/git/refs/heads/main")
+      ).toJson,
+    "GitObject" ->
+      GitObject(
+        sha = Some("abc123"),
+        `type` = Some("commit"),
+        url = Some("https://gitea.example/git/abc123")
+      ).toJson,
+    "AnnotatedTag" ->
+      AnnotatedTag(
+        message = Some("Release v0.1.0"),
+        gitObject = Some(
+          AnnotatedTagObject(
+            sha = Some("abc123"),
+            `type` = Some("commit"),
+            url = Some("https://gitea.example/git/commits/abc123")
+          )
+        ),
+        sha = Some("tag123"),
+        tag = Some("v0.1.0"),
+        tagger = Some(CommitUser(name = Some("Octo Maintainer"), email = Some("octo@example.test"))),
+        url = Some("https://gitea.example/git/tags/tag123"),
+        verification = Some(PayloadCommitVerification(verified = Some(true)))
+      ).toJson,
+    "AnnotatedTagObject" ->
+      AnnotatedTagObject(
+        sha = Some("abc123"),
+        `type` = Some("commit"),
+        url = Some("https://gitea.example/git/commits/abc123")
+      ).toJson,
+    "GitBlobResponse" ->
+      GitBlobResponse(
+        content = Some("SGVsbG8sIEdpdGVhIQ=="),
+        encoding = Some("base64"),
+        lfsOid = Some("sha256:0123456789abcdef"),
+        lfsSize = Some(4096L),
+        sha = Some("blob123"),
+        size = Some(13L),
+        url = Some("https://gitea.example/git/blobs/blob123")
+      ).toJson
+  )
+
+  private def topLevelJsonFields(json: String): Either[String, Set[String]] =
+    json.fromJson[Json].flatMap {
+      case obj: Json.Obj => Right(obj.keys.toList.toSet)
+      case other         => Left(s"expected object JSON, got ${other.getClass.getSimpleName}")
+    }
+
   def spec =
     suite("Core models")(
+      test("records Swagger field checklist for recent Git response models") {
+        val checklistByDefinition =
+          recentGitResponseSchemaChecklist.map(entry => entry.swaggerDefinition -> entry).toMap
+        val missingDefinitions =
+          recentGitResponseSwaggerFields.keySet
+            .diff(checklistByDefinition.keySet)
+            .toList
+            .sorted
+            .map(definition => s"$definition checklist entry is missing")
+        val missingChecklistFields =
+          recentGitResponseSwaggerFields.toList.flatMap { case (definition, expectedFields) =>
+            checklistByDefinition.get(definition).toList.flatMap { checklist =>
+              val missing = expectedFields.diff(checklist.jsonFields)
+
+              Option.when(missing.nonEmpty)(s"$definition checklist missing ${missing.toList.sorted.mkString(", ")}")
+            }
+          }
+        val missingEncodedFields =
+          recentGitResponseSchemaChecklist.flatMap { checklist =>
+            recentGitResponseEncodedFixtures.get(checklist.swaggerDefinition) match
+              case None =>
+                Some(s"${checklist.swaggerDefinition} fixture is missing")
+              case Some(json) =>
+                topLevelJsonFields(json) match
+                  case Left(error) =>
+                    Some(s"${checklist.swaggerDefinition} fixture could not be inspected: $error")
+                  case Right(actualFields) =>
+                    val missing = checklist.jsonFields.diff(actualFields)
+
+                    Option.when(missing.nonEmpty)(
+                      s"${checklist.swaggerDefinition} encoded JSON missing ${missing.toList.sorted.mkString(", ")}"
+                    )
+        }
+
+        assertTrue(
+          missingDefinitions == Nil,
+          missingChecklistFields == Nil,
+          missingEncodedFields == Nil
+        )
+      },
       test("decodes user and organization fields from schema JSON names") {
         val userJson =
           """{

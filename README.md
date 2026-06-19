@@ -757,7 +757,36 @@ GITEA_TOKEN=... \
 ```
 
 Without both integration variables, `it.test` reports the live tests as ignored
-and makes no external calls.
+and makes no external calls. Additional live probes stay hermetic unless every
+variable required by that probe is non-empty.
+
+The slash-containing Git ref routing probe calls `ReposApi.gitRefs(owner, repo,
+ref)` and requires all of:
+
+```bash
+GITEA_URL=https://gitea.example \
+GITEA_TOKEN=... \
+GITEA_OWNER=my-org \
+GITEA_REPO=my-repo \
+GITEA_REF=heads/main \
+./mill it.test
+```
+
+The annotated tag lookup probe calls `ReposApi.annotatedTag(owner, repo, sha)`
+and requires an explicit annotated tag object SHA:
+
+```bash
+GITEA_URL=https://gitea.example \
+GITEA_TOKEN=... \
+GITEA_OWNER=my-org \
+GITEA_REPO=my-repo \
+GITEA_ANNOTATED_TAG_SHA=<annotated-tag-sha> \
+./mill it.test
+```
+
+Repository tag-list entries are not assumed to be annotated tag objects; supply
+`GITEA_ANNOTATED_TAG_SHA` only when you already have the SHA for an annotated
+tag object.
 
 Latest annotated Git tag validation passed with:
 
