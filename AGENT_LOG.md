@@ -1473,3 +1473,76 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 A  core/src/io/worxbend/gitea4s/model/GitBlobResponse.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-19T13:15:55Z iteration 9 started remaining=9412s
+2026-06-19T13:15:55Z iteration 9 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T13:15:55Z iteration 9 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-kpeot28s/repo copied_entries=92
+2026-06-19T13:15:55Z iteration 9 ideator phase started count=3
+2026-06-19T13:15:55Z iteration 9 ideator phase concurrency workers=3
+2026-06-19T13:15:55Z iteration 9 ideator 1 role="the pragmatist" started
+2026-06-19T13:15:55Z iteration 9 ideator 2 role="the architect" started
+2026-06-19T13:15:55Z iteration 9 ideator 3 role="the contrarian" started
+2026-06-19T13:16:04Z iteration 9 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T13:16:05Z iteration 9 ideator 3 role="the contrarian" completed status=0
+2026-06-19T13:16:07Z iteration 9 ideator 2 role="the architect" completed status=0
+2026-06-19T13:16:07Z iteration 9 ideator phase completed approaches=3
+2026-06-19T13:16:07Z iteration 9 selector started approaches=3
+2026-06-19T13:16:19Z iteration 9 selector completed status=0
+2026-06-19T13:16:19Z iteration 9 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-kpeot28s/repo
+2026-06-19T13:16:20Z iteration 9 selector rejected alternative role="the pragmatist" approach="Contract-First Slash-Semantics Slice: treat the Git refs work primarily as a contract-boundary decision about ref path encoding before expanding the public facade" reason="Strong on path semantics and practical sequencing, but too narrowly centered on request encoding; the planner also needs to elevate response-model fidelity and API snapshot discipline as coequal concerns."
+2026-06-19T13:16:20Z iteration 9 selector rejected alternative role="the contrarian" approach="Contract-First Ref Semantics Spike: treat the Git refs slice primarily as a path-contract and model-fidelity risk exercise before adding facade surface" reason="Correctly identifies the semantic risk, but frames the work as a spike in a way that could slow the already-proven vertical-slice flow more than necessary."
+2026-06-19T13:16:20Z iteration 9 selector rejected alternative role="the architect" approach="Contract-First Narrow Slice: treat Git refs as a contract-stabilization slice before a feature slice, using Swagger metadata, response-model fidelity, and public API shape decis..." reason="Closest to the selected direction, but selected as part of a hybrid because the pragmatist and contrarian add useful emphasis on live-routing uncertainty and keeping facade overloads reversible until proven."
+2026-06-19T13:16:20Z iteration 9 selector alternatives persisted count=3
+2026-06-19T13:16:20Z iteration 9 planner started
+2026-06-19T13:16:56Z iteration 9 plan: 5 task(s) in 4 phase(s). The first phase separates core schema work from endpoint metadata/audit work because they touch disjoint files and can proceed independently. Request construction depends on both the Reference model and endpoint metadata. Facade wiring depends on stable request builders and public method naming. Documentation, snapshots, and validation are last so they reflect the final compiled API.
+2026-06-19T13:16:56Z iteration 9 phase 1 started parallel=True tasks=2
+2026-06-19T13:18:13Z iteration 9 task t1 ('Add Git reference core models') status=0
+2026-06-19T13:18:59Z iteration 9 task t2 ('Add Git refs endpoint metadata audit') status=0
+2026-06-19T13:18:59Z iteration 9 phase 2 started parallel=False tasks=1
+2026-06-19T13:21:54Z iteration 9 task t3 ('Implement Git refs request builders') status=0
+2026-06-19T13:21:54Z iteration 9 phase 3 started parallel=False tasks=1
+2026-06-19T13:24:49Z iteration 9 task t4 ('Expose Git refs facade API') status=0
+2026-06-19T13:24:49Z iteration 9 phase 4 started parallel=False tasks=1
+2026-06-19T13:31:22Z iteration 9 task t5 ('Document and validate Git refs slice') status=0
+2026-06-19T13:31:22Z iteration 9 reviewer started
+
+## Reviewer Summary - Iteration 9 - 2026-06-19T14:05:00Z
+
+What was done:
+- Inspected every file changed in the Git refs slice: `Reference`, endpoint metadata, request builders, `ReposApi` and `SttpGiteaClient` facade wiring, request/client/audit/core tests, README, CHANGELOG, PLAN, AGENT_LOG, and public API snapshots.
+- Cross-checked `repoListAllGitRefs`, `repoListGitRefs`, `Reference`, `GitObject`, and `ReferenceList` against `plugin-redoc-2.yaml`; methods, paths, operation IDs, required path parameters, response refs, documented 404 failures, and response fields match the local Swagger contract.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, and `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`.
+
+What was found:
+- No functional blocker or regression was found.
+- `Reference` preserves the Swagger `object` field through the Scala `gitObject` field, `GitObject` keeps the documented `sha`, `type`, and `url` fields optional, and core tests cover decode plus round-trip behavior.
+- `GiteaRequests.repoListAllGitRefs` and `repoListGitRefs` safely encode owner/repo/ref path segments, apply JSON/auth/OTP/user-agent headers, avoid query parameters and request bodies/content type, decode non-paginated `Chunk[Reference]`, map documented 404 failures, and remain retryable as read-only GETs.
+- The filtered refs tests explicitly cover `heads/main` as one encoded path segment (`heads%2Fmain`), which makes the chosen contract deliberate and documented.
+- `GiteaEndpointAuditSpec` covers both refs endpoints with private documented non-2xx expectations and no audit-only data leaked into published endpoint metadata.
+- Residual risk is live-routing confidence: the local Swagger and unit tests support encoded slash refs, but real Gitea routing for `%2F` in `{ref}` should be verified with an opt-in live check when suitable repository/ref environment data is available.
+
+Top improvement proposals:
+- Implement the adjacent annotated tag read slice next: `GET /repos/{owner}/{repo}/git/tags/{sha}` (`GetAnnotatedTag`) with `AnnotatedTag`/`AnnotatedTagObject` models, `AnnotatedTag` response decoding, documented 400/404 coverage, and an explicit repository facade name that does not collide with repository tag-list APIs.
+- Add or schedule a hermetic-by-default live integration probe for slash-containing Git refs, gated on environment variables for owner/repo/ref, so path-routing behavior is validated against real Gitea without making default tests perform network calls.
+- Consider a lightweight model/schema checklist for new Swagger response definitions because endpoint metadata audits prove operation drift but do not prove every response-model field is represented.
+2026-06-19T13:33:58Z iteration 9 reviewer completed status=0
+2026-06-19T13:33:58Z iteration 9 memory updated
+2026-06-19T13:33:58Z iteration 9 completed validation_status=0
+2026-06-19T13:33:58Z iteration 9 checkpoint started
+2026-06-19T13:33:58Z iteration 9 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+A  core/src/io/worxbend/gitea4s/model/Reference.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

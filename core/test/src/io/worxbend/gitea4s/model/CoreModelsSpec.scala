@@ -601,6 +601,53 @@ object CoreModelsSpec extends ZIOSpecDefault:
           !json.contains("lfsSize")
         )
       },
+      test("decodes git reference response with nested git object fields") {
+        val json =
+          """{
+            |  "ref": "refs/heads/main",
+            |  "url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/refs/heads/main",
+            |  "object": {
+            |    "sha": "abc123",
+            |    "type": "commit",
+            |    "url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/commits/abc123"
+            |  }
+            |}""".stripMargin
+
+        val reference = json.fromJson[Reference]
+
+        assertTrue(
+          reference.map(_.ref) == Right(Some("refs/heads/main")),
+          reference.map(_.url) ==
+            Right(Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/refs/heads/main")),
+          reference.map(_.gitObject.flatMap(_.sha)) == Right(Some("abc123")),
+          reference.map(_.gitObject.flatMap(_.`type`)) == Right(Some("commit")),
+          reference.map(_.gitObject.flatMap(_.url)) ==
+            Right(Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/commits/abc123"))
+        )
+      },
+      test("round-trips git reference response without losing object wire name") {
+        val payload = Reference(
+          gitObject = Some(
+            GitObject(
+              sha = Some("tag123"),
+              `type` = Some("tag"),
+              url = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/tags/tag123")
+            )
+          ),
+          ref = Some("refs/tags/v0.1.0"),
+          url = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/refs/tags/v0.1.0")
+        )
+        val json = payload.toJson
+
+        assertTrue(
+          json.fromJson[Reference] == Right(payload),
+          json.contains(""""ref":"refs/tags/v0.1.0""""),
+          json.contains(""""object":{"sha":"tag123","type":"tag""""),
+          !json.contains("gitObject"),
+          Reference(ref = Some("refs/heads/main")).toJson == """{"ref":"refs/heads/main"}""",
+          Reference().toJson == "{}"
+        )
+      },
       test("round-trips commit status request and response payloads with state/status JSON fields") {
         val create = CreateStatusOption(
           context = Some("ci/mill"),

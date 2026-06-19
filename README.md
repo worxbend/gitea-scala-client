@@ -271,6 +271,16 @@ as the documented encoded string at this layer. The request has no query
 parameters or body, is read-only retryable, and propagates documented
 `400`/`404` failures through the shared error mapper.
 
+Repository Git reference lookup covers
+`GET /repos/{owner}/{repo}/git/refs` and
+`GET /repos/{owner}/{repo}/git/refs/{ref}` through `client.gitRefs`. Successful
+responses decode as a non-paginated `Chunk[Reference]` with optional `ref`,
+`url`, and nested `GitObject` fields. The filtered lookup treats `ref` as one
+encoded path segment, so a value like `heads/main` is sent as `heads%2Fmain`
+rather than split into multiple path segments. Both requests have no query
+parameters or body, are read-only retryable, and propagate documented `404`
+failures through the shared error mapper.
+
 Commit diff/patch downloads cover
 `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` through
 `client.commitDiffOrPatch`. Use `CommitDiffType.diff` or
@@ -331,6 +341,10 @@ client.gitTree(
 )
 
 client.gitBlob(owner = "my-org", repo = "my-repo", sha = "blob123")
+
+client.gitRefs(owner = "my-org", repo = "my-repo")
+
+client.gitRefs(owner = "my-org", repo = "my-repo", ref = "heads/main")
 
 client.commitDiffOrPatch(
   owner = "my-org",
@@ -717,9 +731,10 @@ tests, and pagination tests:
 Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
-tree/blob endpoint groups against `plugin-redoc-2.yaml`, including documented
-non-2xx response status/ref labels, optional query parameters such as
-`recursive`/`page`/`per_page`, and path enum values such as `diffType`.
+tree/blob/refs endpoint groups against `plugin-redoc-2.yaml`, including
+documented non-2xx response status/ref labels, optional query parameters such as
+`recursive`/`page`/`per_page`, no-query/no-body checks for Git refs, and path
+enum values such as `diffType`.
 
 Live integration tests are opt-in:
 
@@ -732,7 +747,7 @@ GITEA_TOKEN=... \
 Without both integration variables, `it.test` reports the live tests as ignored
 and makes no external calls.
 
-Latest repository Git blob/default-argument validation passed with:
+Latest repository Git refs validation passed with:
 
 ```bash
 ./mill core.test

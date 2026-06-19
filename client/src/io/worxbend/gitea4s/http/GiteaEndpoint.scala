@@ -349,6 +349,31 @@ object GiteaEndpoints:
       response = "#/responses/GitBlobResponse"
     )
 
+  val repoListAllGitRefs: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/git/refs",
+      operationId = "repoListAllGitRefs",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true)
+      ),
+      response = "#/responses/ReferenceList"
+    )
+
+  val repoListGitRefs: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/git/refs/{ref}",
+      operationId = "repoListGitRefs",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("ref", "path", required = true)
+      ),
+      response = "#/responses/ReferenceList"
+    )
+
   val repoListPullRequests: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

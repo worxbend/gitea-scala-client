@@ -63,6 +63,7 @@ import io.worxbend.gitea4s.model.{
   PullReviewComment,
   PullReviewRequestOptions,
   Reaction,
+  Reference,
   Release,
   Repository,
   StopWatch,
@@ -162,6 +163,12 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def gitBlob(owner: String, repo: String, sha: String): IO[GiteaError, GitBlobResponse] =
     executor.send(GiteaRequests.gitBlob(config, owner, repo, sha))
+
+  override def gitRefs(owner: String, repo: String): IO[GiteaError, Chunk[Reference]] =
+    executor.send(GiteaRequests.repoListAllGitRefs(config, owner, repo))
+
+  override def gitRefs(owner: String, repo: String, ref: String): IO[GiteaError, Chunk[Reference]] =
+    executor.send(GiteaRequests.repoListGitRefs(config, owner, repo, ref))
 
   override def list(
       owner: String,

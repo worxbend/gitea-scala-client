@@ -714,6 +714,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.path ==
             List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "git", "blobs", "blob/abc 123"),
           request.uri.paramsMap.isEmpty,
+          request.body == NoBody,
           request.header("Accept").contains("application/json"),
           request.header("Authorization").contains("token secret"),
           request.header("User-Agent").contains("gitea4s-test"),
@@ -732,6 +733,82 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
                 url = Some("https://gitea.example/api/v1/repos/o/r/git/blobs/blob123")
               )
             )
+        )
+      },
+      test("builds and decodes schema-traceable Git refs list request") {
+        val built = GiteaRequests.repoListAllGitRefs(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """[{"ref":"refs/heads/main","url":"https://gitea.example/api/v1/repos/o/r/git/refs/heads/main","object":{"sha":"abc123","type":"commit","url":"https://gitea.example/api/v1/repos/o/r/git/commits/abc123"}}]"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListAllGitRefs,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoListAllGitRefs",
+          endpoint.path == "/repos/{owner}/{repo}/git/refs",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.parameters.forall(parameter => parameter.in == "path" && parameter.required),
+          endpoint.response == "#/responses/ReferenceList",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/refs",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "git", "refs"),
+          request.uri.paramsMap.isEmpty,
+          request.body == NoBody,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)).map(_.map(_.ref)) == Right(Chunk(Some("refs/heads/main"))),
+          built.decode(request.send(backend)).map(_.headOption.flatMap(_.gitObject.flatMap(_.sha))) ==
+            Right(Some("abc123")),
+          built.decode(request.send(backend)).map(_.headOption.flatMap(_.gitObject.flatMap(_.`type`))) ==
+            Right(Some("commit"))
+        )
+      },
+      test("builds and decodes schema-traceable filtered Git refs request with encoded slash ref") {
+        val built = GiteaRequests.repoListGitRefs(config, "worx bend", "gitea/scala", "heads/main")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """[{"ref":"refs/heads/main","object":{"sha":"abc123","type":"commit","url":"https://gitea.example/api/v1/repos/o/r/git/commits/abc123"}}]"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListGitRefs,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoListGitRefs",
+          endpoint.path == "/repos/{owner}/{repo}/git/refs/{ref}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "ref"),
+          endpoint.parameters.forall(parameter => parameter.in == "path" && parameter.required),
+          endpoint.response == "#/responses/ReferenceList",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/refs/heads%2Fmain",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "git", "refs", "heads/main"),
+          request.uri.paramsMap.isEmpty,
+          request.body == NoBody,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)).map(_.map(_.ref)) == Right(Chunk(Some("refs/heads/main"))),
+          built.decode(request.send(backend)).map(_.headOption.flatMap(_.gitObject.flatMap(_.sha))) ==
+            Right(Some("abc123"))
         )
       },
       test("builds schema-traceable paginated repository pull request list request") {
@@ -3110,6 +3187,17 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.BadRequest("invalid blob ref", badRequestBody)),
           missing.decode(missing.request.send(notFoundBackend)) ==
             Left(GiteaError.NotFound("missing blob", notFoundBody))
+        )
+      },
+      test("maps documented Git refs 404 responses") {
+        val body = """{"message":"missing ref"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val allRefs = GiteaRequests.repoListAllGitRefs(config, "owner", "missing")
+        val filteredRefs = GiteaRequests.repoListGitRefs(config, "owner", "repo", "heads/main")
+
+        assertTrue(
+          allRefs.decode(allRefs.request.send(backend)) == Left(GiteaError.NotFound("missing ref", body)),
+          filteredRefs.decode(filteredRefs.request.send(backend)) == Left(GiteaError.NotFound("missing ref", body))
         )
       },
       test("maps repository pull request not-found responses") {

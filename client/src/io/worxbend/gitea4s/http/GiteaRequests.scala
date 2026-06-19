@@ -43,6 +43,7 @@ import io.worxbend.gitea4s.model.{
   PullReviewComment,
   PullReviewRequestOptions,
   Reaction,
+  Reference,
   Release,
   Repository,
   StopWatch,
@@ -357,6 +358,29 @@ object GiteaRequests:
       List("repos", owner, repo, "git", "blobs", sha),
       Nil,
       GiteaResponseMapper.decodeJson[GitBlobResponse]
+    )
+
+  def repoListAllGitRefs(config: GiteaConfig, owner: String, repo: String): GiteaRequest[zio.Chunk[Reference]] =
+    get(
+      config,
+      GiteaEndpoints.repoListAllGitRefs,
+      List("repos", owner, repo, "git", "refs"),
+      Nil,
+      GiteaResponseMapper.decodeChunk[Reference]
+    )
+
+  def repoListGitRefs(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      ref: String
+  ): GiteaRequest[zio.Chunk[Reference]] =
+    get(
+      config,
+      GiteaEndpoints.repoListGitRefs,
+      List("repos", owner, repo, "git", "refs", ref),
+      Nil,
+      GiteaResponseMapper.decodeChunk[Reference]
     )
 
   def repoPullRequests(

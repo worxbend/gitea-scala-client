@@ -20,6 +20,7 @@ import io.worxbend.gitea4s.model.{
   GitTreeResponse,
   NewIssuePinsAllowed,
   Note,
+  Reference,
   Repository,
   Tag
 }
@@ -53,6 +54,10 @@ trait ReposApi:
   ): IO[GiteaError, GitTreeResponse]
 
   def gitBlob(owner: String, repo: String, sha: String): IO[GiteaError, GitBlobResponse]
+
+  def gitRefs(owner: String, repo: String): IO[GiteaError, Chunk[Reference]]
+
+  def gitRefs(owner: String, repo: String, ref: String): IO[GiteaError, Chunk[Reference]]
 
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 

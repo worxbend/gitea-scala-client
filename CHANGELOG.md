@@ -66,6 +66,14 @@ surface is still being filled out.
   `ReposApi.gitBlob`; the read-only request has no query parameters or request
   body, keeps blob content as the documented encoded string, and propagates
   documented `400`/`404` failures through the shared error mapper.
+- Typed Git reference lookup for
+  `GET /repos/{owner}/{repo}/git/refs` and
+  `GET /repos/{owner}/{repo}/git/refs/{ref}` with `Reference`, `GitObject`,
+  `repoListAllGitRefs`, `repoListGitRefs`, non-paginated `ReferenceList`
+  decoding, and overloaded `ReposApi.gitRefs` facade methods; the read-only
+  requests have no query parameters or request bodies, encode slash-containing
+  refs such as `heads/main` as one path segment, and propagate documented `404`
+  failures through the shared error mapper.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,
@@ -96,6 +104,11 @@ surface is still being filled out.
   `GetBlob`, method, path, required `owner`/`repo`/`sha` path parameters, no
   query parameters, success response, request-body absence, retryability, and
   documented 400/404 response status/ref labels.
+- Git refs endpoint metadata audit coverage for operation IDs
+  `repoListAllGitRefs` and `repoListGitRefs`, methods, paths, required
+  path parameters, no query parameters, success response `ReferenceList`,
+  request-body absence, retryability, and documented 404 response status/ref
+  labels.
 - Commit diff/patch endpoint metadata audit coverage for operation ID, method,
   path, required `owner`/`repo`/`sha`/`diffType` path parameters, success
   response, documented 404 response status/ref label, request-body absence,
@@ -200,7 +213,7 @@ surface is still being filled out.
 
 - No Maven Central release has been cut yet. Local snapshots use
   `0.1.0-SNAPSHOT`.
-- Git tree slice validation passed with `./mill core.test`, `./mill client.test`,
+- Git refs slice validation passed with `./mill core.test`, `./mill client.test`,
   `./mill compatibility.check`, and
   `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill __.test it.test examples.run`;
   the credential-stripped run reported live integration tests as ignored.

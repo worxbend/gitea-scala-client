@@ -548,6 +548,8 @@ public interface io.worxbend.gitea4s.api.ReposApi {
   public static io.worxbend.gitea4s.http.GitTreeParams gitTree$default$4$(io.worxbend.gitea4s.api.ReposApi);
   public default io.worxbend.gitea4s.http.GitTreeParams gitTree$default$4();
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GitBlobResponse> gitBlob(java.lang.String, java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.Reference>> gitRefs(java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.Reference>> gitRefs(java.lang.String, java.lang.String, java.lang.String);
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> list(java.lang.String, io.worxbend.gitea4s.http.RepoListParams);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.NewIssuePinsAllowed> newIssuePinsAllowed(java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<java.lang.String>> topics(java.lang.String, java.lang.String);
@@ -935,7 +937,9 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetPullReviewComments();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetRelease();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetSingleCommit();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoListAllGitRefs();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListBranches();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoListGitRefs();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListPinnedIssues();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListPinnedPullRequests();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListPullRequests();
@@ -992,6 +996,8 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetNote();
   public io.worxbend.gitea4s.http.GiteaEndpoint getTree();
   public io.worxbend.gitea4s.http.GiteaEndpoint getBlob();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoListAllGitRefs();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoListGitRefs();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListPullRequests();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoCreatePullRequest();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListPinnedPullRequests();
@@ -1222,6 +1228,8 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Note> repoCommitNote(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CommitNoteParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> repoCommitPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Comment>> repoIssueComments(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.RepositoryCommentListParams);
+  public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.Reference>> repoListAllGitRefs(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);
+  public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.Reference>> repoListGitRefs(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.NewIssuePinsAllowed> repoNewPinAllowed(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> repoPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> repoPullRequestByBaseHead(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
@@ -1338,6 +1346,8 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GitTreeResponse> gitTree(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.GitTreeParams);
   public io.worxbend.gitea4s.http.GitTreeParams gitTree$default$5();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GitBlobResponse> gitBlob(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
+  public io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.Reference>> repoListAllGitRefs(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);
+  public io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.Reference>> repoListGitRefs(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.PullRequest>> repoPullRequests(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.PullRequestListParams);
   public io.worxbend.gitea4s.http.PullRequestListParams repoPullRequests$default$4();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> createPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreatePullRequestOption);

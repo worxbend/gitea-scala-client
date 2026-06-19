@@ -589,6 +589,118 @@ object GiteaClientSpec extends ZIOSpecDefault:
           remaining.isEmpty
         )
       },
+      test("loads all Git refs through the ReposApi gitRefs method") {
+        val facadeConfig = config.copy(userAgent = Some("gitea4s-test"), otp = Some("654321"))
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/refs" &&
+              request.uri.path == List("api", "v1", "repos", "space owner", "repo/slash", "git", "refs") &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("User-Agent").contains("gitea4s-test") &&
+              request.header("X-Gitea-OTP").contains("654321") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(
+            ResponseStub.adjust(
+              """[{"ref":"refs/heads/main","url":"https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/refs/heads/main","object":{"sha":"abc123","type":"commit","url":"https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/commits/abc123"}}]"""
+            )
+          )
+        val client = GiteaClient.fromBackend(facadeConfig, backend)
+
+        assertZIO(
+          client
+            .gitRefs("space owner", "repo/slash")
+            .map(refs =>
+              refs.map(ref => ref.ref -> ref.gitObject.flatMap(_.sha) -> ref.gitObject.flatMap(_.`type`))
+            )
+        )(
+          Assertion.equalTo(Chunk(Some("refs/heads/main") -> Some("abc123") -> Some("commit")))
+        )
+      },
+      test("loads filtered Git refs through the ReposApi gitRefs method with an encoded slash ref") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/refs/heads%2Fmain" &&
+              request.uri.path ==
+                List("api", "v1", "repos", "space owner", "repo/slash", "git", "refs", "heads/main") &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(
+            ResponseStub.adjust(
+              """[{"ref":"refs/heads/main","object":{"sha":"abc123","type":"commit"}}]"""
+            )
+          )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(
+          client
+            .gitRefs("space owner", "repo/slash", "heads/main")
+            .map(refs => refs.map(ref => ref.ref -> ref.gitObject.flatMap(_.sha)))
+        )(
+          Assertion.equalTo(Chunk(Some("refs/heads/main") -> Some("abc123")))
+        )
+      },
+      test("propagates Git refs documented 404 errors through the facade") {
+        val allRefsBody = """{"message":"repository not found"}"""
+        val filteredRefsBody = """{"message":"reference not found"}"""
+        val allRefsBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "missing", "git", "refs"))
+          ).thenRespond(ResponseStub.adjust(allRefsBody, StatusCode.NotFound))
+        val filteredRefsBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "refs", "heads/main"))
+          ).thenRespond(ResponseStub.adjust(filteredRefsBody, StatusCode.NotFound))
+        val allRefsClient = GiteaClient.fromBackend(config, allRefsBackend)
+        val filteredRefsClient = GiteaClient.fromBackend(config, filteredRefsBackend)
+
+        for
+          allRefs <- allRefsClient.gitRefs("alice", "missing").either
+          filteredRefs <- filteredRefsClient.gitRefs("alice", "api", "heads/main").either
+        yield assertTrue(
+          allRefs == Left(GiteaError.NotFound("repository not found", allRefsBody)),
+          filteredRefs == Left(GiteaError.NotFound("reference not found", filteredRefsBody))
+        )
+      },
+      test("retries Git refs lookup because it is a read-only GET") {
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"temporarily unavailable"}""",
+                  StatusCode.ServiceUnavailable
+                )
+              ),
+              ZIO.succeed(
+                stringResponse(
+                  """[{"ref":"refs/heads/main","object":{"sha":"abc123","type":"commit"}}]"""
+                )
+              )
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.gitRefs("alice", "api", "heads/main").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          refs <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          refs.map(_.ref) == Chunk(Some("refs/heads/main")),
+          refs.headOption.flatMap(_.gitObject.flatMap(_.sha)).contains("abc123"),
+          remaining.isEmpty
+        )
+      },
       test("loads a repository commit through a stub without live environment credentials") {
         val hermeticConfig =
           GiteaConfig.default(uri"https://gitea.example", Auth.Anonymous).copy(pageSize = 1)
