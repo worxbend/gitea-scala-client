@@ -80,7 +80,21 @@ object GiteaClientSpec extends ZIOSpecDefault:
       request = RequestMetadata(Method.GET, uri"https://gitea.example/api/v1/user", Nil)
     )
 
-  private final class ScriptedBackend(responses: Ref[List[Task[Response[String]]]]) extends Backend[Task]:
+  private def bytesResponse(
+      body: Array[Byte],
+      status: StatusCode = StatusCode.Ok,
+      headers: List[Header] = Nil
+  ): Response[Array[Byte]] =
+    Response(
+      body = body,
+      code = status,
+      statusText = "",
+      headers = headers,
+      history = Nil,
+      request = RequestMetadata(Method.GET, uri"https://gitea.example/api/v1/repos/alice/api/raw/docs%2Freadme.md", Nil)
+    )
+
+  private final class ScriptedBackend[B](responses: Ref[List[Task[Response[B]]]]) extends Backend[Task]:
     private val taskMonad = new RIOMonadAsyncError[Any]
 
     override def send[T](request: GenericRequest[T, Effect[Task]]): Task[Response[T]] =
@@ -951,6 +965,102 @@ object GiteaClientSpec extends ZIOSpecDefault:
         yield assertTrue(
           content.path.contains("docs/readme.md"),
           content.content.contains("SGVsbG8="),
+          remaining.isEmpty
+        )
+      },
+      test("downloads raw and media repository files as bytes through the ReposApi facade") {
+        val rawBytes = Array[Byte](0, 1, 2, -1, 65, 10)
+        val mediaBytes = Array[Byte](10, 20, 30, -1)
+        val facadeConfig = config.copy(userAgent = Some("gitea4s-test"), otp = Some("654321"))
+        val rawBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/raw/docs%2Freadme.md?ref=release/1.0" &&
+              request.uri.path ==
+                List("api", "v1", "repos", "space owner", "repo/slash", "raw", "docs/readme.md") &&
+              request.uri.paramsMap.get("ref").contains("release/1.0") &&
+              request.header("Accept").contains("application/octet-stream") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("User-Agent").contains("gitea4s-test") &&
+              request.header("X-Gitea-OTP").contains("654321") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(ResponseStub.adjust(rawBytes))
+        val mediaBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/media/docs%2Freadme.md?ref=release/1.0" &&
+              request.uri.path ==
+                List("api", "v1", "repos", "space owner", "repo/slash", "media", "docs/readme.md") &&
+              request.uri.paramsMap.get("ref").contains("release/1.0") &&
+              request.header("Accept").contains("application/octet-stream") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(ResponseStub.adjust(mediaBytes))
+        val rawClient = GiteaClient.fromBackend(facadeConfig, rawBackend)
+        val mediaClient = GiteaClient.fromBackend(facadeConfig, mediaBackend)
+        val params = ContentsParams(ref = Some("release/1.0"))
+
+        for
+          raw <- rawClient.rawFile("space owner", "repo/slash", "docs/readme.md", params)
+          media <- mediaClient.mediaFile("space owner", "repo/slash", "docs/readme.md", params)
+        yield assertTrue(
+          raw == Chunk.fromArray(rawBytes),
+          media == Chunk.fromArray(mediaBytes)
+        )
+      },
+      test("propagates raw and media repository file documented 404 errors through the facade") {
+        val rawBody = """{"message":"raw file not found"}"""
+        val mediaBody = """{"message":"media file not found"}"""
+        val rawBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "raw", "docs/readme.md"))
+          ).thenRespond(
+            ResponseStub.adjust(rawBody.getBytes(java.nio.charset.StandardCharsets.UTF_8), StatusCode.NotFound)
+          )
+        val mediaBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "media", "docs/readme.md"))
+          ).thenRespond(
+            ResponseStub.adjust(mediaBody.getBytes(java.nio.charset.StandardCharsets.UTF_8), StatusCode.NotFound)
+          )
+        val rawClient = GiteaClient.fromBackend(config, rawBackend)
+        val mediaClient = GiteaClient.fromBackend(config, mediaBackend)
+
+        for
+          raw <- rawClient.rawFile("alice", "api", "docs/readme.md").either
+          media <- mediaClient.mediaFile("alice", "api", "docs/readme.md").either
+        yield assertTrue(
+          raw == Left(GiteaError.NotFound("raw file not found", rawBody)),
+          media == Left(GiteaError.NotFound("media file not found", mediaBody))
+        )
+      },
+      test("retries raw repository file downloads because they are read-only GET requests") {
+        val bytes = Array[Byte](0, 1, 2, -1, 65, 10)
+
+        for
+          responses <- Ref.make(
+            List[Task[Response[Array[Byte]]]](
+              ZIO.succeed(
+                bytesResponse(
+                  """{"message":"temporarily unavailable"}""".getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                  StatusCode.ServiceUnavailable
+                )
+              ),
+              ZIO.succeed(bytesResponse(bytes))
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.rawFile("alice", "api", "docs/readme.md").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          raw <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          raw == Chunk.fromArray(bytes),
           remaining.isEmpty
         )
       },

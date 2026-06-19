@@ -414,6 +414,34 @@ object GiteaEndpoints:
       response = "#/responses/ContentsResponse"
     )
 
+  val repoGetRawFile: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/raw/{filepath}",
+      operationId = "repoGetRawFile",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("filepath", "path", required = true),
+        GiteaParameter("ref", "query", required = false)
+      ),
+      response = "type:file"
+    )
+
+  val repoGetRawFileOrLFS: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/media/{filepath}",
+      operationId = "repoGetRawFileOrLFS",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("filepath", "path", required = true),
+        GiteaParameter("ref", "query", required = false)
+      ),
+      response = "type:file"
+    )
+
   val repoListPullRequests: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

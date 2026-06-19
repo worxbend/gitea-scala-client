@@ -191,6 +191,22 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   ): IO[GiteaError, ContentsResponse] =
     executor.send(GiteaRequests.repoContents(config, owner, repo, filepath, params))
 
+  override def rawFile(
+      owner: String,
+      repo: String,
+      filepath: String,
+      params: ContentsParams
+  ): IO[GiteaError, Chunk[Byte]] =
+    executor.send(GiteaRequests.repoRawFile(config, owner, repo, filepath, params))
+
+  override def mediaFile(
+      owner: String,
+      repo: String,
+      filepath: String,
+      params: ContentsParams
+  ): IO[GiteaError, Chunk[Byte]] =
+    executor.send(GiteaRequests.repoMediaFile(config, owner, repo, filepath, params))
+
   override def list(
       owner: String,
       params: RepoListParams

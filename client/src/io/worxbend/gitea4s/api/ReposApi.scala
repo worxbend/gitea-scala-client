@@ -77,6 +77,20 @@ trait ReposApi:
       params: ContentsParams
   ): IO[GiteaError, ContentsResponse]
 
+  def rawFile(
+      owner: String,
+      repo: String,
+      filepath: String,
+      params: ContentsParams = ContentsParams.default
+  ): IO[GiteaError, Chunk[Byte]]
+
+  def mediaFile(
+      owner: String,
+      repo: String,
+      filepath: String,
+      params: ContentsParams = ContentsParams.default
+  ): IO[GiteaError, Chunk[Byte]]
+
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 
   def newIssuePinsAllowed(owner: String, repo: String): IO[GiteaError, NewIssuePinsAllowed]

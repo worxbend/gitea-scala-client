@@ -1767,3 +1767,81 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 A  core/src/io/worxbend/gitea4s/model/ContentsResponse.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-19T19:24:46Z iteration 3 started remaining=16108s
+2026-06-19T19:24:46Z iteration 3 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T19:24:46Z iteration 3 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-uo06zfmr/repo copied_entries=97
+2026-06-19T19:24:46Z iteration 3 ideator phase started count=3
+2026-06-19T19:24:46Z iteration 3 ideator phase concurrency workers=3
+2026-06-19T19:24:46Z iteration 3 ideator 1 role="the pragmatist" started
+2026-06-19T19:24:46Z iteration 3 ideator 2 role="the architect" started
+2026-06-19T19:24:46Z iteration 3 ideator 3 role="the contrarian" started
+2026-06-19T19:24:58Z iteration 3 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T19:24:58Z iteration 3 ideator 3 role="the contrarian" completed status=0
+2026-06-19T19:25:07Z iteration 3 ideator 2 role="the architect" completed status=0
+2026-06-19T19:25:07Z iteration 3 ideator phase completed approaches=3
+2026-06-19T19:25:07Z iteration 3 selector started approaches=3
+2026-06-19T19:25:21Z iteration 3 selector completed status=0
+2026-06-19T19:25:21Z iteration 3 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-uo06zfmr/repo
+2026-06-19T19:25:21Z iteration 3 selector rejected alternative role="the pragmatist" approach="Boundary-First Raw File Slice: settle the response-body abstraction before expanding endpoint coverage, then implement the smallest raw/media surface that proves the decision wi..." reason="Strong and nearly selected as-is, but it frames the endpoint proof point a little more operationally than strategically; the planner needs the response-body contract to be the explicit governing decision."
+2026-06-19T19:25:21Z iteration 3 selector rejected alternative role="the contrarian" approach="Boundary-First Raw I/O: treat raw/media file support as a public response-semantics decision before endpoint expansion, even if that slows the next slice." reason="Correctly emphasizes slowing down for the protocol boundary, but as-is it risks overcorrecting into design pause mode; the next plan should still use a small raw/media slice to prove the decision."
+2026-06-19T19:25:21Z iteration 3 selector rejected alternative role="the architect" approach="Boundary-First Raw File Slice: decide and codify the raw-response abstraction before adding endpoints, then use the raw/media repository file reads as the smallest proof point f..." reason="Also very strong, but its framing can invite early public abstraction work; the synthesized version stresses a minimal proof point and compatibility restraint."
+2026-06-19T19:25:21Z iteration 3 selector alternatives persisted count=3
+2026-06-19T19:25:21Z iteration 3 selector structured alternatives persisted count=3
+2026-06-19T19:25:21Z iteration 3 planner started
+2026-06-19T19:26:06Z iteration 3 plan: 6 task(s) in 4 phase(s). The decomposition starts with the two independent risks: live validation of existing contents filepath routing and a binary-safe response boundary. Raw/media endpoint plumbing depends on that boundary, facade wiring depends on request builders, and audit/docs/snapshot work can proceed in parallel once the implementation shape is settled.
+2026-06-19T19:26:06Z iteration 3 phase 1 started parallel=True tasks=2
+2026-06-19T19:27:41Z iteration 3 task t1 ('Add opt-in live contents filepath probe') status=0
+2026-06-19T19:33:10Z iteration 3 task t2 ('Introduce binary-safe raw response boundary') status=0
+2026-06-19T19:33:10Z iteration 3 phase 2 started parallel=False tasks=1
+2026-06-19T19:37:20Z iteration 3 task t3 ('Implement raw repository file endpoints') status=0
+2026-06-19T19:37:20Z iteration 3 phase 3 started parallel=False tasks=1
+2026-06-19T19:41:36Z iteration 3 task t4 ('Expose raw file facade methods') status=0
+2026-06-19T19:41:36Z iteration 3 phase 4 started parallel=True tasks=2
+2026-06-19T19:43:31Z iteration 3 task t5 ('Add Swagger audit coverage for raw endpoints') status=0
+2026-06-19T19:48:33Z iteration 3 task t6 ('Update docs, changelog, plan, and API snapshot') status=0
+2026-06-19T19:48:33Z iteration 3 reviewer started
+
+## Reviewer Summary - Iteration 3 - 2026-06-19T19:50:33Z
+
+What was done:
+- Inspected every file changed in the live contents filepath probe and raw/media byte-download slice: `LiveGiteaIntegrationSpec.scala`, `GiteaRequest.scala`, `GiteaResponseMapper.scala`, `GiteaRequestExecutor.scala`, endpoint metadata, request builders, `ReposApi` and `SttpGiteaClient` facade wiring, request/client/audit/mapper tests, README, CHANGELOG, PLAN, API snapshots, and the tracked telemetry artifacts.
+- Cross-checked `repoGetRawFile`, `repoGetRawFileOrLFS`, their `application/octet-stream` `type: file` success shapes, optional `ref` query parameters, and documented `404` failures against `plugin-redoc-2.yaml`.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.http.GiteaResponseMapperSpec io.worxbend.gitea4s.GiteaClientSpec`, and `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill --no-server it.test`.
+
+What was found:
+- No functional blocker was found in the high-level facade path. `ReposApi.rawFile` and `ReposApi.mediaFile` return exact `Chunk[Byte]` payloads, preserve slash-containing filepath routing, forward optional `ref`, propagate documented byte-body `404` errors through the normal mapper taxonomy, and remain retryable as read-only GETs.
+- The live contents filepath probe is hermetic by default and was reported ignored under credential-stripped `it.test`, alongside the existing live probes.
+- Swagger audit coverage correctly checks methods, paths, parameters, request-body absence, retryability, documented non-2xx labels, `type:file` success labels, and `application/octet-stream` production without moving audit-only response data into public endpoint metadata.
+- The binary response boundary works through `GiteaRequestExecutor`, but the source-visible low-level `GiteaRequest.request: Request[String]` and `decode(Response[String])` compatibility view is unsafe for byte-backed requests. External callers of `GiteaRequests.repoRawFile` cannot execute the returned low-level request safely through the old `request.send(...).decode(...)` pattern; they need the facade/executor path.
+- The implementation intentionally keeps `contents` metadata-oriented and does not widen it into directory/file polymorphism, which matches the local Swagger response refs.
+
+Top improvement proposals:
+- Stabilize the low-level `GiteaRequest` response-body contract before adding more binary endpoints: avoid casts from `Request[Array[Byte]]` to `Request[String]`, make supported typed execution explicit, and refresh compatibility snapshots intentionally.
+- Add tests or examples that define the supported low-level execution path for byte responses; if direct `request.send(...).decode(...)` is no longer supported for non-string bodies, document that boundary clearly.
+- Keep raw/media facade methods buffered as `Chunk[Byte]` for this Swagger `type: file` slice, and defer stream-oriented downloads to a deliberate large-binary endpoint slice.
+- Add an opt-in live raw/media byte-download probe after the low-level boundary is explicit, gated on owner/repo/filepath/ref environment variables and ignored by default.
+2026-06-19T19:52:01Z iteration 3 reviewer completed status=0
+2026-06-19T19:52:01Z iteration 3 memory updated
+2026-06-19T19:52:01Z iteration 3 completed validation_status=0
+2026-06-19T19:52:01Z iteration 3 checkpoint started
+2026-06-19T19:52:01Z iteration 3 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequest.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaResponseMapper.scala
+M  client/src/io/worxbend/gitea4s/internal/GiteaRequestExecutor.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaResponseMapperSpec.scala
+M  it/test/src/io/worxbend/gitea4s/it/LiveGiteaIntegrationSpec.scala

@@ -57,6 +57,7 @@ import io.worxbend.gitea4s.model.{
 }
 import sttp.client4.*
 import sttp.model.{MediaType, Method, Uri}
+import zio.Chunk
 import zio.json.*
 
 import java.nio.charset.StandardCharsets
@@ -421,6 +422,34 @@ object GiteaRequests:
       List("repos", owner, repo, "contents", filepath),
       contentsQuery(params),
       GiteaResponseMapper.decodeJson[ContentsResponse]
+    )
+
+  def repoRawFile(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      filepath: String,
+      params: ContentsParams = ContentsParams.default
+  ): GiteaRequest[Chunk[Byte]] =
+    getBytes(
+      config,
+      GiteaEndpoints.repoGetRawFile,
+      List("repos", owner, repo, "raw", filepath),
+      contentsQuery(params)
+    )
+
+  def repoMediaFile(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      filepath: String,
+      params: ContentsParams = ContentsParams.default
+  ): GiteaRequest[Chunk[Byte]] =
+    getBytes(
+      config,
+      GiteaEndpoints.repoGetRawFileOrLFS,
+      List("repos", owner, repo, "media", filepath),
+      contentsQuery(params)
     )
 
   def repoPullRequests(
@@ -1408,6 +1437,23 @@ object GiteaRequests:
         .readTimeout(config.timeout)
         .headers(commonHeaders(config, accept)),
       decode = decode,
+      retryable = GiteaRequest.isReadOnly(endpoint)
+    )
+
+  private def getBytes(
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      query: List[(String, String)]
+  ): GiteaRequest[Chunk[Byte]] =
+    GiteaRequest.withBody[Chunk[Byte], Array[Byte]](
+      endpoint = endpoint,
+      request = basicRequest
+        .get(apiUri(config.baseUrl, path, query))
+        .response(asByteArrayAlways)
+        .readTimeout(config.timeout)
+        .headers(commonHeaders(config, "application/octet-stream")),
+      decode = GiteaResponseMapper.decodeBytes,
       retryable = GiteaRequest.isReadOnly(endpoint)
     )
 

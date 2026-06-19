@@ -1,14 +1,58 @@
 package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.error.GiteaError
-import sttp.client4.Response
-import sttp.client4.testing.ResponseStub
+import io.worxbend.gitea4s.internal.GiteaRequestExecutor
+import sttp.client4.*
+import sttp.client4.impl.zio.RIOMonadAsyncError
+import sttp.client4.testing.{BackendStub, ResponseStub}
 import sttp.model.StatusCode
+import zio.{Chunk, Task}
 import zio.test.*
+
+import java.nio.charset.StandardCharsets
 
 object GiteaResponseMapperSpec extends ZIOSpecDefault:
   def spec =
     suite("Gitea response mapper")(
+      suite("binary bodies")(
+        test("decodes successful byte bodies as chunks without string conversion") {
+          val bytes = Array[Byte](0, 1, 2, -1, 65, 10)
+          val response = rawBytes(bytes, StatusCode.Ok)
+
+          assertTrue(
+            GiteaResponseMapper.decodeBytes(response) == Right(Chunk.fromArray(bytes))
+          )
+        },
+        test("maps non-2xx byte bodies through the normal GiteaError taxonomy") {
+          val body = """{"message":"file missing"}"""
+          val response = rawBytes(body.getBytes(StandardCharsets.UTF_8), StatusCode.NotFound)
+
+          assertTrue(
+            GiteaResponseMapper.decodeBytes(response) ==
+              Left(GiteaError.NotFound("file missing", body))
+          )
+        },
+        test("sends byte response requests through the shared request executor") {
+          val bytes = Array[Byte](0, 1, 2, -1, 65, 10)
+          val backend =
+            BackendStub[Task](new RIOMonadAsyncError[Any])
+              .whenAnyRequest
+              .thenRespond(ResponseStub.adjust(bytes))
+          val request =
+            GiteaRequest.withBody[Chunk[Byte], Array[Byte]](
+              endpoint = GiteaEndpoints.userGetCurrent,
+              request = basicRequest
+                .get(uri"https://gitea.example/api/v1/raw")
+                .response(asByteArrayAlways),
+              decode = GiteaResponseMapper.decodeBytes,
+              retryable = true
+            )
+
+          new GiteaRequestExecutor(backend, maxRetries = 0).send(request).map { result =>
+            assertTrue(result == Chunk.fromArray(bytes))
+          }
+        }
+      ),
       suite("global resource-state failures")(
         test("maps 405 JSON error bodies to MethodNotAllowed with the decoded Gitea message") {
           val body = """{"message":"merge method is not allowed"}"""
@@ -92,4 +136,7 @@ object GiteaResponseMapperSpec extends ZIOSpecDefault:
     )
 
   private def raw(body: String, statusCode: StatusCode): Response[String] =
+    ResponseStub(body, statusCode)
+
+  private def rawBytes(body: Array[Byte], statusCode: StatusCode): Response[Array[Byte]] =
     ResponseStub(body, statusCode)

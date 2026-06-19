@@ -20,3 +20,5 @@
 [pattern] Test-side schema-field checklists complement endpoint audits by proving encoded fixture field names, but they should stay visibly anchored to Swagger definitions or be generated from the local spec.
 [learning] `repoGetContents` has prose that mentions file-or-directory behavior, but the local Swagger response ref is a single `ContentsResponse`; keep this API anchored to the spec and reserve broader polymorphism for `contents-ext`.
 [pattern] Raw/media file endpoints declare `application/octet-stream` `type: file`; decide byte-vs-text response semantics before wiring them through the existing string-oriented request abstraction.
+[pattern] Octet-stream download endpoints should use a typed byte response parser through the executor boundary and expose buffered `Chunk[Byte]` unless a streaming slice is designed deliberately.
+[anti-pattern] A public `Request[String]`/`decode(Response[String])` compatibility view is unsafe for non-string response bodies; low-level request APIs need a typed execution contract before more binary endpoints are added.

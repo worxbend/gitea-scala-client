@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.it
 
 import io.worxbend.gitea4s.backend.zio.ZioGiteaBackend
-import io.worxbend.gitea4s.http.RepoListParams
+import io.worxbend.gitea4s.http.{ContentsParams, RepoListParams}
 import io.worxbend.gitea4s.{GiteaClient, GiteaConfig, GiteaConfigError}
 import zio.ZIO
 import zio.test.*
@@ -48,7 +48,23 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
         TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
-        TestAspect.ifEnv(Env.annotatedTagSha)(nonEmptyValue)
+        TestAspect.ifEnv(Env.annotatedTagSha)(nonEmptyValue),
+      test("loads repository contents for a configured filepath through the live backend") {
+        withLiveClient { client =>
+          val params = nonBlank(sys.env.toMap, Env.contentsRef) match
+            case Some(ref) => ContentsParams(ref = Some(ref))
+            case None      => ContentsParams.default
+
+          for
+            owner <- liveEnv(Env.owner)
+            repo <- liveEnv(Env.repo)
+            filepath <- liveEnv(Env.contentsFilepath)
+            contents <- client.contents(owner, repo, filepath, params)
+          yield assertTrue(contents != null)
+        }
+      } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.contentsFilepath)(nonEmptyValue)
     ) @@ TestAspect.ifEnv(GiteaConfig.Env.url)((value: String) => value.trim.nonEmpty) @@
       TestAspect.ifEnv(GiteaConfig.Env.token)((value: String) => value.trim.nonEmpty)
 
@@ -80,3 +96,5 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
     val repo = "GITEA_REPO"
     val ref = "GITEA_REF"
     val annotatedTagSha = "GITEA_ANNOTATED_TAG_SHA"
+    val contentsFilepath = "GITEA_CONTENTS_FILEPATH"
+    val contentsRef = "GITEA_CONTENTS_REF"

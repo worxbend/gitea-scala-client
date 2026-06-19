@@ -244,6 +244,29 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val rawFileRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoRawFile(
+        config,
+        "owner",
+        "repo",
+        filepath = "docs/readme.md",
+        ContentsParams(ref = Some("main"))
+      ),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoMediaFile(
+        config,
+        "owner",
+        "repo",
+        filepath = "docs/readme.md",
+        ContentsParams(ref = Some("main"))
+      ),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val commitDiffOrPatchRequests = List(
     AuditedRequest(
       request =
@@ -446,6 +469,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoGetContents" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoGetRawFile" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoGetRawFileOrLFS" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoDownloadCommitDiffOrPatch" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     )
@@ -510,6 +539,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("repository contents metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = contentsRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository raw file metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = rawFileRequests.flatMap(auditRawFile(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
@@ -665,6 +700,21 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           )
         ).flatten.map(message => s"${endpoint.operationId}: $message")
 
+  private def auditRawFile(swagger: SwaggerAudit, audited: AuditedRequest): List[String] =
+    val endpoint = audited.request.endpoint
+    val metadataFailures = audit(swagger, audited)
+    val octetStreamFailures =
+      swagger.operation(endpoint.path, endpoint.method) match
+        case Left(message) => List(s"${endpoint.operationId}: $message")
+        case Right(operation) =>
+          val expectedProduces = List("application/octet-stream")
+          List(
+            compare("produces", operation.produces, expectedProduces),
+            compare("request Accept", audited.request.request.header("Accept"), Some(expectedProduces.head))
+          ).flatten.map(message => s"${endpoint.operationId}: $message")
+
+    metadataFailures ++ octetStreamFailures
+
   private def compare[A](label: String, actual: A, expected: A): Option[String] =
     Option.when(actual != expected)(s"$label actual=$actual expected=$expected")
 
@@ -704,6 +754,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       optionalQueryParameters: List[String],
       successResponseLabels: List[String],
       nonSuccessResponses: List[GiteaResponseLabel],
+      produces: List[String],
       hasRequestBody: Boolean
   )
 
@@ -732,6 +783,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           case GiteaResponseLabel(status, label) if status.startsWith("2") => label
         },
         nonSuccessResponses = responses.filterNot(_.status.startsWith("2")),
+        produces = parseProduces(methodBlock),
         hasRequestBody = parameters.exists(_.in == "body")
       )
 
@@ -808,6 +860,14 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           responseLabel(entry).map(label => GiteaResponseLabel(status, label))
       }
 
+    private def parseProduces(block: Vector[String]): List[String] =
+      block
+        .dropWhile(_.trim != "produces:")
+        .drop(1)
+        .takeWhile(_.trim.startsWith("- "))
+        .map(_.trim.stripPrefix("- ").trim)
+        .toList
+
     private def section(block: Vector[String], start: String, end: String): Vector[String] =
       block.dropWhile(_.trim != start).drop(1).takeWhile(_.trim != end)
 
@@ -841,7 +901,13 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
     private def responseLabel(entry: Vector[String]): Option[String] =
       entryValue(entry, "$ref")
+        .orElse(responseSchemaType(entry).map(schemaType => s"type:$schemaType"))
         .orElse(entryValue(entry, "description").map(description => s"description: $description"))
+
+    private def responseSchemaType(entry: Vector[String]): Option[String] =
+      entry
+        .find(_.trim.startsWith("type:"))
+        .map(_.trim.stripPrefix("type:").trim)
 
     private def enumValues(entry: Vector[String]): List[String] =
       entry

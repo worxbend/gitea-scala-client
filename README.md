@@ -15,18 +15,19 @@ and zio-json.
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
   commit statuses, single-commit lookup, commit note lookup, commit diff/patch
   downloads, Git tree reads, Git blob reads, Git reference reads, annotated tag
-  reads, repository contents metadata reads, commit-to-pull-request lookup,
-  releases, pull requests including reviews, pinned pull-request reads,
-  pull-request create/edit writes, diff/patch downloads, merge-status checks,
-  merge/update commands, review-comment resolution, and notifications through a
-  ZIO client API
+  reads, repository contents metadata reads, raw/media repository file byte
+  downloads, commit-to-pull-request lookup, releases, pull requests including
+  reviews, pinned pull-request reads, pull-request create/edit writes,
+  diff/patch downloads, merge-status checks, merge/update commands,
+  review-comment resolution, and notifications through a ZIO client API
 - Contract checks: implemented endpoint metadata is audited against
   `plugin-redoc-2.yaml` for pull-request review lifecycle, commit-status,
   pull-request create/edit, merge/update, commit-to-pull-request,
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
-  annotated tag, and repository contents endpoints, including documented non-2xx
-  response labels, optional query parameters, path enum values, and clear
-  path/method/parameter mismatch failures
+  annotated tag, repository contents, and raw/media repository file endpoints,
+  including documented non-2xx response labels, optional query parameters,
+  `application/octet-stream`/Swagger `type: file` response shape, path enum
+  values, and clear path/method/parameter mismatch failures
 - Endpoint audit-only non-success response labels live in test scope; the
   published client endpoint metadata exposes operation method, path, operation
   ID, parameters, and success response labels only
@@ -311,6 +312,18 @@ string returned by Gitea; this layer does not base64-decode it. Both requests
 are read-only retryable and propagate documented `404` failures through the
 shared error mapper.
 
+Raw repository file downloads cover `GET /repos/{owner}/{repo}/raw/{filepath}`
+through `client.rawFile`, and media/LFS-aware downloads cover
+`GET /repos/{owner}/{repo}/media/{filepath}` through `client.mediaFile`.
+Successful responses return `Chunk[Byte]` and advertise
+`Accept: application/octet-stream`; they do not pass through JSON or `String`
+decoding. Both methods accept `ContentsParams`, so `ContentsParams(ref =
+Some(...))` sends the documented optional `ref` query parameter and
+`ContentsParams.default` omits it. Slash-containing filepaths such as
+`docs/readme.md` use the same one-segment encoding convention as `contents`.
+These byte-download methods are intentionally separate from `contents`, which
+remains metadata-oriented and continues returning `ContentsResponse`.
+
 Commit diff/patch downloads cover
 `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` through
 `client.commitDiffOrPatch`. Use `CommitDiffType.diff` or
@@ -386,6 +399,20 @@ client.contents(
   repo = "my-repo",
   filepath = "docs/readme.md",
   params = ContentsParams(ref = Some("main"))
+)
+
+client.rawFile(
+  owner = "my-org",
+  repo = "my-repo",
+  filepath = "docs/readme.md",
+  params = ContentsParams(ref = Some("main"))
+)
+
+client.mediaFile(
+  owner = "my-org",
+  repo = "my-repo",
+  filepath = "docs/readme.md",
+  params = ContentsParams.default
 )
 
 client.commitDiffOrPatch(
@@ -773,11 +800,14 @@ tests, and pagination tests:
 Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
-tree/blob/annotated-tag/refs and repository contents endpoint groups against
-`plugin-redoc-2.yaml`, including documented non-2xx response status/ref labels,
-optional query parameters such as `recursive`/`page`/`per_page` and contents
-`ref`, no-query/no-body checks for Git blob, annotated tag, and refs requests,
-no-body checks for contents requests, and path enum values such as `diffType`.
+tree/blob/annotated-tag/refs, repository contents, and raw/media repository file
+endpoint groups against `plugin-redoc-2.yaml`, including documented non-2xx
+response status/ref labels, optional query parameters such as
+`recursive`/`page`/`per_page` and contents/raw/media `ref`,
+`application/octet-stream`/Swagger `type: file` response shape for raw/media
+downloads, no-query/no-body checks for Git blob, annotated tag, and refs
+requests, no-body checks for contents and raw/media requests, and path enum
+values such as `diffType`.
 
 Live integration tests are opt-in:
 
@@ -819,12 +849,31 @@ Repository tag-list entries are not assumed to be annotated tag objects; supply
 `GITEA_ANNOTATED_TAG_SHA` only when you already have the SHA for an annotated
 tag object.
 
-Latest repository contents metadata validation passed with:
+The repository contents filepath probe calls
+`ReposApi.contents(owner, repo, filepath, params)` and requires a configured
+filepath. Use a slash-containing value such as `docs/readme.md` when validating
+the current one-segment filepath encoding against a live Gitea instance.
+`GITEA_CONTENTS_REF` is optional and is passed as `ContentsParams(ref =
+Some(value))` when non-empty:
+
+```bash
+GITEA_URL=https://gitea.example \
+GITEA_TOKEN=... \
+GITEA_OWNER=my-org \
+GITEA_REPO=my-repo \
+GITEA_CONTENTS_FILEPATH=docs/readme.md \
+GITEA_CONTENTS_REF=main \
+./mill it.test
+```
+
+Latest raw/media repository file validation passed with:
 
 ```bash
 git diff --check
+./mill --no-server compatibility.writeSnapshot
 ./mill --no-server core.test client.test compatibility.check
-./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec
+./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.http.GiteaResponseMapperSpec io.worxbend.gitea4s.GiteaClientSpec
+env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill --no-server it.test
 ```
 
 ## Mill Commands

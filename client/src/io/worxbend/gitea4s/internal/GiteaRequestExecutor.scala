@@ -30,10 +30,10 @@ final class GiteaRequestExecutor(backend: Backend[Task], maxRetries: Int):
     }
 
   private def sendOnce[A](request: GiteaRequest[A]): IO[GiteaError, A] =
-    request.request
+    request.typedRequest
       .send(backend)
       .mapError(GiteaError.TransportError.apply)
-      .flatMap(response => ZIO.fromEither(request.decode(response)))
+      .flatMap(response => ZIO.fromEither(request.decodeTyped(response)))
 
   private def retryDelay(error: GiteaError, attempt: Int): UIO[Option[Duration]] =
     error match

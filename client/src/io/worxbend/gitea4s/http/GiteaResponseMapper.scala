@@ -7,6 +7,7 @@ import sttp.model.StatusCode
 import zio.Chunk
 import zio.json.*
 
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 import scala.util.Try
 
@@ -21,6 +22,10 @@ object GiteaResponseMapper:
 
   def decodeString(response: Response[String]): Either[GiteaError, String] =
     if response.isSuccess then Right(response.body) else Left(toError(response))
+
+  def decodeBytes(response: Response[Array[Byte]]): Either[GiteaError, Chunk[Byte]] =
+    if response.isSuccess then Right(Chunk.fromArray(response.body))
+    else Left(toError(bytesResponseAsString(response)))
 
   def decodeNoContentOrNotFoundBoolean(response: Response[String]): Either[GiteaError, Boolean] =
     response.code match
@@ -102,6 +107,9 @@ object GiteaResponseMapper:
     response.body.fromJson[GiteaErrorPayload].toOption.flatMap(_.message)
       .orElse(response.header("message"))
       .getOrElse(response.statusText)
+
+  private def bytesResponseAsString(response: Response[Array[Byte]]): Response[String] =
+    response.copy(body = String(response.body, StandardCharsets.UTF_8))
 
   private def hasNextPage(
       response: Response[String],

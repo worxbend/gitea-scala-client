@@ -94,6 +94,19 @@ surface is still being filled out.
   `docs/readme.md` as one path segment, keep `content` as the encoded string
   returned by Gitea, and propagate documented `404` failures through the
   shared error mapper.
+- Binary-safe raw response handling for successful `application/octet-stream`
+  bodies, returning `Chunk[Byte]` without passing byte payloads through JSON or
+  `String` response assumptions while preserving existing JSON, text, unit,
+  pagination, and error mapping behavior.
+- Raw and media repository file byte downloads for
+  `GET /repos/{owner}/{repo}/raw/{filepath}` (`repoGetRawFile`) and
+  `GET /repos/{owner}/{repo}/media/{filepath}` (`repoGetRawFileOrLFS`) with
+  `GiteaRequests.repoRawFile`, `GiteaRequests.repoMediaFile`,
+  `ReposApi.rawFile`, and `ReposApi.mediaFile`; both read-only APIs return
+  `Chunk[Byte]`, accept `ContentsParams` for optional `ref`, encode
+  slash-containing filepaths such as `docs/readme.md` as one path segment,
+  send `Accept: application/octet-stream`, send no request body, and propagate
+  documented `404` failures through the shared error mapper.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,
@@ -140,6 +153,12 @@ surface is still being filled out.
   success responses `ContentsListResponse` and `ContentsResponse`,
   request-body absence, retryability, and documented 404 response status/ref
   labels.
+- Raw/media repository file endpoint metadata audit coverage for operation IDs
+  `repoGetRawFile` and `repoGetRawFileOrLFS`, methods, paths, required
+  `owner`/`repo`/`filepath` path parameters, optional `ref` query parameter,
+  absence of request bodies, read-only retryability, success response shape as
+  Swagger `type: file` / `application/octet-stream`, and documented 404
+  response status/ref labels.
 - Commit diff/patch endpoint metadata audit coverage for operation ID, method,
   path, required `owner`/`repo`/`sha`/`diffType` path parameters, success
   response, documented 404 response status/ref label, request-body absence,
@@ -236,6 +255,11 @@ surface is still being filled out.
   `GITEA_OWNER`, `GITEA_REPO`, and `GITEA_REF` such as `heads/main`; the
   annotated tag probe requires `GITEA_ANNOTATED_TAG_SHA` and does not infer
   annotated tag object SHAs from repository tag listings.
+- Opt-in live integration probe for repository contents filepath routing
+  through `ReposApi.contents(owner, repo, filepath, ContentsParams)`, gated on
+  non-empty `GITEA_URL`, `GITEA_TOKEN`, `GITEA_OWNER`, `GITEA_REPO`, and
+  `GITEA_CONTENTS_FILEPATH`, with optional `GITEA_CONTENTS_REF` passed through
+  as `ContentsParams(ref = Some(value))`.
 - Test-side schema-field checklist coverage for recent Swagger Git response
   models: `Reference`, `GitObject`, `AnnotatedTag`, `AnnotatedTagObject`, and
   `GitBlobResponse`.
@@ -261,3 +285,9 @@ surface is still being filled out.
 - Repository contents metadata validation passed with `git diff --check`,
   `./mill --no-server core.test client.test compatibility.check`, and
   `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`.
+- Raw/media repository file documentation and snapshot validation passed with
+  `git diff --check`, `./mill --no-server compatibility.writeSnapshot`,
+  `./mill --no-server core.test client.test compatibility.check`, and
+  `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.http.GiteaResponseMapperSpec io.worxbend.gitea4s.GiteaClientSpec`.
+- Credential-stripped integration validation passed with
+  `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill --no-server it.test`; all five live probes were reported as ignored and no live credentials were required.

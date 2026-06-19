@@ -933,6 +933,86 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Right(Some("https://gitea.example/api/v1/repos/o/r/git/blobs/def456"))
         )
       },
+      test("builds and decodes schema-traceable raw repository file request as bytes") {
+        val bytes = Array[Byte](0, 1, 2, -1, 65, 10)
+        val built = GiteaRequests.repoRawFile(
+          config,
+          "worx bend",
+          "gitea/scala",
+          "docs/readme.md",
+          ContentsParams(ref = Some("release/1.0"))
+        )
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(bytes))
+        val decoded = built.decodeTyped(built.typedRequest.send(backend))
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetRawFile,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetRawFile",
+          endpoint.path == "/repos/{owner}/{repo}/raw/{filepath}",
+          endpoint.parameters.map(parameter => (parameter.name, parameter.in, parameter.required)) ==
+            List(
+              ("owner", "path", true),
+              ("repo", "path", true),
+              ("filepath", "path", true),
+              ("ref", "query", false)
+            ),
+          endpoint.response == "type:file",
+          request.method == Method.GET,
+          request.uri.toString.contains(
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/raw/docs%2Freadme.md?"
+          ),
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "raw", "docs/readme.md"),
+          request.uri.paramsMap.get("ref").contains("release/1.0"),
+          request.body == NoBody,
+          request.header("Accept").contains("application/octet-stream"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          decoded == Right(Chunk.fromArray(bytes))
+        )
+      },
+      test("builds and decodes schema-traceable media repository file request as bytes") {
+        val bytes = Array[Byte](10, 20, 30, -1)
+        val built = GiteaRequests.repoMediaFile(config, "worx bend", "gitea/scala", "docs/readme.md")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(bytes))
+        val decoded = built.decodeTyped(built.typedRequest.send(backend))
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetRawFileOrLFS,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetRawFileOrLFS",
+          endpoint.path == "/repos/{owner}/{repo}/media/{filepath}",
+          endpoint.parameters.map(parameter => (parameter.name, parameter.in, parameter.required)) ==
+            List(
+              ("owner", "path", true),
+              ("repo", "path", true),
+              ("filepath", "path", true),
+              ("ref", "query", false)
+            ),
+          endpoint.response == "type:file",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/media/docs%2Freadme.md",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "media", "docs/readme.md"),
+          request.uri.paramsMap.isEmpty,
+          request.body == NoBody,
+          request.header("Accept").contains("application/octet-stream"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          decoded == Right(Chunk.fromArray(bytes))
+        )
+      },
       test("builds schema-traceable paginated repository pull request list request") {
         val params = PullRequestListParams(
           baseBranch = Some("main"),
@@ -3350,6 +3430,22 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.NotFound("missing contents", body)),
           fileContents.decode(fileContents.request.send(backend)) ==
             Left(GiteaError.NotFound("missing contents", body))
+        )
+      },
+      test("maps documented raw and media repository file 404 responses") {
+        val body = """{"message":"missing raw file"}"""
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(body.getBytes(java.nio.charset.StandardCharsets.UTF_8), StatusCode.NotFound)
+          )
+        val rawFile = GiteaRequests.repoRawFile(config, "owner", "repo", "docs/readme.md")
+        val mediaFile = GiteaRequests.repoMediaFile(config, "owner", "repo", "docs/readme.md")
+        val rawResult = rawFile.decodeTyped(rawFile.typedRequest.send(backend))
+        val mediaResult = mediaFile.decodeTyped(mediaFile.typedRequest.send(backend))
+
+        assertTrue(
+          rawResult == Left(GiteaError.NotFound("missing raw file", body)),
+          mediaResult == Left(GiteaError.NotFound("missing raw file", body))
         )
       },
       test("maps repository pull request not-found responses") {
