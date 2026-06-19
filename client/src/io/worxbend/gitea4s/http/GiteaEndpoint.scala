@@ -387,6 +387,33 @@ object GiteaEndpoints:
       response = "#/responses/ReferenceList"
     )
 
+  val repoGetContentsList: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/contents",
+      operationId = "repoGetContentsList",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("ref", "query", required = false)
+      ),
+      response = "#/responses/ContentsListResponse"
+    )
+
+  val repoGetContents: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/contents/{filepath}",
+      operationId = "repoGetContents",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("filepath", "path", required = true),
+        GiteaParameter("ref", "query", required = false)
+      ),
+      response = "#/responses/ContentsResponse"
+    )
+
   val repoListPullRequests: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

@@ -227,6 +227,23 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     GiteaEndpoints.repoListGitRefs
   )
 
+  private val contentsRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoContentsList(config, "owner", "repo", ContentsParams(ref = Some("main"))),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoContents(
+        config,
+        "owner",
+        "repo",
+        filepath = "docs/readme.md",
+        ContentsParams(ref = Some("main"))
+      ),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val commitDiffOrPatchRequests = List(
     AuditedRequest(
       request =
@@ -423,6 +440,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoListGitRefs" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoGetContentsList" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoGetContents" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoDownloadCommitDiffOrPatch" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     )
@@ -481,6 +504,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("git refs metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = gitRefEndpoints.flatMap(auditEndpoint(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository contents metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = contentsRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },

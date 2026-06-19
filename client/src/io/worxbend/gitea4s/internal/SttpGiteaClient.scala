@@ -8,6 +8,7 @@ import io.worxbend.gitea4s.http.{
   CombinedStatusParams,
   CommitNoteParams,
   CommitStatusListParams,
+  ContentsParams,
   GitTreeParams,
   IssueCommentListParams,
   IssueListParams,
@@ -35,6 +36,7 @@ import io.worxbend.gitea4s.model.{
   CommitStatus,
   CreateIssue,
   CreateIssueComment,
+  ContentsResponse,
   CreatePullRequestOption,
   CreatePullReviewOptions,
   CreateStatusOption,
@@ -173,6 +175,21 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def gitRefs(owner: String, repo: String, ref: String): IO[GiteaError, Chunk[Reference]] =
     executor.send(GiteaRequests.repoListGitRefs(config, owner, repo, ref))
+
+  override def contents(
+      owner: String,
+      repo: String,
+      params: ContentsParams
+  ): IO[GiteaError, Chunk[ContentsResponse]] =
+    executor.send(GiteaRequests.repoContentsList(config, owner, repo, params))
+
+  override def contents(
+      owner: String,
+      repo: String,
+      filepath: String,
+      params: ContentsParams
+  ): IO[GiteaError, ContentsResponse] =
+    executor.send(GiteaRequests.repoContents(config, owner, repo, filepath, params))
 
   override def list(
       owner: String,

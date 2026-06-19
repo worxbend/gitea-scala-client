@@ -14,7 +14,8 @@ and zio-json.
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
   commit statuses, single-commit lookup, commit note lookup, commit diff/patch
-  downloads, Git tree reads, Git blob reads, commit-to-pull-request lookup,
+  downloads, Git tree reads, Git blob reads, Git reference reads, annotated tag
+  reads, repository contents metadata reads, commit-to-pull-request lookup,
   releases, pull requests including reviews, pinned pull-request reads,
   pull-request create/edit writes, diff/patch downloads, merge-status checks,
   merge/update commands, review-comment resolution, and notifications through a
@@ -22,9 +23,10 @@ and zio-json.
 - Contract checks: implemented endpoint metadata is audited against
   `plugin-redoc-2.yaml` for pull-request review lifecycle, commit-status,
   pull-request create/edit, merge/update, commit-to-pull-request,
-  single-commit, commit note, commit diff/patch, Git tree, and Git blob endpoints,
-  including documented non-2xx response labels, optional query parameters, path
-  enum values, and clear path/method/parameter mismatch failures
+  single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
+  annotated tag, and repository contents endpoints, including documented non-2xx
+  response labels, optional query parameters, path enum values, and clear
+  path/method/parameter mismatch failures
 - Endpoint audit-only non-success response labels live in test scope; the
   published client endpoint metadata exposes operation method, path, operation
   ID, parameters, and success response labels only
@@ -291,6 +293,24 @@ rather than split into multiple path segments. Both requests have no query
 parameters or body, are read-only retryable, and propagate documented `404`
 failures through the shared error mapper.
 
+Repository contents metadata lookup covers
+`GET /repos/{owner}/{repo}/contents` and
+`GET /repos/{owner}/{repo}/contents/{filepath}` through overloaded
+`client.contents` methods. Root contents decode as a non-paginated
+`Chunk[ContentsResponse]`; a filepath lookup decodes one `ContentsResponse`.
+`ContentsParams(ref = Some(...))` sends the documented optional `ref` query
+parameter, while `ContentsParams.default` omits it. Slash-containing filepaths
+such as `docs/readme.md` are encoded as one path parameter
+(`docs%2Freadme.md`) instead of being split into multiple route segments.
+Successful responses preserve the Swagger JSON names through
+`ContentsResponse` and nested `FileLinksResponse`, including `_links`,
+`download_url`, `git_url`, `html_url`, `last_author_date`,
+`last_commit_message`, `last_commit_sha`, `last_committer_date`, `lfs_oid`,
+`lfs_size`, and `submodule_git_url`. The `content` field stays as the encoded
+string returned by Gitea; this layer does not base64-decode it. Both requests
+are read-only retryable and propagate documented `404` failures through the
+shared error mapper.
+
 Commit diff/patch downloads cover
 `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` through
 `client.commitDiffOrPatch`. Use `CommitDiffType.diff` or
@@ -303,6 +323,7 @@ no request body.
 ```scala
 import io.worxbend.gitea4s.http.{
   CommitNoteParams,
+  ContentsParams,
   GitTreeParams,
   SingleCommitParams
 }
@@ -357,6 +378,15 @@ client.annotatedTag(owner = "my-org", repo = "my-repo", sha = "tag-object-sha")
 client.gitRefs(owner = "my-org", repo = "my-repo")
 
 client.gitRefs(owner = "my-org", repo = "my-repo", ref = "heads/main")
+
+client.contents(owner = "my-org", repo = "my-repo", params = ContentsParams.default)
+
+client.contents(
+  owner = "my-org",
+  repo = "my-repo",
+  filepath = "docs/readme.md",
+  params = ContentsParams(ref = Some("main"))
+)
 
 client.commitDiffOrPatch(
   owner = "my-org",
@@ -743,10 +773,11 @@ tests, and pagination tests:
 Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
-tree/blob/annotated-tag/refs endpoint groups against `plugin-redoc-2.yaml`, including
-documented non-2xx response status/ref labels, optional query parameters such as
-`recursive`/`page`/`per_page`, no-query/no-body checks for Git blob, annotated
-tag, and refs requests, and path enum values such as `diffType`.
+tree/blob/annotated-tag/refs and repository contents endpoint groups against
+`plugin-redoc-2.yaml`, including documented non-2xx response status/ref labels,
+optional query parameters such as `recursive`/`page`/`per_page` and contents
+`ref`, no-query/no-body checks for Git blob, annotated tag, and refs requests,
+no-body checks for contents requests, and path enum values such as `diffType`.
 
 Live integration tests are opt-in:
 
@@ -788,12 +819,12 @@ Repository tag-list entries are not assumed to be annotated tag objects; supply
 `GITEA_ANNOTATED_TAG_SHA` only when you already have the SHA for an annotated
 tag object.
 
-Latest annotated Git tag validation passed with:
+Latest repository contents metadata validation passed with:
 
 ```bash
-./mill core.test
-./mill client.test
-./mill compatibility.check
+git diff --check
+./mill --no-server core.test client.test compatibility.check
+./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec
 ```
 
 ## Mill Commands

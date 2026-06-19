@@ -83,6 +83,17 @@ surface is still being filled out.
   requests have no query parameters or request bodies, encode slash-containing
   refs such as `heads/main` as one path segment, and propagate documented `404`
   failures through the shared error mapper.
+- Typed repository contents metadata lookup for
+  `GET /repos/{owner}/{repo}/contents` and
+  `GET /repos/{owner}/{repo}/contents/{filepath}` with `ContentsResponse`,
+  nested `FileLinksResponse`, `ContentsParams`, `repoGetContentsList`,
+  `repoGetContents`, non-paginated `ContentsListResponse` decoding, single
+  `ContentsResponse` decoding, and overloaded `ReposApi.contents` facade
+  methods; the read-only requests omit `ref` by default, encode supplied
+  `ref` query values, encode slash-containing filepaths such as
+  `docs/readme.md` as one path segment, keep `content` as the encoded string
+  returned by Gitea, and propagate documented `404` failures through the
+  shared error mapper.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,
@@ -121,6 +132,12 @@ surface is still being filled out.
 - Git refs endpoint metadata audit coverage for operation IDs
   `repoListAllGitRefs` and `repoListGitRefs`, methods, paths, required
   path parameters, no query parameters, success response `ReferenceList`,
+  request-body absence, retryability, and documented 404 response status/ref
+  labels.
+- Repository contents endpoint metadata audit coverage for operation IDs
+  `repoGetContentsList` and `repoGetContents`, methods, paths, required
+  `owner`/`repo`/`filepath` path parameters, optional `ref` query parameter,
+  success responses `ContentsListResponse` and `ContentsResponse`,
   request-body absence, retryability, and documented 404 response status/ref
   labels.
 - Commit diff/patch endpoint metadata audit coverage for operation ID, method,
@@ -222,6 +239,8 @@ surface is still being filled out.
 - Test-side schema-field checklist coverage for recent Swagger Git response
   models: `Reference`, `GitObject`, `AnnotatedTag`, `AnnotatedTagObject`, and
   `GitBlobResponse`.
+- Test-side schema-field checklist coverage for Swagger repository contents
+  response models: `ContentsResponse` and nested `FileLinksResponse`.
 - Local Maven publishing metadata, source jars, and javadoc jars.
 - Java 21 CI validation and release-process documentation.
 - Sonatype Central Portal publishing groundwork through Mill and a manual
@@ -239,8 +258,6 @@ surface is still being filled out.
   `./mill compatibility.check`, and
   `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill __.test it.test examples.run`;
   the credential-stripped run reported live integration tests as ignored.
-- Live-probe and schema-checklist validation for this slice is expected through
-  `git diff --check`, `./mill --no-server core.test client.test compatibility.check`,
-  and
-  `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill --no-server it.test`;
-  the live probes should remain ignored without their required variables.
+- Repository contents metadata validation passed with `git diff --check`,
+  `./mill --no-server core.test client.test compatibility.check`, and
+  `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`.

@@ -5,6 +5,7 @@ import io.worxbend.gitea4s.http.{
   CombinedStatusParams,
   CommitNoteParams,
   CommitStatusListParams,
+  ContentsParams,
   GitTreeParams,
   RepoListParams,
   SingleCommitParams
@@ -16,6 +17,7 @@ import io.worxbend.gitea4s.model.{
   CommitDiffType,
   CombinedStatus,
   CommitStatus,
+  ContentsResponse,
   CreateStatusOption,
   GitBlobResponse,
   GitTreeResponse,
@@ -61,6 +63,19 @@ trait ReposApi:
   def gitRefs(owner: String, repo: String): IO[GiteaError, Chunk[Reference]]
 
   def gitRefs(owner: String, repo: String, ref: String): IO[GiteaError, Chunk[Reference]]
+
+  def contents(
+      owner: String,
+      repo: String,
+      params: ContentsParams
+  ): IO[GiteaError, Chunk[ContentsResponse]]
+
+  def contents(
+      owner: String,
+      repo: String,
+      filepath: String,
+      params: ContentsParams
+  ): IO[GiteaError, ContentsResponse]
 
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 

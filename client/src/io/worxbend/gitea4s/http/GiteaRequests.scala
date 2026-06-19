@@ -12,6 +12,7 @@ import io.worxbend.gitea4s.model.{
   CommitDiffType,
   CommitStatus,
   CombinedStatus,
+  ContentsResponse,
   CreateIssue,
   CreateIssueComment,
   CreatePullRequestOption,
@@ -391,6 +392,35 @@ object GiteaRequests:
       List("repos", owner, repo, "git", "refs", ref),
       Nil,
       GiteaResponseMapper.decodeChunk[Reference]
+    )
+
+  def repoContentsList(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      params: ContentsParams = ContentsParams.default
+  ): GiteaRequest[zio.Chunk[ContentsResponse]] =
+    get(
+      config,
+      GiteaEndpoints.repoGetContentsList,
+      List("repos", owner, repo, "contents"),
+      contentsQuery(params),
+      GiteaResponseMapper.decodeChunk[ContentsResponse]
+    )
+
+  def repoContents(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      filepath: String,
+      params: ContentsParams = ContentsParams.default
+  ): GiteaRequest[ContentsResponse] =
+    get(
+      config,
+      GiteaEndpoints.repoGetContents,
+      List("repos", owner, repo, "contents", filepath),
+      contentsQuery(params),
+      GiteaResponseMapper.decodeJson[ContentsResponse]
     )
 
   def repoPullRequests(
@@ -1647,6 +1677,9 @@ object GiteaRequests:
       params.page.map(value => "page" -> value.toString),
       params.perPage.map(value => "per_page" -> value.toString)
     ).flatten
+
+  private def contentsQuery(params: ContentsParams): List[(String, String)] =
+    params.ref.map("ref" -> _).toList
 
   private def notificationQuery(params: NotificationListParams, page: Int, pageSize: Int): List[(String, String)] =
     List(

@@ -853,6 +853,86 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Right(Some("abc123"))
         )
       },
+      test("builds and decodes schema-traceable repository contents root request") {
+        val built = GiteaRequests.repoContentsList(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """[{"name":"README.md","path":"README.md","sha":"abc123","size":42,"type":"file","encoding":"base64","content":"IyBSZWFkbWU=","_links":{"self":"https://gitea.example/api/v1/repos/o/r/contents/README.md","git":"https://gitea.example/api/v1/repos/o/r/git/blobs/abc123","html":"https://gitea.example/o/r/src/branch/main/README.md"}}]"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetContentsList,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetContentsList",
+          endpoint.path == "/repos/{owner}/{repo}/contents",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "ref"),
+          endpoint.response == "#/responses/ContentsListResponse",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/contents",
+          request.uri.path == List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "contents"),
+          request.uri.paramsMap.isEmpty,
+          request.body == NoBody,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)).map(_.map(_.name)) == Right(Chunk(Some("README.md"))),
+          built.decode(request.send(backend)).map(_.map(_.content)) == Right(Chunk(Some("IyBSZWFkbWU="))),
+          built.decode(request.send(backend)).map(_.headOption.flatMap(_.links.flatMap(_.self))) ==
+            Right(Some("https://gitea.example/api/v1/repos/o/r/contents/README.md"))
+        )
+      },
+      test("builds and decodes schema-traceable repository contents file request with encoded slash filepath") {
+        val built = GiteaRequests.repoContents(
+          config,
+          "worx bend",
+          "gitea/scala",
+          "docs/readme.md",
+          ContentsParams(ref = Some("release/1.0"))
+        )
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """{"name":"readme.md","path":"docs/readme.md","sha":"def456","size":128,"type":"file","encoding":"base64","content":"SGVsbG8=","download_url":"https://gitea.example/o/r/raw/branch/main/docs/readme.md","_links":{"self":"https://gitea.example/api/v1/repos/o/r/contents/docs/readme.md","git":"https://gitea.example/api/v1/repos/o/r/git/blobs/def456","html":"https://gitea.example/o/r/src/branch/main/docs/readme.md"}}"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetContents,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetContents",
+          endpoint.path == "/repos/{owner}/{repo}/contents/{filepath}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "filepath", "ref"),
+          endpoint.response == "#/responses/ContentsResponse",
+          request.method == Method.GET,
+          request.uri.toString.contains(
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/contents/docs%2Freadme.md?"
+          ),
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "contents", "docs/readme.md"),
+          request.uri.paramsMap.get("ref").contains("release/1.0"),
+          request.body == NoBody,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)).map(_.path) == Right(Some("docs/readme.md")),
+          built.decode(request.send(backend)).map(_.content) == Right(Some("SGVsbG8=")),
+          built.decode(request.send(backend)).map(_.links.flatMap(_.git)) ==
+            Right(Some("https://gitea.example/api/v1/repos/o/r/git/blobs/def456"))
+        )
+      },
       test("builds schema-traceable paginated repository pull request list request") {
         val params = PullRequestListParams(
           baseBranch = Some("main"),
@@ -3257,6 +3337,19 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           allRefs.decode(allRefs.request.send(backend)) == Left(GiteaError.NotFound("missing ref", body)),
           filteredRefs.decode(filteredRefs.request.send(backend)) == Left(GiteaError.NotFound("missing ref", body))
+        )
+      },
+      test("maps documented repository contents 404 responses") {
+        val body = """{"message":"missing contents"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val rootContents = GiteaRequests.repoContentsList(config, "owner", "missing")
+        val fileContents = GiteaRequests.repoContents(config, "owner", "repo", "docs/readme.md")
+
+        assertTrue(
+          rootContents.decode(rootContents.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing contents", body)),
+          fileContents.decode(fileContents.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing contents", body))
         )
       },
       test("maps repository pull request not-found responses") {

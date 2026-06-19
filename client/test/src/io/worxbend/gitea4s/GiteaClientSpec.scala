@@ -7,6 +7,7 @@ import io.worxbend.gitea4s.http.{
   CommitStatusListParams,
   CommitStatusListState,
   CommitStatusSort,
+  ContentsParams,
   GitTreeParams,
   GiteaRequests,
   IssueCommentListParams,
@@ -806,6 +807,150 @@ object GiteaClientSpec extends ZIOSpecDefault:
         yield assertTrue(
           refs.map(_.ref) == Chunk(Some("refs/heads/main")),
           refs.headOption.flatMap(_.gitObject.flatMap(_.sha)).contains("abc123"),
+          remaining.isEmpty
+        )
+      },
+      test("lists repository root contents through the ReposApi contents method") {
+        val facadeConfig = config.copy(userAgent = Some("gitea4s-test"), otp = Some("654321"))
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/contents" &&
+              request.uri.path == List("api", "v1", "repos", "space owner", "repo/slash", "contents") &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("User-Agent").contains("gitea4s-test") &&
+              request.header("X-Gitea-OTP").contains("654321") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(
+            ResponseStub.adjust(
+              """[{"name":"README.md","path":"README.md","sha":"abc123","size":42,"type":"file","encoding":"base64","content":"IyBSZWFkbWU=","_links":{"self":"https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/contents/README.md","git":"https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/blobs/abc123","html":"https://gitea.example/space%20owner/repo%2Fslash/src/branch/main/README.md"}}]"""
+            )
+          )
+        val client = GiteaClient.fromBackend(facadeConfig, backend)
+
+        assertZIO(
+          client
+            .contents("space owner", "repo/slash", ContentsParams.default)
+            .map(contents => contents.map(item => item.name -> item.path -> item.content -> item.links.flatMap(_.self)))
+        )(
+          Assertion.equalTo(
+            Chunk(
+              Some("README.md") -> Some("README.md") -> Some("IyBSZWFkbWU=") ->
+                Some("https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/contents/README.md")
+            )
+          )
+        )
+      },
+      test("loads repository contents for a slash-containing filepath") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/contents/docs%2Freadme.md" &&
+              request.uri.path ==
+                List("api", "v1", "repos", "space owner", "repo/slash", "contents", "docs/readme.md") &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(
+            ResponseStub.adjust(
+              """{"name":"readme.md","path":"docs/readme.md","sha":"def456","size":128,"type":"file","encoding":"base64","content":"SGVsbG8=","download_url":"https://gitea.example/space%20owner/repo%2Fslash/raw/branch/main/docs/readme.md","_links":{"self":"https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/contents/docs/readme.md","git":"https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/blobs/def456","html":"https://gitea.example/space%20owner/repo%2Fslash/src/branch/main/docs/readme.md"}}"""
+            )
+          )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(
+          client
+            .contents("space owner", "repo/slash", "docs/readme.md", ContentsParams.default)
+            .map(content => content.name -> content.path -> content.downloadUrl -> content.links.flatMap(_.git))
+        )(
+          Assertion.equalTo(
+            Some("readme.md") -> Some("docs/readme.md") ->
+              Some("https://gitea.example/space%20owner/repo%2Fslash/raw/branch/main/docs/readme.md") ->
+              Some("https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/blobs/def456")
+          )
+        )
+      },
+      test("forwards repository contents ref query parameters through the ReposApi contents methods") {
+        val listBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "contents")) &&
+              request.uri.paramsMap.get("ref").contains("release/1.0")
+          }.thenRespond(ResponseStub.adjust("""[{"name":"docs","path":"docs","type":"dir"}]"""))
+        val fileBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "contents", "docs/readme.md")) &&
+              request.uri.paramsMap.get("ref").contains("release/1.0")
+          }.thenRespond(ResponseStub.adjust("""{"name":"readme.md","path":"docs/readme.md","type":"file"}"""))
+        val listClient = GiteaClient.fromBackend(config, listBackend)
+        val fileClient = GiteaClient.fromBackend(config, fileBackend)
+        val params = ContentsParams(ref = Some("release/1.0"))
+
+        for
+          rootContents <- listClient.contents("alice", "api", params)
+          fileContent <- fileClient.contents("alice", "api", "docs/readme.md", params)
+        yield assertTrue(
+          rootContents.map(_.path) == Chunk(Some("docs")),
+          fileContent.path.contains("docs/readme.md")
+        )
+      },
+      test("propagates repository contents documented 404 errors through the facade") {
+        val rootBody = """{"message":"repository contents not found"}"""
+        val fileBody = """{"message":"file contents not found"}"""
+        val rootBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "missing", "contents"))
+          ).thenRespond(ResponseStub.adjust(rootBody, StatusCode.NotFound))
+        val fileBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "contents", "docs/readme.md"))
+          ).thenRespond(ResponseStub.adjust(fileBody, StatusCode.NotFound))
+        val rootClient = GiteaClient.fromBackend(config, rootBackend)
+        val fileClient = GiteaClient.fromBackend(config, fileBackend)
+
+        for
+          rootContents <- rootClient.contents("alice", "missing", ContentsParams.default).either
+          fileContents <- fileClient.contents("alice", "api", "docs/readme.md", ContentsParams.default).either
+        yield assertTrue(
+          rootContents == Left(GiteaError.NotFound("repository contents not found", rootBody)),
+          fileContents == Left(GiteaError.NotFound("file contents not found", fileBody))
+        )
+      },
+      test("retries repository contents lookup because it is a read-only GET") {
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"temporarily unavailable"}""",
+                  StatusCode.ServiceUnavailable
+                )
+              ),
+              ZIO.succeed(
+                stringResponse(
+                  """{"name":"readme.md","path":"docs/readme.md","sha":"def456","type":"file","content":"SGVsbG8="}"""
+                )
+              )
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.contents("alice", "api", "docs/readme.md", ContentsParams.default).fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          content <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          content.path.contains("docs/readme.md"),
+          content.content.contains("SGVsbG8="),
           remaining.isEmpty
         )
       },

@@ -14,15 +14,38 @@ object CoreModelsSpec extends ZIOSpecDefault:
       jsonFields: Set[String]
   )
 
-  private val recentGitResponseSwaggerFields = Map(
+  private val schemaChecklistSwaggerFields = Map(
     "Reference" -> Set("object", "ref", "url"),
     "GitObject" -> Set("sha", "type", "url"),
     "AnnotatedTag" -> Set("message", "object", "sha", "tag", "tagger", "url", "verification"),
     "AnnotatedTagObject" -> Set("sha", "type", "url"),
-    "GitBlobResponse" -> Set("content", "encoding", "lfs_oid", "lfs_size", "sha", "size", "url")
+    "GitBlobResponse" -> Set("content", "encoding", "lfs_oid", "lfs_size", "sha", "size", "url"),
+    "ContentsResponse" -> Set(
+      "_links",
+      "content",
+      "download_url",
+      "encoding",
+      "git_url",
+      "html_url",
+      "last_author_date",
+      "last_commit_message",
+      "last_commit_sha",
+      "last_committer_date",
+      "lfs_oid",
+      "lfs_size",
+      "name",
+      "path",
+      "sha",
+      "size",
+      "submodule_git_url",
+      "target",
+      "type",
+      "url"
+    ),
+    "FileLinksResponse" -> Set("git", "html", "self")
   )
 
-  private val recentGitResponseSchemaChecklist = List(
+  private val schemaFieldChecklist = List(
     SchemaFieldChecklist("Reference", Set("object", "ref", "url")),
     SchemaFieldChecklist("GitObject", Set("sha", "type", "url")),
     SchemaFieldChecklist(
@@ -33,10 +56,39 @@ object CoreModelsSpec extends ZIOSpecDefault:
     SchemaFieldChecklist(
       "GitBlobResponse",
       Set("content", "encoding", "lfs_oid", "lfs_size", "sha", "size", "url")
+    ),
+    SchemaFieldChecklist(
+      "ContentsResponse",
+      Set(
+        "_links",
+        "content",
+        "download_url",
+        "encoding",
+        "git_url",
+        "html_url",
+        "last_author_date",
+        "last_commit_message",
+        "last_commit_sha",
+        "last_committer_date",
+        "lfs_oid",
+        "lfs_size",
+        "name",
+        "path",
+        "sha",
+        "size",
+        "submodule_git_url",
+        "target",
+        "type",
+        "url"
+      )
+    ),
+    SchemaFieldChecklist(
+      "FileLinksResponse",
+      Set("git", "html", "self")
     )
   )
 
-  private val recentGitResponseEncodedFixtures = Map(
+  private val schemaFieldEncodedFixtures = Map(
     "Reference" ->
       Reference(
         gitObject = Some(
@@ -86,6 +138,41 @@ object CoreModelsSpec extends ZIOSpecDefault:
         sha = Some("blob123"),
         size = Some(13L),
         url = Some("https://gitea.example/git/blobs/blob123")
+      ).toJson,
+    "ContentsResponse" ->
+      ContentsResponse(
+        links = Some(
+          FileLinksResponse(
+            git = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123"),
+            html = Some("https://gitea.example/octo/gitea4s/src/branch/main/docs/readme.md"),
+            self = Some("https://gitea.example/api/v1/repos/octo/gitea4s/contents/docs/readme.md")
+          )
+        ),
+        content = Some("SGVsbG8sIGNvbnRlbnRzIQ=="),
+        downloadUrl = Some("https://gitea.example/octo/gitea4s/raw/branch/main/docs/readme.md"),
+        encoding = Some("base64"),
+        gitUrl = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123"),
+        htmlUrl = Some("https://gitea.example/octo/gitea4s/src/branch/main/docs/readme.md"),
+        lastAuthorDate = Some(Instant.parse("2026-06-18T12:00:00Z")),
+        lastCommitMessage = Some("Add contents docs"),
+        lastCommitSha = Some("commit123"),
+        lastCommitterDate = Some(Instant.parse("2026-06-18T12:01:00Z")),
+        lfsOid = Some("sha256:0123456789abcdef"),
+        lfsSize = Some(4096L),
+        name = Some("readme.md"),
+        path = Some("docs/readme.md"),
+        sha = Some("blob123"),
+        size = Some(16L),
+        submoduleGitUrl = Some("https://gitea.example/octo/submodule.git"),
+        target = Some("../README.md"),
+        `type` = Some("file"),
+        url = Some("https://gitea.example/api/v1/repos/octo/gitea4s/contents/docs/readme.md")
+      ).toJson,
+    "FileLinksResponse" ->
+      FileLinksResponse(
+        git = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123"),
+        html = Some("https://gitea.example/octo/gitea4s/src/branch/main/docs/readme.md"),
+        self = Some("https://gitea.example/api/v1/repos/octo/gitea4s/contents/docs/readme.md")
       ).toJson
   )
 
@@ -97,17 +184,17 @@ object CoreModelsSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Core models")(
-      test("records Swagger field checklist for recent Git response models") {
+      test("records Swagger field checklist for schema-traced response models") {
         val checklistByDefinition =
-          recentGitResponseSchemaChecklist.map(entry => entry.swaggerDefinition -> entry).toMap
+          schemaFieldChecklist.map(entry => entry.swaggerDefinition -> entry).toMap
         val missingDefinitions =
-          recentGitResponseSwaggerFields.keySet
+          schemaChecklistSwaggerFields.keySet
             .diff(checklistByDefinition.keySet)
             .toList
             .sorted
             .map(definition => s"$definition checklist entry is missing")
         val missingChecklistFields =
-          recentGitResponseSwaggerFields.toList.flatMap { case (definition, expectedFields) =>
+          schemaChecklistSwaggerFields.toList.flatMap { case (definition, expectedFields) =>
             checklistByDefinition.get(definition).toList.flatMap { checklist =>
               val missing = expectedFields.diff(checklist.jsonFields)
 
@@ -115,8 +202,8 @@ object CoreModelsSpec extends ZIOSpecDefault:
             }
           }
         val missingEncodedFields =
-          recentGitResponseSchemaChecklist.flatMap { checklist =>
-            recentGitResponseEncodedFixtures.get(checklist.swaggerDefinition) match
+          schemaFieldChecklist.flatMap { checklist =>
+            schemaFieldEncodedFixtures.get(checklist.swaggerDefinition) match
               case None =>
                 Some(s"${checklist.swaggerDefinition} fixture is missing")
               case Some(json) =>
@@ -809,6 +896,172 @@ object CoreModelsSpec extends ZIOSpecDefault:
           json.fromJson[GitBlobResponse].map(_.lfsSize) == Right(Some(8192L)),
           !json.contains("lfsOid"),
           !json.contains("lfsSize")
+        )
+      },
+      test("decodes and round-trips a repository contents response") {
+        val json =
+          """{
+            |  "_links": {
+            |    "git": "https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123",
+            |    "html": "https://gitea.example/octo/gitea4s/src/branch/main/docs/readme.md",
+            |    "self": "https://gitea.example/api/v1/repos/octo/gitea4s/contents/docs/readme.md"
+            |  },
+            |  "content": "SGVsbG8sIGNvbnRlbnRzIQ==",
+            |  "download_url": "https://gitea.example/octo/gitea4s/raw/branch/main/docs/readme.md",
+            |  "encoding": "base64",
+            |  "git_url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123",
+            |  "html_url": "https://gitea.example/octo/gitea4s/src/branch/main/docs/readme.md",
+            |  "last_author_date": "2026-06-18T12:00:00Z",
+            |  "last_commit_message": "Add contents docs",
+            |  "last_commit_sha": "commit123",
+            |  "last_committer_date": "2026-06-18T12:01:00Z",
+            |  "lfs_oid": "sha256:0123456789abcdef",
+            |  "lfs_size": 4096,
+            |  "name": "readme.md",
+            |  "path": "docs/readme.md",
+            |  "sha": "blob123",
+            |  "size": 16,
+            |  "submodule_git_url": "https://gitea.example/octo/submodule.git",
+            |  "target": "../README.md",
+            |  "type": "file",
+            |  "url": "https://gitea.example/api/v1/repos/octo/gitea4s/contents/docs/readme.md"
+            |}""".stripMargin
+
+        val expected = ContentsResponse(
+          links = Some(
+            FileLinksResponse(
+              git = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123"),
+              html = Some("https://gitea.example/octo/gitea4s/src/branch/main/docs/readme.md"),
+              self = Some("https://gitea.example/api/v1/repos/octo/gitea4s/contents/docs/readme.md")
+            )
+          ),
+          content = Some("SGVsbG8sIGNvbnRlbnRzIQ=="),
+          downloadUrl = Some("https://gitea.example/octo/gitea4s/raw/branch/main/docs/readme.md"),
+          encoding = Some("base64"),
+          gitUrl = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123"),
+          htmlUrl = Some("https://gitea.example/octo/gitea4s/src/branch/main/docs/readme.md"),
+          lastAuthorDate = Some(Instant.parse("2026-06-18T12:00:00Z")),
+          lastCommitMessage = Some("Add contents docs"),
+          lastCommitSha = Some("commit123"),
+          lastCommitterDate = Some(Instant.parse("2026-06-18T12:01:00Z")),
+          lfsOid = Some("sha256:0123456789abcdef"),
+          lfsSize = Some(4096L),
+          name = Some("readme.md"),
+          path = Some("docs/readme.md"),
+          sha = Some("blob123"),
+          size = Some(16L),
+          submoduleGitUrl = Some("https://gitea.example/octo/submodule.git"),
+          target = Some("../README.md"),
+          `type` = Some("file"),
+          url = Some("https://gitea.example/api/v1/repos/octo/gitea4s/contents/docs/readme.md")
+        )
+        val encoded = expected.toJson
+
+        assertTrue(
+          json.fromJson[ContentsResponse] == Right(expected),
+          encoded.fromJson[ContentsResponse] == Right(expected),
+          encoded.contains(""""_links":{"""),
+          encoded.contains(""""content":"SGVsbG8sIGNvbnRlbnRzIQ==""""),
+          encoded.contains(""""download_url":"https://gitea.example/octo/gitea4s/raw/branch/main/docs/readme.md""""),
+          encoded.contains(""""last_author_date":"2026-06-18T12:00:00Z""""),
+          encoded.contains(""""last_commit_sha":"commit123""""),
+          encoded.contains(""""last_committer_date":"2026-06-18T12:01:00Z""""),
+          encoded.contains(""""lfs_oid":"sha256:0123456789abcdef""""),
+          encoded.contains(""""submodule_git_url":"https://gitea.example/octo/submodule.git""""),
+          !encoded.contains("downloadUrl"),
+          !encoded.contains("lastCommitSha"),
+          !encoded.contains("submoduleGitUrl")
+        )
+      },
+      test("decodes and round-trips a repository contents list response") {
+        val json =
+          """[
+            |  {
+            |    "_links": {
+            |      "git": "https://gitea.example/api/v1/repos/octo/gitea4s/git/trees/tree123",
+            |      "html": "https://gitea.example/octo/gitea4s/src/branch/main/docs",
+            |      "self": "https://gitea.example/api/v1/repos/octo/gitea4s/contents/docs"
+            |    },
+            |    "content": null,
+            |    "download_url": "",
+            |    "encoding": null,
+            |    "git_url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/trees/tree123",
+            |    "html_url": "https://gitea.example/octo/gitea4s/src/branch/main/docs",
+            |    "name": "docs",
+            |    "path": "docs",
+            |    "sha": "tree123",
+            |    "size": 0,
+            |    "type": "dir",
+            |    "url": "https://gitea.example/api/v1/repos/octo/gitea4s/contents/docs"
+            |  },
+            |  {
+            |    "_links": {
+            |      "git": "https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123",
+            |      "html": "https://gitea.example/octo/gitea4s/src/branch/main/README.md",
+            |      "self": "https://gitea.example/api/v1/repos/octo/gitea4s/contents/README.md"
+            |    },
+            |    "content": "UmVhZG1lIGNvbnRlbnQ=",
+            |    "download_url": "https://gitea.example/octo/gitea4s/raw/branch/main/README.md",
+            |    "encoding": "base64",
+            |    "git_url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123",
+            |    "html_url": "https://gitea.example/octo/gitea4s/src/branch/main/README.md",
+            |    "name": "README.md",
+            |    "path": "README.md",
+            |    "sha": "blob123",
+            |    "size": 14,
+            |    "type": "file",
+            |    "url": "https://gitea.example/api/v1/repos/octo/gitea4s/contents/README.md"
+            |  }
+            |]""".stripMargin
+
+        val expected = List(
+          ContentsResponse(
+            links = Some(
+              FileLinksResponse(
+                git = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/trees/tree123"),
+                html = Some("https://gitea.example/octo/gitea4s/src/branch/main/docs"),
+                self = Some("https://gitea.example/api/v1/repos/octo/gitea4s/contents/docs")
+              )
+            ),
+            downloadUrl = Some(""),
+            gitUrl = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/trees/tree123"),
+            htmlUrl = Some("https://gitea.example/octo/gitea4s/src/branch/main/docs"),
+            name = Some("docs"),
+            path = Some("docs"),
+            sha = Some("tree123"),
+            size = Some(0L),
+            `type` = Some("dir"),
+            url = Some("https://gitea.example/api/v1/repos/octo/gitea4s/contents/docs")
+          ),
+          ContentsResponse(
+            links = Some(
+              FileLinksResponse(
+                git = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123"),
+                html = Some("https://gitea.example/octo/gitea4s/src/branch/main/README.md"),
+                self = Some("https://gitea.example/api/v1/repos/octo/gitea4s/contents/README.md")
+              )
+            ),
+            content = Some("UmVhZG1lIGNvbnRlbnQ="),
+            downloadUrl = Some("https://gitea.example/octo/gitea4s/raw/branch/main/README.md"),
+            encoding = Some("base64"),
+            gitUrl = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123"),
+            htmlUrl = Some("https://gitea.example/octo/gitea4s/src/branch/main/README.md"),
+            name = Some("README.md"),
+            path = Some("README.md"),
+            sha = Some("blob123"),
+            size = Some(14L),
+            `type` = Some("file"),
+            url = Some("https://gitea.example/api/v1/repos/octo/gitea4s/contents/README.md")
+          )
+        )
+        val encoded = expected.toJson
+
+        assertTrue(
+          json.fromJson[List[ContentsResponse]] == Right(expected),
+          encoded.fromJson[List[ContentsResponse]] == Right(expected),
+          encoded.contains(""""content":"UmVhZG1lIGNvbnRlbnQ=""""),
+          encoded.contains(""""type":"dir""""),
+          encoded.contains(""""type":"file"""")
         )
       },
       test("decodes git reference response with nested git object fields") {
