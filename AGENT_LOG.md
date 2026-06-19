@@ -1620,3 +1620,8 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 A  core/src/io/worxbend/gitea4s/model/AnnotatedTag.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-19T13:51:10Z orchestrator finished iterations_run=10 iterations_attempted=10 iterations_completed_successfully=10 had_nonfatal_failures=false nonfatal_failure_count=0 last_nonfatal_exit_code=0 last_nonfatal_failure_reason=none final_exit_code=0 fatal=false terminal_reason=iterations_complete final_checkpoint_behavior=source_and_telemetry
+2026-06-19T13:51:10Z final checkpoint policy behavior=source_and_telemetry terminal_reason=iterations_complete
+2026-06-19T13:51:10Z iteration final-10 checkpoint started
+2026-06-19T13:51:10Z iteration final-10 checkpoint status before commit:
+M  AGENT_LOG.md
