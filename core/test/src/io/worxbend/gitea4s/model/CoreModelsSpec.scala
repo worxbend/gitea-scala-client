@@ -471,6 +471,89 @@ object CoreModelsSpec extends ZIOSpecDefault:
           Note().toJson == "{}"
         )
       },
+      test("decodes annotated tag payloads from schema JSON names") {
+        val json =
+          """{
+            |  "message": "Release v0.1.0",
+            |  "object": {
+            |    "sha": "abc123",
+            |    "type": "commit",
+            |    "url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/commits/abc123"
+            |  },
+            |  "sha": "tag123",
+            |  "tag": "v0.1.0",
+            |  "tagger": {
+            |    "name": "Octo Maintainer",
+            |    "email": "octo@example.test",
+            |    "date": "2026-06-18T12:00:00Z"
+            |  },
+            |  "url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/tags/tag123",
+            |  "verification": {
+            |    "verified": true,
+            |    "reason": "gpg",
+            |    "signature": "-----BEGIN PGP SIGNATURE-----",
+            |    "payload": "object abc123",
+            |    "signer": {
+            |      "name": "Octo Maintainer",
+            |      "email": "octo@example.test",
+            |      "username": "octo"
+            |    }
+            |  }
+            |}""".stripMargin
+
+        val tag = json.fromJson[AnnotatedTag]
+
+        assertTrue(
+          tag.map(_.message) == Right(Some("Release v0.1.0")),
+          tag.map(_.gitObject.flatMap(_.sha)) == Right(Some("abc123")),
+          tag.map(_.gitObject.flatMap(_.`type`)) == Right(Some("commit")),
+          tag.map(_.sha) == Right(Some("tag123")),
+          tag.map(_.tag) == Right(Some("v0.1.0")),
+          tag.map(_.tagger.flatMap(_.name)) == Right(Some("Octo Maintainer")),
+          tag.map(_.tagger.flatMap(_.date)) == Right(Some("2026-06-18T12:00:00Z")),
+          tag.map(_.verification.flatMap(_.verified)) == Right(Some(true)),
+          tag.map(_.verification.flatMap(_.signer).flatMap(_.username)) == Right(Some("octo"))
+        )
+      },
+      test("round-trips annotated tag optional fields without losing object mapping") {
+        val payload = AnnotatedTag(
+          message = Some("Release v0.1.0"),
+          gitObject = Some(
+            AnnotatedTagObject(
+              sha = Some("abc123"),
+              `type` = Some("commit"),
+              url = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/commits/abc123")
+            )
+          ),
+          sha = Some("tag123"),
+          tag = Some("v0.1.0"),
+          tagger = Some(
+            CommitUser(
+              date = Some("2026-06-18T12:00:00Z"),
+              email = Some("octo@example.test"),
+              name = Some("Octo Maintainer")
+            )
+          ),
+          url = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/tags/tag123"),
+          verification = Some(
+            PayloadCommitVerification(
+              verified = Some(false),
+              reason = Some("unsigned"),
+              signer = Some(PayloadUser(name = Some("Octo Maintainer"), username = Some("octo")))
+            )
+          )
+        )
+        val json = payload.toJson
+
+        assertTrue(
+          json.contains(""""object":{"""),
+          json.contains(""""tagger":{"""),
+          json.contains(""""verification":{"""),
+          !json.contains("gitObject"),
+          json.fromJson[AnnotatedTag] == Right(payload),
+          AnnotatedTag().toJson == "{}"
+        )
+      },
       test("decodes git tree response from schema JSON names") {
         val json =
           """{

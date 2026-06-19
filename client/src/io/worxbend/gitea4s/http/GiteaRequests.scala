@@ -3,6 +3,7 @@ package io.worxbend.gitea4s.http
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
+  AnnotatedTag,
   Auth,
   Branch,
   ChangedFile,
@@ -358,6 +359,15 @@ object GiteaRequests:
       List("repos", owner, repo, "git", "blobs", sha),
       Nil,
       GiteaResponseMapper.decodeJson[GitBlobResponse]
+    )
+
+  def annotatedTag(config: GiteaConfig, owner: String, repo: String, sha: String): GiteaRequest[AnnotatedTag] =
+    get(
+      config,
+      GiteaEndpoints.getAnnotatedTag,
+      List("repos", owner, repo, "git", "tags", sha),
+      Nil,
+      GiteaResponseMapper.decodeJson[AnnotatedTag]
     )
 
   def repoListAllGitRefs(config: GiteaConfig, owner: String, repo: String): GiteaRequest[zio.Chunk[Reference]] =

@@ -66,6 +66,15 @@ surface is still being filled out.
   `ReposApi.gitBlob`; the read-only request has no query parameters or request
   body, keeps blob content as the documented encoded string, and propagates
   documented `400`/`404` failures through the shared error mapper.
+- Typed annotated Git tag lookup for
+  `GET /repos/{owner}/{repo}/git/tags/{sha}` with `AnnotatedTag`,
+  `AnnotatedTagObject`, `GetAnnotatedTag` endpoint metadata,
+  `GiteaRequests.annotatedTag`, and `ReposApi.annotatedTag`; the read-only
+  request has no query parameters or request body, decodes the Swagger
+  annotated-tag object response including `object`, `tagger`, and
+  `verification`, stays distinct from repository tag-list/lightweight tag
+  handling, and propagates documented `400`/`404` failures through the shared
+  error mapper.
 - Typed Git reference lookup for
   `GET /repos/{owner}/{repo}/git/refs` and
   `GET /repos/{owner}/{repo}/git/refs/{ref}` with `Reference`, `GitObject`,
@@ -104,6 +113,11 @@ surface is still being filled out.
   `GetBlob`, method, path, required `owner`/`repo`/`sha` path parameters, no
   query parameters, success response, request-body absence, retryability, and
   documented 400/404 response status/ref labels.
+- Annotated Git tag endpoint metadata audit coverage for uppercase operation ID
+  `GetAnnotatedTag`, method, path, required `owner`/`repo`/`sha` path
+  parameters, no query parameters, success response `AnnotatedTag`,
+  request-body absence, retryability, and documented 400/404 response
+  status/ref labels.
 - Git refs endpoint metadata audit coverage for operation IDs
   `repoListAllGitRefs` and `repoListGitRefs`, methods, paths, required
   path parameters, no query parameters, success response `ReferenceList`,

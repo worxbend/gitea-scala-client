@@ -589,6 +589,114 @@ object GiteaClientSpec extends ZIOSpecDefault:
           remaining.isEmpty
         )
       },
+      test("loads an annotated Git tag through the ReposApi annotatedTag method") {
+        val facadeConfig = config.copy(userAgent = Some("gitea4s-test"), otp = Some("654321"))
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/tags/tag%2Fabc%20123" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "git",
+                "tags",
+                "tag/abc 123"
+              ) &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("User-Agent").contains("gitea4s-test") &&
+              request.header("X-Gitea-OTP").contains("654321") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(
+            ResponseStub.adjust(
+              """{"message":"Release 1.0\n","object":{"sha":"commit123","type":"commit","url":"https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/commits/commit123"},"sha":"tag123","tag":"v1.0.0","tagger":{"date":"2026-06-01T12:34:56Z","email":"tagger@example.com","name":"Tagger"},"url":"https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/tags/tag123","verification":{"verified":true,"reason":"gpg","signature":"sig","payload":"payload","signer":{"name":"Tagger","email":"tagger@example.com","username":"tagger"}}}"""
+            )
+          )
+        val client = GiteaClient.fromBackend(facadeConfig, backend)
+
+        assertZIO(
+          client
+            .annotatedTag("space owner", "repo/slash", "tag/abc 123")
+            .map(tag =>
+              tag.message ->
+                tag.gitObject.flatMap(_.sha) ->
+                tag.gitObject.flatMap(_.`type`) ->
+                tag.tag ->
+                tag.tagger.flatMap(_.name) ->
+                tag.verification.flatMap(_.verified) ->
+                tag.verification.flatMap(_.signer.flatMap(_.username))
+            )
+        )(
+          Assertion.equalTo(
+            Some("Release 1.0\n") ->
+              Some("commit123") ->
+              Some("commit") ->
+              Some("v1.0.0") ->
+              Some("Tagger") ->
+              Some(true) ->
+              Some("tagger")
+          )
+        )
+      },
+      test("propagates annotated Git tag documented 400 and 404 errors through the facade") {
+        val badBody = """{"message":"invalid tag ref"}"""
+        val notFoundBody = """{"message":"tag not found"}"""
+        val badBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "tags", "bad-sha"))
+          ).thenRespond(ResponseStub.adjust(badBody, StatusCode.BadRequest))
+        val notFoundBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "tags", "missing-sha"))
+          ).thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val badClient = GiteaClient.fromBackend(config, badBackend)
+        val notFoundClient = GiteaClient.fromBackend(config, notFoundBackend)
+
+        for
+          bad <- badClient.annotatedTag("alice", "api", "bad-sha").either
+          notFound <- notFoundClient.annotatedTag("alice", "api", "missing-sha").either
+        yield assertTrue(
+          bad == Left(GiteaError.BadRequest("invalid tag ref", badBody)),
+          notFound == Left(GiteaError.NotFound("tag not found", notFoundBody))
+        )
+      },
+      test("retries annotated Git tag lookup because it is a read-only GET") {
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"temporarily unavailable"}""",
+                  StatusCode.ServiceUnavailable
+                )
+              ),
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"Retried tag","object":{"sha":"commit123","type":"commit"},"sha":"tag123","tag":"v1.0.0"}"""
+                )
+              )
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.annotatedTag("alice", "api", "tag123").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          tag <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          tag.message.contains("Retried tag"),
+          tag.gitObject.flatMap(_.sha).contains("commit123"),
+          tag.tag.contains("v1.0.0"),
+          remaining.isEmpty
+        )
+      },
       test("loads all Git refs through the ReposApi gitRefs method") {
         val facadeConfig = config.copy(userAgent = Some("gitea4s-test"), otp = Some("654321"))
         val backend =

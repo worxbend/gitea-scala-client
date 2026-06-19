@@ -271,6 +271,16 @@ as the documented encoded string at this layer. The request has no query
 parameters or body, is read-only retryable, and propagates documented
 `400`/`404` failures through the shared error mapper.
 
+Annotated Git tag lookup covers
+`GET /repos/{owner}/{repo}/git/tags/{sha}` through `client.annotatedTag`.
+Successful responses decode as `AnnotatedTag` with optional `message`, `object`,
+`sha`, `tag`, `tagger`, `url`, and `verification` fields. This Swagger operation
+returns annotated tag objects only; it is separate from `client.tags`, which
+streams the repository tag-list endpoint and does not imply lightweight tag
+object lookup support. The request has no query parameters or body, is read-only
+retryable, and propagates documented `400`/`404` failures through the shared
+error mapper.
+
 Repository Git reference lookup covers
 `GET /repos/{owner}/{repo}/git/refs` and
 `GET /repos/{owner}/{repo}/git/refs/{ref}` through `client.gitRefs`. Successful
@@ -341,6 +351,8 @@ client.gitTree(
 )
 
 client.gitBlob(owner = "my-org", repo = "my-repo", sha = "blob123")
+
+client.annotatedTag(owner = "my-org", repo = "my-repo", sha = "tag-object-sha")
 
 client.gitRefs(owner = "my-org", repo = "my-repo")
 
@@ -731,10 +743,10 @@ tests, and pagination tests:
 Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
-tree/blob/refs endpoint groups against `plugin-redoc-2.yaml`, including
+tree/blob/annotated-tag/refs endpoint groups against `plugin-redoc-2.yaml`, including
 documented non-2xx response status/ref labels, optional query parameters such as
-`recursive`/`page`/`per_page`, no-query/no-body checks for Git refs, and path
-enum values such as `diffType`.
+`recursive`/`page`/`per_page`, no-query/no-body checks for Git blob, annotated
+tag, and refs requests, and path enum values such as `diffType`.
 
 Live integration tests are opt-in:
 
@@ -747,16 +759,13 @@ GITEA_TOKEN=... \
 Without both integration variables, `it.test` reports the live tests as ignored
 and makes no external calls.
 
-Latest repository Git refs validation passed with:
+Latest annotated Git tag validation passed with:
 
 ```bash
 ./mill core.test
 ./mill client.test
 ./mill compatibility.check
-env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill __.test it.test examples.run
 ```
-
-The credential-stripped run reported the live integration tests as ignored.
 
 ## Mill Commands
 

@@ -1546,3 +1546,77 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 A  core/src/io/worxbend/gitea4s/model/Reference.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-19T13:34:01Z iteration 10 started remaining=8326s
+2026-06-19T13:34:01Z iteration 10 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T13:34:01Z iteration 10 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-hw2q247q/repo copied_entries=93
+2026-06-19T13:34:01Z iteration 10 ideator phase started count=3
+2026-06-19T13:34:01Z iteration 10 ideator phase concurrency workers=3
+2026-06-19T13:34:01Z iteration 10 ideator 1 role="the pragmatist" started
+2026-06-19T13:34:01Z iteration 10 ideator 2 role="the architect" started
+2026-06-19T13:34:01Z iteration 10 ideator 3 role="the contrarian" started
+2026-06-19T13:34:10Z iteration 10 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T13:34:10Z iteration 10 ideator 2 role="the architect" completed status=0
+2026-06-19T13:34:15Z iteration 10 ideator 3 role="the contrarian" completed status=0
+2026-06-19T13:34:15Z iteration 10 ideator phase completed approaches=3
+2026-06-19T13:34:15Z iteration 10 selector started approaches=3
+2026-06-19T13:34:25Z iteration 10 selector completed status=0
+2026-06-19T13:34:25Z iteration 10 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-hw2q247q/repo
+2026-06-19T13:34:25Z iteration 10 selector rejected alternative role="the pragmatist" approach="Contract-First Annotated Tag Slice: treat the annotated-tag endpoint as a small release-quality contract exercise, using Swagger metadata and representative payload shape as the..." reason="Strong overall direction, especially on naming and release-quality scope, but it treats the model-fidelity concern as one part of the endpoint slice rather than the central planning gate."
+2026-06-19T13:34:25Z iteration 10 selector rejected alternative role="the architect" approach="Contract-first model spike: treat the annotated-tag slice primarily as a Swagger fidelity exercise, using the endpoint and response schema as the organizing center before touchi..." reason="Very close to the selected strategy, but it is slightly too sequential around facade ergonomics. The Planner should still consider naming and public API clarity while designing the model contract, because this endpoint can be confused wi..."
+2026-06-19T13:34:25Z iteration 10 selector rejected alternative role="the contrarian" approach="Schema-First Model Gate: before adding the annotated-tag endpoint, force the next slice to prove the response model against Swagger definitions first, then treat request constru..." reason="Correctly identifies response-model drift as the weak frontier, but selected as-is it risks over-weighting a new model-audit mechanism. For this iteration, a lightweight checklist mindset is preferable to inventing heavier infrastructure..."
+2026-06-19T13:34:25Z iteration 10 selector alternatives persisted count=3
+2026-06-19T13:34:25Z iteration 10 planner started
+2026-06-19T13:35:00Z iteration 10 plan: 5 task(s) in 5 phase(s). The slice is intentionally sequential because the HTTP layer and facade depend on the new core AnnotatedTag models, and docs/snapshots depend on the final public API shape. No phase is marked parallel because the meaningful implementation work shares either generated types, endpoint metadata, tests, or release documentation.
+2026-06-19T13:35:00Z iteration 10 phase 1 started parallel=False tasks=1
+2026-06-19T13:37:34Z iteration 10 task t1 ('Add AnnotatedTag Core Models') status=0
+2026-06-19T13:37:34Z iteration 10 phase 2 started parallel=False tasks=1
+2026-06-19T13:40:50Z iteration 10 task t2 ('Add Annotated Tag HTTP Request Slice') status=0
+2026-06-19T13:40:50Z iteration 10 phase 3 started parallel=False tasks=1
+2026-06-19T13:42:42Z iteration 10 task t3 ('Expose Annotated Tag Facade') status=0
+2026-06-19T13:42:42Z iteration 10 phase 4 started parallel=False tasks=1
+2026-06-19T13:47:11Z iteration 10 task t4 ('Update Docs, Snapshots, and Plan') status=0
+2026-06-19T13:47:11Z iteration 10 phase 5 started parallel=False tasks=1
+2026-06-19T13:48:19Z iteration 10 task t5 ('Validate Annotated Tag Slice') status=0
+2026-06-19T13:48:19Z iteration 10 reviewer started
+
+## Reviewer Summary - Iteration 10 - 2026-06-19T14:34:00Z
+
+What was done:
+- Inspected every file changed in the annotated Git tag slice: `AnnotatedTag`, endpoint metadata, request builder, `ReposApi` and `SttpGiteaClient` facade wiring, request/client/audit/core tests, README, CHANGELOG, PLAN, AGENT_LOG, and public API snapshots.
+- Cross-checked `GetAnnotatedTag`, `AnnotatedTag`, `AnnotatedTagObject`, `CommitUser`, `PayloadCommitVerification`, and the `AnnotatedTag` response against `plugin-redoc-2.yaml`; method, path, operation ID, required path parameters, success response, documented 400/404 responses, and response fields match the local Swagger contract.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, and `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`.
+
+What was found:
+- No functional blocker or regression was found.
+- `AnnotatedTag` preserves the Swagger `object` field through `gitObject`, reuses existing `CommitUser` and `PayloadCommitVerification` definitions where their fields match, and has focused decode/round-trip coverage for `object`, `tagger`, and `verification`.
+- `GiteaRequests.annotatedTag` safely encodes owner/repo/sha path segments, applies JSON/auth/OTP/user-agent headers, avoids query parameters and request body/content type, decodes `AnnotatedTag`, maps documented 400/404 failures, and remains retryable as a read-only GET.
+- `ReposApi.annotatedTag` gives the Swagger annotated-tag object endpoint a clear facade name distinct from repository lightweight tag listing through `client.tags`.
+- `GiteaEndpointAuditSpec` covers `GetAnnotatedTag` with private documented non-2xx expectations and no audit-only data leaked into published endpoint metadata.
+- Residual risk is mainly process-level: endpoint audits prove operation metadata, not full response-model field coverage; more Git object models should get a lightweight field checklist before this becomes easy to miss.
+
+Top improvement proposals:
+- Add a hermetic-by-default live integration probe for slash-containing Git refs, gated on explicit owner/repo/ref environment variables, to validate real Gitea routing for encoded refs such as `heads/main`.
+- Add an optional annotated-tag live probe only when a specific annotated tag SHA is provided; do not infer annotated tag object support from repository tag-list entries because lightweight tags are explicitly out of scope for `GetAnnotatedTag`.
+- Introduce a lightweight schema-field checklist or test helper for new Swagger response models so future slices verify model field completeness in addition to endpoint metadata.
+2026-06-19T13:51:07Z iteration 10 reviewer completed status=0
+2026-06-19T13:51:07Z iteration 10 memory updated
+2026-06-19T13:51:08Z iteration 10 completed validation_status=0
+2026-06-19T13:51:08Z iteration 10 checkpoint started
+2026-06-19T13:51:08Z iteration 10 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+A  core/src/io/worxbend/gitea4s/model/AnnotatedTag.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

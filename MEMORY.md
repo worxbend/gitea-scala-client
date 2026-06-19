@@ -16,3 +16,4 @@
 [learning] `GetBlob` returns blob content as an encoded string plus optional LFS metadata; keep core/facade models lossless and defer byte decoding to a deliberate convenience layer.
 [learning] `repoListGitRefs` accepts a part or full ref name, and real Git refs contain slashes; request tests should make encoded slash behavior explicit.
 [process] For slash-bearing path parameters, pair unit-level encoded-segment assertions with opt-in live validation before generalizing the routing assumption to more endpoints.
+[learning] `GetAnnotatedTag` only returns annotated tag objects by tag SHA and must stay distinct from repository tag-list/lightweight tag semantics.

@@ -25,6 +25,7 @@ import io.worxbend.gitea4s.http.{
 }
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
+  AnnotatedTag,
   Branch,
   ChangedFile,
   Comment,
@@ -163,6 +164,9 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def gitBlob(owner: String, repo: String, sha: String): IO[GiteaError, GitBlobResponse] =
     executor.send(GiteaRequests.gitBlob(config, owner, repo, sha))
+
+  override def annotatedTag(owner: String, repo: String, sha: String): IO[GiteaError, AnnotatedTag] =
+    executor.send(GiteaRequests.annotatedTag(config, owner, repo, sha))
 
   override def gitRefs(owner: String, repo: String): IO[GiteaError, Chunk[Reference]] =
     executor.send(GiteaRequests.repoListAllGitRefs(config, owner, repo))

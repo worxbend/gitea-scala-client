@@ -735,6 +735,48 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             )
         )
       },
+      test("builds and decodes schema-traceable annotated Git tag lookup") {
+        val built = GiteaRequests.annotatedTag(config, "worx bend", "gitea/scala", "tag/abc 123")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """{"message":"Release 1.0\n","object":{"sha":"commit123","type":"commit","url":"https://gitea.example/api/v1/repos/o/r/git/commits/commit123"},"sha":"tag123","tag":"v1.0.0","tagger":{"date":"2026-06-01T12:34:56Z","email":"tagger@example.com","name":"Tagger"},"url":"https://gitea.example/api/v1/repos/o/r/git/tags/tag123","verification":{"verified":true,"reason":"gpg","signature":"sig","payload":"payload","signer":{"name":"Tagger","email":"tagger@example.com","username":"tagger"}}}"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.getAnnotatedTag,
+          endpoint.method == "GET",
+          endpoint.operationId == "GetAnnotatedTag",
+          endpoint.path == "/repos/{owner}/{repo}/git/tags/{sha}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "sha"),
+          endpoint.parameters.forall(parameter => parameter.in == "path" && parameter.required),
+          endpoint.response == "#/responses/AnnotatedTag",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/tags/tag%2Fabc%20123",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "git", "tags", "tag/abc 123"),
+          request.uri.paramsMap.isEmpty,
+          request.body == NoBody,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)).map(_.message) == Right(Some("Release 1.0\n")),
+          built.decode(request.send(backend)).map(_.gitObject.flatMap(_.sha)) == Right(Some("commit123")),
+          built.decode(request.send(backend)).map(_.gitObject.flatMap(_.`type`)) == Right(Some("commit")),
+          built.decode(request.send(backend)).map(_.tag) == Right(Some("v1.0.0")),
+          built.decode(request.send(backend)).map(_.tagger.flatMap(_.name)) == Right(Some("Tagger")),
+          built.decode(request.send(backend)).map(_.verification.flatMap(_.verified)) == Right(Some(true)),
+          built.decode(request.send(backend)).map(_.verification.flatMap(_.signer.flatMap(_.username))) ==
+            Right(Some("tagger"))
+        )
+      },
       test("builds and decodes schema-traceable Git refs list request") {
         val built = GiteaRequests.repoListAllGitRefs(config, "worx bend", "gitea/scala")
         val endpoint = built.endpoint
@@ -3187,6 +3229,23 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.BadRequest("invalid blob ref", badRequestBody)),
           missing.decode(missing.request.send(notFoundBackend)) ==
             Left(GiteaError.NotFound("missing blob", notFoundBody))
+        )
+      },
+      test("maps documented annotated Git tag 400 and 404 responses") {
+        val badRequestBody = """{"message":"invalid tag ref"}"""
+        val notFoundBody = """{"message":"missing tag"}"""
+        val badRequestBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(badRequestBody, StatusCode.BadRequest))
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val invalid = GiteaRequests.annotatedTag(config, "owner", "repo", "bad ref")
+        val missing = GiteaRequests.annotatedTag(config, "owner", "repo", "missing-sha")
+
+        assertTrue(
+          invalid.decode(invalid.request.send(badRequestBackend)) ==
+            Left(GiteaError.BadRequest("invalid tag ref", badRequestBody)),
+          missing.decode(missing.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing tag", notFoundBody))
         )
       },
       test("maps documented Git refs 404 responses") {

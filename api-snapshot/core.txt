@@ -549,6 +549,116 @@ public final class io.worxbend.gitea4s.model.AddTimeOption$ implements scala.der
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.AnnotatedTag
+public final class io.worxbend.gitea4s.model.AnnotatedTag implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.AnnotatedTag(scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.AnnotatedTagObject>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.CommitUser>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.PayloadCommitVerification>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.String> message();
+  public scala.Option<io.worxbend.gitea4s.model.AnnotatedTagObject> gitObject();
+  public scala.Option<java.lang.String> sha();
+  public scala.Option<java.lang.String> tag();
+  public scala.Option<io.worxbend.gitea4s.model.CommitUser> tagger();
+  public scala.Option<java.lang.String> url();
+  public scala.Option<io.worxbend.gitea4s.model.PayloadCommitVerification> verification();
+  public io.worxbend.gitea4s.model.AnnotatedTag copy(scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.AnnotatedTagObject>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.CommitUser>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.PayloadCommitVerification>);
+  public scala.Option<java.lang.String> copy$default$1();
+  public scala.Option<io.worxbend.gitea4s.model.AnnotatedTagObject> copy$default$2();
+  public scala.Option<java.lang.String> copy$default$3();
+  public scala.Option<java.lang.String> copy$default$4();
+  public scala.Option<io.worxbend.gitea4s.model.CommitUser> copy$default$5();
+  public scala.Option<java.lang.String> copy$default$6();
+  public scala.Option<io.worxbend.gitea4s.model.PayloadCommitVerification> copy$default$7();
+  public scala.Option<java.lang.String> _1();
+  public scala.Option<io.worxbend.gitea4s.model.AnnotatedTagObject> _2();
+  public scala.Option<java.lang.String> _3();
+  public scala.Option<java.lang.String> _4();
+  public scala.Option<io.worxbend.gitea4s.model.CommitUser> _5();
+  public scala.Option<java.lang.String> _6();
+  public scala.Option<io.worxbend.gitea4s.model.PayloadCommitVerification> _7();
+  public static io.worxbend.gitea4s.model.AnnotatedTag apply(scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.AnnotatedTagObject>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.CommitUser>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.PayloadCommitVerification>);
+  public static io.worxbend.gitea4s.model.AnnotatedTag fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.AnnotatedTag> given_JsonCodec_AnnotatedTag();
+  public static io.worxbend.gitea4s.model.AnnotatedTag unapply(io.worxbend.gitea4s.model.AnnotatedTag);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public static scala.Option<io.worxbend.gitea4s.model.AnnotatedTagObject> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$4();
+  public static scala.Option<io.worxbend.gitea4s.model.CommitUser> $lessinit$greater$default$5();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$6();
+  public static scala.Option<io.worxbend.gitea4s.model.PayloadCommitVerification> $lessinit$greater$default$7();
+}
+
+## io.worxbend.gitea4s.model.AnnotatedTag$
+public final class io.worxbend.gitea4s.model.AnnotatedTag$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.AnnotatedTag$ MODULE$;
+  public io.worxbend.gitea4s.model.AnnotatedTag apply(scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.AnnotatedTagObject>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.CommitUser>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.PayloadCommitVerification>);
+  public io.worxbend.gitea4s.model.AnnotatedTag unapply(io.worxbend.gitea4s.model.AnnotatedTag);
+  public scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public scala.Option<io.worxbend.gitea4s.model.AnnotatedTagObject> $lessinit$greater$default$2();
+  public scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public scala.Option<java.lang.String> $lessinit$greater$default$4();
+  public scala.Option<io.worxbend.gitea4s.model.CommitUser> $lessinit$greater$default$5();
+  public scala.Option<java.lang.String> $lessinit$greater$default$6();
+  public scala.Option<io.worxbend.gitea4s.model.PayloadCommitVerification> $lessinit$greater$default$7();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.AnnotatedTag> given_JsonCodec_AnnotatedTag();
+  public io.worxbend.gitea4s.model.AnnotatedTag fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.AnnotatedTagObject
+public final class io.worxbend.gitea4s.model.AnnotatedTagObject implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.AnnotatedTagObject(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.String> sha();
+  public scala.Option<java.lang.String> type();
+  public scala.Option<java.lang.String> url();
+  public io.worxbend.gitea4s.model.AnnotatedTagObject copy(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public scala.Option<java.lang.String> copy$default$1();
+  public scala.Option<java.lang.String> copy$default$2();
+  public scala.Option<java.lang.String> copy$default$3();
+  public scala.Option<java.lang.String> _1();
+  public scala.Option<java.lang.String> _2();
+  public scala.Option<java.lang.String> _3();
+  public static io.worxbend.gitea4s.model.AnnotatedTagObject apply(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.AnnotatedTagObject fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.AnnotatedTagObject> given_JsonCodec_AnnotatedTagObject();
+  public static io.worxbend.gitea4s.model.AnnotatedTagObject unapply(io.worxbend.gitea4s.model.AnnotatedTagObject);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$3();
+}
+
+## io.worxbend.gitea4s.model.AnnotatedTagObject$
+public final class io.worxbend.gitea4s.model.AnnotatedTagObject$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.AnnotatedTagObject$ MODULE$;
+  public io.worxbend.gitea4s.model.AnnotatedTagObject apply(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.AnnotatedTagObject unapply(io.worxbend.gitea4s.model.AnnotatedTagObject);
+  public scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.AnnotatedTagObject> given_JsonCodec_AnnotatedTagObject();
+  public io.worxbend.gitea4s.model.AnnotatedTagObject fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.ApiReference
 public final class io.worxbend.gitea4s.model.ApiReference implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.ApiReference(java.lang.String, java.lang.String);

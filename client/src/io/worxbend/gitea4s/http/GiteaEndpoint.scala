@@ -349,6 +349,19 @@ object GiteaEndpoints:
       response = "#/responses/GitBlobResponse"
     )
 
+  val getAnnotatedTag: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/git/tags/{sha}",
+      operationId = "GetAnnotatedTag",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("sha", "path", required = true)
+      ),
+      response = "#/responses/AnnotatedTag"
+    )
+
   val repoListAllGitRefs: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

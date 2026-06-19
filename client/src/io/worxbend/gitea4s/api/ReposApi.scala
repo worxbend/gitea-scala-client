@@ -10,6 +10,7 @@ import io.worxbend.gitea4s.http.{
   SingleCommitParams
 }
 import io.worxbend.gitea4s.model.{
+  AnnotatedTag,
   Branch,
   Commit,
   CommitDiffType,
@@ -54,6 +55,8 @@ trait ReposApi:
   ): IO[GiteaError, GitTreeResponse]
 
   def gitBlob(owner: String, repo: String, sha: String): IO[GiteaError, GitBlobResponse]
+
+  def annotatedTag(owner: String, repo: String, sha: String): IO[GiteaError, AnnotatedTag]
 
   def gitRefs(owner: String, repo: String): IO[GiteaError, Chunk[Reference]]
 

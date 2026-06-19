@@ -215,6 +215,13 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val annotatedTagRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.annotatedTag(config, "owner", "repo", sha = "abc123"),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val gitRefEndpoints = List(
     GiteaEndpoints.repoListAllGitRefs,
     GiteaEndpoints.repoListGitRefs
@@ -406,6 +413,10 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       GiteaResponseLabel("400", "#/responses/error"),
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "GetAnnotatedTag" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoListAllGitRefs" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
@@ -458,6 +469,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("git blob metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = gitBlobRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("annotated Git tag metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = annotatedTagRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
