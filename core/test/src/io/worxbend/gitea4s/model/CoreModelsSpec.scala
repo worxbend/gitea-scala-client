@@ -487,6 +487,52 @@ object CoreModelsSpec extends ZIOSpecDefault:
           decoded == Right(payload)
         )
       },
+      test("round-trips create pull request option using schema JSON names") {
+        val payload = CreatePullRequestOption(
+          allowMaintainerEdit = Some(true),
+          assignee = Some("alice"),
+          assignees = Some(List("alice", "bob")),
+          base = Some("main"),
+          body = Some("Ready for review"),
+          dueDate = Some(Instant.parse("2026-07-04T00:00:00Z")),
+          head = Some("alice:feature/pr-create"),
+          labels = Some(List(10L, 11L)),
+          milestone = Some(12L),
+          reviewers = Some(List("reviewer")),
+          teamReviewers = Some(List("maintainers")),
+          title = Some("Add pull request create API")
+        )
+        val decoded = payload.toJson.fromJson[CreatePullRequestOption]
+
+        assertTrue(
+          payload.toJson ==
+            """{"allow_maintainer_edit":true,"assignee":"alice","assignees":["alice","bob"],"base":"main","body":"Ready for review","due_date":"2026-07-04T00:00:00Z","head":"alice:feature/pr-create","labels":[10,11],"milestone":12,"reviewers":["reviewer"],"team_reviewers":["maintainers"],"title":"Add pull request create API"}""",
+          decoded == Right(payload)
+        )
+      },
+      test("round-trips edit pull request option using schema JSON names") {
+        val payload = EditPullRequestOption(
+          allowMaintainerEdit = Some(false),
+          assignee = Some("bob"),
+          assignees = Some(List("bob", "carol")),
+          base = Some("release/1.0"),
+          body = Some("Updated description"),
+          contentVersion = Some(9L),
+          dueDate = Some(Instant.parse("2026-07-05T00:00:00Z")),
+          labels = Some(List(20L, 21L)),
+          milestone = Some(22L),
+          state = Some(IssueState.Closed),
+          title = Some("Retitle pull request"),
+          unsetDueDate = Some(false)
+        )
+        val decoded = payload.toJson.fromJson[EditPullRequestOption]
+
+        assertTrue(
+          payload.toJson ==
+            """{"allow_maintainer_edit":false,"assignee":"bob","assignees":["bob","carol"],"base":"release/1.0","body":"Updated description","content_version":9,"due_date":"2026-07-05T00:00:00Z","labels":[20,21],"milestone":22,"state":"closed","title":"Retitle pull request","unset_due_date":false}""",
+          decoded == Right(payload)
+        )
+      },
       test("round-trips merge pull request option using schema JSON names") {
         val payload = MergePullRequestOption(
           mergeMethod = MergePullRequestMethod.RebaseMerge,

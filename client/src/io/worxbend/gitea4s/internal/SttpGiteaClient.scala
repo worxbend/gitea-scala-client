@@ -30,12 +30,14 @@ import io.worxbend.gitea4s.model.{
   CommitStatus,
   CreateIssue,
   CreateIssueComment,
+  CreatePullRequestOption,
   CreatePullReviewOptions,
   CreateStatusOption,
   DismissPullReviewOptions,
   EditDeadlineOption,
   EditIssueComment,
   EditIssue,
+  EditPullRequestOption,
   EditReactionOption,
   Issue,
   IssueDeadline,
@@ -211,6 +213,21 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.repoPullRequest(config, owner, repo, index))
+
+  override def createPullRequest(
+      owner: String,
+      repo: String,
+      body: CreatePullRequestOption
+  ): IO[GiteaError, PullRequest] =
+    executor.send(GiteaRequests.createPullRequest(config, owner, repo, body))
+
+  override def editPullRequest(
+      owner: String,
+      repo: String,
+      index: Long,
+      body: EditPullRequestOption
+  ): IO[GiteaError, PullRequest] =
+    executor.send(GiteaRequests.editPullRequest(config, owner, repo, index, body))
 
   override def pullRequestIsMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean] =
     executor.send(GiteaRequests.repoPullRequestIsMerged(config, owner, repo, index))

@@ -954,3 +954,77 @@ M  api-snapshot/client.txt
 M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 A  client/test/src/io/worxbend/gitea4s/http/GiteaResponseMapperSpec.scala
+2026-06-19T10:58:23Z iteration 2 started remaining=17301s
+2026-06-19T10:58:23Z iteration 2 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T10:58:23Z iteration 2 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-vizbodxt/repo copied_entries=85
+2026-06-19T10:58:23Z iteration 2 ideator phase started count=3
+2026-06-19T10:58:23Z iteration 2 ideator phase concurrency workers=3
+2026-06-19T10:58:23Z iteration 2 ideator 1 role="the pragmatist" started
+2026-06-19T10:58:23Z iteration 2 ideator 2 role="the architect" started
+2026-06-19T10:58:23Z iteration 2 ideator 3 role="the contrarian" started
+2026-06-19T10:58:32Z iteration 2 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T10:58:32Z iteration 2 ideator 2 role="the architect" completed status=0
+2026-06-19T10:58:37Z iteration 2 ideator 3 role="the contrarian" completed status=0
+2026-06-19T10:58:37Z iteration 2 ideator phase completed approaches=3
+2026-06-19T10:58:37Z iteration 2 selector started approaches=3
+2026-06-19T10:58:48Z iteration 2 selector completed status=0
+2026-06-19T10:58:48Z iteration 2 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-vizbodxt/repo
+2026-06-19T10:58:48Z iteration 2 selector rejected alternative role="the pragmatist" approach="Contract-first narrow write slice: treat create/edit pull requests as a bounded public API addition whose Swagger contract is locked before facade polish, prioritizing metadata..." reason="Strong and practical, but slightly too focused on endpoint metadata and response semantics; the Planner also needs explicit attention to payload modeling and public API compatibility before snapshot refresh."
+2026-06-19T10:58:48Z iteration 2 selector rejected alternative role="the architect" approach="Contract-First Write Slice: treat pull-request create/edit as a public-contract stabilization exercise before treating it as another endpoint addition. The planner should anchor..." reason="Strong framing, but too abstract as-is; it needs the contrarian emphasis on negative space: what must remain unexposed, undocumented, non-retryable, or test-private."
+2026-06-19T10:58:48Z iteration 2 selector rejected alternative role="the contrarian" approach="Contract-first write slice: treat create/edit pull request as a schema conformance exercise before an API-expansion exercise, allowing ergonomics only after the Swagger contract..." reason="Useful discipline around drift and ABI creep, but too defensive alone; the Planner still needs to carry the slice through the established vertical path once the contract boundary is clear."
+2026-06-19T10:58:48Z iteration 2 selector alternatives persisted count=3
+2026-06-19T10:58:48Z iteration 2 planner started
+2026-06-19T10:59:27Z iteration 2 plan: 6 task(s) in 5 phase(s). The work is sequenced around the public contract boundary: models first, request construction second, independent audit/request tests third, facade wiring after the request layer is stable, and documentation/snapshot/plan updates last. Parallelism is limited to the two test tasks because they touch disjoint files and both depend only on the completed request-layer surface.
+2026-06-19T10:59:27Z iteration 2 phase 1 started parallel=False tasks=1
+2026-06-19T11:02:40Z iteration 2 task t1 ('Add pull request create/edit models') status=0
+2026-06-19T11:02:40Z iteration 2 phase 2 started parallel=False tasks=1
+2026-06-19T11:04:35Z iteration 2 task t2 ('Implement pull request create/edit request builders') status=0
+2026-06-19T11:04:35Z iteration 2 phase 3 started parallel=True tasks=2
+2026-06-19T11:05:49Z iteration 2 task t3 ('Add Swagger metadata audit coverage') status=0
+2026-06-19T11:07:51Z iteration 2 task t4 ('Add request-layer tests') status=0
+2026-06-19T11:07:51Z iteration 2 phase 4 started parallel=False tasks=1
+2026-06-19T11:11:15Z iteration 2 task t5 ('Expose facade methods and client tests') status=0
+2026-06-19T11:11:15Z iteration 2 phase 5 started parallel=False tasks=1
+2026-06-19T11:15:43Z iteration 2 task t6 ('Update docs, plan, snapshots, and validation notes') status=0
+2026-06-19T11:15:43Z iteration 2 reviewer started
+
+## Reviewer Summary - Iteration 2 - 2026-06-19T11:17:39Z
+
+What was done:
+- Inspected every file changed in the pull-request create/edit slice: core payload models/codecs, endpoint metadata, request builders, facade wiring, request/client/audit tests, README, CHANGELOG, PLAN, AGENT_LOG, and API snapshots.
+- Cross-checked `repoCreatePullRequest` and `repoEditPullRequest` against `plugin-redoc-2.yaml`; methods, paths, operation IDs, body schemas, path parameters, success refs, and documented 403/404/409/422 plus create 423 and edit 412 response labels match the local Swagger contract.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, and `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`.
+
+What was found:
+- No functional blocker or regression was found.
+- `CreatePullRequestOption` and `EditPullRequestOption` preserve schema JSON names, including `allow_maintainer_edit`, `team_reviewers`, `content_version`, and `unset_due_date`, and the request builders send JSON bodies with `Content-Type: application/json`.
+- The new POST/PATCH endpoints are non-retryable writes, path segments are safely encoded, shared auth/OTP/user-agent/accept headers are applied, and facade tests cover success, representative documented failures, and non-retryability.
+- Swagger audit coverage was added from the start of the slice, with documented non-2xx labels kept test-private.
+- The main design gap is error taxonomy: documented edit `412` is preserved and tested, but it still maps to `GiteaError.ServerError(412, body)`, which is semantically misleading for precondition/content-version conflicts.
+
+Top improvement proposals:
+- Add an explicit `GiteaError.PreconditionFailed` or similarly named case for `412`, map it globally, add mapper-level JSON/empty/raw-body tests, and update pull-request edit tests away from `ServerError(412, ...)`.
+- Continue with `GET /repos/{owner}/{repo}/commits/{sha}/pull` (`repoGetCommitPullRequest`) as the next read slice after the 412 taxonomy cleanup.
+- Keep registering documented non-2xx audit labels in test scope for each new audited endpoint; refactor `GiteaEndpointAuditSpec` internals if the table becomes awkward, but do not re-expose audit-only metadata in public endpoint types.
+2026-06-19T11:18:58Z iteration 2 reviewer completed status=0
+2026-06-19T11:18:58Z iteration 2 memory updated
+2026-06-19T11:18:58Z iteration 2 completed validation_status=0
+2026-06-19T11:18:58Z iteration 2 checkpoint started
+2026-06-19T11:18:58Z iteration 2 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/PullRequestsApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+M  core/src/io/worxbend/gitea4s/model/GiteaModels.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

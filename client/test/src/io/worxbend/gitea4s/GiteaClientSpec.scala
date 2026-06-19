@@ -26,12 +26,14 @@ import io.worxbend.gitea4s.model.{
   Auth,
   CommitStatusState,
   CreateIssue,
+  CreatePullRequestOption,
   CreatePullReviewOptions,
   CreateStatusOption,
   DismissPullReviewOptions,
   EditDeadlineOption,
   EditIssue,
   EditIssueComment,
+  EditPullRequestOption,
   EditReactionOption,
   IssueMeta,
   LockIssueOption,
@@ -1096,7 +1098,10 @@ object GiteaClientSpec extends ZIOSpecDefault:
       test("loads and streams repository pull requests") {
         val twoPageHeaders = List(Header("x-total-count", "2"))
         val backend =
-          taskStub.whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls")))
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "pulls"))
+          )
             .thenRespondCyclic(
               ResponseStub.adjust(
                 """[{"id":1,"number":1,"title":"First","state":"open"}]""",
@@ -1109,7 +1114,31 @@ object GiteaClientSpec extends ZIOSpecDefault:
                 twoPageHeaders
               )
             )
-            .whenRequestMatches(_.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2")))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls")) &&
+                (request.body match
+                  case StringBody(body, _, _) =>
+                    body.contains(""""base":"main"""") &&
+                      body.contains(""""head":"feature"""") &&
+                      body.contains(""""title":"Created PR"""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":5,"number":5,"title":"Created PR","state":"open"}""", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.PATCH &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2")) &&
+                (request.body match
+                  case StringBody(body, _, _) =>
+                    body.contains(""""content_version":7""") &&
+                      body.contains(""""title":"Retitled PR"""")
+                  case _ => false)
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":2,"number":2,"title":"Retitled PR","state":"open"}"""))
+            .whenRequestMatches(request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2"))
+            )
             .thenRespond(ResponseStub.adjust("""{"id":2,"number":2,"title":"Second","state":"closed"}"""))
             .whenRequestMatches(request =>
               request.method == Method.GET &&
@@ -1263,6 +1292,17 @@ object GiteaClientSpec extends ZIOSpecDefault:
         for
           pullRequests <- client.pullRequests("alice", "api", PullRequestListParams.default).runCollect
           pullRequest <- client.pullRequest("alice", "api", 2)
+          createdPullRequest <- client.createPullRequest(
+            "alice",
+            "api",
+            CreatePullRequestOption(base = Some("main"), head = Some("feature"), title = Some("Created PR"))
+          )
+          editedPullRequest <- client.editPullRequest(
+            "alice",
+            "api",
+            2,
+            EditPullRequestOption(contentVersion = Some(7L), title = Some("Retitled PR"))
+          )
           merged <- client.pullRequestIsMerged("alice", "api", 2)
           notMerged <- client.pullRequestIsMerged("alice", "api", 3)
           mergePullRequest <- client.mergePullRequest(
@@ -1325,6 +1365,10 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequests.map(_.number) == Chunk(Some(1L), Some(2L)),
           pullRequest.id.contains(2L),
           pullRequest.title.contains("Second"),
+          createdPullRequest.number.contains(5L),
+          createdPullRequest.title.contains("Created PR"),
+          editedPullRequest.number.contains(2L),
+          editedPullRequest.title.contains("Retitled PR"),
           merged,
           !notMerged,
           mergePullRequest == Right(()),
@@ -1349,6 +1393,90 @@ object GiteaClientSpec extends ZIOSpecDefault:
           pullRequestByBaseHead.title.contains("By branch"),
           changedFiles.map(_.filename) == Chunk(Some("src/Main.scala"), Some("README.md")),
           commits.map(_.sha) == Chunk(Some("abc123"), Some("def456"))
+        )
+      },
+      test("propagates pull-request create and edit write errors through the facade") {
+        val createBody = CreatePullRequestOption(base = Some("main"), head = Some("feature"), title = Some("New PR"))
+        val editBody = EditPullRequestOption(contentVersion = Some(7L), title = Some("Retitled PR"))
+        val backend =
+          taskStub
+            .whenRequestMatches(request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls")) &&
+                (request.body match
+                  case StringBody(body, _, _) => body.contains(""""title":"New PR"""")
+                  case _ => false)
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"create forbidden"}""", StatusCode.Forbidden))
+            .whenRequestMatches(request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "missing", "pulls"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"repository not found"}""", StatusCode.NotFound))
+            .whenRequestMatches(request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "conflict", "pulls"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"pull request already exists"}""", StatusCode.Conflict))
+            .whenRequestMatches(request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "invalid", "pulls"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"invalid pull request"}""", StatusCode.UnprocessableEntity))
+            .whenRequestMatches(request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "alice", "archived", "pulls"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"repository is archived"}""", StatusCode(423)))
+            .whenRequestMatches(request =>
+              request.method == Method.PATCH &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"edit forbidden"}""", StatusCode.Forbidden))
+            .whenRequestMatches(request =>
+              request.method == Method.PATCH &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "3"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"pull request not found"}""", StatusCode.NotFound))
+            .whenRequestMatches(request =>
+              request.method == Method.PATCH &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "4"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"edit conflict"}""", StatusCode.Conflict))
+            .whenRequestMatches(request =>
+              request.method == Method.PATCH &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "5"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"stale content"}""", StatusCode(412)))
+            .whenRequestMatches(request =>
+              request.method == Method.PATCH &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "6"))
+            )
+            .thenRespond(ResponseStub.adjust("""{"message":"invalid edit"}""", StatusCode.UnprocessableEntity))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          createForbidden <- client.createPullRequest("alice", "api", createBody).either
+          createNotFound <- client.createPullRequest("alice", "missing", createBody).either
+          createConflict <- client.createPullRequest("alice", "conflict", createBody).either
+          createInvalid <- client.createPullRequest("alice", "invalid", createBody).either
+          createLocked <- client.createPullRequest("alice", "archived", createBody).either
+          editForbidden <- client.editPullRequest("alice", "api", 2, editBody).either
+          editNotFound <- client.editPullRequest("alice", "api", 3, editBody).either
+          editConflict <- client.editPullRequest("alice", "api", 4, editBody).either
+          editStale <- client.editPullRequest("alice", "api", 5, editBody).either
+          editInvalid <- client.editPullRequest("alice", "api", 6, editBody).either
+        yield assertTrue(
+          createForbidden.left.exists(_.isInstanceOf[GiteaError.Forbidden]),
+          createNotFound.left.exists(_.isInstanceOf[GiteaError.NotFound]),
+          createConflict.left.exists(_.isInstanceOf[GiteaError.Conflict]),
+          createInvalid == Left(GiteaError.UnprocessableEntity("invalid pull request", """{"message":"invalid pull request"}""")),
+          createLocked == Left(GiteaError.Locked("repository is archived", """{"message":"repository is archived"}""")),
+          editForbidden.left.exists(_.isInstanceOf[GiteaError.Forbidden]),
+          editNotFound.left.exists(_.isInstanceOf[GiteaError.NotFound]),
+          editConflict.left.exists(_.isInstanceOf[GiteaError.Conflict]),
+          editStale == Left(GiteaError.ServerError(412, """{"message":"stale content"}""")),
+          editInvalid == Left(GiteaError.UnprocessableEntity("invalid edit", """{"message":"invalid edit"}"""))
         )
       },
       test("propagates pull-request merge and update write errors through the facade") {
@@ -1426,6 +1554,27 @@ object GiteaClientSpec extends ZIOSpecDefault:
             .mergePullRequest("alice", "api", 2, MergePullRequestOption(MergePullRequestMethod.Merge))
             .either
           mergeRemaining <- mergeResponses.get
+          createSetup <- clientWithTwoResponses
+          (createClient, createResponses) = createSetup
+          createResult <- createClient
+            .createPullRequest(
+              "alice",
+              "api",
+              CreatePullRequestOption(base = Some("main"), head = Some("feature"), title = Some("Created PR"))
+            )
+            .either
+          createRemaining <- createResponses.get
+          editSetup <- clientWithTwoResponses
+          (editClient, editResponses) = editSetup
+          editResult <- editClient
+            .editPullRequest(
+              "alice",
+              "api",
+              2,
+              EditPullRequestOption(contentVersion = Some(7L), title = Some("Retitled PR"))
+            )
+            .either
+          editRemaining <- editResponses.get
           cancelSetup <- clientWithTwoResponses
           (cancelClient, cancelResponses) = cancelSetup
           cancelResult <- cancelClient.cancelScheduledAutoMerge("alice", "api", 2).either
@@ -1440,6 +1589,16 @@ object GiteaClientSpec extends ZIOSpecDefault:
             case _ => false
           },
           mergeRemaining.size == 1,
+          createResult.left.exists {
+            case GiteaError.TransportError(cause) => cause eq failure
+            case _ => false
+          },
+          createRemaining.size == 1,
+          editResult.left.exists {
+            case GiteaError.TransportError(cause) => cause eq failure
+            case _ => false
+          },
+          editRemaining.size == 1,
           cancelResult.left.exists {
             case GiteaError.TransportError(cause) => cause eq failure
             case _ => false

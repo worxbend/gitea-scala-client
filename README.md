@@ -14,12 +14,13 @@ and zio-json.
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
   commit statuses, releases, pull requests including reviews, pinned
-  pull-request reads, diff/patch downloads, merge-status checks, merge/update commands,
-  review-comment resolution, and notifications through a ZIO client API
+  pull-request reads, pull-request create/edit writes, diff/patch downloads,
+  merge-status checks, merge/update commands, review-comment resolution, and
+  notifications through a ZIO client API
 - Contract checks: implemented endpoint metadata is audited against
   `plugin-redoc-2.yaml` for pull-request review lifecycle, commit-status, and
-  pull-request merge/update endpoints, including documented non-2xx response
-  labels and clear path/method/parameter mismatch failures
+  pull-request create/edit and merge/update endpoints, including documented
+  non-2xx response labels and clear path/method/parameter mismatch failures
 - Endpoint audit-only non-success response labels live in test scope; the
   published client endpoint metadata exposes operation method, path, operation
   ID, parameters, and success response labels only
@@ -342,7 +343,11 @@ Pull-request support includes paginated list/get methods, review creation,
 submission, dismissal, undismissal, review request creation/cancellation,
 review detail and comment methods, review-comment resolve/unresolve commands,
 changed-file and commit streams, raw diff/patch downloads, merge-status checks,
-merge/update commands, and the repository pinned pull-request list.
+create/edit writes, merge/update commands, and the repository pinned
+pull-request list. Create/edit use `CreatePullRequestOption` and
+`EditPullRequestOption`; their JSON codecs preserve Gitea field names such as
+`allow_maintainer_edit`, `team_reviewers`, `content_version`, and
+`unset_due_date`.
 `MergePullRequestOption` supports merge methods `merge`, `rebase`,
 `rebase-merge`, `squash`, `fast-forward-only`, and `manually-merged`.
 Pull-request update style values are `merge` and `rebase`:
@@ -350,8 +355,11 @@ Pull-request update style values are `merge` and `rebase`:
 ```scala
 import io.worxbend.gitea4s.http.{PullRequestDiffType, PullRequestUpdateStyle}
 import io.worxbend.gitea4s.model.{
+  CreatePullRequestOption,
   CreatePullReviewOptions,
   DismissPullReviewOptions,
+  EditPullRequestOption,
+  IssueState,
   MergePullRequestMethod,
   MergePullRequestOption,
   PullReviewRequestOptions,
@@ -362,6 +370,27 @@ import io.worxbend.gitea4s.model.{
 client.pullRequests(owner = "my-org", repo = "my-repo").take(25).runCollect
 client.pullRequest(owner = "my-org", repo = "my-repo", index = 7)
 client.pullRequestByBaseHead(owner = "my-org", repo = "my-repo", base = "main", head = "feature")
+client.createPullRequest(
+  owner = "my-org",
+  repo = "my-repo",
+  body = CreatePullRequestOption(
+    base = Some("main"),
+    head = Some("feature"),
+    title = Some("Add typed client support"),
+    body = Some("Implements a small API slice."),
+    allowMaintainerEdit = Some(true)
+  )
+)
+client.editPullRequest(
+  owner = "my-org",
+  repo = "my-repo",
+  index = 7,
+  body = EditPullRequestOption(
+    title = Some("Add typed client support"),
+    state = Some(IssueState.Open),
+    contentVersion = Some(3L)
+  )
+)
 client.pullRequestIsMerged(owner = "my-org", repo = "my-repo", index = 7)
 client.mergePullRequest(
   owner = "my-org",
@@ -571,7 +600,7 @@ tests, and pagination tests:
 ```
 
 Endpoint audit tests compare the current pull-request review lifecycle,
-commit-status, and pull-request merge/update endpoint groups against
+commit-status, and pull-request create/edit and merge/update endpoint groups against
 `plugin-redoc-2.yaml`, including documented non-2xx response status/ref labels.
 
 Live integration tests are opt-in:

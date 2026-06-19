@@ -28,6 +28,8 @@ import io.worxbend.gitea4s.model.{
   CommitStatusState,
   PullReviewState,
   PullReviewRequestOptions,
+  CreatePullRequestOption,
+  EditPullRequestOption,
   SubmitPullReviewOptions,
   WatchInfo
 }
@@ -433,6 +435,90 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.paramsMap.get("limit").contains("11")
         )
       },
+      test("builds and decodes schema-traceable pull request create and edit requests") {
+        val dueDate = Instant.parse("2026-07-04T00:00:00Z")
+        val createBody = CreatePullRequestOption(
+          allowMaintainerEdit = Some(true),
+          base = Some("main"),
+          body = Some("Ready for review"),
+          dueDate = Some(dueDate),
+          head = Some("alice:feature/pr-create"),
+          labels = Some(List(10L, 11L)),
+          milestone = Some(12L),
+          reviewers = Some(List("reviewer")),
+          teamReviewers = Some(List("maintainers")),
+          title = Some("Add pull request create API")
+        )
+        val editBody = EditPullRequestOption(
+          allowMaintainerEdit = Some(false),
+          base = Some("release/1.0"),
+          body = Some("Updated description"),
+          contentVersion = Some(9L),
+          dueDate = Some(Instant.parse("2026-07-05T00:00:00Z")),
+          labels = Some(List(20L, 21L)),
+          milestone = Some(22L),
+          state = Some(IssueState.Closed),
+          title = Some("Retitle pull request"),
+          unsetDueDate = Some(false)
+        )
+        val create = GiteaRequests.createPullRequest(config, "worx bend", "gitea/scala", createBody)
+        val edit = GiteaRequests.editPullRequest(config, "worx bend", "gitea/scala", 88, editBody)
+        val createBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"id":91,"number":88,"state":"open","title":"Add pull request create API"}""", StatusCode.Created)
+          )
+        val editBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"id":91,"number":88,"state":"closed","title":"Retitle pull request"}""", StatusCode.Created)
+          )
+        val createRequestBody =
+          create.request.body match
+            case StringBody(value, _, _) => value
+            case _ => ""
+        val editRequestBody =
+          edit.request.body match
+            case StringBody(value, _, _) => value
+            case _ => ""
+
+        assertTrue(
+          create.endpoint == GiteaEndpoints.repoCreatePullRequest,
+          create.endpoint.method == "POST",
+          create.endpoint.operationId == "repoCreatePullRequest",
+          create.endpoint.path == "/repos/{owner}/{repo}/pulls",
+          create.endpoint.parameters.map(_.name) == List("owner", "repo", "body"),
+          create.endpoint.response == "#/responses/PullRequest",
+          create.request.method == Method.POST,
+          create.request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls",
+          create.request.header("Accept").contains("application/json"),
+          create.request.header("Authorization").contains("token secret"),
+          create.request.header("User-Agent").contains("gitea4s-test"),
+          create.request.header("X-Gitea-OTP").contains("123456"),
+          create.request.header("Content-Type").exists(_.startsWith("application/json")),
+          createRequestBody ==
+            """{"allow_maintainer_edit":true,"base":"main","body":"Ready for review","due_date":"2026-07-04T00:00:00Z","head":"alice:feature/pr-create","labels":[10,11],"milestone":12,"reviewers":["reviewer"],"team_reviewers":["maintainers"],"title":"Add pull request create API"}""",
+          create.retryable == false,
+          create.decode(create.request.send(createBackend)).map(_.number) == Right(Some(88L)),
+          create.decode(create.request.send(createBackend)).map(_.state) == Right(Some(IssueState.Open)),
+          edit.endpoint == GiteaEndpoints.repoEditPullRequest,
+          edit.endpoint.method == "PATCH",
+          edit.endpoint.operationId == "repoEditPullRequest",
+          edit.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}",
+          edit.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
+          edit.endpoint.response == "#/responses/PullRequest",
+          edit.request.method == Method.PATCH,
+          edit.request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88",
+          edit.request.header("Accept").contains("application/json"),
+          edit.request.header("Authorization").contains("token secret"),
+          edit.request.header("User-Agent").contains("gitea4s-test"),
+          edit.request.header("X-Gitea-OTP").contains("123456"),
+          edit.request.header("Content-Type").exists(_.startsWith("application/json")),
+          editRequestBody ==
+            """{"allow_maintainer_edit":false,"base":"release/1.0","body":"Updated description","content_version":9,"due_date":"2026-07-05T00:00:00Z","labels":[20,21],"milestone":22,"state":"closed","title":"Retitle pull request","unset_due_date":false}""",
+          edit.retryable == false,
+          edit.decode(edit.request.send(editBackend)).map(_.title) == Right(Some("Retitle pull request")),
+          edit.decode(edit.request.send(editBackend)).map(_.state) == Right(Some(IssueState.Closed))
+        )
+      },
       test("builds schema-traceable repository pinned pull request list request") {
         val built = GiteaRequests.pinnedPullRequests(config, "worx bend", "gitea/scala")
         val endpoint = built.endpoint
@@ -448,6 +534,66 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/pinned",
           built.retryable == true
+        )
+      },
+      test("maps documented pull request create and edit failures") {
+        val forbiddenBody = """{"message":"forbidden"}"""
+        val notFoundBody = """{"message":"missing pull request"}"""
+        val conflictBody = """{"message":"pull request already exists"}"""
+        val validationBody = """{"message":"invalid pull request"}"""
+        val lockedBody = """{"message":"repository is archived"}"""
+        val staleBody = "stale content version"
+        val forbiddenBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(forbiddenBody, StatusCode.Forbidden))
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val conflictBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(conflictBody, StatusCode.Conflict))
+        val validationBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(validationBody, StatusCode.UnprocessableEntity)
+          )
+        val lockedBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(lockedBody, StatusCode(423)))
+        val preconditionBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(staleBody, StatusCode(412)))
+        val create =
+          GiteaRequests.createPullRequest(
+            config,
+            "owner",
+            "repo",
+            CreatePullRequestOption(base = Some("main"), head = Some("feature"), title = Some("Open PR"))
+          )
+        val edit =
+          GiteaRequests.editPullRequest(
+            config,
+            "owner",
+            "repo",
+            77,
+            EditPullRequestOption(contentVersion = Some(9L), title = Some("Retitle PR"))
+          )
+
+        assertTrue(
+          create.decode(create.request.send(forbiddenBackend)) ==
+            Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
+          create.decode(create.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing pull request", notFoundBody)),
+          create.decode(create.request.send(conflictBackend)) ==
+            Left(GiteaError.Conflict("pull request already exists", conflictBody)),
+          create.decode(create.request.send(validationBackend)) ==
+            Left(GiteaError.UnprocessableEntity("invalid pull request", validationBody)),
+          create.decode(create.request.send(lockedBackend)) ==
+            Left(GiteaError.Locked("repository is archived", lockedBody)),
+          edit.decode(edit.request.send(forbiddenBackend)) ==
+            Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
+          edit.decode(edit.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing pull request", notFoundBody)),
+          edit.decode(edit.request.send(conflictBackend)) ==
+            Left(GiteaError.Conflict("pull request already exists", conflictBody)),
+          edit.decode(edit.request.send(validationBackend)) ==
+            Left(GiteaError.UnprocessableEntity("invalid pull request", validationBody)),
+          edit.decode(edit.request.send(preconditionBackend)) ==
+            Left(GiteaError.ServerError(412, staleBody))
         )
       },
       test("builds schema-traceable get repository pull request by base and head request") {
@@ -2212,11 +2358,27 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             .thenRespond(ResponseStub.adjust(releaseListResponse, StatusCode.Ok, List(Header("x-total-count", "2"))))
             .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "releases", "20")))
             .thenRespond(ResponseStub.adjust(releaseResponse))
-            .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls")))
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "octo", "api", "pulls"))
+            }
             .thenRespond(
               ResponseStub.adjust(pullRequestListResponse, StatusCode.Ok, List(Header("x-total-count", "2")))
             )
-            .whenRequestMatches(_.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2")))
+            .whenRequestMatches { request =>
+              request.method == Method.POST &&
+                request.uri.path.endsWith(List("repos", "octo", "api", "pulls"))
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":32,"number":3,"state":"open","title":"Created"}""", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.PATCH &&
+                request.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2"))
+            }
+            .thenRespond(ResponseStub.adjust("""{"id":31,"number":2,"state":"closed","title":"Retitled"}""", StatusCode.Created))
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "octo", "api", "pulls", "2"))
+            }
             .thenRespond(ResponseStub.adjust(pullRequestResponse))
             .whenRequestMatches { request =>
               request.method == Method.POST &&
@@ -2294,6 +2456,21 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val pullRequests = GiteaRequests.repoPullRequests(config, "octo", "api")
         val pinnedPullRequests = GiteaRequests.pinnedPullRequests(config, "octo", "api")
         val pullRequest = GiteaRequests.repoPullRequest(config, "octo", "api", 2)
+        val createPullRequest =
+          GiteaRequests.createPullRequest(
+            config,
+            "octo",
+            "api",
+            CreatePullRequestOption(base = Some("main"), head = Some("feature"), title = Some("Created"))
+          )
+        val editPullRequest =
+          GiteaRequests.editPullRequest(
+            config,
+            "octo",
+            "api",
+            2,
+            EditPullRequestOption(contentVersion = Some(4L), title = Some("Retitled"))
+          )
         val pullReviewRequestOptions = PullReviewRequestOptions(reviewers = Some(List("alice")))
         val createPullReviewRequests =
           GiteaRequests.createPullReviewRequests(config, "octo", "api", 2, pullReviewRequestOptions)
@@ -2347,6 +2524,10 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           pinnedPullRequests.decode(pinnedPullRequests.request.send(backend)).map(_.map(_.title)) ==
             Right(Chunk(Some("Pinned"))),
           pullRequest.decode(pullRequest.request.send(backend)).map(_.title) == Right(Some("Second")),
+          createPullRequest.decode(createPullRequest.request.send(backend)).map(_.number) == Right(Some(3L)),
+          createPullRequest.decode(createPullRequest.request.send(backend)).map(_.title) == Right(Some("Created")),
+          editPullRequest.decode(editPullRequest.request.send(backend)).map(_.number) == Right(Some(2L)),
+          editPullRequest.decode(editPullRequest.request.send(backend)).map(_.title) == Right(Some("Retitled")),
           createPullReviewRequests.decode(createPullReviewRequests.request.send(backend)).map(_.map(_.state)) ==
             Right(Chunk(Some(PullReviewState.RequestReview))),
           deletePullReviewRequests.decode(deletePullReviewRequests.request.send(backend)) == Right(()),

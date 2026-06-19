@@ -28,6 +28,14 @@ surface is still being filled out.
   commands with `MergePullRequestOption`, `MergePullRequestMethod`,
   `PullRequestUpdateStyle`, `repoMergePullRequest`,
   `repoCancelScheduledAutoMerge`, and `repoUpdatePullRequest`.
+- Typed pull-request creation and editing with `CreatePullRequestOption`,
+  `EditPullRequestOption`, `repoCreatePullRequest`, `repoEditPullRequest`,
+  `PullRequestsApi.createPullRequest`, and `PullRequestsApi.editPullRequest`;
+  the POST/PATCH request builders send JSON bodies and remain non-retryable
+  writes.
+- Pull-request create/edit endpoint metadata audit coverage for operation IDs,
+  methods, paths, required path parameters, success responses, request-body
+  presence, retryability, and documented non-2xx response status/ref labels.
 - Pull-request merge/update endpoint metadata audit coverage for operation IDs,
   methods, paths, required path parameters, success responses, request-body
   presence, retryability, `repoUpdatePullRequest` `style` enum values, and

@@ -4,9 +4,11 @@ import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.model.{
   Auth,
   CommitStatusState,
+  CreatePullRequestOption,
   CreatePullReviewOptions,
   CreateStatusOption,
   DismissPullReviewOptions,
+  EditPullRequestOption,
   MergePullRequestMethod,
   MergePullRequestOption,
   PullReviewRequestOptions,
@@ -180,7 +182,47 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val pullRequestCreateEditRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.createPullRequest(
+        config,
+        "owner",
+        "repo",
+        CreatePullRequestOption(
+          base = Some("main"),
+          head = Some("feature"),
+          title = Some("Add feature")
+        )
+      ),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.editPullRequest(
+        config,
+        "owner",
+        "repo",
+        index = 12,
+        EditPullRequestOption(title = Some("Update title"))
+      ),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val expectedNonSuccessResponseLabels = Map(
+    "repoCreatePullRequest" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("409", "#/responses/error"),
+      GiteaResponseLabel("422", "#/responses/validationError"),
+      GiteaResponseLabel("423", "#/responses/repoArchivedError")
+    ),
+    "repoEditPullRequest" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("409", "#/responses/error"),
+      GiteaResponseLabel("412", "#/responses/error"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
     "repoResolvePullReviewComment" -> List(
       GiteaResponseLabel("400", "#/responses/validationError"),
       GiteaResponseLabel("403", "#/responses/forbidden"),
@@ -284,6 +326,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("pull-request merge/update metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = pullRequestMergeUpdateRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("pull-request create/edit metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = pullRequestCreateEditRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },

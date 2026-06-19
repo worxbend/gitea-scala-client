@@ -12,12 +12,14 @@ import io.worxbend.gitea4s.model.{
   CombinedStatus,
   CreateIssue,
   CreateIssueComment,
+  CreatePullRequestOption,
   CreatePullReviewOptions,
   CreateStatusOption,
   DismissPullReviewOptions,
   EditDeadlineOption,
   EditIssueComment,
   EditIssue,
+  EditPullRequestOption,
   EditReactionOption,
   Issue,
   IssueDeadline,
@@ -291,6 +293,20 @@ object GiteaRequests:
       response => GiteaResponseMapper.decodePage[PullRequest](response, page, pageSize)
     )
 
+  def createPullRequest(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      body: CreatePullRequestOption
+  ): GiteaRequest[PullRequest] =
+    postJson(
+      config,
+      GiteaEndpoints.repoCreatePullRequest,
+      List("repos", owner, repo, "pulls"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[PullRequest]
+    )
+
   def pinnedPullRequests(config: GiteaConfig, owner: String, repo: String): GiteaRequest[zio.Chunk[PullRequest]] =
     get(
       config,
@@ -321,6 +337,21 @@ object GiteaRequests:
       GiteaEndpoints.repoGetPullRequest,
       List("repos", owner, repo, "pulls", index.toString),
       Nil,
+      GiteaResponseMapper.decodeJson[PullRequest]
+    )
+
+  def editPullRequest(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: EditPullRequestOption
+  ): GiteaRequest[PullRequest] =
+    patchJson(
+      config,
+      GiteaEndpoints.repoEditPullRequest,
+      List("repos", owner, repo, "pulls", index.toString),
+      body.toJson,
       GiteaResponseMapper.decodeJson[PullRequest]
     )
 

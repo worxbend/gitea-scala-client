@@ -491,6 +491,42 @@ final case class PullReviewRequestOptions(
 object PullReviewRequestOptions:
   given JsonCodec[PullReviewRequestOptions] = DeriveJsonCodec.gen[PullReviewRequestOptions]
 
+final case class CreatePullRequestOption(
+    @jsonField("allow_maintainer_edit") allowMaintainerEdit: Option[Boolean] = None,
+    assignee: Option[String] = None,
+    assignees: Option[List[String]] = None,
+    base: Option[String] = None,
+    body: Option[String] = None,
+    @jsonField("due_date") dueDate: Option[Instant] = None,
+    head: Option[String] = None,
+    labels: Option[List[Long]] = None,
+    milestone: Option[Long] = None,
+    reviewers: Option[List[String]] = None,
+    @jsonField("team_reviewers") teamReviewers: Option[List[String]] = None,
+    title: Option[String] = None
+)
+
+object CreatePullRequestOption:
+  given JsonCodec[CreatePullRequestOption] = DeriveJsonCodec.gen[CreatePullRequestOption]
+
+final case class EditPullRequestOption(
+    @jsonField("allow_maintainer_edit") allowMaintainerEdit: Option[Boolean] = None,
+    assignee: Option[String] = None,
+    assignees: Option[List[String]] = None,
+    base: Option[String] = None,
+    body: Option[String] = None,
+    @jsonField("content_version") contentVersion: Option[Long] = None,
+    @jsonField("due_date") dueDate: Option[Instant] = None,
+    labels: Option[List[Long]] = None,
+    milestone: Option[Long] = None,
+    state: Option[IssueState] = None,
+    title: Option[String] = None,
+    @jsonField("unset_due_date") unsetDueDate: Option[Boolean] = None
+)
+
+object EditPullRequestOption:
+  given JsonCodec[EditPullRequestOption] = DeriveJsonCodec.gen[EditPullRequestOption]
+
 final case class MergePullRequestOption(
     @jsonField("Do") mergeMethod: MergePullRequestMethod,
     @jsonField("MergeCommitID") mergeCommitId: Option[String] = None,
