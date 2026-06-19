@@ -807,6 +807,8 @@ object CoreModelsSpec extends ZIOSpecDefault:
           GiteaError.RateLimited(Some(Instant.parse("2026-06-18T00:00:00Z")), "rate limited")
         val methodNotAllowed: GiteaError =
           GiteaError.MethodNotAllowed("merge method is not allowed", """{"message":"merge method is not allowed"}""")
+        val preconditionFailed: GiteaError =
+          GiteaError.PreconditionFailed("stale content", """{"message":"stale content"}""")
         val locked: GiteaError =
           GiteaError.Locked("repository is archived", """{"message":"repository is archived"}""")
 
@@ -817,6 +819,7 @@ object CoreModelsSpec extends ZIOSpecDefault:
             "merge method is not allowed",
             """{"message":"merge method is not allowed"}"""
           ),
+          preconditionFailed == GiteaError.PreconditionFailed("stale content", """{"message":"stale content"}"""),
           locked == GiteaError.Locked("repository is archived", """{"message":"repository is archived"}""")
         )
       },

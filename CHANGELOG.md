@@ -33,9 +33,17 @@ surface is still being filled out.
   `PullRequestsApi.createPullRequest`, and `PullRequestsApi.editPullRequest`;
   the POST/PATCH request builders send JSON bodies and remain non-retryable
   writes.
+- Typed commit-to-pull-request lookup for
+  `GET /repos/{owner}/{repo}/commits/{sha}/pull` with
+  `repoGetCommitPullRequest`, `GiteaRequests.repoCommitPullRequest`, and
+  `PullRequestsApi.commitPullRequest`; the read-only request is retryable and
+  decodes a single `PullRequest`.
 - Pull-request create/edit endpoint metadata audit coverage for operation IDs,
   methods, paths, required path parameters, success responses, request-body
   presence, retryability, and documented non-2xx response status/ref labels.
+- Commit-to-pull-request endpoint metadata audit coverage for operation ID,
+  method, path, required path parameters, success response, request-body
+  absence, retryability, and documented non-2xx response status/ref labels.
 - Pull-request merge/update endpoint metadata audit coverage for operation IDs,
   methods, paths, required path parameters, success responses, request-body
   presence, retryability, `repoUpdatePullRequest` `style` enum values, and
@@ -50,7 +58,12 @@ surface is still being filled out.
 - Explicit `GiteaError.MethodNotAllowed` and `GiteaError.Locked` cases with
   response mapping for documented 405/423 resource-state failures while
   preserving decoded payload messages and raw bodies.
+- Explicit `GiteaError.PreconditionFailed` with response mapping for documented
+  412 conditional-write failures while preserving decoded payload messages and
+  raw bodies.
 - Mapper-level tests for global 405/423 classification with JSON error payloads,
+  empty bodies, and non-JSON raw bodies.
+- Mapper-level tests for global 412 classification with JSON error payloads,
   empty bodies, and non-JSON raw bodies.
 - Typed issue creation with `CreateIssue` and `issueCreateIssue` request
   construction.

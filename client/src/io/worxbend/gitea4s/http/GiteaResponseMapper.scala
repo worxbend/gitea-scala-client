@@ -91,6 +91,7 @@ object GiteaResponseMapper:
       case 404 => GiteaError.NotFound(message, body)
       case 405 => GiteaError.MethodNotAllowed(message, body)
       case 409 => GiteaError.Conflict(message, body)
+      case 412 => GiteaError.PreconditionFailed(message, body)
       case 422 => GiteaError.UnprocessableEntity(message, body)
       case 423 => GiteaError.Locked(message, body)
       case 429 => GiteaError.RateLimited(rateLimitReset(response), body)

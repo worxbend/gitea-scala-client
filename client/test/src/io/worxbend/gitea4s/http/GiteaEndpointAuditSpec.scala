@@ -161,6 +161,13 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val commitPullRequestRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoCommitPullRequest(config, "owner", "repo", sha = "abc123"),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val pullRequestMergeUpdateRequests = List(
     AuditedRequest(
       request = GiteaRequests.mergePullRequest(
@@ -306,6 +313,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoCreateStatus" -> List(
       GiteaResponseLabel("400", "#/responses/error"),
       GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoGetCommitPullRequest" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
     )
   )
 
@@ -320,6 +330,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("commit-status metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = commitStatusRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("commit pull-request metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = commitPullRequestRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },

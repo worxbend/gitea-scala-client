@@ -36,6 +36,8 @@ trait PullRequestsApi:
 
   def pullRequestByBaseHead(owner: String, repo: String, base: String, head: String): IO[GiteaError, PullRequest]
 
+  def commitPullRequest(owner: String, repo: String, sha: String): IO[GiteaError, PullRequest]
+
   def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest]
 
   def createPullRequest(owner: String, repo: String, body: CreatePullRequestOption): IO[GiteaError, PullRequest]

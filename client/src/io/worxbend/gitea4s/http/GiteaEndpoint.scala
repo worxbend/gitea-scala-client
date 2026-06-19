@@ -262,6 +262,19 @@ object GiteaEndpoints:
       response = "#/responses/CommitStatus"
     )
 
+  val repoGetCommitPullRequest: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/commits/{sha}/pull",
+      operationId = "repoGetCommitPullRequest",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("sha", "path", required = true)
+      ),
+      response = "#/responses/PullRequest"
+    )
+
   val repoListPullRequests: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

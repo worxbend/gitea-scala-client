@@ -1395,6 +1395,70 @@ object GiteaClientSpec extends ZIOSpecDefault:
           commits.map(_.sha) == Chunk(Some("abc123"), Some("def456"))
         )
       },
+      test("loads the pull request associated with a commit through the PullRequestsApi") {
+        val facadeConfig = config.copy(userAgent = Some("gitea4s-test"), otp = Some("654321"))
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString == "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/commits/abc%2Fdef%20123/pull" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "commits",
+                "abc/def 123",
+                "pull"
+              ) &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("User-Agent").contains("gitea4s-test") &&
+              request.header("X-Gitea-OTP").contains("654321")
+          }.thenRespond(ResponseStub.adjust("""{"id":7,"number":7,"title":"Commit PR","state":"open"}"""))
+        val client = GiteaClient.fromBackend(facadeConfig, backend)
+
+        assertZIO(client.commitPullRequest("space owner", "repo/slash", "abc/def 123").map(pr => pr.id -> pr.title))(
+          Assertion.equalTo(Some(7L) -> Some("Commit PR"))
+        )
+      },
+      test("propagates commit pull-request 404 errors through the facade") {
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "commits", "missing-sha", "pull"))
+          ).thenRespond(ResponseStub.adjust("""{"message":"pull request not found"}""", StatusCode.NotFound))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.commitPullRequest("alice", "api", "missing-sha").either)(
+          Assertion.equalTo(Left(GiteaError.NotFound("pull request not found", """{"message":"pull request not found"}""")))
+        )
+      },
+      test("retries commit pull-request lookup because it is a read-only GET") {
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"temporarily unavailable"}""",
+                  StatusCode.ServiceUnavailable
+                )
+              ),
+              ZIO.succeed(stringResponse("""{"id":8,"number":8,"title":"Retried commit PR","state":"open"}"""))
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.commitPullRequest("alice", "api", "abc123").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          pullRequest <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          pullRequest.number.contains(8L),
+          pullRequest.title.contains("Retried commit PR"),
+          remaining.isEmpty
+        )
+      },
       test("propagates pull-request create and edit write errors through the facade") {
         val createBody = CreatePullRequestOption(base = Some("main"), head = Some("feature"), title = Some("New PR"))
         val editBody = EditPullRequestOption(contentVersion = Some(7L), title = Some("Retitled PR"))
@@ -1475,7 +1539,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           editForbidden.left.exists(_.isInstanceOf[GiteaError.Forbidden]),
           editNotFound.left.exists(_.isInstanceOf[GiteaError.NotFound]),
           editConflict.left.exists(_.isInstanceOf[GiteaError.Conflict]),
-          editStale == Left(GiteaError.ServerError(412, """{"message":"stale content"}""")),
+          editStale == Left(GiteaError.PreconditionFailed("stale content", """{"message":"stale content"}""")),
           editInvalid == Left(GiteaError.UnprocessableEntity("invalid edit", """{"message":"invalid edit"}"""))
         )
       },

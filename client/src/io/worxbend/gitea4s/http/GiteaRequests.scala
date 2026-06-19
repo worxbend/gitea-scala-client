@@ -276,6 +276,15 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[CommitStatus]
     )
 
+  def repoCommitPullRequest(config: GiteaConfig, owner: String, repo: String, sha: String): GiteaRequest[PullRequest] =
+    get(
+      config,
+      GiteaEndpoints.repoGetCommitPullRequest,
+      List("repos", owner, repo, "commits", sha, "pull"),
+      Nil,
+      GiteaResponseMapper.decodeJson[PullRequest]
+    )
+
   def repoPullRequests(
       config: GiteaConfig,
       owner: String,

@@ -1028,3 +1028,79 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 M  core/src/io/worxbend/gitea4s/model/GiteaModels.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-19T11:19:00Z iteration 3 started remaining=16064s
+2026-06-19T11:19:00Z iteration 3 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T11:19:00Z iteration 3 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-jf3wsg18/repo copied_entries=85
+2026-06-19T11:19:00Z iteration 3 ideator phase started count=3
+2026-06-19T11:19:00Z iteration 3 ideator phase concurrency workers=3
+2026-06-19T11:19:00Z iteration 3 ideator 1 role="the pragmatist" started
+2026-06-19T11:19:00Z iteration 3 ideator 2 role="the architect" started
+2026-06-19T11:19:00Z iteration 3 ideator 3 role="the contrarian" started
+2026-06-19T11:19:09Z iteration 3 ideator 3 role="the contrarian" completed status=0
+2026-06-19T11:19:10Z iteration 3 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T11:19:10Z iteration 3 ideator 2 role="the architect" completed status=0
+2026-06-19T11:19:10Z iteration 3 ideator phase completed approaches=3
+2026-06-19T11:19:10Z iteration 3 selector started approaches=3
+2026-06-19T11:19:22Z iteration 3 selector completed status=0
+2026-06-19T11:19:22Z iteration 3 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-jf3wsg18/repo
+2026-06-19T11:19:22Z iteration 3 selector rejected alternative role="the contrarian" approach="Taxonomy-First Contract Slice: stabilize the shared 412 error semantics before adding the new commit-to-PR read endpoint, then treat the endpoint as a narrow proof that the publ..." reason="Strong framing, but it emphasizes the endpoint as a proof after taxonomy stabilization without explicitly calling out facade placement and snapshot/documentation coherence as first-class planning constraints."
+2026-06-19T11:19:22Z iteration 3 selector rejected alternative role="the pragmatist" approach="Contract-First Error-Taxonomy Gate: stabilize the shared 412 failure semantics before adding the next read endpoint, then treat repoGetCommitPullRequest as a small proof that ne..." reason="Very close to selected, but the strategy benefits from a broader contract-calibration framing rather than only a gate before the next endpoint."
+2026-06-19T11:19:22Z iteration 3 selector rejected alternative role="the architect" approach="Contract-First Error Taxonomy Gate: stabilize the HTTP/error contract before expanding endpoint surface, then let the next read slice pass through the same audited boundary as p..." reason="Also very close, but it risks staying too abstract; the selected synthesis keeps the same architectural focus while anchoring the Planner on the concrete 412 correction and commit-to-PR proof slice."
+2026-06-19T11:19:22Z iteration 3 selector alternatives persisted count=3
+2026-06-19T11:19:22Z iteration 3 planner started
+2026-06-19T11:20:02Z iteration 3 plan: 6 task(s) in 4 phase(s). The iteration is sequenced around contract coherence: first fix the public 412 error taxonomy so later endpoint work does not normalize the current fallback behavior, then add one narrow Swagger-backed read endpoint, then test request/facade/audit behavior in parallel because those tasks touch separate test files after implementation exists, and finally refresh snapshots and documentation once public signatures are stable.
+2026-06-19T11:20:02Z iteration 3 phase 1 started parallel=False tasks=1
+2026-06-19T11:22:09Z iteration 3 task t1 ('Add explicit 412 error taxonomy') status=0
+2026-06-19T11:22:09Z iteration 3 phase 2 started parallel=False tasks=1
+2026-06-19T11:24:02Z iteration 3 task t2 ('Implement commit-to-pull-request endpoint') status=0
+2026-06-19T11:24:02Z iteration 3 phase 3 started parallel=True tasks=3
+2026-06-19T11:24:57Z iteration 3 task t5 ('Extend Swagger endpoint audit coverage') status=0
+2026-06-19T11:25:36Z iteration 3 task t4 ('Add facade and retry tests for commit pull lookup') status=0
+2026-06-19T11:25:58Z iteration 3 task t3 ('Add request-layer tests for commit pull lookup') status=0
+2026-06-19T11:25:58Z iteration 3 phase 4 started parallel=False tasks=1
+2026-06-19T11:49:01Z iteration 3 task t6 ('Refresh snapshots, docs, and plan') status=0
+2026-06-19T11:49:01Z iteration 3 reviewer started
+
+## Reviewer Summary - Iteration 3 - 2026-06-19T12:00:00Z
+
+What was done:
+- Inspected every file changed in the explicit 412 taxonomy and commit-to-pull-request patch: core error ADT/tests, response mapper/tests, endpoint metadata, request builder, facade wiring, request/client/audit tests, example error rendering, README, CHANGELOG, PLAN, and API snapshots.
+- Cross-checked `repoGetCommitPullRequest` against `plugin-redoc-2.yaml`; method, path, operation ID, required owner/repo/sha path parameters, success response, and documented 404 response match the local Swagger contract.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, and `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.http.GiteaResponseMapperSpec io.worxbend.gitea4s.GiteaClientSpec`.
+
+What was found:
+- No functional blocker or regression was found.
+- `GiteaError.PreconditionFailed` is now part of the public core error ADT, `GiteaResponseMapper` maps 412 globally, and mapper-level tests cover JSON, empty, and non-JSON bodies while preserving raw response bodies.
+- The pull-request edit request/facade tests now expect `PreconditionFailed` instead of the misleading `ServerError(412, ...)`.
+- `repoGetCommitPullRequest` uses safe owner/repo/sha path encoding, shared JSON/auth/OTP/user-agent headers, no request body or content type, `PullRequest` decoding, read-only retry eligibility, facade wiring, documented 404 propagation, and Swagger audit coverage with test-private non-2xx labels.
+- The only concrete gap found was in the updated continuation plan: `repoGetSingleCommit` also documents a `files` boolean query parameter in addition to `stat` and `verification`, so the next plan must include all three.
+
+Top improvement proposals:
+- Implement `repoGetSingleCommit` next with a typed params value for `stat`, `verification`, and `files`, explicit query omission/encoding tests, and documented 404/422 failure coverage.
+- Keep the new 412 taxonomy generic; do not add narrower conditional-write error types until the Swagger surface shows caller-actionable distinctions.
+- Continue registering documented non-2xx audit expectations in test scope for each new audited endpoint and avoid moving verification-only metadata back into public endpoint types.
+2026-06-19T11:51:23Z iteration 3 reviewer completed status=0
+2026-06-19T11:51:23Z iteration 3 memory updated
+2026-06-19T11:51:23Z iteration 3 completed validation_status=0
+2026-06-19T11:51:23Z iteration 3 checkpoint started
+2026-06-19T11:51:23Z iteration 3 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/PullRequestsApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaResponseMapper.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaResponseMapperSpec.scala
+M  core/src/io/worxbend/gitea4s/error/GiteaError.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+M  examples/src/io/worxbend/gitea4s/examples/ExampleSupport.scala

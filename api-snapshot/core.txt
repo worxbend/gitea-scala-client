@@ -15,6 +15,7 @@ public final class io.worxbend.gitea4s.error.GiteaError$ implements scala.derivi
   public static final io.worxbend.gitea4s.error.GiteaError$NotFound$ NotFound;
   public static final io.worxbend.gitea4s.error.GiteaError$MethodNotAllowed$ MethodNotAllowed;
   public static final io.worxbend.gitea4s.error.GiteaError$Conflict$ Conflict;
+  public static final io.worxbend.gitea4s.error.GiteaError$PreconditionFailed$ PreconditionFailed;
   public static final io.worxbend.gitea4s.error.GiteaError$UnprocessableEntity$ UnprocessableEntity;
   public static final io.worxbend.gitea4s.error.GiteaError$Locked$ Locked;
   public static final io.worxbend.gitea4s.error.GiteaError$RateLimited$ RateLimited;
@@ -283,6 +284,43 @@ public final class io.worxbend.gitea4s.error.GiteaError$NotFound$ implements sca
   public io.worxbend.gitea4s.error.GiteaError$NotFound unapply(io.worxbend.gitea4s.error.GiteaError$NotFound);
   public java.lang.String toString();
   public io.worxbend.gitea4s.error.GiteaError$NotFound fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.error.GiteaError$PreconditionFailed
+public final class io.worxbend.gitea4s.error.GiteaError$PreconditionFailed implements io.worxbend.gitea4s.error.GiteaError {
+  public io.worxbend.gitea4s.error.GiteaError$PreconditionFailed(java.lang.String, java.lang.String);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public java.lang.String message();
+  public java.lang.String body();
+  public io.worxbend.gitea4s.error.GiteaError$PreconditionFailed copy(java.lang.String, java.lang.String);
+  public java.lang.String copy$default$1();
+  public java.lang.String copy$default$2();
+  public java.lang.String _1();
+  public java.lang.String _2();
+  public static io.worxbend.gitea4s.error.GiteaError$PreconditionFailed apply(java.lang.String, java.lang.String);
+  public static io.worxbend.gitea4s.error.GiteaError$PreconditionFailed fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.error.GiteaError$PreconditionFailed unapply(io.worxbend.gitea4s.error.GiteaError$PreconditionFailed);
+}
+
+## io.worxbend.gitea4s.error.GiteaError$PreconditionFailed$
+public final class io.worxbend.gitea4s.error.GiteaError$PreconditionFailed$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.error.GiteaError$PreconditionFailed$ MODULE$;
+  public io.worxbend.gitea4s.error.GiteaError$PreconditionFailed$();
+  public static {};
+  public io.worxbend.gitea4s.error.GiteaError$PreconditionFailed apply(java.lang.String, java.lang.String);
+  public io.worxbend.gitea4s.error.GiteaError$PreconditionFailed unapply(io.worxbend.gitea4s.error.GiteaError$PreconditionFailed);
+  public java.lang.String toString();
+  public io.worxbend.gitea4s.error.GiteaError$PreconditionFailed fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 

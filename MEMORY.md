@@ -7,3 +7,4 @@
 [pattern] Keep Swagger audit-only expectations in test scope; adding verification fields to public endpoint metadata creates avoidable ABI churn.
 [process] Each endpoint added to an audited group must register expected documented non-2xx labels, and the audit should fail when that registration is missing.
 [pattern] Documented conditional-write failures such as HTTP 412 should get explicit `GiteaError` taxonomy instead of falling through to `ServerError`, even when raw bodies are preserved.
+[learning] `repoGetSingleCommit` documents three optional boolean query toggles: `stat`, `verification`, and `files`; include all three when modeling that endpoint.

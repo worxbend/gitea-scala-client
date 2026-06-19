@@ -211,6 +211,9 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   ): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.repoPullRequestByBaseHead(config, owner, repo, base, head))
 
+  override def commitPullRequest(owner: String, repo: String, sha: String): IO[GiteaError, PullRequest] =
+    executor.send(GiteaRequests.repoCommitPullRequest(config, owner, repo, sha))
+
   override def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.repoPullRequest(config, owner, repo, index))
 

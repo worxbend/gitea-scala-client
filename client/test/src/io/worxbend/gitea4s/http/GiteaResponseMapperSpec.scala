@@ -36,6 +36,32 @@ object GiteaResponseMapperSpec extends ZIOSpecDefault:
               GiteaError.MethodNotAllowed("Method Not Allowed", body)
           )
         },
+        test("maps 412 JSON error bodies to PreconditionFailed with the decoded Gitea message") {
+          val body = """{"message":"stale content version"}"""
+          val response = raw(body, StatusCode(412))
+
+          assertTrue(
+            GiteaResponseMapper.toError(response) ==
+              GiteaError.PreconditionFailed("stale content version", body)
+          )
+        },
+        test("maps 412 empty bodies to PreconditionFailed using the HTTP status text") {
+          val response = raw("", StatusCode(412))
+
+          assertTrue(
+            GiteaResponseMapper.toError(response) ==
+              GiteaError.PreconditionFailed("Precondition Failed", "")
+          )
+        },
+        test("maps 412 non-JSON bodies to PreconditionFailed while preserving the raw body") {
+          val body = "stale content version"
+          val response = raw(body, StatusCode(412))
+
+          assertTrue(
+            GiteaResponseMapper.toError(response) ==
+              GiteaError.PreconditionFailed("Precondition Failed", body)
+          )
+        },
         test("maps 423 JSON error bodies to Locked with the decoded Gitea message") {
           val body = """{"message":"repository is archived"}"""
           val response = raw(body, StatusCode.Locked)

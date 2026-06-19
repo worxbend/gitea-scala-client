@@ -400,6 +400,39 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.decode(request.send(backend)).map(_.state) == Right(Some(CommitStatusState.Success))
         )
       },
+      test("builds and decodes schema-traceable commit pull request lookup") {
+        val built =
+          GiteaRequests.repoCommitPullRequest(config, "worx bend", "gitea/scala", "feature/commit abc")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"id":91,"number":44,"state":"open","title":"Commit pull"}""")
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetCommitPullRequest,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetCommitPullRequest",
+          endpoint.path == "/repos/{owner}/{repo}/commits/{sha}/pull",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "sha"),
+          endpoint.response == "#/responses/PullRequest",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/commits/feature%2Fcommit%20abc/pull",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "commits", "feature/commit abc", "pull"),
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)).map(_.number) == Right(Some(44L)),
+          built.decode(request.send(backend)).map(_.state) == Right(Some(IssueState.Open)),
+          built.decode(request.send(backend)).map(_.title) == Right(Some("Commit pull"))
+        )
+      },
       test("builds schema-traceable paginated repository pull request list request") {
         val params = PullRequestListParams(
           baseBranch = Some("main"),
@@ -593,7 +626,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           edit.decode(edit.request.send(validationBackend)) ==
             Left(GiteaError.UnprocessableEntity("invalid pull request", validationBody)),
           edit.decode(edit.request.send(preconditionBackend)) ==
-            Left(GiteaError.ServerError(412, staleBody))
+            Left(GiteaError.PreconditionFailed("Precondition Failed", staleBody))
         )
       },
       test("builds schema-traceable get repository pull request by base and head request") {
@@ -2684,6 +2717,16 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.NotFound("missing commit", notFoundBody)),
           create.decode(create.request.send(notFoundBackend)) ==
             Left(GiteaError.NotFound("missing commit", notFoundBody))
+        )
+      },
+      test("maps documented commit pull request not-found responses") {
+        val body = """{"message":"missing commit pull request"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val built = GiteaRequests.repoCommitPullRequest(config, "owner", "repo", "missing-sha")
+
+        assertTrue(
+          built.decode(built.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing commit pull request", body))
         )
       },
       test("maps repository pull request not-found responses") {

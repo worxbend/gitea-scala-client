@@ -13,14 +13,15 @@ and zio-json.
 - Implemented surface: typed core models/codecs plus users, organizations,
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
-  commit statuses, releases, pull requests including reviews, pinned
-  pull-request reads, pull-request create/edit writes, diff/patch downloads,
-  merge-status checks, merge/update commands, review-comment resolution, and
-  notifications through a ZIO client API
+  commit statuses, commit-to-pull-request lookup, releases, pull requests
+  including reviews, pinned pull-request reads, pull-request create/edit writes,
+  diff/patch downloads, merge-status checks, merge/update commands,
+  review-comment resolution, and notifications through a ZIO client API
 - Contract checks: implemented endpoint metadata is audited against
   `plugin-redoc-2.yaml` for pull-request review lifecycle, commit-status, and
-  pull-request create/edit and merge/update endpoints, including documented
-  non-2xx response labels and clear path/method/parameter mismatch failures
+  pull-request create/edit, merge/update, and commit-to-pull-request endpoints,
+  including documented non-2xx response labels and clear path/method/parameter
+  mismatch failures
 - Endpoint audit-only non-success response labels live in test scope; the
   published client endpoint metadata exposes operation method, path, operation
   ID, parameters, and success response labels only
@@ -342,9 +343,9 @@ Write requests are not retried by default.
 Pull-request support includes paginated list/get methods, review creation,
 submission, dismissal, undismissal, review request creation/cancellation,
 review detail and comment methods, review-comment resolve/unresolve commands,
-changed-file and commit streams, raw diff/patch downloads, merge-status checks,
-create/edit writes, merge/update commands, and the repository pinned
-pull-request list. Create/edit use `CreatePullRequestOption` and
+changed-file and commit streams, commit-to-pull-request lookup, raw diff/patch
+downloads, merge-status checks, create/edit writes, merge/update commands, and
+the repository pinned pull-request list. Create/edit use `CreatePullRequestOption` and
 `EditPullRequestOption`; their JSON codecs preserve Gitea field names such as
 `allow_maintainer_edit`, `team_reviewers`, `content_version`, and
 `unset_due_date`.
@@ -370,6 +371,7 @@ import io.worxbend.gitea4s.model.{
 client.pullRequests(owner = "my-org", repo = "my-repo").take(25).runCollect
 client.pullRequest(owner = "my-org", repo = "my-repo", index = 7)
 client.pullRequestByBaseHead(owner = "my-org", repo = "my-repo", base = "main", head = "feature")
+client.commitPullRequest(owner = "my-org", repo = "my-repo", sha = "abc123")
 client.createPullRequest(
   owner = "my-org",
   repo = "my-repo",
@@ -467,9 +469,10 @@ client.me.foldZIO(
 HTTP failures preserve response bodies where available. Decode failures include
 the raw body, transport failures preserve the cause, and rate-limit errors carry
 the reset time when Gitea sends one. Resource-state failures map globally to
-explicit cases, including `GiteaError.MethodNotAllowed` for `405` and
-`GiteaError.Locked` for `423`; mapper-level tests cover decoded JSON error
-messages, empty bodies, and non-JSON bodies for both statuses.
+explicit cases, including `GiteaError.MethodNotAllowed` for `405`,
+`GiteaError.PreconditionFailed` for `412`, and `GiteaError.Locked` for `423`;
+mapper-level tests cover decoded JSON error messages, empty bodies, and
+non-JSON bodies for these statuses.
 
 ## Retry And Rate Limits
 
