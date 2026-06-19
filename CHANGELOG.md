@@ -32,11 +32,18 @@ surface is still being filled out.
   methods, paths, required path parameters, success responses, request-body
   presence, retryability, `repoUpdatePullRequest` `style` enum values, and
   documented non-2xx response status/ref labels.
+- Documented non-2xx response status/ref label audit coverage for the already
+  audited pull-request review lifecycle and commit-status endpoint groups.
+- Audit-only non-success response metadata kept out of the published client API:
+  `GiteaEndpoint` no longer exposes `nonSuccessResponses`, and
+  `GiteaResponseLabel` is confined to endpoint audit tests.
 - Reusable Swagger audit helpers that fail loudly when path, method, or
   parameter lookup cannot be matched against `plugin-redoc-2.yaml`.
 - Explicit `GiteaError.MethodNotAllowed` and `GiteaError.Locked` cases with
   response mapping for documented 405/423 resource-state failures while
   preserving decoded payload messages and raw bodies.
+- Mapper-level tests for global 405/423 classification with JSON error payloads,
+  empty bodies, and non-JSON raw bodies.
 - Typed issue creation with `CreateIssue` and `issueCreateIssue` request
   construction.
 - Typed issue deletion with `issueDelete` request construction.

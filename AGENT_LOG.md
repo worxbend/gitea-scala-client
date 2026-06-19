@@ -890,3 +890,67 @@ M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
 M  AGENT_LOG.md
 M  MEMORY.md
 M  SCORES.jsonl
+2026-06-19T10:46:44Z orchestrator started provider=codex budget=18000s iterations=10 max_workers=4
+2026-06-19T10:46:44Z iteration 1 started remaining=18000s
+2026-06-19T10:46:44Z iteration 1 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T10:46:44Z iteration 1 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-355f86oc/repo copied_entries=84
+2026-06-19T10:46:44Z iteration 1 ideator phase started count=3
+2026-06-19T10:46:44Z iteration 1 ideator phase concurrency workers=3
+2026-06-19T10:46:44Z iteration 1 ideator 1 role="the pragmatist" started
+2026-06-19T10:46:44Z iteration 1 ideator 2 role="the architect" started
+2026-06-19T10:46:44Z iteration 1 ideator 3 role="the contrarian" started
+2026-06-19T10:46:54Z iteration 1 ideator 3 role="the contrarian" completed status=0
+2026-06-19T10:46:54Z iteration 1 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T10:46:54Z iteration 1 ideator 2 role="the architect" completed status=0
+2026-06-19T10:46:54Z iteration 1 ideator phase completed approaches=3
+2026-06-19T10:46:54Z iteration 1 selector started approaches=3
+2026-06-19T10:47:04Z iteration 1 selector completed status=0
+2026-06-19T10:47:04Z iteration 1 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-355f86oc/repo
+2026-06-19T10:47:04Z iteration 1 selector rejected alternative role="the contrarian" approach="Contract Debt Freeze: pause new endpoint surface and spend the next planner cycle tightening the public/private boundary and Swagger audit truthfulness before adding another wri..." reason="Selected in spirit, but its freeze framing is slightly too defensive; the planner should stabilize boundaries with a clear path back to endpoint work rather than treating feature growth as broadly paused."
+2026-06-19T10:47:04Z iteration 1 selector rejected alternative role="the pragmatist" approach="Contract-Stabilization First: pause broad endpoint expansion and first make the handwritten contract boundary boring, explicit, and release-safe before adding another write surf..." reason="Strongly aligned, but it underemphasizes the Swagger audit machinery as the specific leverage point that will shape every future endpoint slice."
+2026-06-19T10:47:04Z iteration 1 selector rejected alternative role="the architect" approach="Contract Hardening Before Surface Expansion: pause feature growth long enough to make the existing handwritten HTTP contract machinery release-safe, then use that hardened path..." reason="Also strongly aligned, but it leans closer to a two-step execution narrative. For this selector output, the strategic emphasis should stay on release boundary stabilization rather than previewing the next implementation sequence."
+2026-06-19T10:47:04Z iteration 1 selector alternatives persisted count=3
+2026-06-19T10:47:04Z iteration 1 planner started
+2026-06-19T10:47:34Z iteration 1 plan: 4 task(s) in 3 phase(s). This iteration follows the selected Contract Boundary Stabilization strategy: first prevent audit-only metadata from accidentally becoming release API, then harden generic error mapping and Swagger non-2xx audits in parallel, then update documentation and the continuation plan after the implementation facts are known.
+2026-06-19T10:47:34Z iteration 1 phase 1 started parallel=False tasks=1
+2026-06-19T10:50:42Z iteration 1 task t1 ('Stabilize endpoint audit metadata boundary') status=0
+2026-06-19T10:50:42Z iteration 1 phase 2 started parallel=True tasks=2
+2026-06-19T10:52:25Z iteration 1 task t2 ('Add mapper-level 405 and 423 coverage') status=0
+2026-06-19T10:52:41Z iteration 1 task t3 ('Expand non-2xx Swagger audit coverage') status=0
+2026-06-19T10:52:41Z iteration 1 phase 3 started parallel=False tasks=1
+2026-06-19T10:55:20Z iteration 1 task t4 ('Align docs and continuation plan') status=0
+2026-06-19T10:55:20Z iteration 1 reviewer started
+
+## Reviewer Summary - Iteration 1 - 2026-06-19T11:16:00Z
+
+What was done:
+- Inspected every file changed in the contract-boundary stabilization patch: `GiteaEndpoint.scala`, `GiteaEndpointAuditSpec.scala`, the new `GiteaResponseMapperSpec.scala`, `api-snapshot/client.txt`, `README.md`, `CHANGELOG.md`, `PLAN.md`, and `AGENT_LOG.md`.
+- Cross-checked the audited pull-review lifecycle, commit-status, and pull-request merge/update non-2xx response expectations against `plugin-redoc-2.yaml`.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, and `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaResponseMapperSpec`.
+
+What was found:
+- No functional blocker or regression was found.
+- Audit-only non-success response metadata was correctly removed from the published `GiteaEndpoint` boundary, and the public API snapshot reflects the intentional signature shrink.
+- `GiteaEndpointAuditSpec` now checks documented non-2xx response labels for every currently audited endpoint group, with missing expected-label registrations failing loudly.
+- `GiteaResponseMapperSpec` covers global `405` and `423` mapping for decoded JSON error payloads, empty bodies, and non-JSON raw bodies.
+- Remaining risk is process-level: expected non-2xx audit labels are still manually maintained in test scope, so each new audited endpoint group must register them as part of the slice.
+
+Top improvement proposals:
+- Implement the next pull-request write slice for `repoCreatePullRequest` and `repoEditPullRequest` with typed payload models, facade methods, request tests, and audit coverage from the start.
+- Include documented create/edit failure mappings in tests and audit expectations, especially create's `423` repo-archived case and edit's `412` error case.
+- Keep Swagger audit response-label data private to tests; if the table grows awkward, refactor the audit spec internals instead of adding verification-only fields back to public endpoint metadata.
+2026-06-19T10:58:21Z iteration 1 reviewer completed status=0
+2026-06-19T10:58:21Z iteration 1 memory updated
+2026-06-19T10:58:21Z iteration 1 completed validation_status=0
+2026-06-19T10:58:21Z iteration 1 checkpoint started
+2026-06-19T10:58:21Z iteration 1 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+A  client/test/src/io/worxbend/gitea4s/http/GiteaResponseMapperSpec.scala

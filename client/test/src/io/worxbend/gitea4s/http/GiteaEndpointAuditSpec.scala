@@ -180,6 +180,93 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val expectedNonSuccessResponseLabels = Map(
+    "repoResolvePullReviewComment" -> List(
+      GiteaResponseLabel("400", "#/responses/validationError"),
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoUnresolvePullReviewComment" -> List(
+      GiteaResponseLabel("400", "#/responses/validationError"),
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoMergePullRequest" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("405", "#/responses/empty"),
+      GiteaResponseLabel("409", "#/responses/error"),
+      GiteaResponseLabel("423", "#/responses/repoArchivedError")
+    ),
+    "repoCancelScheduledAutoMerge" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("423", "#/responses/repoArchivedError")
+    ),
+    "repoUpdatePullRequest" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("409", "#/responses/error"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoCreatePullReviewRequests" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoDeletePullReviewRequests" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoListPullReviews" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoCreatePullReview" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoGetPullReview" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoSubmitPullReview" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoDeletePullReview" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoGetPullReviewComments" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoDismissPullReview" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoUnDismissPullReview" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoGetCombinedStatusByRef" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoListStatusesByRef" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoListStatuses" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoCreateStatus" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    )
+  )
+
   def spec =
     suite("Gitea endpoint metadata audit")(
       test("pull-review lifecycle metadata matches plugin-redoc-2.yaml") {
@@ -263,6 +350,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   private def audit(swagger: SwaggerAudit, audited: AuditedRequest): List[String] =
     val endpoint = audited.request.endpoint
+    val expectedNonSuccessResponses = expectedNonSuccessResponseLabels.get(endpoint.operationId)
     swagger.operation(endpoint.path, endpoint.method) match
       case Left(message) => List(s"${endpoint.operationId}: $message")
       case Right(operation) =>
@@ -280,9 +368,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           compare("path", endpoint.path, operation.path),
           compare("required path parameters", requiredPathParameterNames, operation.requiredPathParameters),
           compare("success response labels", List(endpoint.response), operation.successResponseLabels),
-          Option.when(endpoint.nonSuccessResponses.nonEmpty)(
-            compare("non-2xx response labels", endpoint.nonSuccessResponses, operation.nonSuccessResponses)
-          ).flatten,
+          expectedNonSuccessResponses.fold(
+            Some("non-2xx response label lookup failed: no expected labels registered for audited endpoint")
+          )(expected => compare("non-2xx response labels", expected, operation.nonSuccessResponses)),
           compare("endpoint body presence", endpointHasBody, operation.hasRequestBody),
           compare("request body presence", requestHasBody, operation.hasRequestBody),
           compare("retryable", audited.request.retryable, expectedRetryable),
@@ -315,6 +403,8 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       nonSuccessResponses: List[GiteaResponseLabel],
       hasRequestBody: Boolean
   )
+
+  private final case class GiteaResponseLabel(status: String, label: String)
 
   private final class SwaggerAudit(lines: Vector[String]):
     def operation(path: String, method: String): Either[String, SwaggerOperation] =
