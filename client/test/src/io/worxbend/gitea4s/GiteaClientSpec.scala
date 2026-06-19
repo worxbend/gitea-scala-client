@@ -25,6 +25,7 @@ import io.worxbend.gitea4s.internal.GiteaRequestExecutor
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
   Auth,
+  CommitDiffType,
   CommitStatusState,
   CreateIssue,
   CreatePullRequestOption,
@@ -227,6 +228,71 @@ object GiteaClientSpec extends ZIOSpecDefault:
         yield assertTrue(
           commit.sha.contains("abc123"),
           commit.commit.flatMap(_.message).contains("Retried commit")
+        )
+      },
+      test("loads a repository commit diff or patch as raw text through the ReposApi") {
+        val facadeConfig = config.copy(userAgent = Some("gitea4s-test"), otp = Some("654321"))
+        val patch = "From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001\n"
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString == "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/commits/abc%2Fdef%20123.patch" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "git",
+                "commits",
+                "abc/def 123.patch"
+              ) &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("text/plain") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("User-Agent").contains("gitea4s-test") &&
+              request.header("X-Gitea-OTP").contains("654321")
+          }.thenRespond(ResponseStub.adjust(patch))
+        val client = GiteaClient.fromBackend(facadeConfig, backend)
+
+        assertZIO(client.commitDiffOrPatch("space owner", "repo/slash", "abc/def 123", CommitDiffType.patch))(
+          Assertion.equalTo(patch)
+        )
+      },
+      test("propagates commit diff or patch documented 404 errors through the facade") {
+        val body = """{"message":"commit diff not found"}"""
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "commits", "missing-sha.diff"))
+          ).thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.commitDiffOrPatch("alice", "api", "missing-sha", CommitDiffType.diff).either)(
+          Assertion.equalTo(Left(GiteaError.NotFound("commit diff not found", body)))
+        )
+      },
+      test("retries commit diff or patch lookup because it is a read-only GET") {
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"temporarily unavailable"}""",
+                  StatusCode.ServiceUnavailable
+                )
+              ),
+              ZIO.succeed(stringResponse("diff --git a/README.md b/README.md\n"))
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.commitDiffOrPatch("alice", "api", "abc123", CommitDiffType.diff).fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          diff <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          diff.startsWith("diff --git"),
+          remaining.isEmpty
         )
       },
       test("loads a repository commit through a stub without live environment credentials") {

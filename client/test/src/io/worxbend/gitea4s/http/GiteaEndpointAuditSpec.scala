@@ -3,6 +3,7 @@ package io.worxbend.gitea4s.http
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.model.{
   Auth,
+  CommitDiffType,
   CommitStatusState,
   CreatePullRequestOption,
   CreatePullReviewOptions,
@@ -181,6 +182,14 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val commitDiffOrPatchRequests = List(
+    AuditedRequest(
+      request =
+        GiteaRequests.repoCommitDiffOrPatch(config, "owner", "repo", sha = "abc123", diffType = CommitDiffType.diff),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val pullRequestMergeUpdateRequests = List(
     AuditedRequest(
       request = GiteaRequests.mergePullRequest(
@@ -333,6 +342,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoGetSingleCommit" -> List(
       GiteaResponseLabel("404", "#/responses/notFound"),
       GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoDownloadCommitDiffOrPatch" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
     )
   )
 
@@ -359,6 +371,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("single commit metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = singleCommitRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("commit diff or patch metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = commitDiffOrPatchRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },

@@ -6,6 +6,7 @@ import io.worxbend.gitea4s.model.{
   AddTimeOption,
   Auth,
   ChangedFile,
+  CommitDiffType,
   CreateIssue,
   CreateIssueComment,
   CreatePullReviewComment,
@@ -497,6 +498,46 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           allFalse.request.uri.paramsMap.get("stat").contains("false"),
           allFalse.request.uri.paramsMap.get("verification").contains("false"),
           allFalse.request.uri.paramsMap.get("files").contains("false")
+        )
+      },
+      test("builds and decodes schema-traceable commit diff or patch request") {
+        val built =
+          GiteaRequests.repoCommitDiffOrPatch(
+            config,
+            "worx bend",
+            "gitea/scala",
+            "feature/commit abc",
+            CommitDiffType.patch
+          )
+        val endpoint = built.endpoint
+        val request = built.request
+        val body =
+          """diff --git a/src/Main.scala b/src/Main.scala
+            |+println("hello")
+            |""".stripMargin
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body))
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoDownloadCommitDiffOrPatch,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoDownloadCommitDiffOrPatch",
+          endpoint.path == "/repos/{owner}/{repo}/git/commits/{sha}.{diffType}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "diffType"),
+          endpoint.response == "#/responses/string",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/commits/feature%2Fcommit%20abc.patch",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "git", "commits", "feature/commit abc.patch"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("text/plain"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)) == Right(body)
         )
       },
       test("builds schema-traceable paginated repository pull request list request") {
@@ -2812,6 +2853,16 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.NotFound("missing commit", notFoundBody)),
           invalid.decode(invalid.request.send(validationBackend)) ==
             Left(GiteaError.UnprocessableEntity("invalid commit ref", validationBody))
+        )
+      },
+      test("maps documented commit diff or patch 404 responses") {
+        val body = """{"message":"missing commit diff"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val built = GiteaRequests.repoCommitDiffOrPatch(config, "owner", "repo", "missing-sha", CommitDiffType.diff)
+
+        assertTrue(
+          built.decode(built.request.send(backend)) ==
+            Left(GiteaError.NotFound("missing commit diff", body))
         )
       },
       test("maps repository pull request not-found responses") {

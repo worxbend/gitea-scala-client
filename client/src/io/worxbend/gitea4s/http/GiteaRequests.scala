@@ -8,6 +8,7 @@ import io.worxbend.gitea4s.model.{
   ChangedFile,
   Comment,
   Commit,
+  CommitDiffType,
   CommitStatus,
   CombinedStatus,
   CreateIssue,
@@ -298,6 +299,22 @@ object GiteaRequests:
       List("repos", owner, repo, "git", "commits", sha),
       singleCommitQuery(params),
       GiteaResponseMapper.decodeJson[Commit]
+    )
+
+  def repoCommitDiffOrPatch(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      sha: String,
+      diffType: CommitDiffType
+  ): GiteaRequest[String] =
+    get(
+      config,
+      GiteaEndpoints.repoDownloadCommitDiffOrPatch,
+      List("repos", owner, repo, "git", "commits", s"$sha.${diffType.pathValue}"),
+      Nil,
+      GiteaResponseMapper.decodeString,
+      accept = MediaType.TextPlain.toString
     )
 
   def repoPullRequests(

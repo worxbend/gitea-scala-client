@@ -291,6 +291,20 @@ object GiteaEndpoints:
       response = "#/responses/Commit"
     )
 
+  val repoDownloadCommitDiffOrPatch: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/git/commits/{sha}.{diffType}",
+      operationId = "repoDownloadCommitDiffOrPatch",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("sha", "path", required = true),
+        GiteaParameter("diffType", "path", required = true)
+      ),
+      response = "#/responses/string"
+    )
+
   val repoListPullRequests: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

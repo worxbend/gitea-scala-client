@@ -5,6 +5,7 @@ import io.worxbend.gitea4s.http.{CombinedStatusParams, CommitStatusListParams, R
 import io.worxbend.gitea4s.model.{
   Branch,
   Commit,
+  CommitDiffType,
   CombinedStatus,
   CommitStatus,
   CreateStatusOption,
@@ -24,6 +25,8 @@ trait ReposApi:
       sha: String,
       params: SingleCommitParams = SingleCommitParams.default
   ): IO[GiteaError, Commit]
+
+  def commitDiffOrPatch(owner: String, repo: String, sha: String, diffType: CommitDiffType): IO[GiteaError, String]
 
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 

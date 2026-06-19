@@ -1175,3 +1175,77 @@ M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
 M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+2026-06-19T12:06:53Z iteration 5 started remaining=13554s
+2026-06-19T12:06:53Z iteration 5 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T12:06:53Z iteration 5 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-txes1m84/repo copied_entries=86
+2026-06-19T12:06:53Z iteration 5 ideator phase started count=3
+2026-06-19T12:06:53Z iteration 5 ideator phase concurrency workers=3
+2026-06-19T12:06:53Z iteration 5 ideator 1 role="the pragmatist" started
+2026-06-19T12:06:53Z iteration 5 ideator 2 role="the architect" started
+2026-06-19T12:06:53Z iteration 5 ideator 3 role="the contrarian" started
+2026-06-19T12:07:02Z iteration 5 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T12:07:02Z iteration 5 ideator 3 role="the contrarian" completed status=0
+2026-06-19T12:07:03Z iteration 5 ideator 2 role="the architect" completed status=0
+2026-06-19T12:07:03Z iteration 5 ideator phase completed approaches=3
+2026-06-19T12:07:03Z iteration 5 selector started approaches=3
+2026-06-19T12:07:14Z iteration 5 selector completed status=0
+2026-06-19T12:07:14Z iteration 5 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-txes1m84/repo
+2026-06-19T12:07:14Z iteration 5 selector rejected alternative role="the pragmatist" approach="Contract-First Surface Lock: treat the commit diff/patch slice as a public API boundary decision before implementation, using the Swagger contract and nearby commit APIs to sett..." reason="Strong on avoiding public API churn and preserving established implementation patterns, but less explicit than needed about using the audit to prove the absence of query/body surface."
+2026-06-19T12:07:14Z iteration 5 selector rejected alternative role="the contrarian" approach="Contract-First Freeze Point: treat the commit diff/patch slice as a public API naming checkpoint before coding momentum continues. The next planner should decide the repository..." reason="Correctly identifies facade naming as the strategic lever, but risks over-centering naming at the expense of the endpoint contract details that make this slice valuable."
+2026-06-19T12:07:14Z iteration 5 selector rejected alternative role="the architect" approach="Contract-First Micro-Slice: treat the commit diff/patch endpoint as a narrow contract-hardening exercise before expanding more commit APIs, prioritizing Swagger audit boundaries..." reason="Best captures the narrow contract-hardening shape, but selected as part of a hybrid so the Planner also treats the facade vocabulary decision as a first-class freeze point before implementation."
+2026-06-19T12:07:14Z iteration 5 selector alternatives persisted count=3
+2026-06-19T12:07:14Z iteration 5 planner started
+2026-06-19T12:07:52Z iteration 5 plan: 6 task(s) in 5 phase(s). The slice is intentionally contract-first: settle the public vocabulary, implement the Swagger-backed HTTP boundary, then expose the facade and refresh compatibility/docs. Only documentation and snapshot refresh are parallel because they touch separate files after implementation signatures are known.
+2026-06-19T12:07:52Z iteration 5 phase 1 started parallel=False tasks=1
+2026-06-19T12:09:00Z iteration 5 task t1 ('Add commit diff type model') status=0
+2026-06-19T12:09:00Z iteration 5 phase 2 started parallel=False tasks=1
+2026-06-19T12:11:33Z iteration 5 task t2 ('Implement commit diff/patch request layer') status=0
+2026-06-19T12:11:33Z iteration 5 phase 3 started parallel=False tasks=1
+2026-06-19T12:13:35Z iteration 5 task t3 ('Expose repository facade method') status=0
+2026-06-19T12:13:35Z iteration 5 phase 4 started parallel=True tasks=2
+2026-06-19T12:14:39Z iteration 5 task t4 ('Refresh public API snapshot') status=0
+2026-06-19T12:17:32Z iteration 5 task t5 ('Update release documentation and plan') status=0
+2026-06-19T12:17:32Z iteration 5 phase 5 started parallel=False tasks=1
+2026-06-19T12:18:10Z iteration 5 task t6 ('Run focused validation') status=0
+2026-06-19T12:18:10Z iteration 5 reviewer started
+
+## Reviewer Summary - Iteration 5 - 2026-06-19T12:19:54Z
+
+What was done:
+- Inspected every file changed in the commit diff/patch slice: `CommitDiffType`, endpoint metadata, request builder, `ReposApi` and `SttpGiteaClient` facade wiring, request/client/audit/core tests, README, CHANGELOG, PLAN, AGENT_LOG, and public API snapshots.
+- Cross-checked `repoDownloadCommitDiffOrPatch` against `plugin-redoc-2.yaml`; method, path, operation ID, required `owner`/`repo`/`sha`/`diffType` path parameters, `diff`/`patch` enum values, `text/plain` response production, success response, and documented 404 response match the local Swagger contract.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, and `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`.
+
+What was found:
+- No functional blocker or regression was found.
+- `CommitDiffType` is a small closed path-value model for the documented `diff` and `patch` values, and the public `ReposApi.commitDiffOrPatch` name fits cleanly beside `ReposApi.commit` without forcing immediate facade churn.
+- `GiteaRequests.repoCommitDiffOrPatch` safely encodes owner/repo/sha as path segments, appends the typed diff/patch suffix in the dot-suffixed Swagger shape, sends `Accept: text/plain`, avoids `Content-Type`, decodes successful responses as raw `String`, propagates documented 404 failures through `GiteaError.NotFound`, and remains retryable as a read-only GET.
+- Tests cover raw text decoding, path encoding including slash-containing owner/repo/sha inputs, shared auth/OTP/user-agent headers, no query parameters, no body/content type, documented 404 mapping, facade success/failure, retry behavior, and API snapshot updates.
+- The main residual gap is audit depth: `GiteaEndpointAuditSpec` proves no query/body drift for this endpoint, but it does not yet compare path enum values like `diffType` against Swagger.
+
+Top improvement proposals:
+- Add reusable Swagger path-enum auditing and register it for both repository commit diff/patch and pull-request diff/patch `diffType` parameters.
+- Continue with `repoGetNote` next, using a minimal `Note` model, explicit `verification`/`files` params, JSON response decoding, 404/422 failure coverage, and read-only retry tests.
+- Keep raw diff/patch downloads as buffered `String` for this API shape, but consider a future streaming download surface if larger archive/diff endpoints are added.
+2026-06-19T12:20:58Z iteration 5 reviewer completed status=0
+2026-06-19T12:20:58Z iteration 5 memory updated
+2026-06-19T12:20:58Z iteration 5 completed validation_status=0
+2026-06-19T12:20:58Z iteration 5 checkpoint started
+2026-06-19T12:20:58Z iteration 5 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+A  core/src/io/worxbend/gitea4s/model/CommitDiffType.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

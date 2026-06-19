@@ -555,6 +555,13 @@ object CoreModelsSpec extends ZIOSpecDefault:
             List("merge", "rebase", "rebase-merge", "squash", "fast-forward-only", "manually-merged")
         )
       },
+      test("renders commit diff type path values") {
+        assertTrue(
+          CommitDiffType.diff.pathValue == "diff",
+          CommitDiffType.patch.pathValue == "patch",
+          CommitDiffType.values.map(_.pathValue).toList == List("diff", "patch")
+        )
+      },
       test("round-trips pull review write payloads using schema JSON names") {
         val comment = CreatePullReviewComment(
           body = Some("Use the shared helper here"),

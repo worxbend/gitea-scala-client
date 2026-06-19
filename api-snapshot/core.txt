@@ -1117,6 +1117,32 @@ public final class io.worxbend.gitea4s.model.CommitAffectedFile$ implements scal
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.CommitDiffType
+public abstract class io.worxbend.gitea4s.model.CommitDiffType implements scala.reflect.Enum {
+  public io.worxbend.gitea4s.model.CommitDiffType(java.lang.String);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public java.lang.String productPrefix();
+  public java.lang.String productElementName(int);
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public java.lang.String pathValue();
+  public static io.worxbend.gitea4s.model.CommitDiffType fromOrdinal(int);
+  public static io.worxbend.gitea4s.model.CommitDiffType valueOf(java.lang.String);
+  public static io.worxbend.gitea4s.model.CommitDiffType[] values();
+}
+
+## io.worxbend.gitea4s.model.CommitDiffType$
+public final class io.worxbend.gitea4s.model.CommitDiffType$ implements scala.deriving.Mirror$Sum,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.CommitDiffType diff;
+  public static final io.worxbend.gitea4s.model.CommitDiffType patch;
+  public static final io.worxbend.gitea4s.model.CommitDiffType$ MODULE$;
+  public static {};
+  public io.worxbend.gitea4s.model.CommitDiffType[] values();
+  public io.worxbend.gitea4s.model.CommitDiffType valueOf(java.lang.String);
+  public io.worxbend.gitea4s.model.CommitDiffType fromOrdinal(int);
+  public int ordinal(io.worxbend.gitea4s.model.CommitDiffType);
+  public int ordinal(java.lang.Object);
+}
+
 ## io.worxbend.gitea4s.model.CommitMeta
 public final class io.worxbend.gitea4s.model.CommitMeta implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.CommitMeta(scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.lang.String>);

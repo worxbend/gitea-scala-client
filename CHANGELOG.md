@@ -44,6 +44,13 @@ surface is still being filled out.
   `GiteaRequests.repoSingleCommit`, and `ReposApi.commit`; the read-only
   request is retryable, omits `stat`, `verification`, and `files` by default,
   and encodes explicitly supplied boolean controls.
+- Typed commit diff/patch downloads for
+  `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
+  `CommitDiffType.diff`, `CommitDiffType.patch`,
+  `repoDownloadCommitDiffOrPatch`, `GiteaRequests.repoCommitDiffOrPatch`, and
+  `ReposApi.commitDiffOrPatch`; the read-only request is retryable, accepts
+  `text/plain`, decodes successful responses as raw `String` content, and
+  propagates the documented `404` through the shared error mapper.
 - Pull-request create/edit endpoint metadata audit coverage for operation IDs,
   methods, paths, required path parameters, success responses, request-body
   presence, retryability, and documented non-2xx response status/ref labels.
@@ -54,6 +61,10 @@ surface is still being filled out.
   required path parameters, optional `stat`/`verification`/`files` query
   parameters, success response, request-body absence, retryability, and
   documented 404/422 response status/ref labels.
+- Commit diff/patch endpoint metadata audit coverage for operation ID, method,
+  path, required `owner`/`repo`/`sha`/`diffType` path parameters, success
+  response, documented 404 response status/ref label, request-body absence,
+  retryability, and proof that the operation has no query parameters.
 - Pull-request merge/update endpoint metadata audit coverage for operation IDs,
   methods, paths, required path parameters, success responses, request-body
   presence, retryability, `repoUpdatePullRequest` `style` enum values, and

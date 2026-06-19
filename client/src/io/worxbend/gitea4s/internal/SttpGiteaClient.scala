@@ -28,6 +28,7 @@ import io.worxbend.gitea4s.model.{
   Comment,
   CombinedStatus,
   Commit,
+  CommitDiffType,
   CommitStatus,
   CreateIssue,
   CreateIssueComment,
@@ -129,6 +130,14 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       params: SingleCommitParams
   ): IO[GiteaError, Commit] =
     executor.send(GiteaRequests.repoSingleCommit(config, owner, repo, sha, params))
+
+  override def commitDiffOrPatch(
+      owner: String,
+      repo: String,
+      sha: String,
+      diffType: CommitDiffType
+  ): IO[GiteaError, String] =
+    executor.send(GiteaRequests.repoCommitDiffOrPatch(config, owner, repo, sha, diffType))
 
   override def list(
       owner: String,
