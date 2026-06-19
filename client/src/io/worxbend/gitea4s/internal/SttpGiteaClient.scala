@@ -8,6 +8,7 @@ import io.worxbend.gitea4s.http.{
   CombinedStatusParams,
   CommitNoteParams,
   CommitStatusListParams,
+  GitTreeParams,
   IssueCommentListParams,
   IssueListParams,
   IssueTrackedTimeListParams,
@@ -42,6 +43,7 @@ import io.worxbend.gitea4s.model.{
   EditIssue,
   EditPullRequestOption,
   EditReactionOption,
+  GitTreeResponse,
   Issue,
   IssueDeadline,
   IssueLabelsOption,
@@ -148,6 +150,14 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       params: CommitNoteParams
   ): IO[GiteaError, Note] =
     executor.send(GiteaRequests.repoCommitNote(config, owner, repo, sha, params))
+
+  override def gitTree(
+      owner: String,
+      repo: String,
+      sha: String,
+      params: GitTreeParams
+  ): IO[GiteaError, GitTreeResponse] =
+    executor.send(GiteaRequests.gitTree(config, owner, repo, sha, params))
 
   override def list(
       owner: String,

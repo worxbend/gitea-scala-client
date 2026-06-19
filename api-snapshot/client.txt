@@ -544,6 +544,7 @@ public interface io.worxbend.gitea4s.api.ReposApi {
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Note> commitNote(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CommitNoteParams);
   public static io.worxbend.gitea4s.http.CommitNoteParams commitNote$default$4$(io.worxbend.gitea4s.api.ReposApi);
   public default io.worxbend.gitea4s.http.CommitNoteParams commitNote$default$4();
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GitTreeResponse> gitTree(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.GitTreeParams);
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> list(java.lang.String, io.worxbend.gitea4s.http.RepoListParams);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.NewIssuePinsAllowed> newIssuePinsAllowed(java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<java.lang.String>> topics(java.lang.String, java.lang.String);
@@ -762,6 +763,52 @@ public final class io.worxbend.gitea4s.http.CommitStatusSort$ implements scala.d
   public int ordinal(java.lang.Object);
 }
 
+## io.worxbend.gitea4s.http.GitTreeParams
+public final class io.worxbend.gitea4s.http.GitTreeParams implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.http.GitTreeParams(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.Object> recursive();
+  public scala.Option<java.lang.Object> page();
+  public scala.Option<java.lang.Object> perPage();
+  public io.worxbend.gitea4s.http.GitTreeParams copy(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.lang.Object> copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.Object> copy$default$3();
+  public scala.Option<java.lang.Object> _1();
+  public scala.Option<java.lang.Object> _2();
+  public scala.Option<java.lang.Object> _3();
+  public static io.worxbend.gitea4s.http.GitTreeParams apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.http.GitTreeParams default();
+  public static io.worxbend.gitea4s.http.GitTreeParams fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.http.GitTreeParams unapply(io.worxbend.gitea4s.http.GitTreeParams);
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+}
+
+## io.worxbend.gitea4s.http.GitTreeParams$
+public final class io.worxbend.gitea4s.http.GitTreeParams$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.http.GitTreeParams$ MODULE$;
+  public static {};
+  public io.worxbend.gitea4s.http.GitTreeParams apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.http.GitTreeParams unapply(io.worxbend.gitea4s.http.GitTreeParams);
+  public scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public io.worxbend.gitea4s.http.GitTreeParams default();
+  public io.worxbend.gitea4s.http.GitTreeParams fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.http.GiteaEndpoint
 public final class io.worxbend.gitea4s.http.GiteaEndpoint implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.http.GiteaEndpoint(java.lang.String, java.lang.String, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter>, java.lang.String);
@@ -809,6 +856,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoint$ implements scala.deri
 
 ## io.worxbend.gitea4s.http.GiteaEndpoints
 public final class io.worxbend.gitea4s.http.GiteaEndpoints {
+  public static io.worxbend.gitea4s.http.GiteaEndpoint getTree();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueAddLabel();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueAddSubscription();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueAddTime();
@@ -938,6 +986,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetSingleCommit();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoDownloadCommitDiffOrPatch();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetNote();
+  public io.worxbend.gitea4s.http.GiteaEndpoint getTree();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListPullRequests();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoCreatePullRequest();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListPinnedPullRequests();
@@ -1129,6 +1178,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> editIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssueComment);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.IssueDeadline> editIssueDeadline(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditDeadlineOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> editPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditPullRequestOption);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GitTreeResponse> gitTree(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.GitTreeParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> issue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Issue>> issueBlocks(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> issueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
@@ -1218,6 +1268,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static int repoReleases$default$4();
   public static int repoTags$default$4();
   public static int repoTopics$default$4();
+  public static io.worxbend.gitea4s.http.GitTreeParams gitTree$default$5();
   public static int issueBlocks$default$5();
   public static io.worxbend.gitea4s.http.IssueCommentListParams issueComments$default$5();
   public static int issueDependencies$default$5();
@@ -1278,6 +1329,8 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<java.lang.String> repoCommitDiffOrPatch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CommitDiffType);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Note> repoCommitNote(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CommitNoteParams);
   public io.worxbend.gitea4s.http.CommitNoteParams repoCommitNote$default$5();
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GitTreeResponse> gitTree(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.GitTreeParams);
+  public io.worxbend.gitea4s.http.GitTreeParams gitTree$default$5();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.PullRequest>> repoPullRequests(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.PullRequestListParams);
   public io.worxbend.gitea4s.http.PullRequestListParams repoPullRequests$default$4();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> createPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreatePullRequestOption);

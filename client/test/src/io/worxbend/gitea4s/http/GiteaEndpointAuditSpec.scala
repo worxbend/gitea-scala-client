@@ -195,6 +195,19 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val gitTreeRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.gitTree(
+        config,
+        "owner",
+        "repo",
+        sha = "abc123",
+        GitTreeParams(recursive = Some(true), page = Some(2), perPage = Some(50))
+      ),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val commitDiffOrPatchRequests = List(
     AuditedRequest(
       request =
@@ -373,6 +386,10 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       GiteaResponseLabel("404", "#/responses/notFound"),
       GiteaResponseLabel("422", "#/responses/validationError")
     ),
+    "GetTree" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoDownloadCommitDiffOrPatch" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     )
@@ -407,6 +424,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("commit note metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = commitNoteRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("git tree metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = gitTreeRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },

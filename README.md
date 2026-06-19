@@ -14,7 +14,7 @@ and zio-json.
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
   commit statuses, single-commit lookup, commit note lookup, commit diff/patch
-  downloads, commit-to-pull-request lookup,
+  downloads, Git tree reads, commit-to-pull-request lookup,
   releases, pull requests including reviews, pinned pull-request reads,
   pull-request create/edit writes, diff/patch downloads, merge-status checks,
   merge/update commands, review-comment resolution, and notifications through a
@@ -22,9 +22,9 @@ and zio-json.
 - Contract checks: implemented endpoint metadata is audited against
   `plugin-redoc-2.yaml` for pull-request review lifecycle, commit-status,
   pull-request create/edit, merge/update, commit-to-pull-request,
-  single-commit, commit note, and commit diff/patch endpoints, including
-  documented non-2xx response labels, path enum values, and clear
-  path/method/parameter mismatch failures
+  single-commit, commit note, commit diff/patch, and Git tree endpoints,
+  including documented non-2xx response labels, optional query parameters, path
+  enum values, and clear path/method/parameter mismatch failures
 - Endpoint audit-only non-success response labels live in test scope; the
   published client endpoint metadata exposes operation method, path, operation
   ID, parameters, and success response labels only
@@ -252,6 +252,16 @@ parameters. Use `CommitNoteParams` when a call needs explicit control over
 those optional response details. Successful responses decode as `Note`, and
 documented `404`/`422` failures flow through the shared error mapper.
 
+Repository Git tree lookup covers
+`GET /repos/{owner}/{repo}/git/trees/{sha}` through `client.gitTree`. It accepts
+`GitTreeParams` for the documented optional `recursive`, `page`, and `per_page`
+query parameters, omitting all three by default. Successful responses decode as
+the exact Swagger-shaped `GitTreeResponse` object: `page`, `sha`, `total_count`,
+`tree`, `truncated`, and `url` are body fields, with nested `GitEntry` values in
+`tree`. This endpoint is intentionally not modeled as `Page[A]`; pagination
+state comes from the JSON response body. Documented `400`/`404` failures flow
+through the shared error mapper, and the read-only request is retryable.
+
 Commit diff/patch downloads cover
 `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` through
 `client.commitDiffOrPatch`. Use `CommitDiffType.diff` or
@@ -262,7 +272,11 @@ mapper, and its Swagger audit proves the operation has no query parameters and
 no request body.
 
 ```scala
-import io.worxbend.gitea4s.http.{CommitNoteParams, SingleCommitParams}
+import io.worxbend.gitea4s.http.{
+  CommitNoteParams,
+  GitTreeParams,
+  SingleCommitParams
+}
 import io.worxbend.gitea4s.model.CommitDiffType
 
 client.commit(owner = "my-org", repo = "my-repo", sha = "abc123")
@@ -287,6 +301,24 @@ client.commitNote(
   params = CommitNoteParams(
     verification = Some(true),
     files = Some(true)
+  )
+)
+
+client.gitTree(
+  owner = "my-org",
+  repo = "my-repo",
+  sha = "tree123",
+  params = GitTreeParams.default
+)
+
+client.gitTree(
+  owner = "my-org",
+  repo = "my-repo",
+  sha = "tree123",
+  params = GitTreeParams(
+    recursive = Some(true),
+    page = Some(2),
+    perPage = Some(50)
   )
 )
 
@@ -674,9 +706,10 @@ tests, and pagination tests:
 
 Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
-commit-to-pull-request, single-commit, commit note, and commit diff/patch
-endpoint groups against `plugin-redoc-2.yaml`, including documented non-2xx
-response status/ref labels and path enum values such as `diffType`.
+commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
+tree endpoint groups against `plugin-redoc-2.yaml`, including documented
+non-2xx response status/ref labels, optional query parameters such as
+`recursive`/`page`/`per_page`, and path enum values such as `diffType`.
 
 Live integration tests are opt-in:
 
@@ -688,6 +721,17 @@ GITEA_TOKEN=... \
 
 Without both integration variables, `it.test` reports the live tests as ignored
 and makes no external calls.
+
+Latest Git tree slice validation passed with:
+
+```bash
+./mill core.test
+./mill client.test
+./mill compatibility.check
+env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill __.test it.test examples.run
+```
+
+The credential-stripped run reported the live integration tests as ignored.
 
 ## Mill Commands
 

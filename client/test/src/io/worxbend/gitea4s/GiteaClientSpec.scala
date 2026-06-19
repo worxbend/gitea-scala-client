@@ -7,6 +7,7 @@ import io.worxbend.gitea4s.http.{
   CommitStatusListParams,
   CommitStatusListState,
   CommitStatusSort,
+  GitTreeParams,
   GiteaRequests,
   IssueCommentListParams,
   IssueListParams,
@@ -366,6 +367,104 @@ object GiteaClientSpec extends ZIOSpecDefault:
         yield assertTrue(
           note.message.contains("Retried note"),
           note.commit.flatMap(_.sha).contains("abc123"),
+          remaining.isEmpty
+        )
+      },
+      test("loads a Git tree through the ReposApi gitTree method") {
+        val facadeConfig = config.copy(userAgent = Some("gitea4s-test"), otp = Some("654321"))
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/trees/abc%2Fdef%20123?recursive=true&page=2&per_page=50" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "git",
+                "trees",
+                "abc/def 123"
+              ) &&
+              request.uri.paramsMap.get("recursive").contains("true") &&
+              request.uri.paramsMap.get("page").contains("2") &&
+              request.uri.paramsMap.get("per_page").contains("50") &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("User-Agent").contains("gitea4s-test") &&
+              request.header("X-Gitea-OTP").contains("654321") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(
+            ResponseStub.adjust(
+              """{"page":2,"sha":"abc123","total_count":1,"tree":[{"mode":"100644","path":"README.md","sha":"file-sha","size":123,"type":"blob","url":"https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/blobs/file-sha"}],"truncated":false,"url":"https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/trees/abc123"}"""
+            )
+          )
+        val client = GiteaClient.fromBackend(facadeConfig, backend)
+
+        assertZIO(
+          client
+            .gitTree(
+              "space owner",
+              "repo/slash",
+              "abc/def 123",
+              GitTreeParams(recursive = Some(true), page = Some(2), perPage = Some(50))
+            )
+            .map(tree => tree.page -> tree.sha -> tree.totalCount -> tree.tree.flatMap(_.headOption.map(_.path)))
+        )(
+          Assertion.equalTo(Some(2L) -> Some("abc123") -> Some(1L) -> Some(Some("README.md")))
+        )
+      },
+      test("propagates Git tree documented 400 and 404 errors through the facade") {
+        val badBody = """{"message":"invalid tree sha"}"""
+        val notFoundBody = """{"message":"tree not found"}"""
+        val badBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "trees", "bad-sha"))
+          ).thenRespond(ResponseStub.adjust(badBody, StatusCode.BadRequest))
+        val notFoundBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "trees", "missing-sha"))
+          ).thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val badClient = GiteaClient.fromBackend(config, badBackend)
+        val notFoundClient = GiteaClient.fromBackend(config, notFoundBackend)
+
+        for
+          bad <- badClient.gitTree("alice", "api", "bad-sha", GitTreeParams.default).either
+          notFound <- notFoundClient.gitTree("alice", "api", "missing-sha", GitTreeParams.default).either
+        yield assertTrue(
+          bad == Left(GiteaError.BadRequest("invalid tree sha", badBody)),
+          notFound == Left(GiteaError.NotFound("tree not found", notFoundBody))
+        )
+      },
+      test("retries Git tree lookup because it is a read-only GET") {
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"temporarily unavailable"}""",
+                  StatusCode.ServiceUnavailable
+                )
+              ),
+              ZIO.succeed(
+                stringResponse(
+                  """{"sha":"abc123","tree":[{"path":"README.md","type":"blob","sha":"file-sha"}],"truncated":false}"""
+                )
+              )
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.gitTree("alice", "api", "abc123", GitTreeParams.default).fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          tree <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          tree.sha.contains("abc123"),
+          tree.tree.flatMap(_.headOption.flatMap(_.path)).contains("README.md"),
           remaining.isEmpty
         )
       },

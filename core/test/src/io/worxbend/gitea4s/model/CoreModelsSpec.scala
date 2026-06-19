@@ -471,6 +471,78 @@ object CoreModelsSpec extends ZIOSpecDefault:
           Note().toJson == "{}"
         )
       },
+      test("decodes git tree response from schema JSON names") {
+        val json =
+          """{
+            |  "page": 1,
+            |  "sha": "tree123",
+            |  "total_count": 2,
+            |  "tree": [
+            |    {
+            |      "mode": "100644",
+            |      "path": "README.md",
+            |      "sha": "blob123",
+            |      "size": 128,
+            |      "type": "blob",
+            |      "url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123"
+            |    },
+            |    {
+            |      "mode": "040000",
+            |      "path": "src",
+            |      "sha": "subtree123",
+            |      "type": "tree",
+            |      "url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/trees/subtree123"
+            |    }
+            |  ],
+            |  "truncated": false,
+            |  "url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/trees/tree123"
+            |}""".stripMargin
+
+        val tree = json.fromJson[GitTreeResponse]
+
+        assertTrue(
+          tree.map(_.page) == Right(Some(1L)),
+          tree.map(_.sha) == Right(Some("tree123")),
+          tree.map(_.totalCount) == Right(Some(2L)),
+          tree.map(_.tree.flatMap(_.headOption).flatMap(_.path)) == Right(Some("README.md")),
+          tree.map(_.tree.flatMap(_.headOption).flatMap(_.`type`)) == Right(Some("blob")),
+          tree.map(_.tree.flatMap(_.headOption).flatMap(_.size)) == Right(Some(128L)),
+          tree.map(_.tree.flatMap(_.drop(1).headOption).flatMap(_.size)) == Right(None),
+          tree.map(_.tree.flatMap(_.drop(1).headOption).flatMap(_.`type`)) == Right(Some("tree")),
+          tree.map(_.truncated) == Right(Some(false)),
+          tree.map(_.url) == Right(Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/trees/tree123"))
+        )
+      },
+      test("round-trips git tree response without losing total_count wire name") {
+        val payload = GitTreeResponse(
+          page = Some(2L),
+          sha = Some("tree456"),
+          totalCount = Some(1L),
+          tree = Some(
+            List(
+              GitEntry(
+                mode = Some("120000"),
+                path = Some("current"),
+                sha = Some("link123"),
+                size = Some(7L),
+                `type` = Some("symlink"),
+                url = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/link123")
+              )
+            )
+          ),
+          truncated = Some(true),
+          url = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/trees/tree456")
+        )
+        val json = payload.toJson
+
+        assertTrue(
+          json.contains(""""total_count":1"""),
+          json.contains(""""tree":[{"mode":"120000","path":"current","sha":"link123","size":7,"type":"symlink""""),
+          json.fromJson[GitTreeResponse] == Right(payload),
+          GitTreeResponse(sha = Some("tree456")).toJson == """{"sha":"tree456"}""",
+          GitTreeResponse().toJson == "{}"
+        )
+      },
       test("round-trips commit status request and response payloads with state/status JSON fields") {
         val create = CreateStatusOption(
           context = Some("ci/mill"),

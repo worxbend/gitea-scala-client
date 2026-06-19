@@ -50,6 +50,14 @@ surface is still being filled out.
   `ReposApi.commitNote`; the read-only request is retryable, omits
   `verification` and `files` by default, decodes a single `Note`, and
   propagates documented `404`/`422` failures through the shared error mapper.
+- Typed Git tree lookup for
+  `GET /repos/{owner}/{repo}/git/trees/{sha}` with `GitTreeResponse`,
+  `GitEntry`, `GitTreeParams`, `GetTree` endpoint metadata,
+  `GiteaRequests.gitTree`, and `ReposApi.gitTree`; the read-only request is
+  retryable, omits `recursive`, `page`, and `per_page` by default, preserves
+  the Swagger body-pagination response shape through `page`, `total_count`,
+  and `truncated`, and propagates documented `400`/`404` failures through the
+  shared error mapper.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,
@@ -71,6 +79,11 @@ surface is still being filled out.
   required path parameters, optional `verification`/`files` query parameters,
   success response, request-body absence, retryability, and documented 404/422
   response status/ref labels.
+- Git tree endpoint metadata audit coverage for uppercase operation ID
+  `GetTree`, method, path, required `owner`/`repo`/`sha` path parameters,
+  optional `recursive`/`page`/`per_page` query parameters, success response,
+  request-body absence, retryability, and documented 400/404 response
+  status/ref labels.
 - Commit diff/patch endpoint metadata audit coverage for operation ID, method,
   path, required `owner`/`repo`/`sha`/`diffType` path parameters, success
   response, documented 404 response status/ref label, request-body absence,
@@ -175,3 +188,7 @@ surface is still being filled out.
 
 - No Maven Central release has been cut yet. Local snapshots use
   `0.1.0-SNAPSHOT`.
+- Git tree slice validation passed with `./mill core.test`, `./mill client.test`,
+  `./mill compatibility.check`, and
+  `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill __.test it.test examples.run`;
+  the credential-stripped run reported live integration tests as ignored.

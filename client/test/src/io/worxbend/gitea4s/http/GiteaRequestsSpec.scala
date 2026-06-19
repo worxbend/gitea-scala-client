@@ -616,6 +616,78 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           allFalse.request.uri.paramsMap.get("files").contains("false")
         )
       },
+      test("builds and decodes schema-traceable Git tree lookup") {
+        val built =
+          GiteaRequests.gitTree(
+            config,
+            "worx bend",
+            "gitea/scala",
+            "feature/tree abc",
+            GitTreeParams(recursive = Some(true), page = Some(2), perPage = Some(50))
+          )
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """{"page":2,"sha":"tree123","total_count":1,"tree":[{"mode":"100644","path":"src/Main.scala","sha":"blob123","size":42,"type":"blob","url":"https://gitea.example/api/v1/repos/o/r/git/blobs/blob123"}],"truncated":false,"url":"https://gitea.example/api/v1/repos/o/r/git/trees/tree123"}"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.getTree,
+          endpoint.method == "GET",
+          endpoint.operationId == "GetTree",
+          endpoint.path == "/repos/{owner}/{repo}/git/trees/{sha}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "recursive", "page", "per_page"),
+          endpoint.parameters.filter(_.in == "path").forall(_.required),
+          endpoint.parameters.filter(_.in == "query").forall(parameter => !parameter.required),
+          endpoint.response == "#/responses/GitTreeResponse",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/trees/feature%2Ftree%20abc?recursive=true&page=2&per_page=50",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "git", "trees", "feature/tree abc"),
+          request.uri.paramsMap.get("recursive").contains("true"),
+          request.uri.paramsMap.get("page").contains("2"),
+          request.uri.paramsMap.get("per_page").contains("50"),
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)).map(_.page) == Right(Some(2L)),
+          built.decode(request.send(backend)).map(_.sha) == Right(Some("tree123")),
+          built.decode(request.send(backend)).map(_.totalCount) == Right(Some(1L)),
+          built.decode(request.send(backend)).map(_.tree.flatMap(_.headOption.flatMap(_.path))) ==
+            Right(Some("src/Main.scala")),
+          built.decode(request.send(backend)).map(_.tree.flatMap(_.headOption.flatMap(_.`type`))) ==
+            Right(Some("blob")),
+          built.decode(request.send(backend)).map(_.truncated) == Right(Some(false))
+        )
+      },
+      test("omits absent Git tree query parameters and encodes explicit values") {
+        val default =
+          GiteaRequests.gitTree(config, "owner", "repo", "abc123")
+        val explicit =
+          GiteaRequests.gitTree(
+            config,
+            "owner",
+            "repo",
+            "abc123",
+            GitTreeParams(recursive = Some(false), page = Some(3), perPage = Some(20))
+          )
+
+        assertTrue(
+          default.request.uri.toString == "https://gitea.example/root/api/v1/repos/owner/repo/git/trees/abc123",
+          default.request.uri.paramsMap.isEmpty,
+          explicit.request.uri.toString.contains("/api/v1/repos/owner/repo/git/trees/abc123?"),
+          explicit.request.uri.paramsMap.get("recursive").contains("false"),
+          explicit.request.uri.paramsMap.get("page").contains("3"),
+          explicit.request.uri.paramsMap.get("per_page").contains("20")
+        )
+      },
       test("builds schema-traceable paginated repository pull request list request") {
         val params = PullRequestListParams(
           baseBranch = Some("main"),
@@ -2958,6 +3030,23 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.NotFound("missing commit note", notFoundBody)),
           invalid.decode(invalid.request.send(validationBackend)) ==
             Left(GiteaError.UnprocessableEntity("invalid commit note ref", validationBody))
+        )
+      },
+      test("maps documented Git tree 400 and 404 responses") {
+        val badRequestBody = """{"message":"invalid tree ref"}"""
+        val notFoundBody = """{"message":"missing tree"}"""
+        val badRequestBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(badRequestBody, StatusCode.BadRequest))
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val invalid = GiteaRequests.gitTree(config, "owner", "repo", "bad ref")
+        val missing = GiteaRequests.gitTree(config, "owner", "repo", "missing-sha")
+
+        assertTrue(
+          invalid.decode(invalid.request.send(badRequestBackend)) ==
+            Left(GiteaError.BadRequest("invalid tree ref", badRequestBody)),
+          missing.decode(missing.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing tree", notFoundBody))
         )
       },
       test("maps repository pull request not-found responses") {

@@ -320,6 +320,22 @@ object GiteaEndpoints:
       response = "#/responses/Note"
     )
 
+  val getTree: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/git/trees/{sha}",
+      operationId = "GetTree",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("sha", "path", required = true),
+        GiteaParameter("recursive", "query", required = false),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("per_page", "query", required = false)
+      ),
+      response = "#/responses/GitTreeResponse"
+    )
+
   val repoListPullRequests: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

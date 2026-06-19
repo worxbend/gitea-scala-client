@@ -22,6 +22,7 @@ import io.worxbend.gitea4s.model.{
   EditIssue,
   EditPullRequestOption,
   EditReactionOption,
+  GitTreeResponse,
   Issue,
   IssueDeadline,
   IssueLabelsOption,
@@ -331,6 +332,21 @@ object GiteaRequests:
       List("repos", owner, repo, "git", "notes", sha),
       commitNoteQuery(params),
       GiteaResponseMapper.decodeJson[Note]
+    )
+
+  def gitTree(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      sha: String,
+      params: GitTreeParams = GitTreeParams.default
+  ): GiteaRequest[GitTreeResponse] =
+    get(
+      config,
+      GiteaEndpoints.getTree,
+      List("repos", owner, repo, "git", "trees", sha),
+      gitTreeQuery(params),
+      GiteaResponseMapper.decodeJson[GitTreeResponse]
     )
 
   def repoPullRequests(
@@ -1579,6 +1595,13 @@ object GiteaRequests:
     List(
       params.verification.map(value => "verification" -> value.toString),
       params.files.map(value => "files" -> value.toString)
+    ).flatten
+
+  private def gitTreeQuery(params: GitTreeParams): List[(String, String)] =
+    List(
+      params.recursive.map(value => "recursive" -> value.toString),
+      params.page.map(value => "page" -> value.toString),
+      params.perPage.map(value => "per_page" -> value.toString)
     ).flatten
 
   private def notificationQuery(params: NotificationListParams, page: Int, pageSize: Int): List[(String, String)] =

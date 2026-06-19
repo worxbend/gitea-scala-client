@@ -5,6 +5,7 @@ import io.worxbend.gitea4s.http.{
   CombinedStatusParams,
   CommitNoteParams,
   CommitStatusListParams,
+  GitTreeParams,
   RepoListParams,
   SingleCommitParams
 }
@@ -15,6 +16,7 @@ import io.worxbend.gitea4s.model.{
   CombinedStatus,
   CommitStatus,
   CreateStatusOption,
+  GitTreeResponse,
   NewIssuePinsAllowed,
   Note,
   Repository,
@@ -41,6 +43,8 @@ trait ReposApi:
       sha: String,
       params: CommitNoteParams = CommitNoteParams.default
   ): IO[GiteaError, Note]
+
+  def gitTree(owner: String, repo: String, sha: String, params: GitTreeParams): IO[GiteaError, GitTreeResponse]
 
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 

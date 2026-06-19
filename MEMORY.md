@@ -12,3 +12,4 @@
 [learning] Commit diff/patch downloads use a dot-suffixed `{sha}.{diffType}` path and `text/plain`; model `diffType` as a typed path value, not as a query parameter.
 [pattern] Path enum parameters should be compared against Swagger enum values in endpoint audits; local `pathValue` tests alone do not catch API contract drift.
 [learning] `repoGetNote` reuses the documented `Commit` response shape but only exposes `verification` and `files` query toggles; do not copy `repoGetSingleCommit`'s `stat` parameter onto note lookups.
+[learning] `GetTree` uses body-pagination fields (`page`, `total_count`, `truncated`) and should stay as a response object until live behavior justifies a stream abstraction.

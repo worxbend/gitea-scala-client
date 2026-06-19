@@ -2041,6 +2041,126 @@ public final class io.worxbend.gitea4s.model.EditReactionOption$ implements scal
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.GitEntry
+public final class io.worxbend.gitea4s.model.GitEntry implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.GitEntry(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.String> mode();
+  public scala.Option<java.lang.String> path();
+  public scala.Option<java.lang.String> sha();
+  public scala.Option<java.lang.Object> size();
+  public scala.Option<java.lang.String> type();
+  public scala.Option<java.lang.String> url();
+  public io.worxbend.gitea4s.model.GitEntry copy(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public scala.Option<java.lang.String> copy$default$1();
+  public scala.Option<java.lang.String> copy$default$2();
+  public scala.Option<java.lang.String> copy$default$3();
+  public scala.Option<java.lang.Object> copy$default$4();
+  public scala.Option<java.lang.String> copy$default$5();
+  public scala.Option<java.lang.String> copy$default$6();
+  public scala.Option<java.lang.String> _1();
+  public scala.Option<java.lang.String> _2();
+  public scala.Option<java.lang.String> _3();
+  public scala.Option<java.lang.Object> _4();
+  public scala.Option<java.lang.String> _5();
+  public scala.Option<java.lang.String> _6();
+  public static io.worxbend.gitea4s.model.GitEntry apply(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.GitEntry fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.GitEntry> given_JsonCodec_GitEntry();
+  public static io.worxbend.gitea4s.model.GitEntry unapply(io.worxbend.gitea4s.model.GitEntry);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$5();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$6();
+}
+
+## io.worxbend.gitea4s.model.GitEntry$
+public final class io.worxbend.gitea4s.model.GitEntry$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.GitEntry$ MODULE$;
+  public io.worxbend.gitea4s.model.GitEntry apply(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.GitEntry unapply(io.worxbend.gitea4s.model.GitEntry);
+  public scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public scala.Option<java.lang.String> $lessinit$greater$default$5();
+  public scala.Option<java.lang.String> $lessinit$greater$default$6();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.GitEntry> given_JsonCodec_GitEntry();
+  public io.worxbend.gitea4s.model.GitEntry fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.GitTreeResponse
+public final class io.worxbend.gitea4s.model.GitTreeResponse implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.GitTreeResponse(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.GitEntry>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.Object> page();
+  public scala.Option<java.lang.String> sha();
+  public scala.Option<java.lang.Object> totalCount();
+  public scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.GitEntry>> tree();
+  public scala.Option<java.lang.Object> truncated();
+  public scala.Option<java.lang.String> url();
+  public io.worxbend.gitea4s.model.GitTreeResponse copy(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.GitEntry>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public scala.Option<java.lang.Object> copy$default$1();
+  public scala.Option<java.lang.String> copy$default$2();
+  public scala.Option<java.lang.Object> copy$default$3();
+  public scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.GitEntry>> copy$default$4();
+  public scala.Option<java.lang.Object> copy$default$5();
+  public scala.Option<java.lang.String> copy$default$6();
+  public scala.Option<java.lang.Object> _1();
+  public scala.Option<java.lang.String> _2();
+  public scala.Option<java.lang.Object> _3();
+  public scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.GitEntry>> _4();
+  public scala.Option<java.lang.Object> _5();
+  public scala.Option<java.lang.String> _6();
+  public static io.worxbend.gitea4s.model.GitTreeResponse apply(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.GitEntry>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.GitTreeResponse fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.GitTreeResponse> given_JsonCodec_GitTreeResponse();
+  public static io.worxbend.gitea4s.model.GitTreeResponse unapply(io.worxbend.gitea4s.model.GitTreeResponse);
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public static scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.GitEntry>> $lessinit$greater$default$4();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$6();
+}
+
+## io.worxbend.gitea4s.model.GitTreeResponse$
+public final class io.worxbend.gitea4s.model.GitTreeResponse$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.GitTreeResponse$ MODULE$;
+  public io.worxbend.gitea4s.model.GitTreeResponse apply(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.GitEntry>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.GitTreeResponse unapply(io.worxbend.gitea4s.model.GitTreeResponse);
+  public scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.GitEntry>> $lessinit$greater$default$4();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public scala.Option<java.lang.String> $lessinit$greater$default$6();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.GitTreeResponse> given_JsonCodec_GitTreeResponse();
+  public io.worxbend.gitea4s.model.GitTreeResponse fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.GiteaErrorPayload
 public final class io.worxbend.gitea4s.model.GiteaErrorPayload implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.GiteaErrorPayload(scala.Option<java.lang.String>, scala.Option<java.lang.String>);
