@@ -80,20 +80,6 @@ object GiteaClientSpec extends ZIOSpecDefault:
       request = RequestMetadata(Method.GET, uri"https://gitea.example/api/v1/user", Nil)
     )
 
-  private def bytesResponse(
-      body: Array[Byte],
-      status: StatusCode = StatusCode.Ok,
-      headers: List[Header] = Nil
-  ): Response[Array[Byte]] =
-    Response(
-      body = body,
-      code = status,
-      statusText = "",
-      headers = headers,
-      history = Nil,
-      request = RequestMetadata(Method.GET, uri"https://gitea.example/api/v1/repos/alice/api/raw/docs%2Freadme.md", Nil)
-    )
-
   private final class ScriptedBackend[B](responses: Ref[List[Task[Response[B]]]]) extends Backend[Task]:
     private val taskMonad = new RIOMonadAsyncError[Any]
 
@@ -996,6 +982,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
                 List("api", "v1", "repos", "space owner", "repo/slash", "media", "docs/readme.md") &&
               request.uri.paramsMap.get("ref").contains("release/1.0") &&
               request.header("Accept").contains("application/octet-stream") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("User-Agent").contains("gitea4s-test") &&
+              request.header("X-Gitea-OTP").contains("654321") &&
               request.header("Content-Type").isEmpty &&
               request.body == NoBody
           }.thenRespond(ResponseStub.adjust(mediaBytes))
@@ -1039,29 +1028,41 @@ object GiteaClientSpec extends ZIOSpecDefault:
           media == Left(GiteaError.NotFound("media file not found", mediaBody))
         )
       },
-      test("retries raw repository file downloads because they are read-only GET requests") {
-        val bytes = Array[Byte](0, 1, 2, -1, 65, 10)
+      test("retries raw and media repository file downloads because they are read-only GET requests") {
+        val rawBytes = Array[Byte](0, 1, 2, -1, 65, 10)
+        val mediaBytes = Array[Byte](10, 20, 30, -1)
+        val unavailable = """{"message":"temporarily unavailable"}""".getBytes(java.nio.charset.StandardCharsets.UTF_8)
+        val rawBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "raw", "docs/readme.md")) &&
+              request.header("Accept").contains("application/octet-stream")
+          }.thenRespondCyclic(
+            ResponseStub.adjust(unavailable, StatusCode.ServiceUnavailable),
+            ResponseStub.adjust(rawBytes)
+          )
+        val mediaBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "media", "docs/readme.md")) &&
+              request.header("Accept").contains("application/octet-stream")
+          }.thenRespondCyclic(
+            ResponseStub.adjust(unavailable, StatusCode.ServiceUnavailable),
+            ResponseStub.adjust(mediaBytes)
+          )
+        val rawClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), rawBackend)
+        val mediaClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), mediaBackend)
 
         for
-          responses <- Ref.make(
-            List[Task[Response[Array[Byte]]]](
-              ZIO.succeed(
-                bytesResponse(
-                  """{"message":"temporarily unavailable"}""".getBytes(java.nio.charset.StandardCharsets.UTF_8),
-                  StatusCode.ServiceUnavailable
-                )
-              ),
-              ZIO.succeed(bytesResponse(bytes))
-            )
-          )
-          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.rawFile("alice", "api", "docs/readme.md").fork
+          rawFiber <- rawClient.rawFile("alice", "api", "docs/readme.md").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
-          raw <- fiber.join
-          remaining <- responses.get
+          raw <- rawFiber.join
+          mediaFiber <- mediaClient.mediaFile("alice", "api", "docs/readme.md").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          media <- mediaFiber.join
         yield assertTrue(
-          raw == Chunk.fromArray(bytes),
-          remaining.isEmpty
+          raw == Chunk.fromArray(rawBytes),
+          media == Chunk.fromArray(mediaBytes)
         )
       },
       test("loads a repository commit through a stub without live environment credentials") {

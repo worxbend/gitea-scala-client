@@ -1174,26 +1174,24 @@ public final class io.worxbend.gitea4s.http.GiteaParameter$ implements scala.der
 ## io.worxbend.gitea4s.http.GiteaRequest
 public interface io.worxbend.gitea4s.http.GiteaRequest<A> {
   public abstract io.worxbend.gitea4s.http.GiteaEndpoint endpoint();
-  public abstract sttp.client4.Request<java.lang.String> request();
-  public abstract sttp.client4.Request<java.lang.Object> typedRequest();
-  public abstract scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A> decode(sttp.client4.Response<java.lang.String>);
-  public abstract scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A> decodeTyped(sttp.client4.Response<java.lang.Object>);
+  public abstract sttp.client4.Request<java.lang.Object> request();
+  public abstract scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A> decode(sttp.client4.Response<java.lang.Object>);
   public abstract boolean retryable();
   public static io.worxbend.gitea4s.http.GiteaRequest copy$(io.worxbend.gitea4s.http.GiteaRequest, boolean);
   public default io.worxbend.gitea4s.http.GiteaRequest<A> copy(boolean);
   public static boolean copy$default$1$(io.worxbend.gitea4s.http.GiteaRequest);
   public default boolean copy$default$1();
-  public static <A> io.worxbend.gitea4s.http.GiteaRequest<A> apply(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.client4.Request<java.lang.String>, scala.Function1<sttp.client4.Response<java.lang.String>, scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A>>, boolean);
+  public static <A> io.worxbend.gitea4s.http.GiteaRequest apply(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.client4.Request<java.lang.String>, scala.Function1<sttp.client4.Response<java.lang.String>, scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A>>, boolean);
   public static boolean isReadOnly(io.worxbend.gitea4s.http.GiteaEndpoint);
-  public static <A, B> io.worxbend.gitea4s.http.GiteaRequest<A> withBody(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.client4.Request<B>, scala.Function1<sttp.client4.Response<B>, scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A>>, boolean);
+  public static <A, B> io.worxbend.gitea4s.http.GiteaRequest withBody(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.client4.Request<B>, scala.Function1<sttp.client4.Response<B>, scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A>>, boolean);
 }
 
 ## io.worxbend.gitea4s.http.GiteaRequest$
 public final class io.worxbend.gitea4s.http.GiteaRequest$ implements java.io.Serializable {
   public static final io.worxbend.gitea4s.http.GiteaRequest$ MODULE$;
   public static {};
-  public <A> io.worxbend.gitea4s.http.GiteaRequest<A> apply(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.client4.Request<java.lang.String>, scala.Function1<sttp.client4.Response<java.lang.String>, scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A>>, boolean);
-  public <A, B> io.worxbend.gitea4s.http.GiteaRequest<A> withBody(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.client4.Request<B>, scala.Function1<sttp.client4.Response<B>, scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A>>, boolean);
+  public <A> io.worxbend.gitea4s.http.GiteaRequest apply(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.client4.Request<java.lang.String>, scala.Function1<sttp.client4.Response<java.lang.String>, scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A>>, boolean);
+  public <A, B> io.worxbend.gitea4s.http.GiteaRequest withBody(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.client4.Request<B>, scala.Function1<sttp.client4.Response<B>, scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A>>, boolean);
   public boolean isReadOnly(io.worxbend.gitea4s.http.GiteaEndpoint);
 }
 
@@ -1203,11 +1201,9 @@ public final class io.worxbend.gitea4s.http.GiteaRequest$Impl<A, B> implements i
   public io.worxbend.gitea4s.http.GiteaRequest<A> copy(boolean);
   public boolean copy$default$1();
   public io.worxbend.gitea4s.http.GiteaEndpoint endpoint();
-  public sttp.client4.Request<B> typedRequest();
+  public sttp.client4.Request<B> request();
   public boolean retryable();
-  public sttp.client4.Request<java.lang.String> request();
-  public scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A> decode(sttp.client4.Response<java.lang.String>);
-  public scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A> decodeTyped(sttp.client4.Response<B>);
+  public scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A> decode(sttp.client4.Response<B>);
 }
 
 ## io.worxbend.gitea4s.http.GiteaRequest$StringImpl
@@ -1218,9 +1214,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequest$StringImpl<A> implement
   public io.worxbend.gitea4s.http.GiteaEndpoint endpoint();
   public sttp.client4.Request<java.lang.String> request();
   public boolean retryable();
-  public sttp.client4.Request<java.lang.String> typedRequest();
   public scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A> decode(sttp.client4.Response<java.lang.String>);
-  public scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A> decodeTyped(sttp.client4.Response<java.lang.String>);
 }
 
 ## io.worxbend.gitea4s.http.GiteaRequests
@@ -1334,7 +1328,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Repository>> userRepos(io.worxbend.gitea4s.GiteaConfig, java.lang.String, io.worxbend.gitea4s.http.RepoListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> userSearch(io.worxbend.gitea4s.GiteaConfig, io.worxbend.gitea4s.http.UserSearchParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.StopWatch>> userStopwatches(io.worxbend.gitea4s.GiteaConfig, int);
-  public static sttp.client4.Request<java.lang.String> withJsonBody(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Request<java.lang.String>, java.lang.String);
+  public static <B> sttp.client4.Request<B> withJsonBody(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Request<B>, java.lang.String);
   public static io.worxbend.gitea4s.http.NotificationListParams notifications$default$2();
   public static io.worxbend.gitea4s.http.UserSearchParams userSearch$default$2();
   public static int userStopwatches$default$2();
@@ -1522,7 +1516,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public int userFollowers$default$3();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> userFollowing(io.worxbend.gitea4s.GiteaConfig, java.lang.String, int);
   public int userFollowing$default$3();
-  public sttp.client4.Request<java.lang.String> withJsonBody(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Request<java.lang.String>, java.lang.String);
+  public <B> sttp.client4.Request<B> withJsonBody(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Request<B>, java.lang.String);
 }
 
 ## io.worxbend.gitea4s.http.GiteaResponseMapper

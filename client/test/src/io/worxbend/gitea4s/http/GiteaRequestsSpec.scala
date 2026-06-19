@@ -2,6 +2,7 @@ package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.error.GiteaError
+import io.worxbend.gitea4s.internal.GiteaRequestExecutor
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
   Auth,
@@ -36,9 +37,10 @@ import io.worxbend.gitea4s.model.{
   WatchInfo
 }
 import sttp.client4.*
+import sttp.client4.impl.zio.RIOMonadAsyncError
 import sttp.client4.testing.{BackendStub, ResponseStub}
-import sttp.model.{Header, Method, StatusCode}
-import zio.Chunk
+import sttp.model.{Header, Method, StatusCode, Uri}
+import zio.{Chunk, Task}
 import zio.test.*
 
 import java.time.Instant
@@ -296,8 +298,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("Accept").contains("application/json"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)).map(_.state) == Right(Some(CommitStatusState.Warning)),
-          built.decode(request.send(backend)).map(_.totalCount) == Right(Some(2L))
+          decodeWith(built, backend).map(_.state) == Right(Some(CommitStatusState.Warning)),
+          decodeWith(built, backend).map(_.totalCount) == Right(Some(2L))
         )
       },
       test("defaults combined commit status pagination to first configured page") {
@@ -335,15 +337,15 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           byRef.endpoint.path == "/repos/{owner}/{repo}/commits/{ref}/statuses",
           byRef.endpoint.parameters.map(_.name) == List("owner", "repo", "ref", "sort", "state", "page", "limit"),
           byRef.endpoint.response == "#/responses/CommitStatusList",
-          byRef.request.method == Method.GET,
-          byRef.request.uri.toString.contains(
+          methodOf(byRef) == Method.GET,
+          uriOf(byRef).toString.contains(
             "/api/v1/repos/worx%20bend/gitea%2Fscala/commits/main%20branch/statuses?"
           ),
-          byRef.request.uri.paramsMap.get("sort").contains("highestindex"),
-          byRef.request.uri.paramsMap.get("state").contains("success"),
-          byRef.request.uri.paramsMap.get("page").contains("4"),
-          byRef.request.uri.paramsMap.get("limit").contains("9"),
-          byRef.request.header("Content-Type").isEmpty,
+          uriOf(byRef).paramsMap.get("sort").contains("highestindex"),
+          uriOf(byRef).paramsMap.get("state").contains("success"),
+          uriOf(byRef).paramsMap.get("page").contains("4"),
+          uriOf(byRef).paramsMap.get("limit").contains("9"),
+          headerOf(byRef, "Content-Type").isEmpty,
           byRef.retryable == true,
           bySha.endpoint == GiteaEndpoints.repoListStatuses,
           bySha.endpoint.method == "GET",
@@ -351,16 +353,16 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           bySha.endpoint.path == "/repos/{owner}/{repo}/statuses/{sha}",
           bySha.endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "sort", "state", "page", "limit"),
           bySha.endpoint.response == "#/responses/CommitStatusList",
-          bySha.request.method == Method.GET,
-          bySha.request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/statuses/abc%2F123?"),
-          bySha.request.uri.paramsMap.get("sort").contains("highestindex"),
-          bySha.request.uri.paramsMap.get("state").contains("success"),
-          bySha.request.header("Content-Type").isEmpty,
+          methodOf(bySha) == Method.GET,
+          uriOf(bySha).toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/statuses/abc%2F123?"),
+          uriOf(bySha).paramsMap.get("sort").contains("highestindex"),
+          uriOf(bySha).paramsMap.get("state").contains("success"),
+          headerOf(bySha, "Content-Type").isEmpty,
           bySha.retryable == true,
-          byRef.decode(byRef.request.send(backend)).map(_.data.headOption.flatMap(_.state)) ==
+          decodeWith(byRef, backend).map(_.data.headOption.flatMap(_.state)) ==
             Right(Some(CommitStatusState.Success)),
-          byRef.decode(byRef.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
-          bySha.decode(bySha.request.send(backend)).map(_.data.headOption.flatMap(_.targetUrl)) ==
+          decodeWith(byRef, backend).map(_.totalCount) == Right(Some(1L)),
+          decodeWith(bySha, backend).map(_.data.headOption.flatMap(_.targetUrl)) ==
             Right(Some("https://ci.example/builds/700"))
         )
       },
@@ -398,8 +400,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           requestBody ==
             """{"context":"ci/mill","description":"Mill tests passed","state":"success","target_url":"https://ci.example/builds/700"}""",
           built.retryable == false,
-          built.decode(request.send(backend)).map(_.id) == Right(Some(700L)),
-          built.decode(request.send(backend)).map(_.state) == Right(Some(CommitStatusState.Success))
+          decodeWith(built, backend).map(_.id) == Right(Some(700L)),
+          decodeWith(built, backend).map(_.state) == Right(Some(CommitStatusState.Success))
         )
       },
       test("builds and decodes schema-traceable commit pull request lookup") {
@@ -430,9 +432,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("X-Gitea-OTP").contains("123456"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)).map(_.number) == Right(Some(44L)),
-          built.decode(request.send(backend)).map(_.state) == Right(Some(IssueState.Open)),
-          built.decode(request.send(backend)).map(_.title) == Right(Some("Commit pull"))
+          decodeWith(built, backend).map(_.number) == Right(Some(44L)),
+          decodeWith(built, backend).map(_.state) == Right(Some(IssueState.Open)),
+          decodeWith(built, backend).map(_.title) == Right(Some("Commit pull"))
         )
       },
       test("builds and decodes schema-traceable single commit lookup") {
@@ -466,10 +468,10 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("X-Gitea-OTP").contains("123456"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)).map(_.sha) == Right(Some("abc123")),
-          built.decode(request.send(backend)).map(_.commit.flatMap(_.message)) == Right(Some("Implement single commit")),
-          built.decode(request.send(backend)).map(_.stats.flatMap(_.total)) == Right(Some(7L)),
-          built.decode(request.send(backend)).map(_.files.flatMap(_.headOption.flatMap(_.filename))) ==
+          decodeWith(built, backend).map(_.sha) == Right(Some("abc123")),
+          decodeWith(built, backend).map(_.commit.flatMap(_.message)) == Right(Some("Implement single commit")),
+          decodeWith(built, backend).map(_.stats.flatMap(_.total)) == Right(Some(7L)),
+          decodeWith(built, backend).map(_.files.flatMap(_.headOption.flatMap(_.filename))) ==
             Right(Some("src/Main.scala"))
         )
       },
@@ -492,13 +494,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           )
 
         assertTrue(
-          allTrue.request.uri.toString.contains("/api/v1/repos/owner/repo/git/commits/abc123?"),
-          allTrue.request.uri.paramsMap.get("stat").contains("true"),
-          allTrue.request.uri.paramsMap.get("verification").contains("true"),
-          allTrue.request.uri.paramsMap.get("files").contains("true"),
-          allFalse.request.uri.paramsMap.get("stat").contains("false"),
-          allFalse.request.uri.paramsMap.get("verification").contains("false"),
-          allFalse.request.uri.paramsMap.get("files").contains("false")
+          uriOf(allTrue).toString.contains("/api/v1/repos/owner/repo/git/commits/abc123?"),
+          uriOf(allTrue).paramsMap.get("stat").contains("true"),
+          uriOf(allTrue).paramsMap.get("verification").contains("true"),
+          uriOf(allTrue).paramsMap.get("files").contains("true"),
+          uriOf(allFalse).paramsMap.get("stat").contains("false"),
+          uriOf(allFalse).paramsMap.get("verification").contains("false"),
+          uriOf(allFalse).paramsMap.get("files").contains("false")
         )
       },
       test("builds and decodes schema-traceable commit diff or patch request") {
@@ -538,7 +540,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("X-Gitea-OTP").contains("123456"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)) == Right(body)
+          decodeWith(built, backend) == Right(body)
         )
       },
       test("builds and decodes schema-traceable commit note lookup") {
@@ -579,11 +581,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("X-Gitea-OTP").contains("123456"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)).map(_.message) == Right(Some("Reviewed-by: Octo")),
-          built.decode(request.send(backend)).map(_.commit.flatMap(_.sha)) == Right(Some("abc123")),
-          built.decode(request.send(backend)).map(_.commit.flatMap(_.commit.flatMap(_.message))) ==
+          decodeWith(built, backend).map(_.message) == Right(Some("Reviewed-by: Octo")),
+          decodeWith(built, backend).map(_.commit.flatMap(_.sha)) == Right(Some("abc123")),
+          decodeWith(built, backend).map(_.commit.flatMap(_.commit.flatMap(_.message))) ==
             Right(Some("Implement note")),
-          built.decode(request.send(backend)).map(_.commit.flatMap(_.files.flatMap(_.headOption.flatMap(_.filename)))) ==
+          decodeWith(built, backend).map(_.commit.flatMap(_.files.flatMap(_.headOption.flatMap(_.filename)))) ==
             Right(Some("src/Main.scala"))
         )
       },
@@ -608,13 +610,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           )
 
         assertTrue(
-          default.request.uri.toString == "https://gitea.example/root/api/v1/repos/owner/repo/git/notes/abc123",
-          default.request.uri.paramsMap.isEmpty,
-          allTrue.request.uri.toString.contains("/api/v1/repos/owner/repo/git/notes/abc123?"),
-          allTrue.request.uri.paramsMap.get("verification").contains("true"),
-          allTrue.request.uri.paramsMap.get("files").contains("true"),
-          allFalse.request.uri.paramsMap.get("verification").contains("false"),
-          allFalse.request.uri.paramsMap.get("files").contains("false")
+          uriOf(default).toString == "https://gitea.example/root/api/v1/repos/owner/repo/git/notes/abc123",
+          uriOf(default).paramsMap.isEmpty,
+          uriOf(allTrue).toString.contains("/api/v1/repos/owner/repo/git/notes/abc123?"),
+          uriOf(allTrue).paramsMap.get("verification").contains("true"),
+          uriOf(allTrue).paramsMap.get("files").contains("true"),
+          uriOf(allFalse).paramsMap.get("verification").contains("false"),
+          uriOf(allFalse).paramsMap.get("files").contains("false")
         )
       },
       test("builds and decodes schema-traceable Git tree lookup") {
@@ -658,14 +660,14 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("X-Gitea-OTP").contains("123456"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)).map(_.page) == Right(Some(2L)),
-          built.decode(request.send(backend)).map(_.sha) == Right(Some("tree123")),
-          built.decode(request.send(backend)).map(_.totalCount) == Right(Some(1L)),
-          built.decode(request.send(backend)).map(_.tree.flatMap(_.headOption.flatMap(_.path))) ==
+          decodeWith(built, backend).map(_.page) == Right(Some(2L)),
+          decodeWith(built, backend).map(_.sha) == Right(Some("tree123")),
+          decodeWith(built, backend).map(_.totalCount) == Right(Some(1L)),
+          decodeWith(built, backend).map(_.tree.flatMap(_.headOption.flatMap(_.path))) ==
             Right(Some("src/Main.scala")),
-          built.decode(request.send(backend)).map(_.tree.flatMap(_.headOption.flatMap(_.`type`))) ==
+          decodeWith(built, backend).map(_.tree.flatMap(_.headOption.flatMap(_.`type`))) ==
             Right(Some("blob")),
-          built.decode(request.send(backend)).map(_.truncated) == Right(Some(false))
+          decodeWith(built, backend).map(_.truncated) == Right(Some(false))
         )
       },
       test("omits absent Git tree query parameters and encodes explicit values") {
@@ -681,12 +683,12 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           )
 
         assertTrue(
-          default.request.uri.toString == "https://gitea.example/root/api/v1/repos/owner/repo/git/trees/abc123",
-          default.request.uri.paramsMap.isEmpty,
-          explicit.request.uri.toString.contains("/api/v1/repos/owner/repo/git/trees/abc123?"),
-          explicit.request.uri.paramsMap.get("recursive").contains("false"),
-          explicit.request.uri.paramsMap.get("page").contains("3"),
-          explicit.request.uri.paramsMap.get("per_page").contains("20")
+          uriOf(default).toString == "https://gitea.example/root/api/v1/repos/owner/repo/git/trees/abc123",
+          uriOf(default).paramsMap.isEmpty,
+          uriOf(explicit).toString.contains("/api/v1/repos/owner/repo/git/trees/abc123?"),
+          uriOf(explicit).paramsMap.get("recursive").contains("false"),
+          uriOf(explicit).paramsMap.get("page").contains("3"),
+          uriOf(explicit).paramsMap.get("per_page").contains("20")
         )
       },
       test("builds and decodes schema-traceable Git blob lookup") {
@@ -721,7 +723,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("X-Gitea-OTP").contains("123456"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)) ==
+          decodeWith(built, backend) ==
             Right(
               GitBlobResponse(
                 content = Some("SGVsbG8K"),
@@ -767,13 +769,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("X-Gitea-OTP").contains("123456"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)).map(_.message) == Right(Some("Release 1.0\n")),
-          built.decode(request.send(backend)).map(_.gitObject.flatMap(_.sha)) == Right(Some("commit123")),
-          built.decode(request.send(backend)).map(_.gitObject.flatMap(_.`type`)) == Right(Some("commit")),
-          built.decode(request.send(backend)).map(_.tag) == Right(Some("v1.0.0")),
-          built.decode(request.send(backend)).map(_.tagger.flatMap(_.name)) == Right(Some("Tagger")),
-          built.decode(request.send(backend)).map(_.verification.flatMap(_.verified)) == Right(Some(true)),
-          built.decode(request.send(backend)).map(_.verification.flatMap(_.signer.flatMap(_.username))) ==
+          decodeWith(built, backend).map(_.message) == Right(Some("Release 1.0\n")),
+          decodeWith(built, backend).map(_.gitObject.flatMap(_.sha)) == Right(Some("commit123")),
+          decodeWith(built, backend).map(_.gitObject.flatMap(_.`type`)) == Right(Some("commit")),
+          decodeWith(built, backend).map(_.tag) == Right(Some("v1.0.0")),
+          decodeWith(built, backend).map(_.tagger.flatMap(_.name)) == Right(Some("Tagger")),
+          decodeWith(built, backend).map(_.verification.flatMap(_.verified)) == Right(Some(true)),
+          decodeWith(built, backend).map(_.verification.flatMap(_.signer.flatMap(_.username))) ==
             Right(Some("tagger"))
         )
       },
@@ -809,10 +811,10 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("X-Gitea-OTP").contains("123456"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)).map(_.map(_.ref)) == Right(Chunk(Some("refs/heads/main"))),
-          built.decode(request.send(backend)).map(_.headOption.flatMap(_.gitObject.flatMap(_.sha))) ==
+          decodeWith(built, backend).map(_.map(_.ref)) == Right(Chunk(Some("refs/heads/main"))),
+          decodeWith(built, backend).map(_.headOption.flatMap(_.gitObject.flatMap(_.sha))) ==
             Right(Some("abc123")),
-          built.decode(request.send(backend)).map(_.headOption.flatMap(_.gitObject.flatMap(_.`type`))) ==
+          decodeWith(built, backend).map(_.headOption.flatMap(_.gitObject.flatMap(_.`type`))) ==
             Right(Some("commit"))
         )
       },
@@ -848,8 +850,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("X-Gitea-OTP").contains("123456"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)).map(_.map(_.ref)) == Right(Chunk(Some("refs/heads/main"))),
-          built.decode(request.send(backend)).map(_.headOption.flatMap(_.gitObject.flatMap(_.sha))) ==
+          decodeWith(built, backend).map(_.map(_.ref)) == Right(Chunk(Some("refs/heads/main"))),
+          decodeWith(built, backend).map(_.headOption.flatMap(_.gitObject.flatMap(_.sha))) ==
             Right(Some("abc123"))
         )
       },
@@ -883,9 +885,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("X-Gitea-OTP").contains("123456"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)).map(_.map(_.name)) == Right(Chunk(Some("README.md"))),
-          built.decode(request.send(backend)).map(_.map(_.content)) == Right(Chunk(Some("IyBSZWFkbWU="))),
-          built.decode(request.send(backend)).map(_.headOption.flatMap(_.links.flatMap(_.self))) ==
+          decodeWith(built, backend).map(_.map(_.name)) == Right(Chunk(Some("README.md"))),
+          decodeWith(built, backend).map(_.map(_.content)) == Right(Chunk(Some("IyBSZWFkbWU="))),
+          decodeWith(built, backend).map(_.headOption.flatMap(_.links.flatMap(_.self))) ==
             Right(Some("https://gitea.example/api/v1/repos/o/r/contents/README.md"))
         )
       },
@@ -927,10 +929,22 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("X-Gitea-OTP").contains("123456"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
-          built.decode(request.send(backend)).map(_.path) == Right(Some("docs/readme.md")),
-          built.decode(request.send(backend)).map(_.content) == Right(Some("SGVsbG8=")),
-          built.decode(request.send(backend)).map(_.links.flatMap(_.git)) ==
+          decodeWith(built, backend).map(_.path) == Right(Some("docs/readme.md")),
+          decodeWith(built, backend).map(_.content) == Right(Some("SGVsbG8=")),
+          decodeWith(built, backend).map(_.links.flatMap(_.git)) ==
             Right(Some("https://gitea.example/api/v1/repos/o/r/git/blobs/def456"))
+        )
+      },
+      test("keeps ordinary JSON request execution string-backed at the low-level boundary") {
+        val built = GiteaRequests.currentUser(config)
+        val response = """{"id":42,"login":"octo"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(response))
+
+        assertTrue(
+          headerOf(built, "Accept").contains("application/json"),
+          headerOf(built, "Content-Type").isEmpty,
+          decodeWith(built, backend).map(_.login) == Right(Some("octo")),
+          decodeWith(built, backend).map(_.id) == Right(Some(42L))
         )
       },
       test("builds and decodes schema-traceable raw repository file request as bytes") {
@@ -946,7 +960,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val request = built.request
         val backend =
           BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(bytes))
-        val decoded = built.decodeTyped(built.typedRequest.send(backend))
+        val decoded = decodeWith(built, backend)
 
         assertTrue(
           endpoint == GiteaEndpoints.repoGetRawFile,
@@ -980,12 +994,18 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
       },
       test("builds and decodes schema-traceable media repository file request as bytes") {
         val bytes = Array[Byte](10, 20, 30, -1)
-        val built = GiteaRequests.repoMediaFile(config, "worx bend", "gitea/scala", "docs/readme.md")
+        val built = GiteaRequests.repoMediaFile(
+          config,
+          "worx bend",
+          "gitea/scala",
+          "docs/readme.md",
+          ContentsParams(ref = Some("release/1.0"))
+        )
         val endpoint = built.endpoint
         val request = built.request
         val backend =
           BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(bytes))
-        val decoded = built.decodeTyped(built.typedRequest.send(backend))
+        val decoded = decodeWith(built, backend)
 
         assertTrue(
           endpoint == GiteaEndpoints.repoGetRawFileOrLFS,
@@ -1001,16 +1021,61 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             ),
           endpoint.response == "type:file",
           request.method == Method.GET,
-          request.uri.toString ==
-            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/media/docs%2Freadme.md",
+          request.uri.toString.contains(
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/media/docs%2Freadme.md?"
+          ),
           request.uri.path ==
             List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "media", "docs/readme.md"),
-          request.uri.paramsMap.isEmpty,
+          request.uri.paramsMap.get("ref").contains("release/1.0"),
           request.body == NoBody,
           request.header("Accept").contains("application/octet-stream"),
           request.header("Content-Type").isEmpty,
           built.retryable == true,
           decoded == Right(Chunk.fromArray(bytes))
+        )
+      },
+      test("executes raw and media byte requests through GiteaRequestExecutor without string response decoding") {
+        val rawBytes = Array[Byte](0, 1, 2, -1, 65, 10)
+        val mediaBytes = Array[Byte](10, 20, 30, -1)
+        val rawFile = GiteaRequests.repoRawFile(
+          config,
+          "worx bend",
+          "gitea/scala",
+          "docs/readme.md",
+          ContentsParams(ref = Some("release/1.0"))
+        )
+        val mediaFile = GiteaRequests.repoMediaFile(
+          config,
+          "worx bend",
+          "gitea/scala",
+          "docs/readme.md",
+          ContentsParams(ref = Some("release/1.0"))
+        )
+        val rawBackend =
+          BackendStub[Task](new RIOMonadAsyncError[Any])
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+              request.uri.path == List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "raw", "docs/readme.md") &&
+              request.uri.paramsMap.get("ref").contains("release/1.0") &&
+              request.header("Accept").contains("application/octet-stream")
+            }
+            .thenRespond(ResponseStub.adjust(rawBytes))
+        val mediaBackend =
+          BackendStub[Task](new RIOMonadAsyncError[Any])
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+              request.uri.path == List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "media", "docs/readme.md") &&
+              request.uri.paramsMap.get("ref").contains("release/1.0") &&
+              request.header("Accept").contains("application/octet-stream")
+            }
+            .thenRespond(ResponseStub.adjust(mediaBytes))
+
+        for
+          rawResult <- new GiteaRequestExecutor(rawBackend, maxRetries = 0).send(rawFile)
+          mediaResult <- new GiteaRequestExecutor(mediaBackend, maxRetries = 0).send(mediaFile)
+        yield assertTrue(
+          rawResult == Chunk.fromArray(rawBytes),
+          mediaResult == Chunk.fromArray(mediaBytes)
         )
       },
       test("builds schema-traceable paginated repository pull request list request") {
@@ -1085,11 +1150,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             ResponseStub.adjust("""{"id":91,"number":88,"state":"closed","title":"Retitle pull request"}""", StatusCode.Created)
           )
         val createRequestBody =
-          create.request.body match
+          bodyOf(create) match
             case StringBody(value, _, _) => value
             case _ => ""
         val editRequestBody =
-          edit.request.body match
+          bodyOf(edit) match
             case StringBody(value, _, _) => value
             case _ => ""
 
@@ -1100,36 +1165,36 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           create.endpoint.path == "/repos/{owner}/{repo}/pulls",
           create.endpoint.parameters.map(_.name) == List("owner", "repo", "body"),
           create.endpoint.response == "#/responses/PullRequest",
-          create.request.method == Method.POST,
-          create.request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls",
-          create.request.header("Accept").contains("application/json"),
-          create.request.header("Authorization").contains("token secret"),
-          create.request.header("User-Agent").contains("gitea4s-test"),
-          create.request.header("X-Gitea-OTP").contains("123456"),
-          create.request.header("Content-Type").exists(_.startsWith("application/json")),
+          methodOf(create) == Method.POST,
+          uriOf(create).toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls",
+          headerOf(create, "Accept").contains("application/json"),
+          headerOf(create, "Authorization").contains("token secret"),
+          headerOf(create, "User-Agent").contains("gitea4s-test"),
+          headerOf(create, "X-Gitea-OTP").contains("123456"),
+          headerOf(create, "Content-Type").exists(_.startsWith("application/json")),
           createRequestBody ==
             """{"allow_maintainer_edit":true,"base":"main","body":"Ready for review","due_date":"2026-07-04T00:00:00Z","head":"alice:feature/pr-create","labels":[10,11],"milestone":12,"reviewers":["reviewer"],"team_reviewers":["maintainers"],"title":"Add pull request create API"}""",
           create.retryable == false,
-          create.decode(create.request.send(createBackend)).map(_.number) == Right(Some(88L)),
-          create.decode(create.request.send(createBackend)).map(_.state) == Right(Some(IssueState.Open)),
+          decodeWith(create, createBackend).map(_.number) == Right(Some(88L)),
+          decodeWith(create, createBackend).map(_.state) == Right(Some(IssueState.Open)),
           edit.endpoint == GiteaEndpoints.repoEditPullRequest,
           edit.endpoint.method == "PATCH",
           edit.endpoint.operationId == "repoEditPullRequest",
           edit.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}",
           edit.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
           edit.endpoint.response == "#/responses/PullRequest",
-          edit.request.method == Method.PATCH,
-          edit.request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88",
-          edit.request.header("Accept").contains("application/json"),
-          edit.request.header("Authorization").contains("token secret"),
-          edit.request.header("User-Agent").contains("gitea4s-test"),
-          edit.request.header("X-Gitea-OTP").contains("123456"),
-          edit.request.header("Content-Type").exists(_.startsWith("application/json")),
+          methodOf(edit) == Method.PATCH,
+          uriOf(edit).toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88",
+          headerOf(edit, "Accept").contains("application/json"),
+          headerOf(edit, "Authorization").contains("token secret"),
+          headerOf(edit, "User-Agent").contains("gitea4s-test"),
+          headerOf(edit, "X-Gitea-OTP").contains("123456"),
+          headerOf(edit, "Content-Type").exists(_.startsWith("application/json")),
           editRequestBody ==
             """{"allow_maintainer_edit":false,"base":"release/1.0","body":"Updated description","content_version":9,"due_date":"2026-07-05T00:00:00Z","labels":[20,21],"milestone":22,"state":"closed","title":"Retitle pull request","unset_due_date":false}""",
           edit.retryable == false,
-          edit.decode(edit.request.send(editBackend)).map(_.title) == Right(Some("Retitle pull request")),
-          edit.decode(edit.request.send(editBackend)).map(_.state) == Right(Some(IssueState.Closed))
+          decodeWith(edit, editBackend).map(_.title) == Right(Some("Retitle pull request")),
+          decodeWith(edit, editBackend).map(_.state) == Right(Some(IssueState.Closed))
         )
       },
       test("builds schema-traceable repository pinned pull request list request") {
@@ -1187,25 +1252,25 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           )
 
         assertTrue(
-          create.decode(create.request.send(forbiddenBackend)) ==
+          decodeWith(create, forbiddenBackend) ==
             Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
-          create.decode(create.request.send(notFoundBackend)) ==
+          decodeWith(create, notFoundBackend) ==
             Left(GiteaError.NotFound("missing pull request", notFoundBody)),
-          create.decode(create.request.send(conflictBackend)) ==
+          decodeWith(create, conflictBackend) ==
             Left(GiteaError.Conflict("pull request already exists", conflictBody)),
-          create.decode(create.request.send(validationBackend)) ==
+          decodeWith(create, validationBackend) ==
             Left(GiteaError.UnprocessableEntity("invalid pull request", validationBody)),
-          create.decode(create.request.send(lockedBackend)) ==
+          decodeWith(create, lockedBackend) ==
             Left(GiteaError.Locked("repository is archived", lockedBody)),
-          edit.decode(edit.request.send(forbiddenBackend)) ==
+          decodeWith(edit, forbiddenBackend) ==
             Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
-          edit.decode(edit.request.send(notFoundBackend)) ==
+          decodeWith(edit, notFoundBackend) ==
             Left(GiteaError.NotFound("missing pull request", notFoundBody)),
-          edit.decode(edit.request.send(conflictBackend)) ==
+          decodeWith(edit, conflictBackend) ==
             Left(GiteaError.Conflict("pull request already exists", conflictBody)),
-          edit.decode(edit.request.send(validationBackend)) ==
+          decodeWith(edit, validationBackend) ==
             Left(GiteaError.UnprocessableEntity("invalid pull request", validationBody)),
-          edit.decode(edit.request.send(preconditionBackend)) ==
+          decodeWith(edit, preconditionBackend) ==
             Left(GiteaError.PreconditionFailed("Precondition Failed", staleBody))
         )
       },
@@ -1263,8 +1328,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/merge",
           request.header("Accept").contains("application/json"),
           built.retryable == true,
-          built.decode(request.send(mergedBackend)) == Right(true),
-          built.decode(request.send(unmergedBackend)) == Right(false)
+          decodeWith(built, mergedBackend) == Right(true),
+          decodeWith(built, unmergedBackend) == Right(false)
         )
       },
       test("builds and decodes schema-traceable pull request merge request") {
@@ -1303,7 +1368,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           requestBody ==
             """{"Do":"squash","MergeCommitID":"abc123","MergeMessageField":"Squash commits","MergeTitleField":"Add feature","delete_branch_after_merge":true,"force_merge":false,"head_commit_id":"def456","merge_when_checks_succeed":true}""",
           built.retryable == false,
-          built.decode(request.send(backend)) == Right(())
+          decodeWith(built, backend) == Right(())
         )
       },
       test("builds and decodes schema-traceable pull request merge/update lifecycle requests") {
@@ -1321,30 +1386,30 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           cancel.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/merge",
           cancel.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
           cancel.endpoint.response == "#/responses/empty",
-          cancel.request.method == Method.DELETE,
-          cancel.request.uri.toString ==
+          methodOf(cancel) == Method.DELETE,
+          uriOf(cancel).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/merge",
-          cancel.request.header("Accept").contains("application/json"),
-          cancel.request.header("Content-Type").isEmpty,
-          cancel.request.body == NoBody,
+          headerOf(cancel, "Accept").contains("application/json"),
+          headerOf(cancel, "Content-Type").isEmpty,
+          bodyOf(cancel) == NoBody,
           cancel.retryable == false,
-          cancel.decode(cancel.request.send(cancelBackend)) == Right(()),
+          decodeWith(cancel, cancelBackend) == Right(()),
           update.endpoint == GiteaEndpoints.repoUpdatePullRequest,
           update.endpoint.method == "POST",
           update.endpoint.operationId == "repoUpdatePullRequest",
           update.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/update",
           update.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "style"),
           update.endpoint.response == "#/responses/empty",
-          update.request.method == Method.POST,
-          update.request.uri.toString.contains(
+          methodOf(update) == Method.POST,
+          uriOf(update).toString.contains(
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/update?"
           ),
-          update.request.uri.paramsMap.get("style").contains("rebase"),
-          update.request.header("Accept").contains("application/json"),
-          update.request.header("Content-Type").isEmpty,
-          update.request.body == NoBody,
+          uriOf(update).paramsMap.get("style").contains("rebase"),
+          headerOf(update, "Accept").contains("application/json"),
+          headerOf(update, "Content-Type").isEmpty,
+          bodyOf(update) == NoBody,
           update.retryable == false,
-          update.decode(update.request.send(updateBackend)) == Right(()),
+          decodeWith(update, updateBackend) == Right(()),
           PullRequestUpdateStyle.values.map(_.queryValue).toList == List("merge", "rebase")
         )
       },
@@ -1361,34 +1426,34 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           resolve.endpoint.path == "/repos/{owner}/{repo}/pulls/comments/{id}/resolve",
           resolve.endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
           resolve.endpoint.response == "#/responses/empty",
-          resolve.request.method == Method.POST,
-          resolve.request.uri.toString ==
+          methodOf(resolve) == Method.POST,
+          uriOf(resolve).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/comments/91/resolve",
-          resolve.request.header("Accept").contains("application/json"),
-          resolve.request.header("Authorization").contains("token secret"),
-          resolve.request.header("User-Agent").contains("gitea4s-test"),
-          resolve.request.header("X-Gitea-OTP").contains("123456"),
-          resolve.request.header("Content-Type").isEmpty,
-          resolve.request.body == NoBody,
+          headerOf(resolve, "Accept").contains("application/json"),
+          headerOf(resolve, "Authorization").contains("token secret"),
+          headerOf(resolve, "User-Agent").contains("gitea4s-test"),
+          headerOf(resolve, "X-Gitea-OTP").contains("123456"),
+          headerOf(resolve, "Content-Type").isEmpty,
+          bodyOf(resolve) == NoBody,
           resolve.retryable == false,
-          resolve.decode(resolve.request.send(backend)) == Right(()),
+          decodeWith(resolve, backend) == Right(()),
           unresolve.endpoint == GiteaEndpoints.repoUnresolvePullReviewComment,
           unresolve.endpoint.method == "POST",
           unresolve.endpoint.operationId == "repoUnresolvePullReviewComment",
           unresolve.endpoint.path == "/repos/{owner}/{repo}/pulls/comments/{id}/unresolve",
           unresolve.endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
           unresolve.endpoint.response == "#/responses/empty",
-          unresolve.request.method == Method.POST,
-          unresolve.request.uri.toString ==
+          methodOf(unresolve) == Method.POST,
+          uriOf(unresolve).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/comments/91/unresolve",
-          unresolve.request.header("Accept").contains("application/json"),
-          unresolve.request.header("Authorization").contains("token secret"),
-          unresolve.request.header("User-Agent").contains("gitea4s-test"),
-          unresolve.request.header("X-Gitea-OTP").contains("123456"),
-          unresolve.request.header("Content-Type").isEmpty,
-          unresolve.request.body == NoBody,
+          headerOf(unresolve, "Accept").contains("application/json"),
+          headerOf(unresolve, "Authorization").contains("token secret"),
+          headerOf(unresolve, "User-Agent").contains("gitea4s-test"),
+          headerOf(unresolve, "X-Gitea-OTP").contains("123456"),
+          headerOf(unresolve, "Content-Type").isEmpty,
+          bodyOf(unresolve) == NoBody,
           unresolve.retryable == false,
-          unresolve.decode(unresolve.request.send(backend)) == Right(())
+          decodeWith(unresolve, backend) == Right(())
         )
       },
       test("maps documented pull-review comment resolution failures") {
@@ -1405,11 +1470,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val unresolve = GiteaRequests.unresolvePullReviewComment(config, "owner", "repo", 91)
 
         assertTrue(
-          resolve.decode(resolve.request.send(badRequestBackend)) ==
+          decodeWith(resolve, badRequestBackend) ==
             Left(GiteaError.BadRequest("invalid review comment", badRequestBody)),
-          resolve.decode(resolve.request.send(forbiddenBackend)) ==
+          decodeWith(resolve, forbiddenBackend) ==
             Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
-          unresolve.decode(unresolve.request.send(notFoundBackend)) ==
+          decodeWith(unresolve, notFoundBackend) ==
             Left(GiteaError.NotFound("missing review comment", notFoundBody))
         )
       },
@@ -1445,17 +1510,17 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val update = GiteaRequests.updatePullRequest(config, "owner", "repo", 77, PullRequestUpdateStyle.Merge)
 
         assertTrue(
-          merge.decode(merge.request.send(forbiddenBackend)) ==
+          decodeWith(merge, forbiddenBackend) ==
             Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
-          cancel.decode(cancel.request.send(notFoundBackend)) ==
+          decodeWith(cancel, notFoundBackend) ==
             Left(GiteaError.NotFound("missing pull request", notFoundBody)),
-          merge.decode(merge.request.send(methodNotAllowedBackend)) ==
+          decodeWith(merge, methodNotAllowedBackend) ==
             Left(GiteaError.MethodNotAllowed("merge method is not allowed", methodNotAllowedBody)),
-          merge.decode(merge.request.send(conflictBackend)) ==
+          decodeWith(merge, conflictBackend) ==
             Left(GiteaError.Conflict("merge conflict", conflictBody)),
-          update.decode(update.request.send(validationBackend)) ==
+          decodeWith(update, validationBackend) ==
             Left(GiteaError.UnprocessableEntity("invalid update", validationBody)),
-          update.decode(update.request.send(lockedBackend)) ==
+          decodeWith(update, lockedBackend) ==
             Left(GiteaError.Locked("repository is archived", lockedBody))
         )
       },
@@ -1474,11 +1539,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
 
         val createBody =
-          create.request.body match
+          bodyOf(create) match
             case StringBody(value, _, _) => value
             case _ => ""
         val deleteBody =
-          delete.request.body match
+          bodyOf(delete) match
             case StringBody(value, _, _) => value
             case _ => ""
 
@@ -1489,13 +1554,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           create.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/requested_reviewers",
           create.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
           create.endpoint.response == "#/responses/PullReviewList",
-          create.request.method == Method.POST,
-          create.request.uri.toString ==
+          methodOf(create) == Method.POST,
+          uriOf(create).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/requested_reviewers",
-          create.request.header("Content-Type").exists(_.startsWith("application/json")),
+          headerOf(create, "Content-Type").exists(_.startsWith("application/json")),
           createBody == """{"reviewers":["alice","bob"],"team_reviewers":["maintainers"]}""",
           create.retryable == false,
-          create.decode(create.request.send(createBackend)).map(_.map(_.state)) ==
+          decodeWith(create, createBackend).map(_.map(_.state)) ==
             Right(Chunk(Some(PullReviewState.RequestReview))),
           delete.endpoint == GiteaEndpoints.repoDeletePullReviewRequests,
           delete.endpoint.method == "DELETE",
@@ -1503,13 +1568,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           delete.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/requested_reviewers",
           delete.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
           delete.endpoint.response == "#/responses/empty",
-          delete.request.method == Method.DELETE,
-          delete.request.uri.toString ==
+          methodOf(delete) == Method.DELETE,
+          uriOf(delete).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/requested_reviewers",
-          delete.request.header("Content-Type").exists(_.startsWith("application/json")),
+          headerOf(delete, "Content-Type").exists(_.startsWith("application/json")),
           deleteBody == """{"reviewers":["alice","bob"],"team_reviewers":["maintainers"]}""",
           delete.retryable == false,
-          delete.decode(delete.request.send(deleteBackend)) == Right(())
+          decodeWith(delete, deleteBackend) == Right(())
         )
       },
       test("builds schema-traceable paginated pull request reviews request") {
@@ -1553,7 +1618,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             ResponseStub.adjust("""{"id":12,"state":"COMMENT","body":"Review summary"}""")
           )
         val requestBody =
-          built.request.body match
+          bodyOf(built) match
             case StringBody(value, _, _) => value
             case _ => ""
 
@@ -1564,14 +1629,14 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/reviews",
           built.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
           built.endpoint.response == "#/responses/PullReview",
-          built.request.method == Method.POST,
-          built.request.uri.toString ==
+          methodOf(built) == Method.POST,
+          uriOf(built).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/reviews",
-          built.request.header("Content-Type").exists(_.startsWith("application/json")),
+          headerOf(built, "Content-Type").exists(_.startsWith("application/json")),
           requestBody ==
             """{"body":"Review summary","comments":[{"body":"Use the shared helper here","new_position":14,"old_position":0,"path":"src/Main.scala"}],"commit_id":"abc123","event":"COMMENT"}""",
           built.retryable == false,
-          built.decode(built.request.send(backend)).map(_.state) == Right(Some(PullReviewState.Comment))
+          decodeWith(built, backend).map(_.state) == Right(Some(PullReviewState.Comment))
         )
       },
       test("builds schema-traceable pull request review detail and comments requests") {
@@ -1585,8 +1650,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           review.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/reviews/{id}",
           review.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "id"),
           review.endpoint.response == "#/responses/PullReview",
-          review.request.method == Method.GET,
-          review.request.uri.toString ==
+          methodOf(review) == Method.GET,
+          uriOf(review).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/reviews/12",
           review.retryable == true,
           comments.endpoint == GiteaEndpoints.repoGetPullReviewComments,
@@ -1595,8 +1660,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           comments.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/reviews/{id}/comments",
           comments.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "id"),
           comments.endpoint.response == "#/responses/PullReviewCommentList",
-          comments.request.method == Method.GET,
-          comments.request.uri.toString ==
+          methodOf(comments) == Method.GET,
+          uriOf(comments).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/reviews/12/comments",
           comments.retryable == true
         )
@@ -1612,11 +1677,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             ResponseStub.adjust("""{"id":12,"state":"APPROVED","dismissed":false}""")
           )
         val submitRequestBody =
-          submit.request.body match
+          bodyOf(submit) match
             case StringBody(value, _, _) => value
             case _ => ""
         val dismissRequestBody =
-          dismiss.request.body match
+          bodyOf(dismiss) match
             case StringBody(value, _, _) => value
             case _ => ""
 
@@ -1627,38 +1692,38 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           submit.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/reviews/{id}",
           submit.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "id", "body"),
           submit.endpoint.response == "#/responses/PullReview",
-          submit.request.method == Method.POST,
-          submit.request.uri.toString ==
+          methodOf(submit) == Method.POST,
+          uriOf(submit).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/reviews/12",
-          submit.request.header("Content-Type").exists(_.startsWith("application/json")),
+          headerOf(submit, "Content-Type").exists(_.startsWith("application/json")),
           submitRequestBody == """{"body":"Looks good","event":"APPROVED"}""",
           submit.retryable == false,
-          submit.decode(submit.request.send(backend)).map(_.state) == Right(Some(PullReviewState.Approved)),
+          decodeWith(submit, backend).map(_.state) == Right(Some(PullReviewState.Approved)),
           dismiss.endpoint == GiteaEndpoints.repoDismissPullReview,
           dismiss.endpoint.method == "POST",
           dismiss.endpoint.operationId == "repoDismissPullReview",
           dismiss.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/reviews/{id}/dismissals",
           dismiss.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "id", "body"),
           dismiss.endpoint.response == "#/responses/PullReview",
-          dismiss.request.method == Method.POST,
-          dismiss.request.uri.toString ==
+          methodOf(dismiss) == Method.POST,
+          uriOf(dismiss).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/reviews/12/dismissals",
-          dismiss.request.header("Content-Type").exists(_.startsWith("application/json")),
+          headerOf(dismiss, "Content-Type").exists(_.startsWith("application/json")),
           dismissRequestBody == """{"message":"Superseded","priors":true}""",
           dismiss.retryable == false,
-          dismiss.decode(dismiss.request.send(backend)).map(_.state) == Right(Some(PullReviewState.Approved)),
+          decodeWith(dismiss, backend).map(_.state) == Right(Some(PullReviewState.Approved)),
           undismiss.endpoint == GiteaEndpoints.repoUnDismissPullReview,
           undismiss.endpoint.method == "POST",
           undismiss.endpoint.operationId == "repoUnDismissPullReview",
           undismiss.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/reviews/{id}/undismissals",
           undismiss.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "id"),
           undismiss.endpoint.response == "#/responses/PullReview",
-          undismiss.request.method == Method.POST,
-          undismiss.request.uri.toString ==
+          methodOf(undismiss) == Method.POST,
+          uriOf(undismiss).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/reviews/12/undismissals",
-          undismiss.request.body == NoBody,
+          bodyOf(undismiss) == NoBody,
           undismiss.retryable == false,
-          undismiss.decode(undismiss.request.send(backend)).map(_.dismissed) == Right(Some(false))
+          decodeWith(undismiss, backend).map(_.dismissed) == Right(Some(false))
         )
       },
       test("builds and decodes schema-traceable pull request review deletion request") {
@@ -1673,11 +1738,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/reviews/{id}",
           built.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "id"),
           built.endpoint.response == "#/responses/empty",
-          built.request.method == Method.DELETE,
-          built.request.uri.toString ==
+          methodOf(built) == Method.DELETE,
+          uriOf(built).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/reviews/12",
           built.retryable == false,
-          built.decode(built.request.send(backend)) == Right(())
+          decodeWith(built, backend) == Right(())
         )
       },
       test("builds schema-traceable pull request diff or patch request") {
@@ -1852,9 +1917,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           pin.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/pin",
           pin.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
           pin.endpoint.response == "#/responses/empty",
-          pin.request.method == Method.POST,
-          pin.request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/pin",
-          pin.request.header("Content-Type").isEmpty,
+          methodOf(pin) == Method.POST,
+          uriOf(pin).toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/pin",
+          headerOf(pin, "Content-Type").isEmpty,
           pin.retryable == false,
           unpin.endpoint == GiteaEndpoints.unpinIssue,
           unpin.endpoint.method == "DELETE",
@@ -1862,9 +1927,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           unpin.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/pin",
           unpin.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
           unpin.endpoint.response == "#/responses/empty",
-          unpin.request.method == Method.DELETE,
-          unpin.request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/pin",
-          unpin.request.header("Content-Type").isEmpty,
+          methodOf(unpin) == Method.DELETE,
+          uriOf(unpin).toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/pin",
+          headerOf(unpin, "Content-Type").isEmpty,
           unpin.retryable == false,
           move.endpoint == GiteaEndpoints.moveIssuePin,
           move.endpoint.method == "PATCH",
@@ -1872,9 +1937,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           move.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/pin/{position}",
           move.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "position"),
           move.endpoint.response == "#/responses/empty",
-          move.request.method == Method.PATCH,
-          move.request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/pin/2",
-          move.request.header("Content-Type").isEmpty,
+          methodOf(move) == Method.PATCH,
+          uriOf(move).toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/pin/2",
+          headerOf(move, "Content-Type").isEmpty,
           move.retryable == false
         )
       },
@@ -1978,12 +2043,12 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           issueComments.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/comments",
           issueComments.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "since", "before"),
           issueComments.endpoint.response == "#/responses/CommentList",
-          issueComments.request.method == Method.GET,
-          issueComments.request.uri.toString.contains(
+          methodOf(issueComments) == Method.GET,
+          uriOf(issueComments).toString.contains(
             "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/comments?"
           ),
-          issueComments.request.uri.paramsMap.get("since").contains("2026-06-01T00:00:00Z"),
-          issueComments.request.uri.paramsMap.get("before").contains("2026-06-18T00:00:00Z"),
+          uriOf(issueComments).paramsMap.get("since").contains("2026-06-01T00:00:00Z"),
+          uriOf(issueComments).paramsMap.get("before").contains("2026-06-18T00:00:00Z"),
           issueComments.retryable == true,
           repoComments.endpoint == GiteaEndpoints.issueGetRepoComments,
           repoComments.endpoint.method == "GET",
@@ -1991,18 +2056,18 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           repoComments.endpoint.path == "/repos/{owner}/{repo}/issues/comments",
           repoComments.endpoint.parameters.map(_.name) == List("owner", "repo", "since", "before", "page", "limit"),
           repoComments.endpoint.response == "#/responses/CommentList",
-          repoComments.request.method == Method.GET,
-          repoComments.request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/issues/comments?"),
-          repoComments.request.uri.paramsMap.get("page").contains("2"),
-          repoComments.request.uri.paramsMap.get("limit").contains("9"),
+          methodOf(repoComments) == Method.GET,
+          uriOf(repoComments).toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/issues/comments?"),
+          uriOf(repoComments).paramsMap.get("page").contains("2"),
+          uriOf(repoComments).paramsMap.get("limit").contains("9"),
           repoComments.retryable == true,
           getComment.endpoint == GiteaEndpoints.issueGetComment,
           getComment.endpoint.method == "GET",
           getComment.endpoint.operationId == "issueGetComment",
           getComment.endpoint.path == "/repos/{owner}/{repo}/issues/comments/{id}",
           getComment.endpoint.response == "#/responses/Comment",
-          getComment.request.method == Method.GET,
-          getComment.request.uri.toString ==
+          methodOf(getComment) == Method.GET,
+          uriOf(getComment).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/comments/30",
           getComment.retryable == true,
           editComment.endpoint == GiteaEndpoints.issueEditComment,
@@ -2011,10 +2076,10 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           editComment.endpoint.path == "/repos/{owner}/{repo}/issues/comments/{id}",
           editComment.endpoint.parameters.map(_.name) == List("owner", "repo", "id", "body"),
           editComment.endpoint.response == "#/responses/Comment",
-          editComment.request.method == Method.PATCH,
-          editComment.request.header("Content-Type").exists(_.startsWith("application/json")),
+          methodOf(editComment) == Method.PATCH,
+          headerOf(editComment, "Content-Type").exists(_.startsWith("application/json")),
           editComment.retryable == false,
-          editComment.request.body match
+          bodyOf(editComment) match
             case StringBody(json, _, _) => json.contains(""""body":"Updated"""")
             case _ => false,
           deleteComment.endpoint == GiteaEndpoints.issueDeleteComment,
@@ -2023,8 +2088,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           deleteComment.endpoint.path == "/repos/{owner}/{repo}/issues/comments/{id}",
           deleteComment.endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
           deleteComment.endpoint.response == "#/responses/empty",
-          deleteComment.request.method == Method.DELETE,
-          deleteComment.request.uri.toString ==
+          methodOf(deleteComment) == Method.DELETE,
+          uriOf(deleteComment).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/comments/30",
           deleteComment.retryable == false
         )
@@ -2042,8 +2107,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           list.endpoint.path == "/repos/{owner}/{repo}/issues/comments/{id}/reactions",
           list.endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
           list.endpoint.response == "#/responses/ReactionList",
-          list.request.method == Method.GET,
-          list.request.uri.toString ==
+          methodOf(list) == Method.GET,
+          uriOf(list).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/comments/30/reactions",
           list.retryable == true,
           add.endpoint == GiteaEndpoints.issuePostCommentReaction,
@@ -2051,20 +2116,20 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           add.endpoint.operationId == "issuePostCommentReaction",
           add.endpoint.parameters.map(_.name) == List("owner", "repo", "id", "content"),
           add.endpoint.response == "#/responses/Reaction",
-          add.request.method == Method.POST,
-          add.request.header("Content-Type").exists(_.startsWith("application/json")),
+          methodOf(add) == Method.POST,
+          headerOf(add, "Content-Type").exists(_.startsWith("application/json")),
           add.retryable == false,
-          add.request.body match
+          bodyOf(add) match
             case StringBody(json, _, _) => json.contains(""""content":"+1"""")
             case _ => false,
           remove.endpoint == GiteaEndpoints.issueDeleteCommentReaction,
           remove.endpoint.method == "DELETE",
           remove.endpoint.operationId == "issueDeleteCommentReaction",
           remove.endpoint.path == "/repos/{owner}/{repo}/issues/comments/{id}/reactions",
-          remove.request.method == Method.DELETE,
-          remove.request.header("Content-Type").exists(_.startsWith("application/json")),
+          methodOf(remove) == Method.DELETE,
+          headerOf(remove, "Content-Type").exists(_.startsWith("application/json")),
           remove.retryable == false,
-          remove.request.body match
+          bodyOf(remove) match
             case StringBody(json, _, _) => json.contains(""""content":"+1"""")
             case _ => false
         )
@@ -2096,32 +2161,32 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           get.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/labels",
           get.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
           get.endpoint.response == "#/responses/LabelList",
-          get.request.method == Method.GET,
-          get.request.uri.toString ==
+          methodOf(get) == Method.GET,
+          uriOf(get).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/labels",
           get.retryable == true,
           replace.endpoint == GiteaEndpoints.issueReplaceLabels,
-          replace.request.method == Method.PUT,
-          replace.request.header("Content-Type").exists(_.startsWith("application/json")),
+          methodOf(replace) == Method.PUT,
+          headerOf(replace, "Content-Type").exists(_.startsWith("application/json")),
           replace.retryable == false,
-          replace.request.body match
+          bodyOf(replace) match
             case StringBody(json, _, _) => json.contains(""""labels":[1,2]""")
             case _ => false,
           add.endpoint == GiteaEndpoints.issueAddLabel,
-          add.request.method == Method.POST,
-          add.request.header("Content-Type").exists(_.startsWith("application/json")),
+          methodOf(add) == Method.POST,
+          headerOf(add, "Content-Type").exists(_.startsWith("application/json")),
           add.retryable == false,
-          add.request.body match
+          bodyOf(add) match
             case StringBody(json, _, _) => json.contains(""""labels":[3]""")
             case _ => false,
           clear.endpoint == GiteaEndpoints.issueClearLabels,
-          clear.request.method == Method.DELETE,
-          clear.request.uri.toString ==
+          methodOf(clear) == Method.DELETE,
+          uriOf(clear).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/labels",
           clear.retryable == false,
           remove.endpoint == GiteaEndpoints.issueRemoveLabel,
-          remove.request.method == Method.DELETE,
-          remove.request.uri.toString ==
+          methodOf(remove) == Method.DELETE,
+          uriOf(remove).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/labels/3",
           remove.retryable == false
         )
@@ -2144,12 +2209,12 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           lock.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/lock",
           lock.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
           lock.endpoint.response == "#/responses/empty",
-          lock.request.method == Method.PUT,
-          lock.request.uri.toString ==
+          methodOf(lock) == Method.PUT,
+          uriOf(lock).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/lock",
-          lock.request.header("Content-Type").exists(_.startsWith("application/json")),
+          headerOf(lock, "Content-Type").exists(_.startsWith("application/json")),
           lock.retryable == false,
-          lock.request.body match
+          bodyOf(lock) match
             case StringBody(json, _, _) => json.contains(""""lock_reason":"resolved"""")
             case _ => false,
           unlock.endpoint == GiteaEndpoints.issueUnlockIssue,
@@ -2158,8 +2223,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           unlock.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/lock",
           unlock.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
           unlock.endpoint.response == "#/responses/empty",
-          unlock.request.method == Method.DELETE,
-          unlock.request.uri.toString ==
+          methodOf(unlock) == Method.DELETE,
+          uriOf(unlock).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/lock",
           unlock.retryable == false
         )
@@ -2209,24 +2274,24 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           blocks.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/blocks",
           blocks.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "page", "limit"),
           blocks.endpoint.response == "#/responses/IssueList",
-          blocks.request.method == Method.GET,
-          blocks.request.uri.toString.contains(
+          methodOf(blocks) == Method.GET,
+          uriOf(blocks).toString.contains(
             "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/blocks?"
           ),
-          blocks.request.uri.paramsMap.get("page").contains("2"),
-          blocks.request.uri.paramsMap.get("limit").contains("25"),
+          uriOf(blocks).paramsMap.get("page").contains("2"),
+          uriOf(blocks).paramsMap.get("limit").contains("25"),
           blocks.retryable == true,
           block.endpoint == GiteaEndpoints.issueCreateIssueBlocking,
           block.endpoint.method == "POST",
           block.endpoint.operationId == "issueCreateIssueBlocking",
           block.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
           block.endpoint.response == "#/responses/Issue",
-          block.request.method == Method.POST,
-          block.request.uri.toString ==
+          methodOf(block) == Method.POST,
+          uriOf(block).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/blocks",
-          block.request.header("Content-Type").exists(_.startsWith("application/json")),
+          headerOf(block, "Content-Type").exists(_.startsWith("application/json")),
           block.retryable == false,
-          block.request.body match
+          bodyOf(block) match
             case StringBody(json, _, _) =>
               json.contains(""""index":13""") &&
                 json.contains(""""owner":"other"""") &&
@@ -2236,33 +2301,33 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           unblock.endpoint.method == "DELETE",
           unblock.endpoint.operationId == "issueRemoveIssueBlocking",
           unblock.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/blocks",
-          unblock.request.method == Method.DELETE,
-          unblock.request.header("Content-Type").exists(_.startsWith("application/json")),
+          methodOf(unblock) == Method.DELETE,
+          headerOf(unblock, "Content-Type").exists(_.startsWith("application/json")),
           unblock.retryable == false,
-          unblock.request.body match
+          bodyOf(unblock) match
             case StringBody(json, _, _) => json.contains(""""index":13""")
             case _ => false,
           dependencies.endpoint == GiteaEndpoints.issueListIssueDependencies,
           dependencies.endpoint.operationId == "issueListIssueDependencies",
           dependencies.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/dependencies",
           dependencies.endpoint.response == "#/responses/IssueList",
-          dependencies.request.method == Method.GET,
-          dependencies.request.uri.toString.contains(
+          methodOf(dependencies) == Method.GET,
+          uriOf(dependencies).toString.contains(
             "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/dependencies?"
           ),
-          dependencies.request.uri.paramsMap.get("page").contains("3"),
+          uriOf(dependencies).paramsMap.get("page").contains("3"),
           dependencies.retryable == true,
           addDependency.endpoint == GiteaEndpoints.issueCreateIssueDependencies,
           addDependency.endpoint.operationId == "issueCreateIssueDependencies",
-          addDependency.request.method == Method.POST,
-          addDependency.request.uri.toString ==
+          methodOf(addDependency) == Method.POST,
+          uriOf(addDependency).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/dependencies",
-          addDependency.request.header("Content-Type").exists(_.startsWith("application/json")),
+          headerOf(addDependency, "Content-Type").exists(_.startsWith("application/json")),
           addDependency.retryable == false,
           removeDependency.endpoint == GiteaEndpoints.issueRemoveIssueDependencies,
           removeDependency.endpoint.operationId == "issueRemoveIssueDependencies",
-          removeDependency.request.method == Method.DELETE,
-          removeDependency.request.header("Content-Type").exists(_.startsWith("application/json")),
+          methodOf(removeDependency) == Method.DELETE,
+          headerOf(removeDependency, "Content-Type").exists(_.startsWith("application/json")),
           removeDependency.retryable == false
         )
       },
@@ -2279,32 +2344,32 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           list.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/reactions",
           list.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "page", "limit"),
           list.endpoint.response == "#/responses/ReactionList",
-          list.request.method == Method.GET,
-          list.request.uri.toString.contains(
+          methodOf(list) == Method.GET,
+          uriOf(list).toString.contains(
             "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/reactions?"
           ),
-          list.request.uri.paramsMap.get("page").contains("4"),
-          list.request.uri.paramsMap.get("limit").contains("25"),
+          uriOf(list).paramsMap.get("page").contains("4"),
+          uriOf(list).paramsMap.get("limit").contains("25"),
           list.retryable == true,
           add.endpoint == GiteaEndpoints.issuePostIssueReaction,
           add.endpoint.method == "POST",
           add.endpoint.operationId == "issuePostIssueReaction",
           add.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "content"),
           add.endpoint.response == "#/responses/Reaction",
-          add.request.method == Method.POST,
-          add.request.header("Content-Type").exists(_.startsWith("application/json")),
+          methodOf(add) == Method.POST,
+          headerOf(add, "Content-Type").exists(_.startsWith("application/json")),
           add.retryable == false,
-          add.request.body match
+          bodyOf(add) match
             case StringBody(json, _, _) => json.contains(""""content":"heart"""")
             case _ => false,
           remove.endpoint == GiteaEndpoints.issueDeleteIssueReaction,
           remove.endpoint.method == "DELETE",
           remove.endpoint.operationId == "issueDeleteIssueReaction",
           remove.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/reactions",
-          remove.request.method == Method.DELETE,
-          remove.request.header("Content-Type").exists(_.startsWith("application/json")),
+          methodOf(remove) == Method.DELETE,
+          headerOf(remove, "Content-Type").exists(_.startsWith("application/json")),
           remove.retryable == false,
-          remove.request.body match
+          bodyOf(remove) match
             case StringBody(json, _, _) => json.contains(""""content":"heart"""")
             case _ => false
         )
@@ -2322,12 +2387,12 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           list.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/subscriptions",
           list.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "page", "limit"),
           list.endpoint.response == "#/responses/UserList",
-          list.request.method == Method.GET,
-          list.request.uri.toString.contains(
+          methodOf(list) == Method.GET,
+          uriOf(list).toString.contains(
             "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/subscriptions?"
           ),
-          list.request.uri.paramsMap.get("page").contains("5"),
-          list.request.uri.paramsMap.get("limit").contains("25"),
+          uriOf(list).paramsMap.get("page").contains("5"),
+          uriOf(list).paramsMap.get("limit").contains("25"),
           list.retryable == true,
           check.endpoint == GiteaEndpoints.issueCheckSubscription,
           check.endpoint.method == "GET",
@@ -2335,8 +2400,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           check.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/subscriptions/check",
           check.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
           check.endpoint.response == "#/responses/WatchInfo",
-          check.request.method == Method.GET,
-          check.request.uri.toString ==
+          methodOf(check) == Method.GET,
+          uriOf(check).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/subscriptions/check",
           check.retryable == true,
           add.endpoint == GiteaEndpoints.issueAddSubscription,
@@ -2345,16 +2410,16 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           add.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
           add.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "user"),
           add.endpoint.response == "#/responses/empty",
-          add.request.method == Method.PUT,
-          add.request.uri.toString ==
+          methodOf(add) == Method.PUT,
+          uriOf(add).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/subscriptions/space%20user%2Fslash",
           add.retryable == false,
           remove.endpoint == GiteaEndpoints.issueDeleteSubscription,
           remove.endpoint.method == "DELETE",
           remove.endpoint.operationId == "issueDeleteSubscription",
           remove.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
-          remove.request.method == Method.DELETE,
-          remove.request.uri.toString ==
+          methodOf(remove) == Method.DELETE,
+          uriOf(remove).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/subscriptions/space%20user%2Fslash",
           remove.retryable == false
         )
@@ -2395,27 +2460,27 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           list.endpoint.parameters.map(_.name) ==
             List("owner", "repo", "index", "user", "since", "before", "page", "limit"),
           list.endpoint.response == "#/responses/TrackedTimeList",
-          list.request.method == Method.GET,
-          list.request.uri.toString.contains(
+          methodOf(list) == Method.GET,
+          uriOf(list).toString.contains(
             "/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/times?"
           ),
-          list.request.uri.paramsMap.get("user").contains("octo"),
-          list.request.uri.paramsMap.get("since").contains("2026-06-01T00:00:00Z"),
-          list.request.uri.paramsMap.get("before").contains("2026-06-18T00:00:00Z"),
-          list.request.uri.paramsMap.get("page").contains("6"),
-          list.request.uri.paramsMap.get("limit").contains("7"),
+          uriOf(list).paramsMap.get("user").contains("octo"),
+          uriOf(list).paramsMap.get("since").contains("2026-06-01T00:00:00Z"),
+          uriOf(list).paramsMap.get("before").contains("2026-06-18T00:00:00Z"),
+          uriOf(list).paramsMap.get("page").contains("6"),
+          uriOf(list).paramsMap.get("limit").contains("7"),
           list.retryable == true,
           add.endpoint == GiteaEndpoints.issueAddTime,
           add.endpoint.method == "POST",
           add.endpoint.operationId == "issueAddTime",
           add.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
           add.endpoint.response == "#/responses/TrackedTime",
-          add.request.method == Method.POST,
-          add.request.uri.toString ==
+          methodOf(add) == Method.POST,
+          uriOf(add).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/times",
-          add.request.header("Content-Type").exists(_.startsWith("application/json")),
+          headerOf(add, "Content-Type").exists(_.startsWith("application/json")),
           add.retryable == false,
-          add.request.body match
+          bodyOf(add) match
             case StringBody(json, _, _) =>
               json.contains(""""time":3600""") &&
                 json.contains(""""created":"2026-06-01T00:00:00Z"""") &&
@@ -2425,8 +2490,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           reset.endpoint.method == "DELETE",
           reset.endpoint.operationId == "issueResetTime",
           reset.endpoint.response == "#/responses/empty",
-          reset.request.method == Method.DELETE,
-          reset.request.uri.toString ==
+          methodOf(reset) == Method.DELETE,
+          uriOf(reset).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/times",
           reset.retryable == false,
           remove.endpoint == GiteaEndpoints.issueDeleteTime,
@@ -2435,8 +2500,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           remove.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/times/{id}",
           remove.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "id"),
           remove.endpoint.response == "#/responses/empty",
-          remove.request.method == Method.DELETE,
-          remove.request.uri.toString ==
+          methodOf(remove) == Method.DELETE,
+          uriOf(remove).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/times/44",
           remove.retryable == false
         )
@@ -2453,25 +2518,25 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           start.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/stopwatch/start",
           start.endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
           start.endpoint.response == "#/responses/empty",
-          start.request.method == Method.POST,
-          start.request.uri.toString ==
+          methodOf(start) == Method.POST,
+          uriOf(start).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/stopwatch/start",
-          start.request.header("Content-Type").isEmpty,
+          headerOf(start, "Content-Type").isEmpty,
           start.retryable == false,
           stop.endpoint == GiteaEndpoints.issueStopStopWatch,
           stop.endpoint.method == "POST",
           stop.endpoint.operationId == "issueStopStopWatch",
           stop.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/stopwatch/stop",
-          stop.request.method == Method.POST,
-          stop.request.uri.toString ==
+          methodOf(stop) == Method.POST,
+          uriOf(stop).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/stopwatch/stop",
           stop.retryable == false,
           remove.endpoint == GiteaEndpoints.issueDeleteStopWatch,
           remove.endpoint.method == "DELETE",
           remove.endpoint.operationId == "issueDeleteStopWatch",
           remove.endpoint.path == "/repos/{owner}/{repo}/issues/{index}/stopwatch/delete",
-          remove.request.method == Method.DELETE,
-          remove.request.uri.toString ==
+          methodOf(remove) == Method.DELETE,
+          uriOf(remove).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/stopwatch/delete",
           remove.retryable == false
         )
@@ -2486,10 +2551,10 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.endpoint.path == "/user/stopwatches",
           built.endpoint.parameters.map(_.name) == List("page", "limit"),
           built.endpoint.response == "#/responses/StopWatchList",
-          built.request.method == Method.GET,
-          built.request.uri.toString.contains("/api/v1/user/stopwatches?"),
-          built.request.uri.paramsMap.get("page").contains("4"),
-          built.request.uri.paramsMap.get("limit").contains("25"),
+          methodOf(built) == Method.GET,
+          uriOf(built).toString.contains("/api/v1/user/stopwatches?"),
+          uriOf(built).paramsMap.get("page").contains("4"),
+          uriOf(built).paramsMap.get("limit").contains("25"),
           built.retryable == true
         )
       },
@@ -2500,14 +2565,14 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           followers.endpoint == GiteaEndpoints.userListFollowers,
           followers.endpoint.operationId == "userListFollowers",
-          followers.request.uri.toString.contains("/api/v1/users/space%20user%2Fslash/followers?"),
-          followers.request.uri.paramsMap.get("page").contains("2"),
-          followers.request.uri.paramsMap.get("limit").contains("25"),
+          uriOf(followers).toString.contains("/api/v1/users/space%20user%2Fslash/followers?"),
+          uriOf(followers).paramsMap.get("page").contains("2"),
+          uriOf(followers).paramsMap.get("limit").contains("25"),
           following.endpoint == GiteaEndpoints.userListFollowing,
           following.endpoint.operationId == "userListFollowing",
-          following.request.uri.toString.contains("/api/v1/users/space%20user%2Fslash/following?"),
-          following.request.uri.paramsMap.get("page").contains("3"),
-          following.request.uri.paramsMap.get("limit").contains("25")
+          uriOf(following).toString.contains("/api/v1/users/space%20user%2Fslash/following?"),
+          uriOf(following).paramsMap.get("page").contains("3"),
+          uriOf(following).paramsMap.get("limit").contains("25")
         )
       },
       test("builds schema-traceable user search request") {
@@ -2571,15 +2636,15 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           count.endpoint.operationId == "notifyNewAvailable",
           count.endpoint.path == "/notifications/new",
           count.endpoint.response == "#/responses/NotificationCount",
-          count.request.method == Method.GET,
-          count.request.uri.toString == "https://gitea.example/root/api/v1/notifications/new",
+          methodOf(count) == Method.GET,
+          uriOf(count).toString == "https://gitea.example/root/api/v1/notifications/new",
           thread.endpoint == GiteaEndpoints.notifyGetThread,
           thread.endpoint.operationId == "notifyGetThread",
           thread.endpoint.path == "/notifications/threads/{id}",
           thread.endpoint.parameters.map(_.name) == List("id"),
           thread.endpoint.response == "#/responses/NotificationThread",
-          thread.request.method == Method.GET,
-          thread.request.uri.toString ==
+          methodOf(thread) == Method.GET,
+          uriOf(thread).toString ==
             "https://gitea.example/root/api/v1/notifications/threads/thread%20id%2Fslash"
         )
       },
@@ -2633,23 +2698,21 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val response = """{"id":42,"login":"octo"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(response))
         val built = GiteaRequests.currentUser(config)
-        val raw = built.request.send(backend)
 
         assertTrue(
-          built.decode(raw).map(_.login) == Right(Some("octo")),
-          built.decode(raw).map(_.id) == Right(Some(42L))
+          decodeWith(built, backend).map(_.login) == Right(Some("octo")),
+          decodeWith(built, backend).map(_.id) == Right(Some(42L))
         )
       },
       test("decodes a successful organization response through BackendStub") {
         val response = """{"id":9,"name":"platform","full_name":"Platform Team"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(response))
         val built = GiteaRequests.organization(config, "platform")
-        val raw = built.request.send(backend)
 
         assertTrue(
-          built.decode(raw).map(_.id) == Right(Some(9L)),
-          built.decode(raw).map(_.name) == Right(Some("platform")),
-          built.decode(raw).map(_.fullName) == Right(Some("Platform Team"))
+          decodeWith(built, backend).map(_.id) == Right(Some(9L)),
+          decodeWith(built, backend).map(_.name) == Right(Some("platform")),
+          decodeWith(built, backend).map(_.fullName) == Right(Some("Platform Team"))
         )
       },
       test("decodes paginated issue list response and pagination headers") {
@@ -2658,14 +2721,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val backend =
           BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(response, StatusCode.Ok, headers))
         val built = GiteaRequests.issues(config, "owner", "repo")
-        val raw = built.request.send(backend)
 
         assertTrue(
-          built.decode(raw).map(_.data.headOption.flatMap(_.number)) == Right(Some(7L)),
-          built.decode(raw).map(_.totalCount) == Right(Some(31L)),
-          built.decode(raw).map(_.page) == Right(1),
-          built.decode(raw).map(_.pageSize) == Right(25),
-          built.decode(raw).map(_.hasNext) == Right(true)
+          decodeWith(built, backend).map(_.data.headOption.flatMap(_.number)) == Right(Some(7L)),
+          decodeWith(built, backend).map(_.totalCount) == Right(Some(31L)),
+          decodeWith(built, backend).map(_.page) == Right(1),
+          decodeWith(built, backend).map(_.pageSize) == Right(25),
+          decodeWith(built, backend).map(_.hasNext) == Right(true)
         )
       },
       test("decodes pinned issues and new pin allowed responses") {
@@ -2679,8 +2741,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           )
         val pinnedRequest = GiteaRequests.pinnedIssues(config, "owner", "repo")
         val allowedRequest = GiteaRequests.repoNewPinAllowed(config, "owner", "repo")
-        val pinned = pinnedRequest.decode(pinnedRequest.request.send(pinnedBackend))
-        val allowed = allowedRequest.decode(allowedRequest.request.send(allowedBackend))
+        val pinned = decodeWith(pinnedRequest, pinnedBackend)
+        val allowed = decodeWith(allowedRequest, allowedBackend)
 
         assertTrue(
           pinned.map(_.headOption.flatMap(_.title)) == Right(Some("pinned")),
@@ -2692,12 +2754,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val backend =
           BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(response, StatusCode.Created))
         val built = GiteaRequests.createIssue(config, "owner", "repo", CreateIssue(title = "Created"))
-        val raw = built.request.send(backend)
 
         assertTrue(
-          built.decode(raw).map(_.id) == Right(Some(77L)),
-          built.decode(raw).map(_.number) == Right(Some(12L)),
-          built.decode(raw).map(_.title) == Right(Some("Created"))
+          decodeWith(built, backend).map(_.id) == Right(Some(77L)),
+          decodeWith(built, backend).map(_.number) == Right(Some(12L)),
+          decodeWith(built, backend).map(_.title) == Right(Some("Created"))
         )
       },
       test("decodes an edited issue response") {
@@ -2706,13 +2767,12 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(response, StatusCode.Created))
         val built =
           GiteaRequests.editIssue(config, "owner", "repo", 12, EditIssue(title = Some("Retitle")))
-        val raw = built.request.send(backend)
 
         assertTrue(
-          built.decode(raw).map(_.id) == Right(Some(77L)),
-          built.decode(raw).map(_.number) == Right(Some(12L)),
-          built.decode(raw).map(_.state) == Right(Some(IssueState.Closed)),
-          built.decode(raw).map(_.title) == Right(Some("Retitle"))
+          decodeWith(built, backend).map(_.id) == Right(Some(77L)),
+          decodeWith(built, backend).map(_.number) == Right(Some(12L)),
+          decodeWith(built, backend).map(_.state) == Right(Some(IssueState.Closed)),
+          decodeWith(built, backend).map(_.title) == Right(Some("Retitle"))
         )
       },
       test("decodes issue label list and empty label mutation responses") {
@@ -2728,9 +2788,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val clear = GiteaRequests.clearIssueLabels(config, "owner", "repo", 12)
 
         assertTrue(
-          labels.decode(labels.request.send(backend)).map(_.map(_.name)) ==
+          decodeWith(labels, backend).map(_.map(_.name)) ==
             Right(Chunk(Some("kind/api"), Some("status/ready"))),
-          clear.decode(clear.request.send(backend)) == Right(())
+          decodeWith(clear, backend) == Right(())
         )
       },
       test("decodes empty issue lock and unlock responses") {
@@ -2740,8 +2800,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val unlock = GiteaRequests.unlockIssue(config, "owner", "repo", 12)
 
         assertTrue(
-          lock.decode(lock.request.send(backend)) == Right(()),
-          unlock.decode(unlock.request.send(backend)) == Right(())
+          decodeWith(lock, backend) == Right(()),
+          decodeWith(unlock, backend) == Right(())
         )
       },
       test("decodes edited issue deadline responses") {
@@ -2754,7 +2814,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           GiteaRequests.editIssueDeadline(config, "owner", "repo", 12, EditDeadlineOption(Some(due)))
 
         assertTrue(
-          built.decode(built.request.send(backend)) == Right(IssueDeadline(Some(due)))
+          decodeWith(built, backend) == Right(IssueDeadline(Some(due)))
         )
       },
       test("decodes issue blocking and dependency responses") {
@@ -2775,10 +2835,10 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val removeDependency = GiteaRequests.removeIssueDependency(config, "owner", "repo", 99, IssueMeta(13L))
 
         assertTrue(
-          blocks.decode(blocks.request.send(backend)).map(_.data.headOption.flatMap(_.number)) == Right(Some(13L)),
-          dependencies.decode(dependencies.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
-          block.decode(block.request.send(backend)).map(_.number) == Right(Some(99L)),
-          removeDependency.decode(removeDependency.request.send(backend)).map(_.title) == Right(Some("Root"))
+          decodeWith(blocks, backend).map(_.data.headOption.flatMap(_.number)) == Right(Some(13L)),
+          decodeWith(dependencies, backend).map(_.totalCount) == Right(Some(1L)),
+          decodeWith(block, backend).map(_.number) == Right(Some(99L)),
+          decodeWith(removeDependency, backend).map(_.title) == Right(Some("Root"))
         )
       },
       test("decodes issue and comment reaction responses") {
@@ -2801,13 +2861,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val remove = GiteaRequests.deleteIssueCommentReaction(config, "owner", "repo", 30, EditReactionOption("+1"))
 
         assertTrue(
-          issueReactions.decode(issueReactions.request.send(backend)).map(_.data.headOption.flatMap(_.content)) ==
+          decodeWith(issueReactions, backend).map(_.data.headOption.flatMap(_.content)) ==
             Right(Some("+1")),
-          issueReactions.decode(issueReactions.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
-          commentReactions.decode(commentReactions.request.send(backend)).map(_.headOption.flatMap(_.content)) ==
+          decodeWith(issueReactions, backend).map(_.totalCount) == Right(Some(1L)),
+          decodeWith(commentReactions, backend).map(_.headOption.flatMap(_.content)) ==
             Right(Some("+1")),
-          add.decode(add.request.send(backend)).map(_.content) == Right(Some("heart")),
-          remove.decode(remove.request.send(backend)) == Right(())
+          decodeWith(add, backend).map(_.content) == Right(Some("heart")),
+          decodeWith(remove, backend) == Right(())
         )
       },
       test("decodes issue subscription responses") {
@@ -2837,13 +2897,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val remove = GiteaRequests.deleteIssueSubscription(config, "owner", "repo", 99, "octo")
 
         assertTrue(
-          list.decode(list.request.send(backend)).map(_.data.headOption.flatMap(_.login)) == Right(Some("octo")),
-          list.decode(list.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
-          check.decode(check.request.send(backend)).map(_.subscribed) == Right(Some(true)),
-          check.decode(check.request.send(backend)).map(_.createdAt) ==
+          decodeWith(list, backend).map(_.data.headOption.flatMap(_.login)) == Right(Some("octo")),
+          decodeWith(list, backend).map(_.totalCount) == Right(Some(1L)),
+          decodeWith(check, backend).map(_.subscribed) == Right(Some(true)),
+          decodeWith(check, backend).map(_.createdAt) ==
             Right(Some(Instant.parse("2026-06-18T10:00:00Z"))),
-          add.decode(add.request.send(backend)) == Right(()),
-          remove.decode(remove.request.send(backend)) == Right(())
+          decodeWith(add, backend) == Right(()),
+          decodeWith(remove, backend) == Right(())
         )
       },
       test("decodes issue tracked-time responses") {
@@ -2864,13 +2924,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val remove = GiteaRequests.deleteIssueTrackedTime(config, "owner", "repo", 99, 44)
 
         assertTrue(
-          list.decode(list.request.send(backend)).map(_.data.headOption.flatMap(_.id)) == Right(Some(44L)),
-          list.decode(list.request.send(backend)).map(_.data.headOption.flatMap(_.issue.flatMap(_.number))) ==
+          decodeWith(list, backend).map(_.data.headOption.flatMap(_.id)) == Right(Some(44L)),
+          decodeWith(list, backend).map(_.data.headOption.flatMap(_.issue.flatMap(_.number))) ==
             Right(Some(12L)),
-          list.decode(list.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
-          add.decode(add.request.send(backend)).map(_.time) == Right(Some(1800L)),
-          reset.decode(reset.request.send(backend)) == Right(()),
-          remove.decode(remove.request.send(backend)) == Right(())
+          decodeWith(list, backend).map(_.totalCount) == Right(Some(1L)),
+          decodeWith(add, backend).map(_.time) == Right(Some(1800L)),
+          decodeWith(reset, backend) == Right(()),
+          decodeWith(remove, backend) == Right(())
         )
       },
       test("decodes stopwatch responses") {
@@ -2891,12 +2951,12 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val remove = GiteaRequests.deleteIssueStopwatch(config, "owner", "repo", 99)
 
         assertTrue(
-          list.decode(list.request.send(backend)).map(_.data.headOption.flatMap(_.issueIndex)) == Right(Some(12L)),
-          list.decode(list.request.send(backend)).map(_.data.headOption.flatMap(_.seconds)) == Right(Some(3723L)),
-          list.decode(list.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
-          start.decode(start.request.send(backend)) == Right(()),
-          stop.decode(stop.request.send(backend)) == Right(()),
-          remove.decode(remove.request.send(backend)) == Right(())
+          decodeWith(list, backend).map(_.data.headOption.flatMap(_.issueIndex)) == Right(Some(12L)),
+          decodeWith(list, backend).map(_.data.headOption.flatMap(_.seconds)) == Right(Some(3723L)),
+          decodeWith(list, backend).map(_.totalCount) == Right(Some(1L)),
+          decodeWith(start, backend) == Right(()),
+          decodeWith(stop, backend) == Right(()),
+          decodeWith(remove, backend) == Right(())
         )
       },
       test("decodes single issue and paginated user list responses") {
@@ -2926,19 +2986,19 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val search = GiteaRequests.userSearch(config, UserSearchParams(q = Some("search")))
 
         assertTrue(
-          issue.decode(issue.request.send(backend)).map(_.number) == Right(Some(7L)),
-          followers.decode(followers.request.send(backend)).map(_.data.headOption.flatMap(_.login)) ==
+          decodeWith(issue, backend).map(_.number) == Right(Some(7L)),
+          decodeWith(followers, backend).map(_.data.headOption.flatMap(_.login)) ==
             Right(Some("alice")),
-          followers.decode(followers.request.send(backend)).map(_.hasNext) == Right(false),
-          orgMembers.decode(orgMembers.request.send(backend)).map(_.data.headOption.flatMap(_.login)) ==
+          decodeWith(followers, backend).map(_.hasNext) == Right(false),
+          decodeWith(orgMembers, backend).map(_.data.headOption.flatMap(_.login)) ==
             Right(Some("member")),
-          orgMembers.decode(orgMembers.request.send(backend)).map(_.hasNext) == Right(false),
-          orgPublicMembers.decode(orgPublicMembers.request.send(backend)).map(_.data.headOption.flatMap(_.login)) ==
+          decodeWith(orgMembers, backend).map(_.hasNext) == Right(false),
+          decodeWith(orgPublicMembers, backend).map(_.data.headOption.flatMap(_.login)) ==
             Right(Some("public-member")),
-          orgPublicMembers.decode(orgPublicMembers.request.send(backend)).map(_.hasNext) == Right(false),
-          search.decode(search.request.send(backend)).map(_.data.headOption.flatMap(_.login)) ==
+          decodeWith(orgPublicMembers, backend).map(_.hasNext) == Right(false),
+          decodeWith(search, backend).map(_.data.headOption.flatMap(_.login)) ==
             Right(Some("search-hit")),
-          search.decode(search.request.send(backend)).map(_.hasNext) == Right(false)
+          decodeWith(search, backend).map(_.hasNext) == Right(false)
         )
       },
       test("decodes paginated repository list, topic names, branch, and tag responses") {
@@ -3116,57 +3176,57 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val pullRequestCommits = GiteaRequests.repoPullRequestCommits(config, "octo", "api", 2)
 
         assertTrue(
-          repos.decode(repos.request.send(backend)).map(_.data.map(_.name)) ==
+          decodeWith(repos, backend).map(_.data.map(_.name)) ==
             Right(Chunk(Some("api"), Some("client"))),
-          orgRepos.decode(orgRepos.request.send(backend)).map(_.data.map(_.name)) ==
+          decodeWith(orgRepos, backend).map(_.data.map(_.name)) ==
             Right(Chunk(Some("org-api"), Some("org-client"))),
-          orgRepos.decode(orgRepos.request.send(backend)).map(_.hasNext) == Right(false),
-          topics.decode(topics.request.send(backend)).map(_.data) == Right(Chunk("scala", "zio")),
-          branches.decode(branches.request.send(backend)).map(_.data.map(_.name)) ==
+          decodeWith(orgRepos, backend).map(_.hasNext) == Right(false),
+          decodeWith(topics, backend).map(_.data) == Right(Chunk("scala", "zio")),
+          decodeWith(branches, backend).map(_.data.map(_.name)) ==
             Right(Chunk(Some("main"), Some("release"))),
-          branches.decode(branches.request.send(backend)).map(_.totalCount) == Right(Some(2L)),
-          tags.decode(tags.request.send(backend)).map(_.data.map(_.name)) ==
+          decodeWith(branches, backend).map(_.totalCount) == Right(Some(2L)),
+          decodeWith(tags, backend).map(_.data.map(_.name)) ==
             Right(Chunk(Some("v1.0.0"), Some("v1.1.0"))),
-          releases.decode(releases.request.send(backend)).map(_.data.map(_.tagName)) ==
+          decodeWith(releases, backend).map(_.data.map(_.tagName)) ==
             Right(Chunk(Some("v1.0.0"), Some("v1.1.0"))),
-          releases.decode(releases.request.send(backend)).map(_.totalCount) == Right(Some(2L)),
-          release.decode(release.request.send(backend)).map(_.tagName) == Right(Some("v1.0.0")),
-          pullRequests.decode(pullRequests.request.send(backend)).map(_.data.map(_.number)) ==
+          decodeWith(releases, backend).map(_.totalCount) == Right(Some(2L)),
+          decodeWith(release, backend).map(_.tagName) == Right(Some("v1.0.0")),
+          decodeWith(pullRequests, backend).map(_.data.map(_.number)) ==
             Right(Chunk(Some(1L), Some(2L))),
-          pullRequests.decode(pullRequests.request.send(backend)).map(_.totalCount) == Right(Some(2L)),
-          pinnedPullRequests.decode(pinnedPullRequests.request.send(backend)).map(_.map(_.title)) ==
+          decodeWith(pullRequests, backend).map(_.totalCount) == Right(Some(2L)),
+          decodeWith(pinnedPullRequests, backend).map(_.map(_.title)) ==
             Right(Chunk(Some("Pinned"))),
-          pullRequest.decode(pullRequest.request.send(backend)).map(_.title) == Right(Some("Second")),
-          createPullRequest.decode(createPullRequest.request.send(backend)).map(_.number) == Right(Some(3L)),
-          createPullRequest.decode(createPullRequest.request.send(backend)).map(_.title) == Right(Some("Created")),
-          editPullRequest.decode(editPullRequest.request.send(backend)).map(_.number) == Right(Some(2L)),
-          editPullRequest.decode(editPullRequest.request.send(backend)).map(_.title) == Right(Some("Retitled")),
-          createPullReviewRequests.decode(createPullReviewRequests.request.send(backend)).map(_.map(_.state)) ==
+          decodeWith(pullRequest, backend).map(_.title) == Right(Some("Second")),
+          decodeWith(createPullRequest, backend).map(_.number) == Right(Some(3L)),
+          decodeWith(createPullRequest, backend).map(_.title) == Right(Some("Created")),
+          decodeWith(editPullRequest, backend).map(_.number) == Right(Some(2L)),
+          decodeWith(editPullRequest, backend).map(_.title) == Right(Some("Retitled")),
+          decodeWith(createPullReviewRequests, backend).map(_.map(_.state)) ==
             Right(Chunk(Some(PullReviewState.RequestReview))),
-          deletePullReviewRequests.decode(deletePullReviewRequests.request.send(backend)) == Right(()),
-          pullReviews.decode(pullReviews.request.send(backend)).map(_.data.map(_.state)) ==
+          decodeWith(deletePullReviewRequests, backend) == Right(()),
+          decodeWith(pullReviews, backend).map(_.data.map(_.state)) ==
             Right(Chunk(Some(PullReviewState.Approved))),
-          pullReviews.decode(pullReviews.request.send(backend)).map(_.data.headOption.flatMap(_.commentsCount)) ==
+          decodeWith(pullReviews, backend).map(_.data.headOption.flatMap(_.commentsCount)) ==
             Right(Some(2L)),
-          createPullReview.decode(createPullReview.request.send(backend)).map(_.state) ==
+          decodeWith(createPullReview, backend).map(_.state) ==
             Right(Some(PullReviewState.Comment)),
-          pullReview.decode(pullReview.request.send(backend)).map(_.body) == Right(Some("Looks good")),
-          submitPullReview.decode(submitPullReview.request.send(backend)).map(_.state) ==
+          decodeWith(pullReview, backend).map(_.body) == Right(Some("Looks good")),
+          decodeWith(submitPullReview, backend).map(_.state) ==
             Right(Some(PullReviewState.Approved)),
-          dismissPullReview.decode(dismissPullReview.request.send(backend)).map(_.dismissed) == Right(Some(true)),
-          undismissPullReview.decode(undismissPullReview.request.send(backend)).map(_.dismissed) == Right(Some(false)),
-          pullReviewComments.decode(pullReviewComments.request.send(backend)).map(_.map(_.path)) ==
+          decodeWith(dismissPullReview, backend).map(_.dismissed) == Right(Some(true)),
+          decodeWith(undismissPullReview, backend).map(_.dismissed) == Right(Some(false)),
+          decodeWith(pullReviewComments, backend).map(_.map(_.path)) ==
             Right(Chunk(Some("README.md"))),
-          pullReviewComments.decode(pullReviewComments.request.send(backend)).map(_.head.position) ==
+          decodeWith(pullReviewComments, backend).map(_.head.position) ==
             Right(Some(7L)),
-          pullRequestDiff.decode(pullRequestDiff.request.send(backend)) ==
+          decodeWith(pullRequestDiff, backend) ==
             Right("diff --git a/README.md b/README.md"),
-          pullRequestFiles.decode(pullRequestFiles.request.send(backend)).map(_.data.map(_.filename)) ==
+          decodeWith(pullRequestFiles, backend).map(_.data.map(_.filename)) ==
             Right(Chunk(Some("src/Main.scala"))),
-          pullRequestFiles.decode(pullRequestFiles.request.send(backend)).map(_.totalCount) == Right(Some(1L)),
-          pullRequestCommits.decode(pullRequestCommits.request.send(backend)).map(_.data.map(_.sha)) ==
+          decodeWith(pullRequestFiles, backend).map(_.totalCount) == Right(Some(1L)),
+          decodeWith(pullRequestCommits, backend).map(_.data.map(_.sha)) ==
             Right(Chunk(Some("abc123"))),
-          pullRequestCommits.decode(pullRequestCommits.request.send(backend)).map(_.data.head.commit.flatMap(_.message)) ==
+          decodeWith(pullRequestCommits, backend).map(_.data.head.commit.flatMap(_.message)) ==
             Right(Some("Implement commits"))
         )
       },
@@ -3189,62 +3249,57 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val thread = GiteaRequests.notificationThread(config, "41")
 
         assertTrue(
-          count.decode(count.request.send(backend)).map(_.unread) == Right(Some(2L)),
-          notifications.decode(notifications.request.send(backend)).map(_.data.headOption.flatMap(_.id)) ==
+          decodeWith(count, backend).map(_.unread) == Right(Some(2L)),
+          decodeWith(notifications, backend).map(_.data.headOption.flatMap(_.id)) ==
             Right(Some(40L)),
-          notifications.decode(notifications.request.send(backend)).map(_.data.headOption.flatMap(_.subject.flatMap(_.subjectType))) ==
+          decodeWith(notifications, backend).map(_.data.headOption.flatMap(_.subject.flatMap(_.subjectType))) ==
             Right(Some(NotificationSubjectType.Issue)),
-          thread.decode(thread.request.send(backend)).map(_.subject.flatMap(_.title)) == Right(Some("Second"))
+          decodeWith(thread, backend).map(_.subject.flatMap(_.title)) == Right(Some("Second"))
         )
       },
       test("maps Gitea error responses while preserving raw body") {
         val body = """{"message":"missing repo","url":"https://docs.gitea.com/api"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val built = GiteaRequests.issue(config, "owner", "missing", 404)
-        val raw = built.request.send(backend)
 
         assertTrue(
-          built.decode(raw) == Left(GiteaError.NotFound("missing repo", body))
+          decodeWith(built, backend) == Left(GiteaError.NotFound("missing repo", body))
         )
       },
       test("maps organization not-found responses") {
         val body = """{"message":"missing org"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val built = GiteaRequests.organization(config, "missing")
-        val raw = built.request.send(backend)
 
         assertTrue(
-          built.decode(raw) == Left(GiteaError.NotFound("missing org", body))
+          decodeWith(built, backend) == Left(GiteaError.NotFound("missing org", body))
         )
       },
       test("maps organization member-list not-found responses") {
         val body = """{"message":"missing org"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val built = GiteaRequests.organizationMembers(config, "missing")
-        val raw = built.request.send(backend)
 
         assertTrue(
-          built.decode(raw) == Left(GiteaError.NotFound("missing org", body))
+          decodeWith(built, backend) == Left(GiteaError.NotFound("missing org", body))
         )
       },
       test("maps organization public member-list not-found responses") {
         val body = """{"message":"missing org"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val built = GiteaRequests.organizationPublicMembers(config, "missing")
-        val raw = built.request.send(backend)
 
         assertTrue(
-          built.decode(raw) == Left(GiteaError.NotFound("missing org", body))
+          decodeWith(built, backend) == Left(GiteaError.NotFound("missing org", body))
         )
       },
       test("maps organization repository-list not-found responses") {
         val body = """{"message":"missing org"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val built = GiteaRequests.organizationRepos(config, "missing")
-        val raw = built.request.send(backend)
 
         assertTrue(
-          built.decode(raw) == Left(GiteaError.NotFound("missing org", body))
+          decodeWith(built, backend) == Left(GiteaError.NotFound("missing org", body))
         )
       },
       test("maps repository branch and tag not-found responses") {
@@ -3254,8 +3309,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val tags = GiteaRequests.repoTags(config, "owner", "missing")
 
         assertTrue(
-          branches.decode(branches.request.send(backend)) == Left(GiteaError.NotFound("missing repo", body)),
-          tags.decode(tags.request.send(backend)) == Left(GiteaError.NotFound("missing repo", body))
+          decodeWith(branches, backend) == Left(GiteaError.NotFound("missing repo", body)),
+          decodeWith(tags, backend) == Left(GiteaError.NotFound("missing repo", body))
         )
       },
       test("maps repository release not-found responses") {
@@ -3265,8 +3320,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val release = GiteaRequests.repoRelease(config, "owner", "missing", 77)
 
         assertTrue(
-          releases.decode(releases.request.send(backend)) == Left(GiteaError.NotFound("missing release", body)),
-          release.decode(release.request.send(backend)) == Left(GiteaError.NotFound("missing release", body))
+          decodeWith(releases, backend) == Left(GiteaError.NotFound("missing release", body)),
+          decodeWith(release, backend) == Left(GiteaError.NotFound("missing release", body))
         )
       },
       test("maps documented commit status failures") {
@@ -3289,13 +3344,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           )
 
         assertTrue(
-          combined.decode(combined.request.send(badRequestBackend)) ==
+          decodeWith(combined, badRequestBackend) ==
             Left(GiteaError.BadRequest("invalid ref", badRequestBody)),
-          byRef.decode(byRef.request.send(notFoundBackend)) ==
+          decodeWith(byRef, notFoundBackend) ==
             Left(GiteaError.NotFound("missing commit", notFoundBody)),
-          bySha.decode(bySha.request.send(notFoundBackend)) ==
+          decodeWith(bySha, notFoundBackend) ==
             Left(GiteaError.NotFound("missing commit", notFoundBody)),
-          create.decode(create.request.send(notFoundBackend)) ==
+          decodeWith(create, notFoundBackend) ==
             Left(GiteaError.NotFound("missing commit", notFoundBody))
         )
       },
@@ -3305,7 +3360,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val built = GiteaRequests.repoCommitPullRequest(config, "owner", "repo", "missing-sha")
 
         assertTrue(
-          built.decode(built.request.send(backend)) ==
+          decodeWith(built, backend) ==
             Left(GiteaError.NotFound("missing commit pull request", body))
         )
       },
@@ -3322,9 +3377,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val invalid = GiteaRequests.repoSingleCommit(config, "owner", "repo", "bad ref")
 
         assertTrue(
-          missing.decode(missing.request.send(notFoundBackend)) ==
+          decodeWith(missing, notFoundBackend) ==
             Left(GiteaError.NotFound("missing commit", notFoundBody)),
-          invalid.decode(invalid.request.send(validationBackend)) ==
+          decodeWith(invalid, validationBackend) ==
             Left(GiteaError.UnprocessableEntity("invalid commit ref", validationBody))
         )
       },
@@ -3334,7 +3389,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val built = GiteaRequests.repoCommitDiffOrPatch(config, "owner", "repo", "missing-sha", CommitDiffType.diff)
 
         assertTrue(
-          built.decode(built.request.send(backend)) ==
+          decodeWith(built, backend) ==
             Left(GiteaError.NotFound("missing commit diff", body))
         )
       },
@@ -3351,9 +3406,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val invalid = GiteaRequests.repoCommitNote(config, "owner", "repo", "bad ref")
 
         assertTrue(
-          missing.decode(missing.request.send(notFoundBackend)) ==
+          decodeWith(missing, notFoundBackend) ==
             Left(GiteaError.NotFound("missing commit note", notFoundBody)),
-          invalid.decode(invalid.request.send(validationBackend)) ==
+          decodeWith(invalid, validationBackend) ==
             Left(GiteaError.UnprocessableEntity("invalid commit note ref", validationBody))
         )
       },
@@ -3368,9 +3423,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val missing = GiteaRequests.gitTree(config, "owner", "repo", "missing-sha")
 
         assertTrue(
-          invalid.decode(invalid.request.send(badRequestBackend)) ==
+          decodeWith(invalid, badRequestBackend) ==
             Left(GiteaError.BadRequest("invalid tree ref", badRequestBody)),
-          missing.decode(missing.request.send(notFoundBackend)) ==
+          decodeWith(missing, notFoundBackend) ==
             Left(GiteaError.NotFound("missing tree", notFoundBody))
         )
       },
@@ -3385,9 +3440,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val missing = GiteaRequests.gitBlob(config, "owner", "repo", "missing-sha")
 
         assertTrue(
-          invalid.decode(invalid.request.send(badRequestBackend)) ==
+          decodeWith(invalid, badRequestBackend) ==
             Left(GiteaError.BadRequest("invalid blob ref", badRequestBody)),
-          missing.decode(missing.request.send(notFoundBackend)) ==
+          decodeWith(missing, notFoundBackend) ==
             Left(GiteaError.NotFound("missing blob", notFoundBody))
         )
       },
@@ -3402,9 +3457,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val missing = GiteaRequests.annotatedTag(config, "owner", "repo", "missing-sha")
 
         assertTrue(
-          invalid.decode(invalid.request.send(badRequestBackend)) ==
+          decodeWith(invalid, badRequestBackend) ==
             Left(GiteaError.BadRequest("invalid tag ref", badRequestBody)),
-          missing.decode(missing.request.send(notFoundBackend)) ==
+          decodeWith(missing, notFoundBackend) ==
             Left(GiteaError.NotFound("missing tag", notFoundBody))
         )
       },
@@ -3415,8 +3470,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val filteredRefs = GiteaRequests.repoListGitRefs(config, "owner", "repo", "heads/main")
 
         assertTrue(
-          allRefs.decode(allRefs.request.send(backend)) == Left(GiteaError.NotFound("missing ref", body)),
-          filteredRefs.decode(filteredRefs.request.send(backend)) == Left(GiteaError.NotFound("missing ref", body))
+          decodeWith(allRefs, backend) == Left(GiteaError.NotFound("missing ref", body)),
+          decodeWith(filteredRefs, backend) == Left(GiteaError.NotFound("missing ref", body))
         )
       },
       test("maps documented repository contents 404 responses") {
@@ -3426,9 +3481,9 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val fileContents = GiteaRequests.repoContents(config, "owner", "repo", "docs/readme.md")
 
         assertTrue(
-          rootContents.decode(rootContents.request.send(backend)) ==
+          decodeWith(rootContents, backend) ==
             Left(GiteaError.NotFound("missing contents", body)),
-          fileContents.decode(fileContents.request.send(backend)) ==
+          decodeWith(fileContents, backend) ==
             Left(GiteaError.NotFound("missing contents", body))
         )
       },
@@ -3440,8 +3495,8 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           )
         val rawFile = GiteaRequests.repoRawFile(config, "owner", "repo", "docs/readme.md")
         val mediaFile = GiteaRequests.repoMediaFile(config, "owner", "repo", "docs/readme.md")
-        val rawResult = rawFile.decodeTyped(rawFile.typedRequest.send(backend))
-        val mediaResult = mediaFile.decodeTyped(mediaFile.typedRequest.send(backend))
+        val rawResult = decodeWith(rawFile, backend)
+        val mediaResult = decodeWith(mediaFile, backend)
 
         assertTrue(
           rawResult == Left(GiteaError.NotFound("missing raw file", body)),
@@ -3488,38 +3543,38 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val pullRequestCommits = GiteaRequests.repoPullRequestCommits(config, "owner", "missing", 77)
 
         assertTrue(
-          pullRequests.decode(pullRequests.request.send(backend)) ==
+          decodeWith(pullRequests, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          pinnedPullRequests.decode(pinnedPullRequests.request.send(backend)) ==
+          decodeWith(pinnedPullRequests, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          pullRequest.decode(pullRequest.request.send(backend)) ==
+          decodeWith(pullRequest, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          pullRequestDiff.decode(pullRequestDiff.request.send(backend)) ==
+          decodeWith(pullRequestDiff, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          pullRequestIsMerged.decode(pullRequestIsMerged.request.send(backend)) == Right(false),
-          createPullReviewRequests.decode(createPullReviewRequests.request.send(backend)) ==
+          decodeWith(pullRequestIsMerged, backend) == Right(false),
+          decodeWith(createPullReviewRequests, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          deletePullReviewRequests.decode(deletePullReviewRequests.request.send(backend)) ==
+          decodeWith(deletePullReviewRequests, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          pullReviews.decode(pullReviews.request.send(backend)) ==
+          decodeWith(pullReviews, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          createPullReview.decode(createPullReview.request.send(backend)) ==
+          decodeWith(createPullReview, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          pullReview.decode(pullReview.request.send(backend)) ==
+          decodeWith(pullReview, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          submitPullReview.decode(submitPullReview.request.send(backend)) ==
+          decodeWith(submitPullReview, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          deletePullReview.decode(deletePullReview.request.send(backend)) ==
+          decodeWith(deletePullReview, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          dismissPullReview.decode(dismissPullReview.request.send(backend)) ==
+          decodeWith(dismissPullReview, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          undismissPullReview.decode(undismissPullReview.request.send(backend)) ==
+          decodeWith(undismissPullReview, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          pullReviewComments.decode(pullReviewComments.request.send(backend)) ==
+          decodeWith(pullReviewComments, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          pullRequestFiles.decode(pullRequestFiles.request.send(backend)) ==
+          decodeWith(pullRequestFiles, backend) ==
             Left(GiteaError.NotFound("missing pull request", body)),
-          pullRequestCommits.decode(pullRequestCommits.request.send(backend)) ==
+          decodeWith(pullRequestCommits, backend) ==
             Left(GiteaError.NotFound("missing pull request", body))
         )
       },
@@ -3529,7 +3584,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val thread = GiteaRequests.notificationThread(config, "missing")
 
         assertTrue(
-          thread.decode(thread.request.send(backend)) ==
+          decodeWith(thread, backend) ==
             Left(GiteaError.NotFound("missing notification thread", body))
         )
       },
@@ -3540,14 +3595,72 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             ResponseStub.adjust("rate limited", StatusCode.TooManyRequests, headers)
           )
         val built = GiteaRequests.currentUser(config)
-        val raw = built.request.send(backend)
 
         assertTrue(
-          built.decode(raw).left.exists {
+          decodeWith(built, backend).left.exists {
             case GiteaError.RateLimited(Some(resetAt), "rate limited") =>
               resetAt.toString == "2026-06-18T00:00:00Z"
             case _ => false
           }
         )
-      }
+      },
+      suite("GiteaRequestExecutor is the sole supported execution path for byte responses")(
+        test("executes a string-typed GiteaRequest through GiteaRequestExecutor and decodes the response") {
+          val userJson = """{"id":1,"login":"alice"}"""
+          val request  = GiteaRequests.currentUser(config)
+          val backend =
+            BackendStub[Task](new RIOMonadAsyncError[Any])
+              .whenRequestMatches { req =>
+                req.method == Method.GET &&
+                req.uri.path == List("root", "api", "v1", "user") &&
+                req.header("Accept").contains("application/json")
+              }
+              .thenRespond(ResponseStub.adjust(userJson))
+
+          for result <- new GiteaRequestExecutor(backend, maxRetries = 0).send(request)
+          yield assertTrue(
+            result.login == Some("alice"),
+            result.id == Some(1L)
+          )
+        },
+        test("executes a byte-typed GiteaRequest[Chunk[Byte]] through GiteaRequestExecutor and decodes the response") {
+          val rawBytes = Array[Byte](72, 101, 108, 108, 111)
+          val request  = GiteaRequests.repoRawFile(
+            config,
+            "owner",
+            "repo",
+            "README.md",
+            ContentsParams(ref = None)
+          )
+          val backend =
+            BackendStub[Task](new RIOMonadAsyncError[Any])
+              .whenRequestMatches { req =>
+                req.method == Method.GET &&
+                req.uri.path == List("root", "api", "v1", "repos", "owner", "repo", "raw", "README.md") &&
+                req.header("Accept").contains("application/octet-stream")
+              }
+              .thenRespond(ResponseStub.adjust(rawBytes))
+
+          for result <- new GiteaRequestExecutor(backend, maxRetries = 0).send(request)
+          yield assertTrue(
+            result == Chunk.fromArray(rawBytes)
+          )
+        }
+      )
     )
+
+  private def decodeWith[A](request: GiteaRequest[A], backend: SyncBackend): Either[GiteaError, A] =
+    val response = request.request.send(backend)
+    request.decode(response)
+
+  private def methodOf(request: GiteaRequest[?]): Method =
+    request.request.method
+
+  private def uriOf(request: GiteaRequest[?]): Uri =
+    request.request.uri
+
+  private def headerOf(request: GiteaRequest[?], name: String): Option[String] =
+    request.request.header(name)
+
+  private def bodyOf(request: GiteaRequest[?]): Any =
+    request.request.body

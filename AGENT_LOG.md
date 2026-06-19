@@ -2096,3 +2096,78 @@ M  SCORES.jsonl
  M client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
  M client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
  M it/test/src/io/worxbend/gitea4s/it/LiveGiteaIntegrationSpec.scala
+2026-06-19T20:05:14Z orchestrator finished iterations_run=15 iterations_attempted=15 iterations_completed_successfully=3 had_nonfatal_failures=true nonfatal_failure_count=12 last_nonfatal_exit_code=1 last_nonfatal_failure_reason=planner_failed loop_exit_code=0 process_exit_code=0 fatal=false terminal_reason=iterations_complete_with_failures final_checkpoint_behavior=telemetry_only
+2026-06-19T20:11:46Z orchestrator started provider=claude budget=18000s iterations=15 max_workers=4
+2026-06-19T20:11:46Z iteration 1 started remaining=18000s
+2026-06-19T20:11:46Z iteration 1 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T20:11:46Z iteration 1 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-u58my2tt/repo copied_entries=97
+2026-06-19T20:11:46Z iteration 1 ideator phase started count=3
+2026-06-19T20:11:46Z iteration 1 ideator phase concurrency workers=3
+2026-06-19T20:11:46Z iteration 1 ideator 1 role="the pragmatist" started
+2026-06-19T20:11:46Z iteration 1 ideator 2 role="the architect" started
+2026-06-19T20:11:46Z iteration 1 ideator 3 role="the contrarian" started
+2026-06-19T20:12:00Z iteration 1 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T20:12:02Z iteration 1 ideator 2 role="the architect" completed status=0
+2026-06-19T20:12:07Z iteration 1 ideator 3 role="the contrarian" completed status=0
+2026-06-19T20:12:07Z iteration 1 ideator phase completed approaches=3
+2026-06-19T20:12:07Z iteration 1 selector started approaches=3
+2026-06-19T20:12:23Z iteration 1 selector completed status=0
+2026-06-19T20:12:23Z iteration 1 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-u58my2tt/repo
+2026-06-19T20:12:23Z iteration 1 selector rejected alternative role="the pragmatist" approach="Type-Boundary Stabilization First: Harden the low-level request execution contract before expanding the API surface" reason="Correctly identifies the priority but frames it as 'stabilize the typed execution boundary' without resolving the key design question: should GiteaRequest be made generic, or should the string-shaped path be sealed/removed for binary cal..."
+2026-06-19T20:12:23Z iteration 1 selector rejected alternative role="the architect" approach="Typed Execution Boundary First: stabilize the low-level GiteaRequest response-body contract before expanding API surface, treating the boundary as a load-bearing seam rather tha..." reason="Accurate on blast radius and sequencing risks but anchors on 'parameterize GiteaRequest[A] on body type' as the mechanism, which is a broader horizontal refactor than the boundary decision requires. The key insight from the contrarian\u2014th..."
+2026-06-19T20:12:23Z iteration 1 selector alternatives persisted count=2
+2026-06-19T20:12:23Z iteration 1 selector structured alternatives persisted count=2
+2026-06-19T20:12:23Z iteration 1 planner started
+2026-06-19T20:14:57Z iteration 1 plan: 2 task(s) in 2 phase(s). The live raw/media probe (GITEA_RAW_FILEPATH gate) is already implemented in LiveGiteaIntegrationSpec (lines 68–83), so that item from the Next Continuation is done. The only remaining work is sealing the public GiteaRequest execution surface and adding tests that document the resulting contract. These two tasks are strictly sequential: t2 tests the API shape that t1 establishes, and the api-snapshot should be updated in t1 via `./mill compatibility.writeSnapshot` before t2 adds the contract tests. Keeping the decomposition at two tasks avoids over-splitting what is fundamentally a single coherent design boundary decision.
+2026-06-19T20:14:57Z iteration 1 phase 1 started parallel=False tasks=1
+2026-06-19T20:17:31Z iteration 1 task t1 ('Seal GiteaRequest response-body execution contract') status=0
+2026-06-19T20:17:31Z iteration 1 phase 2 started parallel=False tasks=1
+2026-06-19T20:19:42Z iteration 1 task t2 ('Add contract boundary tests and update api-snapshot') status=0
+
+## Reviewer Summary - Iteration final-telemetry - 2026-06-19T20:30:00Z
+
+### What was done
+- Inspected all working-tree modifications from iteration tasks t1 and t2: `GiteaRequest.scala`, `GiteaRequests.scala`, `GiteaRequestExecutor.scala`, `GiteaClientSpec.scala`, `GiteaRequestsSpec.scala`, `LiveGiteaIntegrationSpec.scala`, and `api-snapshot/client.txt`.
+- Ran `./mill --no-server client.test` (203 tests: 121 in GiteaRequestsSpec, 82 in GiteaClientSpec — all passing), `./mill --no-server compatibility.check` (passing), and credential-stripped `it.test` (all 6 live probes correctly ignored).
+
+### What was found
+
+**Fully implemented and correct:**
+- The unsafe public `request: Request[String]` / `typedRequest: Request[Body]` / `decode(Response[String])` / `decodeTyped(Response[Body])` surface was removed from the `GiteaRequest` sealed interface. Both `request: Request[Body]` and `decode(Response[Body])` are now `private[gitea4s]`, so external callers cannot execute raw requests without going through `GiteaRequestExecutor`.
+- `GiteaRequestExecutor.sendOnce` correctly uses `request.request` and `request.decode` instead of the old aliased names.
+- The `copy` method on `GiteaRequest` was cleaned up correspondingly.
+- New test suite `"GiteaRequestExecutor is the sole supported execution path for byte responses"` documents and validates both string and byte execution paths through the executor.
+- The existing `decodeWith`/`methodOf`/`uriOf`/`headerOf`/`bodyOf` helpers in `GiteaRequestsSpec` continue to work because the test is in `io.worxbend.gitea4s.http`, which is inside the `private[gitea4s]` accessibility boundary.
+- Retry test for raw/media downloads was migrated from `ScriptedBackend` (requiring `Ref`) to `BackendStub.thenRespondCyclic`, which is cleaner and more idiomatic.
+- Additional auth/OTP/user-agent assertions were added to the media file facade test.
+- Live raw/media file probe was added to `LiveGiteaIntegrationSpec`, gated on `GITEA_RAW_FILEPATH`, remains hermetic when absent.
+- API snapshot was updated to reflect the intentional ABI removal.
+
+**Minor design observations (non-blocking):**
+- `GiteaRequests.withJsonBody` was widened from `Request[String] => Request[String]` to `Request[B] => Request[B]`. This is more permissive than necessary — all current callers pass `Request[String]` — but functionally correct since `sttp`'s `.body(string)` preserves the response type `B`.
+- The api-snapshot shows `GiteaRequest.apply` and `GiteaRequest.withBody` returning raw `GiteaRequest` (without `<A>` type parameter) due to Scala refined-type erasure in JVM bytecode. This is an expected Scala/JVM artifact, not a functional regression.
+- The test suite title "GiteaRequestExecutor is the sole supported execution path for byte responses" is aspirational documentation: it is enforced by `private[gitea4s]` access control for external callers, but internal tests in the same package can still call `request.request.send(...)` directly. This is the correct design.
+
+### Top improvement proposals
+1. Narrow `withJsonBody` back from `Request[B]` to `Request[String]` since all production callers use it with string-response requests only; the permissive form invites accidental misuse on byte-response builders.
+2. The next vertical slice should resume endpoint expansion: either `repoGetArchive` for zip/tar.gz binary downloads (exercises the now-stable byte executor path), or release asset endpoints, both of which are the natural follow-on to `rawFile`/`mediaFile`.
+3. Consider adding a `// low-level: use GiteaRequestExecutor` comment to the `private[gitea4s]` members in `GiteaRequest` so internal contributors understand the intended access pattern.
+4. README and CHANGELOG should be updated to document the now-stable boundary contract: that `GiteaRequest.request` and `GiteaRequest.decode` are package-private and callers should use the facade methods for all API access.
+2026-06-19T20:19:42Z iteration 1 reviewer started
+2026-06-19T20:24:21Z iteration 1 reviewer completed status=0
+2026-06-19T20:24:21Z iteration 1 memory updated
+2026-06-19T20:24:21Z iteration 1 completed validation_status=0
+2026-06-19T20:24:21Z iteration 1 checkpoint started
+2026-06-19T20:24:21Z iteration 1 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  MEMORY.md
+M  PLAN.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  client/src/io/worxbend/gitea4s/http/GiteaRequest.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/GiteaRequestExecutor.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+M  it/test/src/io/worxbend/gitea4s/it/LiveGiteaIntegrationSpec.scala

@@ -847,17 +847,23 @@ Deliverable:
 
 Local publish and generated docs work from Mill.
 
+- `GiteaRequest` response-body boundary stabilization is complete: the unsafe public `Request[String]` / `decode(Response[String])` view has been removed from the `GiteaRequest` sealed interface. Both `request: Request[Body]` and `decode(Response[Body])` are now `private[gitea4s]`, preventing external callers from executing requests through unsafe string casts. `GiteaRequestExecutor` is the sole production execution path for all request types.
+- Contract boundary tests are complete: `GiteaRequestsSpec` documents that `GiteaRequestExecutor` is the supported execution path with one string test and one byte test; the existing `decodeWith`/`methodOf`/`uriOf`/`headerOf`/`bodyOf` helpers now correctly access the `private[gitea4s]` members because the test is inside `io.worxbend.gitea4s.http`.
+- Live raw/media file probe is complete in `LiveGiteaIntegrationSpec`, gated on `GITEA_RAW_FILEPATH` plus base URL/token variables. All six live probes remain hermetic when credentials are absent.
+- API snapshot was updated to reflect the removal of `request()`, `typedRequest()`, `decode(Response[String])`, and `decodeTyped(Response[Body])` from the public interface.
+- `GiteaRequests.withJsonBody` was generalized from `Request[String] => Request[String]` to `Request[B] => Request[B]` to avoid compile issues when called with path-dependent `Request[Body]` types.
+- Focused validation passed: `git diff --check`, `./mill --no-server client.test`, `./mill --no-server compatibility.check`, and `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill --no-server it.test` (all 6 live probes ignored hermetically).
+
 ## Next Continuation
 
-Continue with the next small vertical slice:
+The `GiteaRequest` boundary is now stable. The next continuation should resume vertical endpoint expansion:
 
-- stabilize the low-level `GiteaRequest` response-body boundary before adding more binary endpoints: remove or replace the unsafe public string-shaped execution path for byte-backed requests, keep typed request execution available to `GiteaRequestExecutor`, and update source/API snapshots deliberately rather than relying on casts from `Request[Array[Byte]]` to `Request[String]`,
-- add focused tests that describe supported low-level request usage for both string and byte response bodies; if direct low-level execution is not intended for byte requests, document that callers should use `GiteaRequestExecutor`/facade methods rather than `request.send(...).decode(...)`,
-- keep the `ReposApi.rawFile` and `ReposApi.mediaFile` public ABI as buffered `Chunk[Byte]` for the current Swagger `type: file` endpoints, but defer streaming download abstractions to a deliberate large-binary slice if archive, attachment, or release download endpoints are added,
-- add an optional live raw/media file probe only after the low-level boundary is explicit, gated on `GITEA_URL`, `GITEA_TOKEN`, `GITEA_OWNER`, `GITEA_REPO`, `GITEA_RAW_FILEPATH`, and optional `GITEA_RAW_REF`, so byte download routing is validated against real Gitea without affecting hermetic default tests,
+- add the next repository file endpoint group: `GET /repos/{owner}/{repo}/archive/{archive}` (`repoGetArchive`) for zip/tar.gz archive downloads, which is the natural follow-on to raw/media binary downloads, using `application/octet-stream` + `Chunk[Byte]` through the now-stable byte response executor path,
+- alternatively, pivot to the repository release asset endpoints (`GET /repos/{owner}/{repo}/releases/{id}/assets`, `GET /repos/{owner}/{repo}/releases/assets/{id}`) which are the next most common binary download use case and also expose the `Chunk[Byte]` response path,
+- before adding more endpoint groups, consider whether `GiteaRequests.withJsonBody` should be narrowed back from `Request[B] => Request[B]` to `Request[String] => Request[String]` since all current callers use it with string-response requests only; the generic version is harmless but more permissive than necessary,
+- keep the `ReposApi.rawFile` and `ReposApi.mediaFile` public ABI as buffered `Chunk[Byte]` for the current Swagger `type: file` endpoints; defer streaming download abstractions to a deliberate large-binary slice,
 - continue keeping the GitHub-compatible `contents` API behavior anchored to the local Swagger response refs; defer broader directory/file polymorphism work to a deliberate `contents-ext` slice rather than widening `ReposApi.contents` implicitly,
 - continue keeping private endpoint audit expectations for documented non-2xx response labels out of published endpoint metadata,
-- keep orchestration artifacts such as `ALTERNATIVES.jsonl` out of source-focused commits unless deliberately tracked changes are required,
 - keep README, CHANGELOG, public API snapshots, and this PLAN aligned with the newly implemented API surface and validation results; run `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, focused request/audit/mapper/facade tests, and credential-stripped `it.test` before the next review.
 
 Always update this PLAN.md based on the progress: remove completed work, describe and add the next continuation and improvements, and keep this exact instruction as the last line at the bottom of the file.

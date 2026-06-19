@@ -64,7 +64,23 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
         TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
-        TestAspect.ifEnv(Env.contentsFilepath)(nonEmptyValue)
+        TestAspect.ifEnv(Env.contentsFilepath)(nonEmptyValue),
+      test("downloads a configured raw repository file through the live backend") {
+        withLiveClient { client =>
+          val params = nonBlank(sys.env.toMap, Env.rawRef) match
+            case Some(ref) => ContentsParams(ref = Some(ref))
+            case None      => ContentsParams.default
+
+          for
+            owner <- liveEnv(Env.owner)
+            repo <- liveEnv(Env.repo)
+            filepath <- liveEnv(Env.rawFilepath)
+            bytes <- client.rawFile(owner, repo, filepath, params)
+          yield assertTrue(bytes.nonEmpty)
+        }
+      } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.rawFilepath)(nonEmptyValue)
     ) @@ TestAspect.ifEnv(GiteaConfig.Env.url)((value: String) => value.trim.nonEmpty) @@
       TestAspect.ifEnv(GiteaConfig.Env.token)((value: String) => value.trim.nonEmpty)
 
@@ -98,3 +114,5 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
     val annotatedTagSha = "GITEA_ANNOTATED_TAG_SHA"
     val contentsFilepath = "GITEA_CONTENTS_FILEPATH"
     val contentsRef = "GITEA_CONTENTS_REF"
+    val rawFilepath = "GITEA_RAW_FILEPATH"
+    val rawRef = "GITEA_RAW_REF"

@@ -1415,7 +1415,7 @@ object GiteaRequests:
       page = page
     )
 
-  def withJsonBody(config: GiteaConfig, request: Request[String], json: String): Request[String] =
+  def withJsonBody[B](config: GiteaConfig, request: Request[B], json: String): Request[B] =
     request
       .body(json)
       .contentType(MediaType.ApplicationJson)
