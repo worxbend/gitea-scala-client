@@ -22,6 +22,7 @@ import io.worxbend.gitea4s.model.{
   EditIssue,
   EditPullRequestOption,
   EditReactionOption,
+  GitBlobResponse,
   GitTreeResponse,
   Issue,
   IssueDeadline,
@@ -347,6 +348,15 @@ object GiteaRequests:
       List("repos", owner, repo, "git", "trees", sha),
       gitTreeQuery(params),
       GiteaResponseMapper.decodeJson[GitTreeResponse]
+    )
+
+  def gitBlob(config: GiteaConfig, owner: String, repo: String, sha: String): GiteaRequest[GitBlobResponse] =
+    get(
+      config,
+      GiteaEndpoints.getBlob,
+      List("repos", owner, repo, "git", "blobs", sha),
+      Nil,
+      GiteaResponseMapper.decodeJson[GitBlobResponse]
     )
 
   def repoPullRequests(

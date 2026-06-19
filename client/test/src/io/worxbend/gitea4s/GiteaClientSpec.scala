@@ -416,6 +416,34 @@ object GiteaClientSpec extends ZIOSpecDefault:
           Assertion.equalTo(Some(2L) -> Some("abc123") -> Some(1L) -> Some(Some("README.md")))
         )
       },
+      test("omits Git tree query parameters when facade params are omitted") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString == "https://gitea.example/api/v1/repos/alice/api/git/trees/abc123" &&
+              request.uri.paramsMap.isEmpty &&
+              !request.uri.paramsMap.contains("recursive") &&
+              !request.uri.paramsMap.contains("page") &&
+              !request.uri.paramsMap.contains("per_page") &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(
+            ResponseStub.adjust(
+              """{"sha":"abc123","tree":[{"mode":"100644","path":"README.md","sha":"file-sha","size":123,"type":"blob"}],"truncated":false}"""
+            )
+          )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(
+          client
+            .gitTree("alice", "api", "abc123")
+            .map(tree => tree.sha -> tree.tree.flatMap(_.headOption.flatMap(_.path)) -> tree.truncated)
+        )(
+          Assertion.equalTo(Some("abc123") -> Some("README.md") -> Some(false))
+        )
+      },
       test("propagates Git tree documented 400 and 404 errors through the facade") {
         val badBody = """{"message":"invalid tree sha"}"""
         val notFoundBody = """{"message":"tree not found"}"""
@@ -465,6 +493,99 @@ object GiteaClientSpec extends ZIOSpecDefault:
         yield assertTrue(
           tree.sha.contains("abc123"),
           tree.tree.flatMap(_.headOption.flatMap(_.path)).contains("README.md"),
+          remaining.isEmpty
+        )
+      },
+      test("loads a Git blob through the ReposApi gitBlob method") {
+        val facadeConfig = config.copy(userAgent = Some("gitea4s-test"), otp = Some("654321"))
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/blobs/blob%2Fabc%20123" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "git",
+                "blobs",
+                "blob/abc 123"
+              ) &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("User-Agent").contains("gitea4s-test") &&
+              request.header("X-Gitea-OTP").contains("654321") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(
+            ResponseStub.adjust(
+              """{"content":"SGVsbG8K","encoding":"base64","lfs_oid":"oid123","lfs_size":1024,"sha":"blob123","size":6,"url":"https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/blobs/blob123"}"""
+            )
+          )
+        val client = GiteaClient.fromBackend(facadeConfig, backend)
+
+        assertZIO(
+          client
+            .gitBlob("space owner", "repo/slash", "blob/abc 123")
+            .map(blob => blob.content -> blob.encoding -> blob.lfsOid -> blob.lfsSize -> blob.sha -> blob.size)
+        )(
+          Assertion.equalTo(
+            Some("SGVsbG8K") -> Some("base64") -> Some("oid123") -> Some(1024L) -> Some("blob123") -> Some(6L)
+          )
+        )
+      },
+      test("propagates Git blob documented 400 and 404 errors through the facade") {
+        val badBody = """{"message":"invalid blob sha"}"""
+        val notFoundBody = """{"message":"blob not found"}"""
+        val badBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "blobs", "bad-sha"))
+          ).thenRespond(ResponseStub.adjust(badBody, StatusCode.BadRequest))
+        val notFoundBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "git", "blobs", "missing-sha"))
+          ).thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val badClient = GiteaClient.fromBackend(config, badBackend)
+        val notFoundClient = GiteaClient.fromBackend(config, notFoundBackend)
+
+        for
+          bad <- badClient.gitBlob("alice", "api", "bad-sha").either
+          notFound <- notFoundClient.gitBlob("alice", "api", "missing-sha").either
+        yield assertTrue(
+          bad == Left(GiteaError.BadRequest("invalid blob sha", badBody)),
+          notFound == Left(GiteaError.NotFound("blob not found", notFoundBody))
+        )
+      },
+      test("retries Git blob lookup because it is a read-only GET") {
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"temporarily unavailable"}""",
+                  StatusCode.ServiceUnavailable
+                )
+              ),
+              ZIO.succeed(
+                stringResponse(
+                  """{"content":"UmV0cmllZAo=","encoding":"base64","sha":"blob123","size":8}"""
+                )
+              )
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.gitBlob("alice", "api", "blob123").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          blob <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          blob.content.contains("UmV0cmllZAo="),
+          blob.sha.contains("blob123"),
           remaining.isEmpty
         )
       },

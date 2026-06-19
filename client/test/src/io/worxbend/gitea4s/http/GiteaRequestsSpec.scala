@@ -32,6 +32,7 @@ import io.worxbend.gitea4s.model.{
   CreatePullRequestOption,
   EditPullRequestOption,
   SubmitPullReviewOptions,
+  GitBlobResponse,
   WatchInfo
 }
 import sttp.client4.*
@@ -686,6 +687,51 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           explicit.request.uri.paramsMap.get("recursive").contains("false"),
           explicit.request.uri.paramsMap.get("page").contains("3"),
           explicit.request.uri.paramsMap.get("per_page").contains("20")
+        )
+      },
+      test("builds and decodes schema-traceable Git blob lookup") {
+        val built = GiteaRequests.gitBlob(config, "worx bend", "gitea/scala", "blob/abc 123")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """{"content":"SGVsbG8K","encoding":"base64","lfs_oid":"oid123","lfs_size":1024,"sha":"blob123","size":6,"url":"https://gitea.example/api/v1/repos/o/r/git/blobs/blob123"}"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.getBlob,
+          endpoint.method == "GET",
+          endpoint.operationId == "GetBlob",
+          endpoint.path == "/repos/{owner}/{repo}/git/blobs/{sha}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "sha"),
+          endpoint.parameters.forall(parameter => parameter.in == "path" && parameter.required),
+          endpoint.response == "#/responses/GitBlobResponse",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/blobs/blob%2Fabc%20123",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "git", "blobs", "blob/abc 123"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)) ==
+            Right(
+              GitBlobResponse(
+                content = Some("SGVsbG8K"),
+                encoding = Some("base64"),
+                lfsOid = Some("oid123"),
+                lfsSize = Some(1024L),
+                sha = Some("blob123"),
+                size = Some(6L),
+                url = Some("https://gitea.example/api/v1/repos/o/r/git/blobs/blob123")
+              )
+            )
         )
       },
       test("builds schema-traceable paginated repository pull request list request") {
@@ -3047,6 +3093,23 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.BadRequest("invalid tree ref", badRequestBody)),
           missing.decode(missing.request.send(notFoundBackend)) ==
             Left(GiteaError.NotFound("missing tree", notFoundBody))
+        )
+      },
+      test("maps documented Git blob 400 and 404 responses") {
+        val badRequestBody = """{"message":"invalid blob ref"}"""
+        val notFoundBody = """{"message":"missing blob"}"""
+        val badRequestBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(badRequestBody, StatusCode.BadRequest))
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val invalid = GiteaRequests.gitBlob(config, "owner", "repo", "bad ref")
+        val missing = GiteaRequests.gitBlob(config, "owner", "repo", "missing-sha")
+
+        assertTrue(
+          invalid.decode(invalid.request.send(badRequestBackend)) ==
+            Left(GiteaError.BadRequest("invalid blob ref", badRequestBody)),
+          missing.decode(missing.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing blob", notFoundBody))
         )
       },
       test("maps repository pull request not-found responses") {

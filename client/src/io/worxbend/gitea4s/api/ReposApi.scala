@@ -16,6 +16,7 @@ import io.worxbend.gitea4s.model.{
   CombinedStatus,
   CommitStatus,
   CreateStatusOption,
+  GitBlobResponse,
   GitTreeResponse,
   NewIssuePinsAllowed,
   Note,
@@ -44,7 +45,14 @@ trait ReposApi:
       params: CommitNoteParams = CommitNoteParams.default
   ): IO[GiteaError, Note]
 
-  def gitTree(owner: String, repo: String, sha: String, params: GitTreeParams): IO[GiteaError, GitTreeResponse]
+  def gitTree(
+      owner: String,
+      repo: String,
+      sha: String,
+      params: GitTreeParams = GitTreeParams.default
+  ): IO[GiteaError, GitTreeResponse]
+
+  def gitBlob(owner: String, repo: String, sha: String): IO[GiteaError, GitBlobResponse]
 
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 

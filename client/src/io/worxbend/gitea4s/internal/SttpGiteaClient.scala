@@ -43,6 +43,7 @@ import io.worxbend.gitea4s.model.{
   EditIssue,
   EditPullRequestOption,
   EditReactionOption,
+  GitBlobResponse,
   GitTreeResponse,
   Issue,
   IssueDeadline,
@@ -155,9 +156,12 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       owner: String,
       repo: String,
       sha: String,
-      params: GitTreeParams
+      params: GitTreeParams = GitTreeParams.default
   ): IO[GiteaError, GitTreeResponse] =
     executor.send(GiteaRequests.gitTree(config, owner, repo, sha, params))
+
+  override def gitBlob(owner: String, repo: String, sha: String): IO[GiteaError, GitBlobResponse] =
+    executor.send(GiteaRequests.gitBlob(config, owner, repo, sha))
 
   override def list(
       owner: String,

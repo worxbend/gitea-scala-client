@@ -14,7 +14,7 @@ and zio-json.
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
   commit statuses, single-commit lookup, commit note lookup, commit diff/patch
-  downloads, Git tree reads, commit-to-pull-request lookup,
+  downloads, Git tree reads, Git blob reads, commit-to-pull-request lookup,
   releases, pull requests including reviews, pinned pull-request reads,
   pull-request create/edit writes, diff/patch downloads, merge-status checks,
   merge/update commands, review-comment resolution, and notifications through a
@@ -22,7 +22,7 @@ and zio-json.
 - Contract checks: implemented endpoint metadata is audited against
   `plugin-redoc-2.yaml` for pull-request review lifecycle, commit-status,
   pull-request create/edit, merge/update, commit-to-pull-request,
-  single-commit, commit note, commit diff/patch, and Git tree endpoints,
+  single-commit, commit note, commit diff/patch, Git tree, and Git blob endpoints,
   including documented non-2xx response labels, optional query parameters, path
   enum values, and clear path/method/parameter mismatch failures
 - Endpoint audit-only non-success response labels live in test scope; the
@@ -255,12 +255,21 @@ documented `404`/`422` failures flow through the shared error mapper.
 Repository Git tree lookup covers
 `GET /repos/{owner}/{repo}/git/trees/{sha}` through `client.gitTree`. It accepts
 `GitTreeParams` for the documented optional `recursive`, `page`, and `per_page`
-query parameters, omitting all three by default. Successful responses decode as
+query parameters, and `client.gitTree(owner, repo, sha)` omits all three by
+default. Successful responses decode as
 the exact Swagger-shaped `GitTreeResponse` object: `page`, `sha`, `total_count`,
 `tree`, `truncated`, and `url` are body fields, with nested `GitEntry` values in
 `tree`. This endpoint is intentionally not modeled as `Page[A]`; pagination
 state comes from the JSON response body. Documented `400`/`404` failures flow
 through the shared error mapper, and the read-only request is retryable.
+
+Repository Git blob lookup covers
+`GET /repos/{owner}/{repo}/git/blobs/{sha}` through `client.gitBlob`. Successful
+responses decode as `GitBlobResponse` with optional `content`, `encoding`,
+`lfsOid`, `lfsSize`, `sha`, `size`, and `url` fields. The `content` value stays
+as the documented encoded string at this layer. The request has no query
+parameters or body, is read-only retryable, and propagates documented
+`400`/`404` failures through the shared error mapper.
 
 Commit diff/patch downloads cover
 `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` through
@@ -307,8 +316,7 @@ client.commitNote(
 client.gitTree(
   owner = "my-org",
   repo = "my-repo",
-  sha = "tree123",
-  params = GitTreeParams.default
+  sha = "tree123"
 )
 
 client.gitTree(
@@ -321,6 +329,8 @@ client.gitTree(
     perPage = Some(50)
   )
 )
+
+client.gitBlob(owner = "my-org", repo = "my-repo", sha = "blob123")
 
 client.commitDiffOrPatch(
   owner = "my-org",
@@ -707,7 +717,7 @@ tests, and pagination tests:
 Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
-tree endpoint groups against `plugin-redoc-2.yaml`, including documented
+tree/blob endpoint groups against `plugin-redoc-2.yaml`, including documented
 non-2xx response status/ref labels, optional query parameters such as
 `recursive`/`page`/`per_page`, and path enum values such as `diffType`.
 
@@ -722,7 +732,7 @@ GITEA_TOKEN=... \
 Without both integration variables, `it.test` reports the live tests as ignored
 and makes no external calls.
 
-Latest Git tree slice validation passed with:
+Latest repository Git blob/default-argument validation passed with:
 
 ```bash
 ./mill core.test

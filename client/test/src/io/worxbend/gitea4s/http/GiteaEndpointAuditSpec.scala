@@ -208,6 +208,13 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val gitBlobRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.gitBlob(config, "owner", "repo", sha = "abc123"),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val commitDiffOrPatchRequests = List(
     AuditedRequest(
       request =
@@ -390,6 +397,10 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       GiteaResponseLabel("400", "#/responses/error"),
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "GetBlob" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoDownloadCommitDiffOrPatch" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     )
@@ -430,6 +441,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("git tree metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = gitTreeRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("git blob metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = gitBlobRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },

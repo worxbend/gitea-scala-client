@@ -336,6 +336,19 @@ object GiteaEndpoints:
       response = "#/responses/GitTreeResponse"
     )
 
+  val getBlob: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/git/blobs/{sha}",
+      operationId = "GetBlob",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("sha", "path", required = true)
+      ),
+      response = "#/responses/GitBlobResponse"
+    )
+
   val repoListPullRequests: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

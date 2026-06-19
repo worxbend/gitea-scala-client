@@ -543,6 +543,64 @@ object CoreModelsSpec extends ZIOSpecDefault:
           GitTreeResponse().toJson == "{}"
         )
       },
+      test("decodes git blob response with all documented fields") {
+        val json =
+          """{
+            |  "content": "SGVsbG8sIEdpdGVhIQ==",
+            |  "encoding": "base64",
+            |  "lfs_oid": "sha256:0123456789abcdef",
+            |  "lfs_size": 4096,
+            |  "sha": "blob123",
+            |  "size": 13,
+            |  "url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123"
+            |}""".stripMargin
+
+        val blob = json.fromJson[GitBlobResponse]
+
+        assertTrue(
+          blob.map(_.content) == Right(Some("SGVsbG8sIEdpdGVhIQ==")),
+          blob.map(_.encoding) == Right(Some("base64")),
+          blob.map(_.lfsOid) == Right(Some("sha256:0123456789abcdef")),
+          blob.map(_.lfsSize) == Right(Some(4096L)),
+          blob.map(_.sha) == Right(Some("blob123")),
+          blob.map(_.size) == Right(Some(13L)),
+          blob.map(_.url) == Right(Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123"))
+        )
+      },
+      test("round-trips git blob response without decoding content") {
+        val payload = GitBlobResponse(
+          content = Some("SGVsbG8sIEdpdGVhIQ=="),
+          encoding = Some("base64"),
+          lfsOid = Some("sha256:0123456789abcdef"),
+          lfsSize = Some(4096L),
+          sha = Some("blob123"),
+          size = Some(13L),
+          url = Some("https://gitea.example/api/v1/repos/octo/gitea4s/git/blobs/blob123")
+        )
+        val json = payload.toJson
+
+        assertTrue(
+          json.fromJson[GitBlobResponse] == Right(payload),
+          json.contains(""""content":"SGVsbG8sIEdpdGVhIQ==""""),
+          GitBlobResponse(sha = Some("blob123")).toJson == """{"sha":"blob123"}""",
+          GitBlobResponse().toJson == "{}"
+        )
+      },
+      test("uses schema LFS JSON names for git blob response") {
+        val payload = GitBlobResponse(
+          lfsOid = Some("sha256:fedcba9876543210"),
+          lfsSize = Some(8192L)
+        )
+        val json = payload.toJson
+
+        assertTrue(
+          json == """{"lfs_oid":"sha256:fedcba9876543210","lfs_size":8192}""",
+          json.fromJson[GitBlobResponse].map(_.lfsOid) == Right(Some("sha256:fedcba9876543210")),
+          json.fromJson[GitBlobResponse].map(_.lfsSize) == Right(Some(8192L)),
+          !json.contains("lfsOid"),
+          !json.contains("lfsSize")
+        )
+      },
       test("round-trips commit status request and response payloads with state/status JSON fields") {
         val create = CreateStatusOption(
           context = Some("ci/mill"),

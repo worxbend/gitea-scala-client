@@ -1401,3 +1401,75 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 A  core/src/io/worxbend/gitea4s/model/GitTree.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-19T12:59:44Z iteration 8 started remaining=10383s
+2026-06-19T12:59:44Z iteration 8 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T12:59:44Z iteration 8 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-bxqwcja3/repo copied_entries=91
+2026-06-19T12:59:44Z iteration 8 ideator phase started count=3
+2026-06-19T12:59:44Z iteration 8 ideator phase concurrency workers=3
+2026-06-19T12:59:44Z iteration 8 ideator 1 role="the pragmatist" started
+2026-06-19T12:59:44Z iteration 8 ideator 2 role="the architect" started
+2026-06-19T12:59:44Z iteration 8 ideator 3 role="the contrarian" started
+2026-06-19T12:59:52Z iteration 8 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T12:59:54Z iteration 8 ideator 2 role="the architect" completed status=0
+2026-06-19T12:59:56Z iteration 8 ideator 3 role="the contrarian" completed status=0
+2026-06-19T12:59:56Z iteration 8 ideator phase completed approaches=3
+2026-06-19T12:59:56Z iteration 8 selector started approaches=3
+2026-06-19T13:00:06Z iteration 8 selector completed status=0
+2026-06-19T13:00:06Z iteration 8 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-bxqwcja3/repo
+2026-06-19T13:00:06Z iteration 8 selector rejected alternative role="the pragmatist" approach="Contract-first micro-slice with API-shape stabilization: settle the `gitTree` default-argument decision first, then treat `GetBlob` as a narrow repository-Git contract exercise..." reason="Strong tactical fit, but selected as part of a broader API-surface stabilization strategy rather than only a micro-slice execution frame."
+2026-06-19T13:00:06Z iteration 8 selector rejected alternative role="the architect" approach="Contract-First Git Surface Stabilization: treat the Git blob slice as a chance to harden the repository Git API shape before adding more endpoints, prioritizing Swagger contract..." reason="Strong strategic framing, but needs the pragmatist's concrete emphasis on the exact `gitTree` decision, `GetBlob` contract boundaries, and compatibility snapshot discipline."
+2026-06-19T13:00:06Z iteration 8 selector rejected alternative role="the contrarian" approach="Contract-First Pause Gate: before expanding the Git blob slice, briefly stabilize the repository Git API shape and audit conventions as the primary decision point, then let impl..." reason="Useful warning against rushing, but too pause-oriented for this iteration; the project has enough established patterns to proceed with the blob slice after a bounded API-shape check."
+2026-06-19T13:00:06Z iteration 8 selector alternatives persisted count=3
+2026-06-19T13:00:06Z iteration 8 planner started
+2026-06-19T13:00:44Z iteration 8 plan: 5 task(s) in 4 phase(s). Phase 1 separates the public gitTree ergonomics decision from the new core blob model because they touch disjoint files and can proceed independently. Later phases are sequential because the request layer depends on the core model, the facade depends on the request builder, and audit/docs/snapshots should happen only after the public API shape is intentional and compiling.
+2026-06-19T13:00:44Z iteration 8 phase 1 started parallel=True tasks=2
+2026-06-19T13:02:06Z iteration 8 task t2 ('Add GitBlobResponse core model') status=0
+2026-06-19T13:02:29Z iteration 8 task t1 ('Normalize gitTree facade default') status=0
+2026-06-19T13:02:29Z iteration 8 phase 2 started parallel=False tasks=1
+2026-06-19T13:04:34Z iteration 8 task t3 ('Implement GetBlob request layer') status=0
+2026-06-19T13:04:34Z iteration 8 phase 3 started parallel=False tasks=1
+2026-06-19T13:06:21Z iteration 8 task t4 ('Expose gitBlob facade') status=0
+2026-06-19T13:06:21Z iteration 8 phase 4 started parallel=False tasks=1
+2026-06-19T13:12:36Z iteration 8 task t5 ('Audit, docs, snapshots, and plan') status=0
+2026-06-19T13:12:36Z iteration 8 reviewer started
+
+## Reviewer Summary - Iteration 8 - 2026-06-19T13:14:30Z
+
+What was done:
+- Inspected every file changed in the Git tree default-argument and Git blob slice: `GitBlobResponse`, endpoint metadata, request builder, `ReposApi` and `SttpGiteaClient` facade wiring, request/client/audit/core tests, README, CHANGELOG, PLAN, AGENT_LOG, and public API snapshots.
+- Cross-checked `GetBlob` against `plugin-redoc-2.yaml`; method, path, operation ID, required owner/repo/sha path parameters, success response, documented 400/404 responses, and `GitBlobResponse` fields match the local Swagger contract.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, and `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`.
+
+What was found:
+- No functional blocker or regression was found.
+- `ReposApi.gitTree` now has a default `GitTreeParams.default` argument, matching the nearby repository Git methods; tests prove omitted facade params produce no `recursive`, `page`, or `per_page` query parameters.
+- `GitBlobResponse` preserves all documented fields, including `lfs_oid` and `lfs_size`, and intentionally keeps `content` as the encoded response string rather than adding premature byte decoding.
+- `GiteaRequests.gitBlob` safely encodes owner/repo/sha path segments, sends JSON accept/auth/OTP/user-agent headers, avoids query parameters and request body/content type, decodes `GitBlobResponse`, maps documented 400/404 failures, and remains retryable as a read-only GET.
+- `GiteaEndpointAuditSpec` covers `GetBlob` with test-private non-2xx labels; audit-only response expectations did not leak back into the public `GiteaEndpoint` metadata. API snapshots show only intentional ABI additions.
+
+Top improvement proposals:
+- Implement Git refs next: `repoListAllGitRefs` and `repoListGitRefs`, with minimal `Reference` and `GitObject` models and non-paginated `Chunk[Reference]` decoding.
+- For `repoListGitRefs`, explicitly test slash-containing refs such as `heads/main`; Swagger describes `{ref}` as a part or full ref name, and ref path encoding should be a deliberate contract decision.
+- Keep endpoint audit data private to tests, and consider a lightweight schema-field checklist/helper if more Git object response models are added because endpoint metadata audits do not prove response-model field completeness.
+2026-06-19T13:15:52Z iteration 8 reviewer completed status=0
+2026-06-19T13:15:52Z iteration 8 memory updated
+2026-06-19T13:15:52Z iteration 8 completed validation_status=0
+2026-06-19T13:15:52Z iteration 8 checkpoint started
+2026-06-19T13:15:52Z iteration 8 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+A  core/src/io/worxbend/gitea4s/model/GitBlobResponse.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

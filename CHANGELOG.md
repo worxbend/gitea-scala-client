@@ -58,6 +58,14 @@ surface is still being filled out.
   the Swagger body-pagination response shape through `page`, `total_count`,
   and `truncated`, and propagates documented `400`/`404` failures through the
   shared error mapper.
+- `ReposApi.gitTree` now has a `GitTreeParams.default` default argument,
+  matching the surrounding `commit` and `commitNote` repository Git facades.
+- Typed Git blob lookup for
+  `GET /repos/{owner}/{repo}/git/blobs/{sha}` with `GitBlobResponse`,
+  `GetBlob` endpoint metadata, `GiteaRequests.gitBlob`, and
+  `ReposApi.gitBlob`; the read-only request has no query parameters or request
+  body, keeps blob content as the documented encoded string, and propagates
+  documented `400`/`404` failures through the shared error mapper.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,
@@ -84,6 +92,10 @@ surface is still being filled out.
   optional `recursive`/`page`/`per_page` query parameters, success response,
   request-body absence, retryability, and documented 400/404 response
   status/ref labels.
+- Git blob endpoint metadata audit coverage for uppercase operation ID
+  `GetBlob`, method, path, required `owner`/`repo`/`sha` path parameters, no
+  query parameters, success response, request-body absence, retryability, and
+  documented 400/404 response status/ref labels.
 - Commit diff/patch endpoint metadata audit coverage for operation ID, method,
   path, required `owner`/`repo`/`sha`/`diffType` path parameters, success
   response, documented 404 response status/ref label, request-body absence,
