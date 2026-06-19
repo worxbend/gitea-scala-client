@@ -2672,6 +2672,46 @@ public final class io.worxbend.gitea4s.model.NewIssuePinsAllowed$ implements sca
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.Note
+public final class io.worxbend.gitea4s.model.Note implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.Note(scala.Option<io.worxbend.gitea4s.model.Commit>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<io.worxbend.gitea4s.model.Commit> commit();
+  public scala.Option<java.lang.String> message();
+  public io.worxbend.gitea4s.model.Note copy(scala.Option<io.worxbend.gitea4s.model.Commit>, scala.Option<java.lang.String>);
+  public scala.Option<io.worxbend.gitea4s.model.Commit> copy$default$1();
+  public scala.Option<java.lang.String> copy$default$2();
+  public scala.Option<io.worxbend.gitea4s.model.Commit> _1();
+  public scala.Option<java.lang.String> _2();
+  public static io.worxbend.gitea4s.model.Note apply(scala.Option<io.worxbend.gitea4s.model.Commit>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.Note fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.Note> given_JsonCodec_Note();
+  public static io.worxbend.gitea4s.model.Note unapply(io.worxbend.gitea4s.model.Note);
+  public static scala.Option<io.worxbend.gitea4s.model.Commit> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$2();
+}
+
+## io.worxbend.gitea4s.model.Note$
+public final class io.worxbend.gitea4s.model.Note$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.Note$ MODULE$;
+  public io.worxbend.gitea4s.model.Note apply(scala.Option<io.worxbend.gitea4s.model.Commit>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.Note unapply(io.worxbend.gitea4s.model.Note);
+  public scala.Option<io.worxbend.gitea4s.model.Commit> $lessinit$greater$default$1();
+  public scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.Note> given_JsonCodec_Note();
+  public io.worxbend.gitea4s.model.Note fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.NotificationCount
 public final class io.worxbend.gitea4s.model.NotificationCount implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.NotificationCount(scala.Option<java.lang.Object>);

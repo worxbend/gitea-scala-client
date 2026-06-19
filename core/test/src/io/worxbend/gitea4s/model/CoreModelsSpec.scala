@@ -395,6 +395,82 @@ object CoreModelsSpec extends ZIOSpecDefault:
           combinedStatus.map(_.totalCount) == Right(Some(1L))
         )
       },
+      test("decodes note payloads with the documented commit shape") {
+        val noteJson =
+          """{
+            |  "commit": {
+            |    "sha": "abc123",
+            |    "created": "2026-06-18T12:00:00Z",
+            |    "html_url": "https://gitea.example/octo/gitea4s/commit/abc123",
+            |    "url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/commits/abc123",
+            |    "author": { "id": 42, "login": "octo" },
+            |    "committer": { "id": 43, "login": "maintainer" },
+            |    "commit": {
+            |      "message": "Implement commit notes",
+            |      "author": { "name": "Octo", "email": "octo@example.test", "date": "2026-06-18T12:00:00Z" },
+            |      "committer": { "name": "Maintainer", "email": "maintainer@example.test", "date": "2026-06-18T12:01:00Z" },
+            |      "tree": { "sha": "tree123", "created": "2026-06-18T12:00:00Z" },
+            |      "url": "https://gitea.example/api/v1/repos/octo/gitea4s/git/commits/abc123",
+            |      "verification": { "verified": true, "reason": "gpg" }
+            |    },
+            |    "files": [{ "filename": "src/Note.scala", "status": "added" }],
+            |    "parents": [{ "sha": "parent123", "created": "2026-06-18T11:00:00Z" }],
+            |    "stats": { "additions": 14, "deletions": 0, "total": 14 }
+            |  },
+            |  "message": "Reviewed-by: Maintainer"
+            |}""".stripMargin
+
+        val note = noteJson.fromJson[Note]
+
+        assertTrue(
+          note.map(_.message) == Right(Some("Reviewed-by: Maintainer")),
+          note.map(_.commit.flatMap(_.sha)) == Right(Some("abc123")),
+          note.map(_.commit.flatMap(_.created)) == Right(Some(Instant.parse("2026-06-18T12:00:00Z"))),
+          note.map(_.commit.flatMap(_.htmlUrl)) ==
+            Right(Some("https://gitea.example/octo/gitea4s/commit/abc123")),
+          note.map(_.commit.flatMap(_.author).flatMap(_.login)) == Right(Some("octo")),
+          note.map(_.commit.flatMap(_.commit).flatMap(_.message)) == Right(Some("Implement commit notes")),
+          note.map(_.commit.flatMap(_.commit).flatMap(_.verification).flatMap(_.verified)) == Right(Some(true)),
+          note.map(_.commit.flatMap(_.files).flatMap(_.headOption).flatMap(_.filename)) ==
+            Right(Some("src/Note.scala")),
+          note.map(_.commit.flatMap(_.parents).flatMap(_.headOption).flatMap(_.sha)) == Right(Some("parent123")),
+          note.map(_.commit.flatMap(_.stats).flatMap(_.total)) == Right(Some(14L))
+        )
+      },
+      test("round-trips note optional fields without losing schema JSON names") {
+        val payload = Note(
+          commit = Some(
+            Commit(
+              commit = Some(
+                RepoCommit(
+                  message = Some("Implement commit notes"),
+                  tree = Some(CommitMeta(sha = Some("tree123"))),
+                  verification = Some(PayloadCommitVerification(verified = Some(false), reason = Some("unsigned")))
+                )
+              ),
+              created = Some(Instant.parse("2026-06-18T12:00:00Z")),
+              files = Some(List(CommitAffectedFile(filename = Some("src/Note.scala"), status = Some("added")))),
+              htmlUrl = Some("https://gitea.example/octo/gitea4s/commit/abc123"),
+              parents = Some(List(CommitMeta(sha = Some("parent123")))),
+              sha = Some("abc123"),
+              stats = Some(CommitStats(additions = Some(14L), deletions = Some(0L), total = Some(14L)))
+            )
+          ),
+          message = Some("Reviewed-by: Maintainer")
+        )
+        val json = payload.toJson
+
+        assertTrue(
+          json.contains(""""html_url":"https://gitea.example/octo/gitea4s/commit/abc123""""),
+          json.contains(""""files":[{"filename":"src/Note.scala","status":"added"}]"""),
+          json.contains(""""parents":[{"sha":"parent123"}]"""),
+          json.contains(""""stats":{"additions":14,"deletions":0,"total":14}"""),
+          json.contains(""""verification":{"verified":false,"reason":"unsigned"}"""),
+          json.fromJson[Note] == Right(payload),
+          Note(message = Some("Reviewed-by: Maintainer")).toJson == """{"message":"Reviewed-by: Maintainer"}""",
+          Note().toJson == "{}"
+        )
+      },
       test("round-trips commit status request and response payloads with state/status JSON fields") {
         val create = CreateStatusOption(
           context = Some("ci/mill"),

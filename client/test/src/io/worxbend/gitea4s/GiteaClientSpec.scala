@@ -3,6 +3,7 @@ package io.worxbend.gitea4s
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
   CombinedStatusParams,
+  CommitNoteParams,
   CommitStatusListParams,
   CommitStatusListState,
   CommitStatusSort,
@@ -292,6 +293,79 @@ object GiteaClientSpec extends ZIOSpecDefault:
           remaining <- responses.get
         yield assertTrue(
           diff.startsWith("diff --git"),
+          remaining.isEmpty
+        )
+      },
+      test("loads a repository commit note through the ReposApi as a read-only GET") {
+        val facadeConfig = config.copy(userAgent = Some("gitea4s-test"), otp = Some("654321"))
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/git/notes/abc%2Fdef%20123?verification=false&files=true" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "git",
+                "notes",
+                "abc/def 123"
+              ) &&
+              request.uri.paramsMap.get("verification").contains("false") &&
+              request.uri.paramsMap.get("files").contains("true") &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("User-Agent").contains("gitea4s-test") &&
+              request.header("X-Gitea-OTP").contains("654321") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(
+            ResponseStub.adjust(
+              """{"message":"Reviewed-by: Octo","commit":{"sha":"abc123","commit":{"message":"Commit with note"}}}"""
+            )
+          )
+        val client = GiteaClient.fromBackend(facadeConfig, backend)
+
+        assertZIO(
+          client
+            .commitNote(
+              "space owner",
+              "repo/slash",
+              "abc/def 123",
+              CommitNoteParams(verification = Some(false), files = Some(true))
+            )
+            .map(note => note.message -> note.commit.flatMap(_.sha) -> note.commit.flatMap(_.commit.flatMap(_.message)))
+        )(
+          Assertion.equalTo(Some("Reviewed-by: Octo") -> Some("abc123") -> Some("Commit with note"))
+        )
+      },
+      test("retries commit note lookup because it is a read-only GET") {
+        for
+          responses <- Ref.make(
+            List[Task[Response[String]]](
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"temporarily unavailable"}""",
+                  StatusCode.ServiceUnavailable
+                )
+              ),
+              ZIO.succeed(
+                stringResponse(
+                  """{"message":"Retried note","commit":{"sha":"abc123","commit":{"message":"Retried commit note"}}}"""
+                )
+              )
+            )
+          )
+          client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
+          fiber <- client.commitNote("alice", "api", "abc123").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          note <- fiber.join
+          remaining <- responses.get
+        yield assertTrue(
+          note.message.contains("Retried note"),
+          note.commit.flatMap(_.sha).contains("abc123"),
           remaining.isEmpty
         )
       },

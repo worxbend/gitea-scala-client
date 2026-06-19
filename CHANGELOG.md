@@ -44,6 +44,12 @@ surface is still being filled out.
   `GiteaRequests.repoSingleCommit`, and `ReposApi.commit`; the read-only
   request is retryable, omits `stat`, `verification`, and `files` by default,
   and encodes explicitly supplied boolean controls.
+- Typed commit note lookup for
+  `GET /repos/{owner}/{repo}/git/notes/{sha}` with `Note`,
+  `CommitNoteParams`, `repoGetNote`, `GiteaRequests.repoCommitNote`, and
+  `ReposApi.commitNote`; the read-only request is retryable, omits
+  `verification` and `files` by default, decodes a single `Note`, and
+  propagates documented `404`/`422` failures through the shared error mapper.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,
@@ -61,10 +67,17 @@ surface is still being filled out.
   required path parameters, optional `stat`/`verification`/`files` query
   parameters, success response, request-body absence, retryability, and
   documented 404/422 response status/ref labels.
+- Commit note endpoint metadata audit coverage for operation ID, method, path,
+  required path parameters, optional `verification`/`files` query parameters,
+  success response, request-body absence, retryability, and documented 404/422
+  response status/ref labels.
 - Commit diff/patch endpoint metadata audit coverage for operation ID, method,
   path, required `owner`/`repo`/`sha`/`diffType` path parameters, success
   response, documented 404 response status/ref label, request-body absence,
   retryability, and proof that the operation has no query parameters.
+- Path enum audit coverage for commit and pull-request diff/patch `diffType`
+  values, comparing local typed path values against `plugin-redoc-2.yaml`
+  without adding audit-only fields to published endpoint metadata.
 - Pull-request merge/update endpoint metadata audit coverage for operation IDs,
   methods, paths, required path parameters, success responses, request-body
   presence, retryability, `repoUpdatePullRequest` `style` enum values, and

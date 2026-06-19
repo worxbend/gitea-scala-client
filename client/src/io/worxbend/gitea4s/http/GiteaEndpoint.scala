@@ -305,6 +305,21 @@ object GiteaEndpoints:
       response = "#/responses/string"
     )
 
+  val repoGetNote: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/git/notes/{sha}",
+      operationId = "repoGetNote",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("sha", "path", required = true),
+        GiteaParameter("verification", "query", required = false),
+        GiteaParameter("files", "query", required = false)
+      ),
+      response = "#/responses/Note"
+    )
+
   val repoListPullRequests: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

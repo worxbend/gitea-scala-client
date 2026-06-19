@@ -1249,3 +1249,81 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 A  core/src/io/worxbend/gitea4s/model/CommitDiffType.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-19T12:21:01Z iteration 6 started remaining=12706s
+2026-06-19T12:21:01Z iteration 6 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-19T12:21:01Z iteration 6 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-wl4y34mq/repo copied_entries=87
+2026-06-19T12:21:01Z iteration 6 ideator phase started count=3
+2026-06-19T12:21:01Z iteration 6 ideator phase concurrency workers=3
+2026-06-19T12:21:01Z iteration 6 ideator 1 role="the pragmatist" started
+2026-06-19T12:21:01Z iteration 6 ideator 2 role="the architect" started
+2026-06-19T12:21:01Z iteration 6 ideator 3 role="the contrarian" started
+2026-06-19T12:21:10Z iteration 6 ideator 2 role="the architect" completed status=0
+2026-06-19T12:21:10Z iteration 6 ideator 3 role="the contrarian" completed status=0
+2026-06-19T12:21:11Z iteration 6 ideator 1 role="the pragmatist" completed status=0
+2026-06-19T12:21:11Z iteration 6 ideator phase completed approaches=3
+2026-06-19T12:21:11Z iteration 6 selector started approaches=3
+2026-06-19T12:21:29Z iteration 6 selector completed status=0
+2026-06-19T12:21:29Z iteration 6 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-wl4y34mq/repo
+2026-06-19T12:21:29Z iteration 6 selector rejected alternative role="the architect" approach="Audit-First Contract Ratchet: strengthen the Swagger audit harness before adding the commit-note slice, then let the new endpoint prove the harness by passing through the smalle..." reason="Strong direction, but selected approach should be slightly more explicit that the audit enhancement is a gate and must remain test-private to avoid ABI churn."
+2026-06-19T12:21:29Z iteration 6 selector rejected alternative role="the contrarian" approach="Audit-First Contract Gate: treat the path-enum audit hardening as the controlling deliverable, and let the commit-note slice proceed only after the audit can prove existing diff..." reason="Correctly prioritizes the audit gate, but risks making API progress feel secondary; the Planner should still treat the commit-note slice as the proof case once the guardrail is in place."
+2026-06-19T12:21:29Z iteration 6 selector rejected alternative role="the pragmatist" approach="Audit-Gated Vertical Slice: treat the Swagger audit enhancement as the gatekeeper for the commit-note slice, then let the new endpoint pass through the same narrow request-to-fa..." reason="Closest to the selected strategy, but the synthesized version emphasizes the contract ratchet and existing diff/patch endpoints as regression anchors before the new endpoint is added."
+2026-06-19T12:21:29Z iteration 6 selector alternatives persisted count=3
+2026-06-19T12:21:29Z iteration 6 planner started
+2026-06-19T12:22:10Z iteration 6 plan: 6 task(s) in 5 phase(s). The first phase raises the Swagger audit floor before adding new API surface. The core model and params work can proceed independently because they touch separate modules and do not depend on each other beyond the later request wiring. Request/facade implementation, behavior tests, and documentation/snapshot refresh are sequential because each depends on compiled signatures and finalized behavior from the previous phase.
+2026-06-19T12:22:10Z iteration 6 phase 1 started parallel=False tasks=1
+2026-06-19T12:24:25Z iteration 6 task t1 ('Harden path enum endpoint audits') status=0
+2026-06-19T12:24:25Z iteration 6 phase 2 started parallel=True tasks=2
+2026-06-19T12:26:24Z iteration 6 task t2 ('Add Note core model and codecs') status=0
+2026-06-19T12:26:43Z iteration 6 task t3 ('Add commit note query params') status=0
+2026-06-19T12:26:43Z iteration 6 phase 3 started parallel=False tasks=1
+2026-06-19T12:28:45Z iteration 6 task t4 ('Implement repoGetNote request and facade') status=0
+2026-06-19T12:28:45Z iteration 6 phase 4 started parallel=False tasks=1
+2026-06-19T12:32:11Z iteration 6 task t5 ('Test commit note contract and behavior') status=0
+2026-06-19T12:32:11Z iteration 6 phase 5 started parallel=False tasks=1
+2026-06-19T12:37:34Z iteration 6 task t6 ('Update docs, plan, snapshots, and validate') status=0
+2026-06-19T12:37:34Z iteration 6 reviewer started
+
+## Reviewer Summary - Iteration 6 - 2026-06-19T13:10:00Z
+
+What was done:
+- Inspected every file changed in the path-enum audit hardening and commit-note slice: `Note`, `CommitNoteParams`, endpoint metadata, request builder, `ReposApi` and `SttpGiteaClient` facade wiring, request/client/audit/core tests, README, CHANGELOG, PLAN, AGENT_LOG, and public API snapshots.
+- Cross-checked `repoGetNote` against `plugin-redoc-2.yaml`; method, path, operation ID, required owner/repo/sha path parameters, optional `verification`/`files` query parameters, success response, and documented 404/422 responses match the local Swagger contract.
+- Cross-checked the new path enum audit against commit and pull-request diff/patch `diffType` parameters; both local typed value sets match Swagger's documented `diff` and `patch` values.
+- Ran validation: `git diff --check`, `./mill --no-server core.test`, `./mill --no-server client.test`, `./mill --no-server compatibility.check`, and `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`.
+
+What was found:
+- No functional blocker or regression was found.
+- `Note` is a minimal schema-traceable model that reuses the existing `Commit` shape correctly, and the codecs cover both documented nested commit decoding and optional-field round trips.
+- `GiteaRequests.repoCommitNote` safely encodes owner/repo/sha path segments, omits absent query parameters, encodes explicit true/false `verification` and `files` toggles, applies shared JSON/auth/OTP/user-agent headers, avoids `Content-Type` for the GET, decodes `Note`, maps documented 404/422 responses, and remains retryable as a read-only request.
+- `ReposApi.commitNote` and `SttpGiteaClient` expose the endpoint with a coherent name beside `commit` and `commitDiffOrPatch`, and facade tests cover success plus retry behavior.
+- `GiteaEndpointAuditSpec` now has a test-private path enum helper, so typed path-value drift fails without adding audit-only data back to public endpoint metadata.
+- The main residual risk is process-level: Swagger audit expectations are still manually registered per endpoint group, so each new slice must keep registering non-2xx labels and typed path/query enum checks from the start.
+
+Top improvement proposals:
+- Implement `GET /repos/{owner}/{repo}/git/trees/{sha}` (`GetTree`) next with exact `GitTreeResponse` and `GitEntry` models from Swagger.
+- Model Git tree pagination as the documented response object first, not as the existing header-backed `Page[A]`, because this endpoint reports `page`, `total_count`, and `truncated` in the JSON body.
+- Add `GitTreeParams` with exact `recursive`, `page`, and `per_page` wire names, and cover default omission plus explicit query encoding in request tests and endpoint audits.
+- Keep `GetTree` audit coverage private to tests and compare the uppercase operation ID exactly; this is a useful check because most existing operation IDs are lower camel case.
+2026-06-19T12:40:46Z iteration 6 reviewer completed status=0
+2026-06-19T12:40:46Z iteration 6 memory updated
+2026-06-19T12:40:46Z iteration 6 completed validation_status=0
+2026-06-19T12:40:46Z iteration 6 checkpoint started
+2026-06-19T12:40:46Z iteration 6 checkpoint status before commit:
+M  AGENT_LOG.md
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+A  client/src/io/worxbend/gitea4s/http/CommitNoteParams.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+A  core/src/io/worxbend/gitea4s/model/Note.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

@@ -540,6 +540,82 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.decode(request.send(backend)) == Right(body)
         )
       },
+      test("builds and decodes schema-traceable commit note lookup") {
+        val built =
+          GiteaRequests.repoCommitNote(
+            config,
+            "worx bend",
+            "gitea/scala",
+            "feature/commit abc",
+            CommitNoteParams(verification = Some(false), files = Some(true))
+          )
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """{"message":"Reviewed-by: Octo","commit":{"sha":"abc123","commit":{"message":"Implement note"},"files":[{"filename":"src/Main.scala","status":"modified"}]}}"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetNote,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetNote",
+          endpoint.path == "/repos/{owner}/{repo}/git/notes/{sha}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "verification", "files"),
+          endpoint.response == "#/responses/Note",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/notes/feature%2Fcommit%20abc?verification=false&files=true",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "git", "notes", "feature/commit abc"),
+          request.uri.paramsMap.get("verification").contains("false"),
+          request.uri.paramsMap.get("files").contains("true"),
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          built.decode(request.send(backend)).map(_.message) == Right(Some("Reviewed-by: Octo")),
+          built.decode(request.send(backend)).map(_.commit.flatMap(_.sha)) == Right(Some("abc123")),
+          built.decode(request.send(backend)).map(_.commit.flatMap(_.commit.flatMap(_.message))) ==
+            Right(Some("Implement note")),
+          built.decode(request.send(backend)).map(_.commit.flatMap(_.files.flatMap(_.headOption.flatMap(_.filename)))) ==
+            Right(Some("src/Main.scala"))
+        )
+      },
+      test("omits absent commit note query parameters and encodes explicit boolean toggles") {
+        val default =
+          GiteaRequests.repoCommitNote(config, "owner", "repo", "abc123")
+        val allTrue =
+          GiteaRequests.repoCommitNote(
+            config,
+            "owner",
+            "repo",
+            "abc123",
+            CommitNoteParams(verification = Some(true), files = Some(true))
+          )
+        val allFalse =
+          GiteaRequests.repoCommitNote(
+            config,
+            "owner",
+            "repo",
+            "abc123",
+            CommitNoteParams(verification = Some(false), files = Some(false))
+          )
+
+        assertTrue(
+          default.request.uri.toString == "https://gitea.example/root/api/v1/repos/owner/repo/git/notes/abc123",
+          default.request.uri.paramsMap.isEmpty,
+          allTrue.request.uri.toString.contains("/api/v1/repos/owner/repo/git/notes/abc123?"),
+          allTrue.request.uri.paramsMap.get("verification").contains("true"),
+          allTrue.request.uri.paramsMap.get("files").contains("true"),
+          allFalse.request.uri.paramsMap.get("verification").contains("false"),
+          allFalse.request.uri.paramsMap.get("files").contains("false")
+        )
+      },
       test("builds schema-traceable paginated repository pull request list request") {
         val params = PullRequestListParams(
           baseBranch = Some("main"),
@@ -2863,6 +2939,25 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           built.decode(built.request.send(backend)) ==
             Left(GiteaError.NotFound("missing commit diff", body))
+        )
+      },
+      test("maps documented commit note 404 and 422 responses") {
+        val notFoundBody = """{"message":"missing commit note"}"""
+        val validationBody = """{"message":"invalid commit note ref"}"""
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val validationBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(validationBody, StatusCode.UnprocessableEntity)
+          )
+        val missing = GiteaRequests.repoCommitNote(config, "owner", "repo", "missing-sha")
+        val invalid = GiteaRequests.repoCommitNote(config, "owner", "repo", "bad ref")
+
+        assertTrue(
+          missing.decode(missing.request.send(notFoundBackend)) ==
+            Left(GiteaError.NotFound("missing commit note", notFoundBody)),
+          invalid.decode(invalid.request.send(validationBackend)) ==
+            Left(GiteaError.UnprocessableEntity("invalid commit note ref", validationBody))
         )
       },
       test("maps repository pull request not-found responses") {

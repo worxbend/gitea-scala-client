@@ -13,8 +13,8 @@ and zio-json.
 - Implemented surface: typed core models/codecs plus users, organizations,
   repositories, issue list/get/pinned-list/create/delete/pin/deadline/label/lock/
   dependency/blocking/reaction/subscription/tracked-time/stopwatch management,
-  commit statuses, single-commit lookup, commit diff/patch downloads,
-  commit-to-pull-request lookup,
+  commit statuses, single-commit lookup, commit note lookup, commit diff/patch
+  downloads, commit-to-pull-request lookup,
   releases, pull requests including reviews, pinned pull-request reads,
   pull-request create/edit writes, diff/patch downloads, merge-status checks,
   merge/update commands, review-comment resolution, and notifications through a
@@ -22,8 +22,9 @@ and zio-json.
 - Contract checks: implemented endpoint metadata is audited against
   `plugin-redoc-2.yaml` for pull-request review lifecycle, commit-status,
   pull-request create/edit, merge/update, commit-to-pull-request,
-  single-commit, and commit diff/patch endpoints, including documented
-  non-2xx response labels and clear path/method/parameter mismatch failures
+  single-commit, commit note, and commit diff/patch endpoints, including
+  documented non-2xx response labels, path enum values, and clear
+  path/method/parameter mismatch failures
 - Endpoint audit-only non-success response labels live in test scope; the
   published client endpoint metadata exposes operation method, path, operation
   ID, parameters, and success response labels only
@@ -244,6 +245,13 @@ through `client.commit`. By default the client omits the documented `stat`,
 `verification`, and `files` query parameters. Use `SingleCommitParams` when a
 call needs to explicitly enable or disable those response details.
 
+Repository commit note lookup covers
+`GET /repos/{owner}/{repo}/git/notes/{sha}` through `client.commitNote`. By
+default the client omits the documented `verification` and `files` query
+parameters. Use `CommitNoteParams` when a call needs explicit control over
+those optional response details. Successful responses decode as `Note`, and
+documented `404`/`422` failures flow through the shared error mapper.
+
 Commit diff/patch downloads cover
 `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` through
 `client.commitDiffOrPatch`. Use `CommitDiffType.diff` or
@@ -254,7 +262,7 @@ mapper, and its Swagger audit proves the operation has no query parameters and
 no request body.
 
 ```scala
-import io.worxbend.gitea4s.http.SingleCommitParams
+import io.worxbend.gitea4s.http.{CommitNoteParams, SingleCommitParams}
 import io.worxbend.gitea4s.model.CommitDiffType
 
 client.commit(owner = "my-org", repo = "my-repo", sha = "abc123")
@@ -266,6 +274,18 @@ client.commit(
   params = SingleCommitParams(
     stat = Some(true),
     verification = Some(false),
+    files = Some(true)
+  )
+)
+
+client.commitNote(owner = "my-org", repo = "my-repo", sha = "abc123")
+
+client.commitNote(
+  owner = "my-org",
+  repo = "my-repo",
+  sha = "abc123",
+  params = CommitNoteParams(
+    verification = Some(true),
     files = Some(true)
   )
 )
@@ -654,9 +674,9 @@ tests, and pagination tests:
 
 Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
-commit-to-pull-request, single-commit, and commit diff/patch endpoint groups
-against `plugin-redoc-2.yaml`, including documented non-2xx response status/ref
-labels.
+commit-to-pull-request, single-commit, commit note, and commit diff/patch
+endpoint groups against `plugin-redoc-2.yaml`, including documented non-2xx
+response status/ref labels and path enum values such as `diffType`.
 
 Live integration tests are opt-in:
 

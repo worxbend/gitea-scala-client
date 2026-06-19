@@ -541,6 +541,9 @@ public interface io.worxbend.gitea4s.api.ReposApi {
   public static io.worxbend.gitea4s.http.SingleCommitParams commit$default$4$(io.worxbend.gitea4s.api.ReposApi);
   public default io.worxbend.gitea4s.http.SingleCommitParams commit$default$4();
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.String> commitDiffOrPatch(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CommitDiffType);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Note> commitNote(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CommitNoteParams);
+  public static io.worxbend.gitea4s.http.CommitNoteParams commitNote$default$4$(io.worxbend.gitea4s.api.ReposApi);
+  public default io.worxbend.gitea4s.http.CommitNoteParams commitNote$default$4();
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> list(java.lang.String, io.worxbend.gitea4s.http.RepoListParams);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.NewIssuePinsAllowed> newIssuePinsAllowed(java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<java.lang.String>> topics(java.lang.String, java.lang.String);
@@ -606,6 +609,47 @@ public final class io.worxbend.gitea4s.http.CombinedStatusParams$ implements sca
   public scala.Option<java.lang.Object> $lessinit$greater$default$2();
   public io.worxbend.gitea4s.http.CombinedStatusParams default();
   public io.worxbend.gitea4s.http.CombinedStatusParams fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.http.CommitNoteParams
+public final class io.worxbend.gitea4s.http.CommitNoteParams implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.http.CommitNoteParams(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.Object> verification();
+  public scala.Option<java.lang.Object> files();
+  public io.worxbend.gitea4s.http.CommitNoteParams copy(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.lang.Object> copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.Object> _1();
+  public scala.Option<java.lang.Object> _2();
+  public static io.worxbend.gitea4s.http.CommitNoteParams apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.http.CommitNoteParams default();
+  public static io.worxbend.gitea4s.http.CommitNoteParams fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.http.CommitNoteParams unapply(io.worxbend.gitea4s.http.CommitNoteParams);
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+}
+
+## io.worxbend.gitea4s.http.CommitNoteParams$
+public final class io.worxbend.gitea4s.http.CommitNoteParams$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.http.CommitNoteParams$ MODULE$;
+  public static {};
+  public io.worxbend.gitea4s.http.CommitNoteParams apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.http.CommitNoteParams unapply(io.worxbend.gitea4s.http.CommitNoteParams);
+  public scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public io.worxbend.gitea4s.http.CommitNoteParams default();
+  public io.worxbend.gitea4s.http.CommitNoteParams fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 
@@ -830,6 +874,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGet();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetCombinedStatusByRef();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetCommitPullRequest();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetNote();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetPullRequest();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetPullRequestByBaseHead();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetPullRequestCommits();
@@ -892,6 +937,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetCommitPullRequest();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetSingleCommit();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoDownloadCommitDiffOrPatch();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoGetNote();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListPullRequests();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoCreatePullRequest();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListPinnedPullRequests();
@@ -1117,6 +1163,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Branch>> repoBranches(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.CombinedStatus> repoCombinedStatusByRef(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CombinedStatusParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<java.lang.String> repoCommitDiffOrPatch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CommitDiffType);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Note> repoCommitNote(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CommitNoteParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> repoCommitPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Comment>> repoIssueComments(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.RepositoryCommentListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.NewIssuePinsAllowed> repoNewPinAllowed(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);
@@ -1178,6 +1225,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static int issueSubscriptions$default$5();
   public static io.worxbend.gitea4s.http.IssueTrackedTimeListParams issueTrackedTimes$default$5();
   public static io.worxbend.gitea4s.http.CombinedStatusParams repoCombinedStatusByRef$default$5();
+  public static io.worxbend.gitea4s.http.CommitNoteParams repoCommitNote$default$5();
   public static io.worxbend.gitea4s.http.PullRequestCommitsParams repoPullRequestCommits$default$5();
   public static io.worxbend.gitea4s.http.PullRequestFilesParams repoPullRequestFiles$default$5();
   public static int repoPullReviews$default$5();
@@ -1228,6 +1276,8 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Commit> repoSingleCommit(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.SingleCommitParams);
   public io.worxbend.gitea4s.http.SingleCommitParams repoSingleCommit$default$5();
   public io.worxbend.gitea4s.http.GiteaRequest<java.lang.String> repoCommitDiffOrPatch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CommitDiffType);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Note> repoCommitNote(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CommitNoteParams);
+  public io.worxbend.gitea4s.http.CommitNoteParams repoCommitNote$default$5();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.PullRequest>> repoPullRequests(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.PullRequestListParams);
   public io.worxbend.gitea4s.http.PullRequestListParams repoPullRequests$default$4();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> createPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreatePullRequestOption);

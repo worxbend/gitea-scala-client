@@ -1,7 +1,13 @@
 package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.http.{CombinedStatusParams, CommitStatusListParams, RepoListParams, SingleCommitParams}
+import io.worxbend.gitea4s.http.{
+  CombinedStatusParams,
+  CommitNoteParams,
+  CommitStatusListParams,
+  RepoListParams,
+  SingleCommitParams
+}
 import io.worxbend.gitea4s.model.{
   Branch,
   Commit,
@@ -10,6 +16,7 @@ import io.worxbend.gitea4s.model.{
   CommitStatus,
   CreateStatusOption,
   NewIssuePinsAllowed,
+  Note,
   Repository,
   Tag
 }
@@ -27,6 +34,13 @@ trait ReposApi:
   ): IO[GiteaError, Commit]
 
   def commitDiffOrPatch(owner: String, repo: String, sha: String, diffType: CommitDiffType): IO[GiteaError, String]
+
+  def commitNote(
+      owner: String,
+      repo: String,
+      sha: String,
+      params: CommitNoteParams = CommitNoteParams.default
+  ): IO[GiteaError, Note]
 
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 

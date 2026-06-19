@@ -31,6 +31,7 @@ import io.worxbend.gitea4s.model.{
   LockIssueOption,
   MergePullRequestOption,
   NewIssuePinsAllowed,
+  Note,
   NotificationCount,
   NotificationThread,
   Organization,
@@ -315,6 +316,21 @@ object GiteaRequests:
       Nil,
       GiteaResponseMapper.decodeString,
       accept = MediaType.TextPlain.toString
+    )
+
+  def repoCommitNote(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      sha: String,
+      params: CommitNoteParams = CommitNoteParams.default
+  ): GiteaRequest[Note] =
+    get(
+      config,
+      GiteaEndpoints.repoGetNote,
+      List("repos", owner, repo, "git", "notes", sha),
+      commitNoteQuery(params),
+      GiteaResponseMapper.decodeJson[Note]
     )
 
   def repoPullRequests(
@@ -1555,6 +1571,12 @@ object GiteaRequests:
   private def singleCommitQuery(params: SingleCommitParams): List[(String, String)] =
     List(
       params.stat.map(value => "stat" -> value.toString),
+      params.verification.map(value => "verification" -> value.toString),
+      params.files.map(value => "files" -> value.toString)
+    ).flatten
+
+  private def commitNoteQuery(params: CommitNoteParams): List[(String, String)] =
+    List(
       params.verification.map(value => "verification" -> value.toString),
       params.files.map(value => "files" -> value.toString)
     ).flatten

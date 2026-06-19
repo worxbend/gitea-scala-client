@@ -182,11 +182,37 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val commitNoteRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoCommitNote(
+        config,
+        "owner",
+        "repo",
+        sha = "abc123",
+        CommitNoteParams(verification = Some(false), files = Some(true))
+      ),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val commitDiffOrPatchRequests = List(
     AuditedRequest(
       request =
         GiteaRequests.repoCommitDiffOrPatch(config, "owner", "repo", sha = "abc123", diffType = CommitDiffType.diff),
       noBodyLifecyclePost = false
+    )
+  )
+
+  private val pathEnumAudits = List(
+    PathEnumAudit(
+      endpoint = GiteaEndpoints.repoDownloadCommitDiffOrPatch,
+      parameterName = "diffType",
+      localValues = CommitDiffType.values.map(_.pathValue).toList
+    ),
+    PathEnumAudit(
+      endpoint = GiteaEndpoints.repoDownloadPullDiffOrPatch,
+      parameterName = "diffType",
+      localValues = PullRequestDiffType.values.map(_.pathValue).toList
     )
   )
 
@@ -343,6 +369,10 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       GiteaResponseLabel("404", "#/responses/notFound"),
       GiteaResponseLabel("422", "#/responses/validationError")
     ),
+    "repoGetNote" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
     "repoDownloadCommitDiffOrPatch" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     )
@@ -371,6 +401,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("single commit metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = singleCommitRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("commit note metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = commitNoteRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
@@ -450,6 +486,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           )
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("path enum values match plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = pathEnumAudits.flatMap(auditPathEnum(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       }
     )
 
@@ -499,9 +541,26 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       value => compare(label, actual, value).toList
     )
 
+  private def auditPathEnum(swagger: SwaggerAudit, audited: PathEnumAudit): List[String] =
+    compareSwagger(
+      s"${audited.endpoint.operationId} ${audited.parameterName} path enum",
+      audited.localValues,
+      swagger.pathParameterEnumValues(
+        audited.endpoint.path,
+        audited.endpoint.method,
+        audited.parameterName
+      )
+    )
+
   private final case class AuditedRequest(
       request: GiteaRequest[?],
       noBodyLifecyclePost: Boolean
+  )
+
+  private final case class PathEnumAudit(
+      endpoint: GiteaEndpoint,
+      parameterName: String,
+      localValues: List[String]
   )
 
   private final case class SwaggerOperation(
@@ -544,16 +603,28 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       )
 
     def parameterEnumValues(path: String, method: String, name: String): Either[String, List[String]] =
+      parameterValues(path, method, name, in = None)
+
+    def pathParameterEnumValues(path: String, method: String, name: String): Either[String, List[String]] =
+      parameterValues(path, method, name, in = Some("path"))
+
+    private def parameterValues(
+        path: String,
+        method: String,
+        name: String,
+        in: Option[String]
+    ): Either[String, List[String]] =
       for
         pathIndex <- findPath(path)
         methodIndex <- findMethod(pathIndex, method)
         methodBlock = blockAfter(methodIndex, minimumIndent = 6)
         parameters = parseParameters(methodBlock)
         parameter <- parameters
-          .find(_.name == name)
+          .find(parameter => parameter.name == name && in.forall(_ == parameter.in))
           .toRight {
             val available = parameters.map(parameter => s"${parameter.name}:${parameter.in}").mkString(", ")
-            s"Swagger parameter lookup failed: parameter '$name' not found in ${method.toUpperCase} $path; available parameters: [$available]"
+            val location = in.fold("")(value => s" $value")
+            s"Swagger parameter lookup failed: parameter '$name'$location not found in ${method.toUpperCase} $path; available parameters: [$available]"
           }
       yield parameter.enumValues
 

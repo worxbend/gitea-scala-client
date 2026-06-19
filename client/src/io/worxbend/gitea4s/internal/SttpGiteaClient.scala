@@ -6,6 +6,7 @@ import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
   GiteaRequests,
   CombinedStatusParams,
+  CommitNoteParams,
   CommitStatusListParams,
   IssueCommentListParams,
   IssueListParams,
@@ -50,6 +51,7 @@ import io.worxbend.gitea4s.model.{
   LockIssueOption,
   MergePullRequestOption,
   NewIssuePinsAllowed,
+  Note,
   NotificationCount,
   NotificationThread,
   Organization,
@@ -138,6 +140,14 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       diffType: CommitDiffType
   ): IO[GiteaError, String] =
     executor.send(GiteaRequests.repoCommitDiffOrPatch(config, owner, repo, sha, diffType))
+
+  override def commitNote(
+      owner: String,
+      repo: String,
+      sha: String,
+      params: CommitNoteParams
+  ): IO[GiteaError, Note] =
+    executor.send(GiteaRequests.repoCommitNote(config, owner, repo, sha, params))
 
   override def list(
       owner: String,
