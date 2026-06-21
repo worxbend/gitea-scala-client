@@ -2512,3 +2512,82 @@ M  SCORES.jsonl
 ?? core/src/io/worxbend/gitea4s/model/ArchiveFormat.scala
 ?? core/src/io/worxbend/gitea4s/model/CreateRepo.scala
 ?? core/src/io/worxbend/gitea4s/model/ForkRepo.scala
+2026-06-19T23:28:01Z orchestrator finished iterations_run=2 iterations_attempted=2 iterations_completed_successfully=0 had_nonfatal_failures=true nonfatal_failure_count=2 last_nonfatal_exit_code=1 last_nonfatal_failure_reason=planner_failed loop_exit_code=0 process_exit_code=0 fatal=false terminal_reason=iterations_complete_with_failures final_checkpoint_behavior=telemetry_only
+2026-06-21T22:20:03Z orchestrator started provider=codex budget=18000s iterations=30 max_workers=4
+2026-06-21T22:20:03Z iteration 1 started remaining=18000s
+2026-06-21T22:20:03Z iteration 1 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-21T22:20:03Z iteration 1 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-1281lp5k/repo copied_entries=100
+2026-06-21T22:20:03Z iteration 1 ideator phase started count=3
+2026-06-21T22:20:03Z iteration 1 ideator phase concurrency workers=3
+2026-06-21T22:20:03Z iteration 1 ideator 1 role="the pragmatist" started
+2026-06-21T22:20:03Z iteration 1 ideator 2 role="the architect" started
+2026-06-21T22:20:03Z iteration 1 ideator 3 role="the contrarian" started
+2026-06-21T22:20:12Z iteration 1 ideator 1 role="the pragmatist" completed status=0
+2026-06-21T22:20:12Z iteration 1 ideator 2 role="the architect" completed status=0
+2026-06-21T22:20:13Z iteration 1 ideator 3 role="the contrarian" completed status=0
+2026-06-21T22:20:13Z iteration 1 ideator phase completed approaches=3
+2026-06-21T22:20:13Z iteration 1 selector started approaches=3
+2026-06-21T22:20:29Z iteration 1 selector completed status=0
+2026-06-21T22:20:29Z iteration 1 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-1281lp5k/repo
+2026-06-21T22:20:29Z iteration 1 selector rejected alternative role="the pragmatist" approach="Binary Boundary First: expand with repoGetArchive only after revalidating the byte-response contract, keeping the next slice narrow and using it as a proving ground for all futu..." reason="Not selected as-is because it underemphasizes the need to make the archive slice an explicit architectural checkpoint for the stabilized private typed-body boundary, though its narrow-slice instinct is correct."
+2026-06-21T22:20:29Z iteration 1 selector rejected alternative role="the architect" approach="Binary Boundary First: expand through archive downloads only after treating every file-like endpoint as a contract test for the stabilized byte-response execution boundary, keep..." reason="Not selected as-is because its framing could invite over-designing binary-download abstractions before archive behavior is proven; the selected strategy keeps the architectural scrutiny but narrows the scope."
+2026-06-21T22:20:29Z iteration 1 selector rejected alternative role="the contrarian" approach="Contract-First Binary Surface Freeze: pause broad endpoint expansion briefly and use the archive endpoint as a narrow proving ground for the binary-download contract, emphasizin..." reason="Not selected as-is because a broad 'surface freeze' may slow normal endpoint momentum too much; the selected strategy keeps the compatibility checkpoint idea while still advancing one concrete vertical endpoint."
+2026-06-21T22:20:29Z iteration 1 selector alternatives persisted count=3
+2026-06-21T22:20:29Z iteration 1 selector structured alternatives persisted count=3
+2026-06-21T22:20:29Z iteration 1 planner started
+2026-06-21T22:21:06Z iteration 1 plan: 5 task(s) in 4 phase(s). This iteration keeps the scope to `repoGetArchive` as a narrow binary-boundary checkpoint after raw/media downloads. Request contract work comes first because facade and integration tests depend on the endpoint builder and decoder. Facade and live integration wiring can proceed in parallel after the request layer because they touch disjoint files. Documentation, API snapshots, and PLAN updates wait until the public method shape is final.
+2026-06-21T22:21:06Z iteration 1 phase 1 started parallel=False tasks=1
+2026-06-21T22:26:14Z iteration 1 task t1 ('Add archive download request contract') status=0
+2026-06-21T22:26:14Z iteration 1 phase 2 started parallel=True tasks=2
+2026-06-21T22:27:40Z iteration 1 task t3 ('Add opt-in live archive probe') status=0
+2026-06-21T22:28:33Z iteration 1 task t2 ('Expose archive download facade') status=0
+2026-06-21T22:28:33Z iteration 1 phase 3 started parallel=False tasks=1
+2026-06-21T22:34:25Z iteration 1 task t4 ('Update docs, snapshots, and plan') status=0
+2026-06-21T22:34:25Z iteration 1 phase 4 started parallel=False tasks=1
+2026-06-21T22:35:13Z iteration 1 task t5 ('Run focused validation') status=0
+2026-06-21T22:35:13Z iteration 1 reviewer started
+
+## Reviewer Summary - Iteration 1 - 2026-06-22T00:00:00+03:00
+
+What was done:
+- Inspected the full working-tree patch for the archive download slice, including endpoint metadata, request builders, facade wiring, request/facade/audit/live tests, README, CHANGELOG, PLAN, API snapshots, telemetry files, and the untracked `ArchiveFormat`, `CreateRepo`, and `ForkRepo` model files.
+- Cross-checked `repoGetArchive` against `plugin-redoc-2.yaml`. The Swagger operation is `GET /repos/{owner}/{repo}/archive/{archive}`, has required `owner`/`repo`/`archive` path parameters, also documents optional multi-value query parameter `path`, has `produces: application/json`, a bare `200` success description, and documented `404`.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`, `./mill --no-server __.compile`, and credential-stripped `it.test`; all passed, and the seven live probes were ignored without credentials.
+
+What was found:
+- Archive byte download itself is mostly wired correctly: `ReposApi.archive` calls `GiteaRequests.repoGetArchive`, builds a read-only GET, encodes slash-containing archive values as one path segment, sends `Accept: application/octet-stream`, decodes successful byte bodies as `Chunk[Byte]`, propagates documented `404`, retries read-only failures, and has an opt-in live probe gated by `GITEA_ARCHIVE`.
+- Release-blocking gap: the current public archive API cannot send Swagger's optional multi-value `path` query parameter for repository subpaths. Tests and docs currently assert "no query parameters", while endpoint metadata correctly includes `path`.
+- Release-blocking scope leak: unrelated repository write API (`CreateRepo`, `ForkRepo`, `ReposApi.create`, `ReposApi.fork`, `ReposApi.delete`, `createCurrentUserRepo`, `createFork`, `repoDelete`, and request builders) was added to source and snapshots without request/client/audit/docs coverage, and the new core model files are still untracked.
+- Documentation/audit mismatch: README/CHANGELOG/PLAN claim archive audit coverage proves Swagger `type: file` / `application/octet-stream`, but the local Swagger records `produces: application/json` and no response schema for archive success. The client's byte decoder may be pragmatic, but the docs should not claim a Swagger file schema that is not present.
+- Minor ABI question: `ArchiveFormat` and a low-level overload `repoGetArchive(config, owner, repo, ref, format)` are public but not exposed through the facade or covered by tests; either make this a deliberate ergonomic API or remove it.
+
+Top improvement proposals:
+- First quarantine or complete the accidental repository write surface. If it stays, finish it as a dedicated write slice with schema-complete models, documented failure mapping, non-retryable write tests, Swagger audit coverage, docs, and snapshots; otherwise remove it from source and snapshots before release.
+- Add `ArchiveParams` or equivalent for the documented archive `path` query parameter, or explicitly document `ReposApi.archive(owner, repo, archive)` as whole-archive-only and add a follow-up for subpath archives.
+- Correct archive documentation and audit wording to distinguish local Swagger facts from the client runtime byte-response decision.
+- Decide whether `ArchiveFormat` belongs in public API. If retained, test it and consider facade support; if not, remove it from `core` and the API snapshot.
+2026-06-21T22:39:33Z iteration 1 reviewer completed status=0
+2026-06-21T22:39:33Z iteration 1 memory updated
+2026-06-21T22:39:33Z iteration 1 completed validation_status=0
+2026-06-21T22:39:33Z iteration 1 checkpoint started
+2026-06-21T22:39:33Z iteration 1 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+A  core/src/io/worxbend/gitea4s/model/ArchiveFormat.scala
+A  core/src/io/worxbend/gitea4s/model/CreateRepo.scala
+A  core/src/io/worxbend/gitea4s/model/ForkRepo.scala
+M  it/test/src/io/worxbend/gitea4s/it/LiveGiteaIntegrationSpec.scala

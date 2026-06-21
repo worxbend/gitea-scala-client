@@ -1078,6 +1078,95 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           mediaResult == Chunk.fromArray(mediaBytes)
         )
       },
+      test("executes archive byte request through GiteaRequestExecutor without string response decoding") {
+        val bytes = Array[Byte](31, -117, 8, 0, 0, 0)
+        val archive = GiteaRequests.repoGetArchive(
+          config,
+          "worx bend",
+          "gitea/scala",
+          "refs/heads/main.tar.gz"
+        )
+        val backend =
+          BackendStub[Task](new RIOMonadAsyncError[Any])
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+              request.uri.path ==
+                List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "archive", "refs/heads/main.tar.gz") &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/octet-stream")
+            }
+            .thenRespond(ResponseStub.adjust(bytes))
+
+        for result <- new GiteaRequestExecutor(backend, maxRetries = 0).send(archive)
+        yield assertTrue(result == Chunk.fromArray(bytes))
+      },
+      test("builds and decodes schema-traceable archive download request as bytes") {
+        val bytes = Array[Byte](80, 75, 3, 4, 20, 0)
+        val built = GiteaRequests.repoGetArchive(
+          config,
+          "worx bend",
+          "gitea/scala",
+          "main.zip"
+        )
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(bytes))
+        val decoded = decodeWith(built, backend)
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetArchive,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetArchive",
+          endpoint.path == "/repos/{owner}/{repo}/archive/{archive}",
+          endpoint.parameters.map(parameter => (parameter.name, parameter.in, parameter.required)) ==
+            List(
+              ("owner", "path", true),
+              ("repo", "path", true),
+              ("archive", "path", true),
+              ("path", "query", false)
+            ),
+          endpoint.response == "description: success",
+          request.method == Method.GET,
+          request.uri.toString.contains(
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/archive/main.zip"
+          ),
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "archive", "main.zip"),
+          request.uri.paramsMap.isEmpty,
+          request.body == NoBody,
+          request.header("Accept").contains("application/octet-stream"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true,
+          decoded == Right(Chunk.fromArray(bytes))
+        )
+      },
+      test("encodes slash-containing archive values as one path segment") {
+        val built = GiteaRequests.repoGetArchive(
+          config,
+          "owner",
+          "repo",
+          "refs/heads/main.tar.gz"
+        )
+        val request = built.request
+
+        assertTrue(
+          request.method == Method.GET,
+          request.uri.toString.contains(
+            "https://gitea.example/root/api/v1/repos/owner/repo/archive/refs%2Fheads%2Fmain.tar.gz"
+          ),
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "owner", "repo", "archive", "refs/heads/main.tar.gz"),
+          request.uri.paramsMap.isEmpty,
+          request.body == NoBody,
+          request.header("Accept").contains("application/octet-stream"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true
+        )
+      },
       test("builds schema-traceable paginated repository pull request list request") {
         val params = PullRequestListParams(
           baseBranch = Some("main"),
@@ -3501,6 +3590,19 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           rawResult == Left(GiteaError.NotFound("missing raw file", body)),
           mediaResult == Left(GiteaError.NotFound("missing raw file", body))
+        )
+      },
+      test("maps documented archive download 404 responses") {
+        val body = """{"message":"missing archive"}"""
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(body.getBytes(java.nio.charset.StandardCharsets.UTF_8), StatusCode.NotFound)
+          )
+        val archive = GiteaRequests.repoGetArchive(config, "owner", "repo", "missing.zip")
+
+        assertTrue(
+          decodeWith(archive, backend) ==
+            Left(GiteaError.NotFound("missing archive", body))
         )
       },
       test("maps repository pull request not-found responses") {

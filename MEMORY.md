@@ -24,3 +24,6 @@
 [pattern] The `GiteaRequest` execution boundary is stabilized: `request: Request[Body]` and `decode(Response[Body])` are `private[gitea4s]`; external callers must use `GiteaRequestExecutor` or the facade, not raw `request.send(...)`.
 [learning] Widening `withJsonBody` from `Request[String] => Request[String]` to `Request[B] => Request[B]` compiles and works because sttp's `.body(string)` preserves response type `B`, but the generic form invites accidental misuse on byte-response builders.
 [pattern] When removing a public API surface, update the api-snapshot immediately via `./mill compatibility.writeSnapshot` before writing tests, so the snapshot reflects the intended contract rather than the legacy one.
+[learning] `repoGetArchive` documents an optional multi-value `path` query parameter for repository subpaths; a whole-archive facade is only a subset unless that query is modeled.
+[learning] Archive downloads may need byte decoding in practice even when local Swagger records `produces: application/json` and a bare `200` response; audits and docs must separate Swagger facts from pragmatic client behavior.
+[anti-pattern] Failed or abandoned endpoint work can leak into public ABI through source imports and snapshots; quarantine or complete accidental surface before compatibility snapshots are refreshed.

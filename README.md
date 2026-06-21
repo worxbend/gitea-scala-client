@@ -324,6 +324,16 @@ Some(...))` sends the documented optional `ref` query parameter and
 These byte-download methods are intentionally separate from `contents`, which
 remains metadata-oriented and continues returning `ContentsResponse`.
 
+Repository archive downloads cover
+`GET /repos/{owner}/{repo}/archive/{archive}` through `client.archive`.
+Successful responses return buffered `Chunk[Byte]` and advertise
+`Accept: application/octet-stream`; the request has no query parameters and no
+body. Pass the archive path exactly as Gitea documents it, such as `main.zip`
+or `v1.0.0.tar.gz`. Slash-containing archive values are encoded as one path
+segment, so refs such as `refs/heads/main.tar.gz` are preserved as a single
+`archive` parameter. Archive downloads are separate from metadata-oriented
+`contents` and from raw/media single-file downloads.
+
 Commit diff/patch downloads cover
 `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` through
 `client.commitDiffOrPatch`. Use `CommitDiffType.diff` or
@@ -414,6 +424,8 @@ client.mediaFile(
   filepath = "docs/readme.md",
   params = ContentsParams.default
 )
+
+client.archive(owner = "my-org", repo = "my-repo", archive = "main.zip")
 
 client.commitDiffOrPatch(
   owner = "my-org",
@@ -866,14 +878,25 @@ GITEA_CONTENTS_REF=main \
 ./mill it.test
 ```
 
-Latest raw/media repository file validation passed with:
+The repository archive probe calls `ReposApi.archive(owner, repo, archive)` and
+requires a configured archive value such as `main.zip`:
+
+```bash
+GITEA_URL=https://gitea.example \
+GITEA_TOKEN=... \
+GITEA_OWNER=my-org \
+GITEA_REPO=my-repo \
+GITEA_ARCHIVE=main.zip \
+./mill it.test
+```
+
+Latest repository archive validation passed with:
 
 ```bash
 git diff --check
 ./mill --no-server compatibility.writeSnapshot
 ./mill --no-server core.test client.test compatibility.check
-./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.http.GiteaResponseMapperSpec io.worxbend.gitea4s.GiteaClientSpec
-env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill --no-server it.test
+env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD -u GITEA_OWNER -u GITEA_REPO -u GITEA_ARCHIVE ./mill --no-server it.test
 ```
 
 ## Mill Commands

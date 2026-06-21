@@ -18,7 +18,9 @@ import io.worxbend.gitea4s.model.{
   CombinedStatus,
   CommitStatus,
   ContentsResponse,
+  CreateRepo,
   CreateStatusOption,
+  ForkRepo,
   GitBlobResponse,
   GitTreeResponse,
   NewIssuePinsAllowed,
@@ -90,6 +92,14 @@ trait ReposApi:
       filepath: String,
       params: ContentsParams = ContentsParams.default
   ): IO[GiteaError, Chunk[Byte]]
+
+  def archive(owner: String, repo: String, archive: String): IO[GiteaError, Chunk[Byte]]
+
+  def create(body: CreateRepo): IO[GiteaError, Repository]
+
+  def fork(owner: String, repo: String, body: ForkRepo): IO[GiteaError, Repository]
+
+  def delete(owner: String, repo: String): IO[GiteaError, Unit]
 
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 

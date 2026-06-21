@@ -267,6 +267,17 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val archiveRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoGetArchive(config, "owner", "repo", archive = "main.zip"),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoGetArchive(config, "owner", "repo", archive = "v1.0.0.tar.gz"),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val commitDiffOrPatchRequests = List(
     AuditedRequest(
       request =
@@ -475,6 +486,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoGetRawFileOrLFS" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoGetArchive" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoDownloadCommitDiffOrPatch" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     )
@@ -545,6 +559,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("repository raw file metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = rawFileRequests.flatMap(auditRawFile(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository archive metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = archiveRequests.flatMap(auditArchive(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
@@ -714,6 +734,23 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           ).flatten.map(message => s"${endpoint.operationId}: $message")
 
     metadataFailures ++ octetStreamFailures
+
+  private def auditArchive(swagger: SwaggerAudit, audited: AuditedRequest): List[String] =
+    val endpoint = audited.request.endpoint
+    val metadataFailures = audit(swagger, audited)
+    val requestFailures =
+      swagger.operation(endpoint.path, endpoint.method) match
+        case Left(message) => List(s"${endpoint.operationId}: $message")
+        case Right(operation) =>
+          List(
+            compare("produces", operation.produces, List("application/json")),
+            compare("request Accept", audited.request.request.header("Accept"), Some("application/octet-stream")),
+            Option.when(audited.request.request.uri.paramsMap.nonEmpty)(
+              s"request query parameters actual=${audited.request.request.uri.paramsMap} expected=Map()"
+            )
+          ).flatten.map(message => s"${endpoint.operationId}: $message")
+
+    metadataFailures ++ requestFailures
 
   private def compare[A](label: String, actual: A, expected: A): Option[String] =
     Option.when(actual != expected)(s"$label actual=$actual expected=$expected")

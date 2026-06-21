@@ -80,7 +80,19 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
         TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
-        TestAspect.ifEnv(Env.rawFilepath)(nonEmptyValue)
+        TestAspect.ifEnv(Env.rawFilepath)(nonEmptyValue),
+      test("downloads a configured repository archive through the live backend") {
+        withLiveClient { client =>
+          for
+            owner <- liveEnv(Env.owner)
+            repo <- liveEnv(Env.repo)
+            archive <- liveEnv(Env.archive)
+            bytes <- client.archive(owner, repo, archive)
+          yield assertTrue(bytes.nonEmpty)
+        }
+      } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.archive)(nonEmptyValue)
     ) @@ TestAspect.ifEnv(GiteaConfig.Env.url)((value: String) => value.trim.nonEmpty) @@
       TestAspect.ifEnv(GiteaConfig.Env.token)((value: String) => value.trim.nonEmpty)
 
@@ -116,3 +128,4 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
     val contentsRef = "GITEA_CONTENTS_REF"
     val rawFilepath = "GITEA_RAW_FILEPATH"
     val rawRef = "GITEA_RAW_REF"
+    val archive = "GITEA_ARCHIVE"

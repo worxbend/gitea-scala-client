@@ -1065,6 +1065,68 @@ object GiteaClientSpec extends ZIOSpecDefault:
           media == Chunk.fromArray(mediaBytes)
         )
       },
+      test("downloads archive path values as bytes through the ReposApi facade") {
+        val zipBytes = Array[Byte](80, 75, 3, 4, 20, 0)
+        val tarBytes = Array[Byte](31, -117, 8, 0, 0, 0, 0, 0)
+        val zipBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "myrepo", "archive", "main.zip")) &&
+              request.header("Accept").contains("application/octet-stream") &&
+              request.body == NoBody
+          }.thenRespond(ResponseStub.adjust(zipBytes))
+        val tarBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "myrepo", "archive", "v1.0.0.tar.gz")) &&
+              request.header("Accept").contains("application/octet-stream") &&
+              request.body == NoBody
+          }.thenRespond(ResponseStub.adjust(tarBytes))
+        val zipClient = GiteaClient.fromBackend(config, zipBackend)
+        val tarClient = GiteaClient.fromBackend(config, tarBackend)
+
+        for
+          zip <- zipClient.archive("alice", "myrepo", "main.zip")
+          tar <- tarClient.archive("alice", "myrepo", "v1.0.0.tar.gz")
+        yield assertTrue(
+          zip == Chunk.fromArray(zipBytes),
+          tar == Chunk.fromArray(tarBytes)
+        )
+      },
+      test("propagates archive documented 404 error through the facade") {
+        val body = """{"message":"archive not found"}"""
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "archive", "main.zip"))
+          ).thenRespond(
+            ResponseStub.adjust(body.getBytes(java.nio.charset.StandardCharsets.UTF_8), StatusCode.NotFound)
+          )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for result <- client.archive("alice", "api", "main.zip").either
+        yield assertTrue(result == Left(GiteaError.NotFound("archive not found", body)))
+      },
+      test("retries archive download because it is a read-only GET request") {
+        val bytes = Array[Byte](80, 75, 3, 4, 20, 0)
+        val unavailable = """{"message":"temporarily unavailable"}""".getBytes(java.nio.charset.StandardCharsets.UTF_8)
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "archive", "main.zip")) &&
+              request.header("Accept").contains("application/octet-stream")
+          }.thenRespondCyclic(
+            ResponseStub.adjust(unavailable, StatusCode.ServiceUnavailable),
+            ResponseStub.adjust(bytes)
+          )
+        val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
+
+        for
+          fiber <- client.archive("alice", "api", "main.zip").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          result <- fiber.join
+        yield assertTrue(result == Chunk.fromArray(bytes))
+      },
       test("loads a repository commit through a stub without live environment credentials") {
         val hermeticConfig =
           GiteaConfig.default(uri"https://gitea.example", Auth.Anonymous).copy(pageSize = 1)

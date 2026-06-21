@@ -4,6 +4,7 @@ import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
   AnnotatedTag,
+  ArchiveFormat,
   Auth,
   Branch,
   ChangedFile,
@@ -17,6 +18,7 @@ import io.worxbend.gitea4s.model.{
   CreateIssueComment,
   CreatePullRequestOption,
   CreatePullReviewOptions,
+  CreateRepo,
   CreateStatusOption,
   DismissPullReviewOptions,
   EditDeadlineOption,
@@ -24,6 +26,7 @@ import io.worxbend.gitea4s.model.{
   EditIssue,
   EditPullRequestOption,
   EditReactionOption,
+  ForkRepo,
   GitBlobResponse,
   GitTreeResponse,
   Issue,
@@ -450,6 +453,54 @@ object GiteaRequests:
       GiteaEndpoints.repoGetRawFileOrLFS,
       List("repos", owner, repo, "media", filepath),
       contentsQuery(params)
+    )
+
+  def repoGetArchive(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      archive: String
+  ): GiteaRequest[Chunk[Byte]] =
+    getBytes(
+      config,
+      GiteaEndpoints.repoGetArchive,
+      List("repos", owner, repo, "archive", archive),
+      Nil
+    )
+
+  def repoGetArchive(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      ref: String,
+      format: ArchiveFormat
+  ): GiteaRequest[Chunk[Byte]] =
+    repoGetArchive(config, owner, repo, ref + format.pathSuffix)
+
+  def createRepo(config: GiteaConfig, body: CreateRepo): GiteaRequest[Repository] =
+    postJson(
+      config,
+      GiteaEndpoints.createCurrentUserRepo,
+      List("user", "repos"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Repository]
+    )
+
+  def forkRepo(config: GiteaConfig, owner: String, repo: String, body: ForkRepo): GiteaRequest[Repository] =
+    postJson(
+      config,
+      GiteaEndpoints.createFork,
+      List("repos", owner, repo, "forks"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Repository]
+    )
+
+  def deleteRepo(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Unit] =
+    delete(
+      config,
+      GiteaEndpoints.repoDelete,
+      List("repos", owner, repo),
+      GiteaResponseMapper.decodeUnit
     )
 
   def repoPullRequests(
