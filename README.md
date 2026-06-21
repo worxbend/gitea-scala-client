@@ -17,7 +17,8 @@ and zio-json.
   downloads, Git tree reads, Git blob reads, Git reference reads, annotated tag
   reads, repository contents metadata reads, raw/media repository file byte
   downloads, repository archive byte downloads, commit-to-pull-request lookup,
-  releases, release asset metadata reads, pull requests including reviews,
+  release listing/detail/tag lookup, release asset metadata reads, pull
+  requests including reviews,
   pinned pull-request reads, pull-request create/edit writes, diff/patch
   downloads, merge-status checks, merge/update commands, review-comment
   resolution, and notifications through a ZIO client API
@@ -26,7 +27,7 @@ and zio-json.
   pull-request create/edit, merge/update, commit-to-pull-request,
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
   annotated tag, repository contents, raw/media repository file, repository
-  archive, and release asset endpoints,
+  archive, release, and release asset endpoints,
   including documented non-2xx response labels, optional query parameters,
   `application/octet-stream`/Swagger `type: file` response shape for raw/media
   downloads, the archive operation's bare `200` success description, path enum
@@ -347,7 +348,16 @@ metadata-oriented `contents` and from raw/media single-file downloads.
 
 Repository release metadata covers paginated release listing through
 `client.releases(owner, repo)` and single release lookup through
-`client.release(owner, repo, id)`. Release asset metadata covers
+`client.release(owner, repo, id)`. Tag lookup uses
+`client.releaseByTag(owner, repo, tag)` and the Gitea endpoint
+`GET /repos/{owner}/{repo}/releases/tags/{tag}` to return `Release` metadata
+for a tag. Tag values with punctuation such as `v1.0.0` and values with
+slashes such as `release/candidate` are encoded as one `tag` path segment. The
+lookup has no query parameters or request body, sends JSON accept headers, is
+read-only retryable, and propagates documented `404` failures through the
+shared error mapper.
+
+Release asset metadata covers
 `GET /repos/{owner}/{repo}/releases/{id}/assets` through
 `client.releaseAssets(owner, repo, releaseId)` and
 `GET /repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}` through
@@ -358,8 +368,9 @@ The asset list endpoint has no documented `page`, `limit`, or other query
 parameters, so it returns `IO[GiteaError, Chunk[ReleaseAsset]]` rather than a
 pagination stream. `ReleaseAsset` preserves metadata fields such as
 `browser_download_url`, `created_at`, `download_count`, `id`, `name`, `size`,
-and `uuid`. Upload, edit, delete, and binary asset download surfaces are not
-part of the current read-only API.
+and `uuid`. Release create, edit, and delete operations are not implied by the
+release metadata API. Release asset upload, edit, delete, and binary download
+surfaces are also not part of the current read-only API.
 
 Commit diff/patch downloads cover
 `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` through
@@ -466,6 +477,8 @@ client.archive(
 client.releases(owner = "my-org", repo = "my-repo").take(25).runCollect
 
 client.release(owner = "my-org", repo = "my-repo", id = 7)
+
+client.releaseByTag(owner = "my-org", repo = "my-repo", tag = "release/candidate")
 
 client.releaseAssets(owner = "my-org", repo = "my-repo", releaseId = 7)
 

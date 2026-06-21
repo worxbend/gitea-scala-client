@@ -303,6 +303,13 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val releaseByTagRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoReleaseByTag(config, "owner", "repo", tag = "release/candidate"),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val commitDiffOrPatchRequests = List(
     AuditedRequest(
       request =
@@ -520,6 +527,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoGetReleaseAttachment" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoGetReleaseByTag" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoDownloadCommitDiffOrPatch" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     )
@@ -602,6 +612,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("repository release asset metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = releaseAssetRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository release by tag metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = releaseByTagRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },

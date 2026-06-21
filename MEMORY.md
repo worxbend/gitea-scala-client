@@ -29,3 +29,4 @@
 [anti-pattern] Failed or abandoned endpoint work can leak into public ABI through source imports and snapshots; quarantine or complete accidental surface before compatibility snapshots are refreshed.
 [pattern] Swagger array query parameters with `collectionFormat: multi` must be tested via ordered repeated pairs (`paramsSeq`); map-shaped assertions hide duplicate keys.
 [learning] Release attachment GET endpoints return generic Swagger `Attachment` metadata; upload/edit/delete and any binary download behavior are separate contracts, not implied by `browser_download_url`.
+[process] Documentation that claims Swagger audit coverage should name the exact audited endpoint group; broad labels like "release endpoints" can hide unaudited legacy metadata.

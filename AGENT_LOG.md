@@ -2747,3 +2747,74 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 A  core/src/io/worxbend/gitea4s/model/ReleaseAsset.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-21T23:24:50Z iteration 4 started remaining=14114s
+2026-06-21T23:24:50Z iteration 4 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-21T23:24:50Z iteration 4 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-ge62s65a/repo copied_entries=99
+2026-06-21T23:24:50Z iteration 4 ideator phase started count=3
+2026-06-21T23:24:50Z iteration 4 ideator phase concurrency workers=3
+2026-06-21T23:24:50Z iteration 4 ideator 1 role="the pragmatist" started
+2026-06-21T23:24:50Z iteration 4 ideator 2 role="the architect" started
+2026-06-21T23:24:50Z iteration 4 ideator 3 role="the contrarian" started
+2026-06-21T23:25:01Z iteration 4 ideator 1 role="the pragmatist" completed status=0
+2026-06-21T23:25:01Z iteration 4 ideator 2 role="the architect" completed status=0
+2026-06-21T23:25:02Z iteration 4 ideator 3 role="the contrarian" completed status=0
+2026-06-21T23:25:02Z iteration 4 ideator phase completed approaches=3
+2026-06-21T23:25:02Z iteration 4 selector started approaches=3
+2026-06-21T23:25:13Z iteration 4 selector completed status=0
+2026-06-21T23:25:13Z iteration 4 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-ge62s65a/repo
+2026-06-21T23:25:13Z iteration 4 selector rejected alternative role="the pragmatist" approach="Release Read-Path Consolidation: finish the release-by-tag slice as a narrow read-only capability while using it to standardize release lookup naming, path-segment encoding, ret..." reason="Strong and mostly aligned, but selected as-is it frames the work more as endpoint consolidation than as a broader release-boundary checkpoint around tags, attachments, and downloads."
+2026-06-21T23:25:13Z iteration 4 selector rejected alternative role="the architect" approach="Contract-First Read-Only Expansion: Treat `repoGetReleaseByTag` as a small release-domain contract probe, prioritizing Swagger alignment, path-encoding confidence, and facade na..." reason="Strong and close to the selected strategy, but it under-emphasizes the need to freeze adjacent release write and attachment decisions as an explicit planning constraint."
+2026-06-21T23:25:13Z iteration 4 selector rejected alternative role="the contrarian" approach="Contract-First Release Surface Freeze: pause new endpoint expansion briefly and force the next release-by-tag slice to prove that the existing release/read/download boundaries a..." reason="Useful caution, but too process-heavy if taken literally as a pause. The Planner should still advance with the release-by-tag endpoint while applying the boundary discipline."
+2026-06-21T23:25:13Z iteration 4 selector alternatives persisted count=3
+2026-06-21T23:25:13Z iteration 4 selector structured alternatives persisted count=3
+2026-06-21T23:25:13Z iteration 4 planner started
+2026-06-21T23:25:50Z iteration 4 plan: 5 task(s) in 4 phase(s). This decomposition keeps the release-by-tag slice narrow and contract-first. Request metadata and Swagger audits come first because the facade depends on the request builder. Snapshot and documentation can proceed in parallel after the API shape is known because they touch disjoint files. PLAN updates and validation are last so they can record the actual completed state.
+2026-06-21T23:25:50Z iteration 4 phase 1 started parallel=False tasks=1
+2026-06-21T23:29:25Z iteration 4 task t1 ('Add release-by-tag request contract') status=0
+2026-06-21T23:29:25Z iteration 4 phase 2 started parallel=False tasks=1
+2026-06-21T23:31:42Z iteration 4 task t2 ('Expose releaseByTag facade') status=0
+2026-06-21T23:31:42Z iteration 4 phase 3 started parallel=True tasks=2
+2026-06-21T23:33:06Z iteration 4 task t4 ('Update release-by-tag docs') status=0
+2026-06-21T23:33:49Z iteration 4 task t3 ('Refresh public API snapshot') status=0
+2026-06-21T23:33:49Z iteration 4 phase 4 started parallel=False tasks=1
+2026-06-21T23:36:02Z iteration 4 task t5 ('Validate and update PLAN continuation') status=0
+2026-06-21T23:36:02Z iteration 4 reviewer started
+
+## Reviewer Summary - Iteration 4 - 2026-06-22T03:10:00+03:00
+
+What was done:
+- Inspected the full release-by-tag patch across source, tests, docs, public API snapshot, PLAN, AGENT_LOG, and ALTERNATIVES telemetry.
+- Cross-checked `repoGetReleaseByTag` against `plugin-redoc-2.yaml`; the local Swagger operation is `GET /repos/{owner}/{repo}/releases/tags/{tag}`, has required `owner`/`repo`/`tag` path parameters, produces `application/json`, returns `#/responses/Release` on `200`, and documents `404` as `#/responses/notFound`.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, focused `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`, and credential-stripped `it.test`; all passed, with all seven existing live probes ignored.
+
+What was found:
+- No functional blocker or regression was found.
+- `GiteaEndpoints.repoGetReleaseByTag`, `GiteaRequests.repoReleaseByTag`, `ReleasesApi.releaseByTag`, and `SttpGiteaClient.releaseByTag` follow established release-read patterns: safe path segment construction, no query parameters, no request body or JSON `Content-Type`, JSON accept/auth/OTP/user-agent headers, `Release` decoding, documented `404` propagation, and read-only retry eligibility.
+- Request and facade tests cover punctuation-heavy tags such as `v1.0.0`, slash-containing tags such as `release/candidate` encoded as one path segment, success, 404 mapping, and retry behavior.
+- Swagger audit coverage was added for `repoGetReleaseByTag` with private documented non-2xx expectations and no audit-only metadata leakage into public endpoint types.
+- The only concrete gap is documentation/audit scope: README now says the audit covers "release" endpoints, but `GiteaEndpointAuditSpec` currently audits release-by-tag plus release asset endpoints, not the older `repoListReleases` and `repoGetRelease` metadata.
+
+Top improvement proposals:
+- Register `repoListReleases` and `repoGetRelease` in `GiteaEndpointAuditSpec`, including optional release-list queries, documented non-2xx labels, body absence, retryability, and success refs; otherwise narrow README wording so it names only the audited release subset.
+- Add hermetic live probes for release detail, release-by-tag, release asset list, and release asset detail, gated by explicit `GITEA_RELEASE_ID`, `GITEA_RELEASE_TAG`, and `GITEA_RELEASE_ASSET_ID` variables plus the existing live credentials and repository variables.
+- Keep release delete-by-tag, release create/edit/delete, release asset upload/edit/delete, and release asset binary download out of the next continuation; each is a separate write or binary contract slice.
+2026-06-21T23:39:29Z iteration 4 reviewer completed status=0
+2026-06-21T23:39:29Z iteration 4 memory updated
+2026-06-21T23:39:29Z iteration 4 completed validation_status=0
+2026-06-21T23:39:29Z iteration 4 checkpoint started
+2026-06-21T23:39:29Z iteration 4 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  client/src/io/worxbend/gitea4s/api/ReleasesApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala

@@ -130,6 +130,14 @@ surface is still being filled out.
   list decodes the non-paginated Swagger `AttachmentList` response as
   `Chunk[ReleaseAsset]`, has no documented query params, and the detail lookup
   decodes one `Attachment` as `ReleaseAsset`.
+- Release-by-tag metadata lookup for
+  `GET /repos/{owner}/{repo}/releases/tags/{tag}` (`repoGetReleaseByTag`) with
+  `GiteaRequests.repoReleaseByTag` and `ReleasesApi.releaseByTag`; the
+  read-only request is retryable, has no query parameters or request body,
+  returns `Release` metadata, and encodes punctuation-heavy tags such as
+  `v1.0.0` and slash-containing tags such as `release/candidate` as one path
+  segment. Release create/edit/delete and release asset
+  upload/edit/delete/download surfaces remain out of scope.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,

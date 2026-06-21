@@ -287,6 +287,9 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override def release(owner: String, repo: String, id: Long): IO[GiteaError, Release] =
     executor.send(GiteaRequests.repoRelease(config, owner, repo, id))
 
+  override def releaseByTag(owner: String, repo: String, tag: String): IO[GiteaError, Release] =
+    executor.send(GiteaRequests.repoReleaseByTag(config, owner, repo, tag))
+
   override def releaseAssets(owner: String, repo: String, releaseId: Long): IO[GiteaError, Chunk[ReleaseAsset]] =
     executor.send(GiteaRequests.repoReleaseAssets(config, owner, repo, releaseId))
 

@@ -216,6 +216,15 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Release]
     )
 
+  def repoReleaseByTag(config: GiteaConfig, owner: String, repo: String, tag: String): GiteaRequest[Release] =
+    get(
+      config,
+      GiteaEndpoints.repoGetReleaseByTag,
+      List("repos", owner, repo, "releases", "tags", tag),
+      Nil,
+      GiteaResponseMapper.decodeJson[Release]
+    )
+
   def repoReleaseAssets(
       config: GiteaConfig,
       owner: String,
