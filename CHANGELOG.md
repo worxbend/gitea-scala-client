@@ -138,6 +138,14 @@ surface is still being filled out.
   `v1.0.0` and slash-containing tags such as `release/candidate` as one path
   segment. Release create/edit/delete and release asset
   upload/edit/delete/download surfaces remain out of scope.
+- Release confidence hardening for the existing read-only release metadata
+  surface: Swagger audit coverage now explicitly includes release list/detail
+  (`repoListReleases`, `repoGetRelease`) alongside release-by-tag and release
+  asset metadata endpoints, and opt-in live probes document the variables for
+  release detail, release-by-tag, release asset list, and single release asset
+  metadata lookups. This adds validation coverage only; it does not add release
+  create/edit/delete, release asset upload/edit/delete, or asset binary
+  download APIs.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,
@@ -201,6 +209,12 @@ surface is still being filled out.
   parameters, absence of request bodies, read-only retryability, success
   response refs `AttachmentList` and `Attachment`, and documented 404 response
   status/ref labels.
+- Release list/detail endpoint metadata audit coverage for operation IDs
+  `repoListReleases` and `repoGetRelease`, methods, paths, required
+  `owner`/`repo`/`id` path parameters, optional release-list query parameters
+  `draft`, `pre-release`, `page`, and `limit`, absence of request bodies,
+  read-only retryability, success response refs `ReleaseList` and `Release`,
+  and documented non-2xx response status/ref labels.
 - Commit diff/patch endpoint metadata audit coverage for operation ID, method,
   path, required `owner`/`repo`/`sha`/`diffType` path parameters, success
   response, documented 404 response status/ref label, request-body absence,
@@ -302,6 +316,12 @@ surface is still being filled out.
   non-empty `GITEA_URL`, `GITEA_TOKEN`, `GITEA_OWNER`, `GITEA_REPO`, and
   `GITEA_CONTENTS_FILEPATH`, with optional `GITEA_CONTENTS_REF` passed through
   as `ContentsParams(ref = Some(value))`.
+- Opt-in live integration probes for existing release metadata lookups. The
+  release detail and release asset list probes require `GITEA_RELEASE_ID`, the
+  release-by-tag probe requires `GITEA_RELEASE_TAG`, and the single release
+  asset probe requires both `GITEA_RELEASE_ID` and
+  `GITEA_RELEASE_ASSET_ID`, in addition to non-empty `GITEA_URL`,
+  `GITEA_TOKEN`, `GITEA_OWNER`, and `GITEA_REPO`.
 - Test-side schema-field checklist coverage for recent Swagger Git response
   models: `Reference`, `GitObject`, `AnnotatedTag`, `AnnotatedTagObject`, and
   `GitBlobResponse`.
@@ -341,3 +361,7 @@ surface is still being filled out.
   request/audit/facade specs, and credential-stripped integration testing with
   `GITEA_ARCHIVE_PATHS` unset alongside the other live-probe variables; all
   seven live probes were reported as ignored.
+- Release audit and live-probe documentation now records
+  `GITEA_RELEASE_ID`, `GITEA_RELEASE_TAG`, and `GITEA_RELEASE_ASSET_ID`; the
+  credential-stripped integration command unsets those release variables
+  alongside the existing live-probe variables.

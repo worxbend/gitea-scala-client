@@ -27,7 +27,8 @@ and zio-json.
   pull-request create/edit, merge/update, commit-to-pull-request,
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
   annotated tag, repository contents, raw/media repository file, repository
-  archive, release, and release asset endpoints,
+  archive, release list/detail, release-by-tag, and release asset metadata
+  endpoints,
   including documented non-2xx response labels, optional query parameters,
   `application/octet-stream`/Swagger `type: file` response shape for raw/media
   downloads, the archive operation's bare `200` success description, path enum
@@ -874,17 +875,19 @@ tests, and pagination tests:
 Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
-tree/blob/annotated-tag/refs, repository contents, and raw/media repository file
-and repository archive and release asset endpoint groups against
+tree/blob/annotated-tag/refs, repository contents, raw/media repository file,
+repository archive, release list/detail, release-by-tag, and release asset
+metadata endpoint groups against
 `plugin-redoc-2.yaml`, including
 documented non-2xx response status/ref labels, optional query parameters such as
 `recursive`/`page`/`per_page`, contents/raw/media `ref`, and archive `path`,
 `application/octet-stream`/Swagger `type: file` response shape for raw/media
 downloads, the archive operation's bare `200` success description,
 no-query/no-body checks for Git blob, annotated tag, and refs requests, no-body
-checks for contents, raw/media, archive, and release asset requests, release
-asset `AttachmentList`/`Attachment` response refs, and path enum values such as
-`diffType`.
+checks for contents, raw/media, archive, release list/detail, release-by-tag,
+and release asset requests, release list/detail `ReleaseList`/`Release`
+response refs, release asset `AttachmentList`/`Attachment` response refs, and
+path enum values such as `diffType`.
 
 Live integration tests are opt-in:
 
@@ -961,14 +964,31 @@ GITEA_ARCHIVE_PATHS=src,docs/readme.md \
 ./mill it.test
 ```
 
-Latest release asset documentation and snapshot validation passed with:
+Release metadata probes are read-only and metadata-only. They call the existing
+`client.release(owner, repo, id)`, `client.releaseByTag(owner, repo, tag)`,
+`client.releaseAssets(owner, repo, releaseId)`, and
+`client.releaseAsset(owner, repo, releaseId, assetId)` facades. In addition to
+`GITEA_URL`, `GITEA_TOKEN`, `GITEA_OWNER`, and `GITEA_REPO`, configure
+`GITEA_RELEASE_ID` for release detail and asset-list probes,
+`GITEA_RELEASE_TAG` for the release-by-tag probe, and both
+`GITEA_RELEASE_ID` and `GITEA_RELEASE_ASSET_ID` for the single asset lookup:
 
 ```bash
-git diff --check
-./mill --no-server compatibility.writeSnapshot
-./mill --no-server core.test client.test compatibility.check
-./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec
-env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD -u GITEA_OWNER -u GITEA_REPO -u GITEA_REF -u GITEA_ANNOTATED_TAG_SHA -u GITEA_CONTENTS_FILEPATH -u GITEA_CONTENTS_REF -u GITEA_RAW_FILEPATH -u GITEA_ARCHIVE -u GITEA_ARCHIVE_PATHS ./mill --no-server it.test
+GITEA_URL=https://gitea.example \
+GITEA_TOKEN=... \
+GITEA_OWNER=my-org \
+GITEA_REPO=my-repo \
+GITEA_RELEASE_ID=7 \
+GITEA_RELEASE_TAG=v1.0.0 \
+GITEA_RELEASE_ASSET_ID=42 \
+./mill it.test
+```
+
+For credential-stripped integration validation, unset the full live-variable
+set so `it.test` reports the probes as ignored and makes no network calls:
+
+```bash
+env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD -u GITEA_OWNER -u GITEA_REPO -u GITEA_REF -u GITEA_ANNOTATED_TAG_SHA -u GITEA_CONTENTS_FILEPATH -u GITEA_CONTENTS_REF -u GITEA_RAW_FILEPATH -u GITEA_RAW_REF -u GITEA_ARCHIVE -u GITEA_ARCHIVE_PATHS -u GITEA_RELEASE_ID -u GITEA_RELEASE_TAG -u GITEA_RELEASE_ASSET_ID ./mill --no-server it.test
 ```
 
 ## Mill Commands

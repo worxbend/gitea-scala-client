@@ -94,7 +94,57 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
         TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
-        TestAspect.ifEnv(Env.archive)(nonEmptyValue)
+        TestAspect.ifEnv(Env.archive)(nonEmptyValue),
+      test("loads configured release metadata through the live backend") {
+        withLiveClient { client =>
+          for
+            owner <- liveEnv(Env.owner)
+            repo <- liveEnv(Env.repo)
+            releaseId <- liveEnvLong(Env.releaseId)
+            release <- client.release(owner, repo, releaseId)
+          yield assertTrue(release.id.contains(releaseId))
+        }
+      } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.releaseId)(nonEmptyValue),
+      test("loads configured release metadata by tag through the live backend") {
+        withLiveClient { client =>
+          for
+            owner <- liveEnv(Env.owner)
+            repo <- liveEnv(Env.repo)
+            tag <- liveEnv(Env.releaseTag)
+            release <- client.releaseByTag(owner, repo, tag)
+          yield assertTrue(release.tagName.contains(tag))
+        }
+      } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.releaseTag)(nonEmptyValue),
+      test("loads configured release asset metadata list through the live backend") {
+        withLiveClient { client =>
+          for
+            owner <- liveEnv(Env.owner)
+            repo <- liveEnv(Env.repo)
+            releaseId <- liveEnvLong(Env.releaseId)
+            assets <- client.releaseAssets(owner, repo, releaseId)
+          yield assertTrue(assets.forall(_.id.forall(_ > 0L)))
+        }
+      } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.releaseId)(nonEmptyValue),
+      test("loads configured release asset metadata through the live backend") {
+        withLiveClient { client =>
+          for
+            owner <- liveEnv(Env.owner)
+            repo <- liveEnv(Env.repo)
+            releaseId <- liveEnvLong(Env.releaseId)
+            assetId <- liveEnvLong(Env.releaseAssetId)
+            asset <- client.releaseAsset(owner, repo, releaseId, assetId)
+          yield assertTrue(asset.id.contains(assetId))
+        }
+      } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.releaseId)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.releaseAssetId)(nonEmptyValue)
     ) @@ TestAspect.ifEnv(GiteaConfig.Env.url)((value: String) => value.trim.nonEmpty) @@
       TestAspect.ifEnv(GiteaConfig.Env.token)((value: String) => value.trim.nonEmpty)
 
@@ -114,6 +164,11 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
 
   private def liveEnv(name: String): ZIO[Any, String, String] =
     ZIO.fromOption(nonBlank(sys.env.toMap, name)).orElseFail(s"$name must be configured for this live test")
+
+  private def liveEnvLong(name: String): ZIO[Any, String, Long] =
+    liveEnv(name).flatMap { value =>
+      ZIO.fromOption(value.toLongOption).orElseFail(s"$name must be a whole number for this live test")
+    }
 
   private def nonBlank(env: Map[String, String], name: String): Option[String] =
     env.get(name).map(_.trim).filter(_.nonEmpty)
@@ -141,3 +196,6 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
     val archive = "GITEA_ARCHIVE"
     val archivePaths = "GITEA_ARCHIVE_PATHS"
     val archivePathsDelimiter = ","
+    val releaseId = "GITEA_RELEASE_ID"
+    val releaseTag = "GITEA_RELEASE_TAG"
+    val releaseAssetId = "GITEA_RELEASE_ASSET_ID"

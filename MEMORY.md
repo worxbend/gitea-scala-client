@@ -30,3 +30,5 @@
 [pattern] Swagger array query parameters with `collectionFormat: multi` must be tested via ordered repeated pairs (`paramsSeq`); map-shaped assertions hide duplicate keys.
 [learning] Release attachment GET endpoints return generic Swagger `Attachment` metadata; upload/edit/delete and any binary download behavior are separate contracts, not implied by `browser_download_url`.
 [process] Documentation that claims Swagger audit coverage should name the exact audited endpoint group; broad labels like "release endpoints" can hide unaudited legacy metadata.
+[learning] `repoListReleases` documents `draft` and `pre-release` filters in addition to pagination; release listing is not facade-complete until those filters are modeled.
+[pattern] Live list probes are more useful when an optional configured detail id makes them assert list membership; otherwise empty-list success can be only a weak endpoint check.

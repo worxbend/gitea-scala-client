@@ -2818,3 +2818,66 @@ M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
 M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+2026-06-21T23:39:33Z iteration 5 started remaining=13231s
+2026-06-21T23:39:33Z iteration 5 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-21T23:39:33Z iteration 5 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-x5ugphv7/repo copied_entries=99
+2026-06-21T23:39:33Z iteration 5 ideator phase started count=3
+2026-06-21T23:39:33Z iteration 5 ideator phase concurrency workers=3
+2026-06-21T23:39:33Z iteration 5 ideator 1 role="the pragmatist" started
+2026-06-21T23:39:33Z iteration 5 ideator 2 role="the architect" started
+2026-06-21T23:39:33Z iteration 5 ideator 3 role="the contrarian" started
+2026-06-21T23:39:42Z iteration 5 ideator 2 role="the architect" completed status=0
+2026-06-21T23:39:42Z iteration 5 ideator 3 role="the contrarian" completed status=0
+2026-06-21T23:39:44Z iteration 5 ideator 1 role="the pragmatist" completed status=0
+2026-06-21T23:39:44Z iteration 5 ideator phase completed approaches=3
+2026-06-21T23:39:44Z iteration 5 selector started approaches=3
+2026-06-21T23:39:54Z iteration 5 selector completed status=0
+2026-06-21T23:39:54Z iteration 5 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-x5ugphv7/repo
+2026-06-21T23:39:54Z iteration 5 selector rejected alternative role="the architect" approach="Audit-First Release Confidence: stabilize the documented release metadata boundary before touching more surface area, using Swagger audit truth as the gate and live probes only..." reason="Strong and mostly aligned, but selected as part of a broader synthesis that makes README claim reconciliation and public-surface non-expansion explicit planning constraints."
+2026-06-21T23:39:54Z iteration 5 selector rejected alternative role="the contrarian" approach="Audit-First Release Confidence: treat release metadata as a contract-integrity checkpoint before adding any new surface, prioritizing proof that existing release APIs are accura..." reason="Strong framing, but slightly too abstract; the synthesized strategy anchors the release gatekeeper idea to the concrete current gaps in audit registration, documentation precision, and live confidence."
+2026-06-21T23:39:54Z iteration 5 selector rejected alternative role="the pragmatist" approach="Audit-First Confidence Closure: treat the next slice as a release-metadata confidence pass, not an API expansion. Start by making the claimed contract coverage literally true, t..." reason="Strongest operational framing, but selected as a synthesis rather than as-is to incorporate the architect's emphasis on Swagger audit truth as the primary gate."
+2026-06-21T23:39:54Z iteration 5 selector alternatives persisted count=3
+2026-06-21T23:39:54Z iteration 5 selector structured alternatives persisted count=3
+2026-06-21T23:39:54Z iteration 5 planner started
+2026-06-21T23:40:25Z iteration 5 plan: 4 task(s) in 3 phase(s). The slice is ordered audit-first because documentation claims and live confidence should be anchored to the local Swagger contract. Live probes and docs can proceed in parallel after the audit because they touch separate files and only depend on the agreed environment variable names. PLAN update and validation come last because they must reflect all implemented work and final command results.
+2026-06-21T23:40:25Z iteration 5 phase 1 started parallel=False tasks=1
+2026-06-21T23:41:57Z iteration 5 task t1 ('Audit existing release list/detail endpoints') status=0
+2026-06-21T23:41:57Z iteration 5 phase 2 started parallel=True tasks=2
+2026-06-21T23:44:22Z iteration 5 task t3 ('Document release live variables and audit scope') status=0
+2026-06-21T23:44:47Z iteration 5 task t2 ('Add read-only release live probes') status=0
+2026-06-21T23:44:47Z iteration 5 phase 3 started parallel=False tasks=1
+2026-06-21T23:47:14Z iteration 5 task t4 ('Update plan and run validation') status=0
+2026-06-21T23:47:14Z iteration 5 reviewer started
+
+## Reviewer Summary - Iteration 5 - 2026-06-22T03:55:00+03:00
+
+What was done:
+- Inspected every file changed in the release confidence slice: `GiteaEndpointAuditSpec.scala`, `LiveGiteaIntegrationSpec.scala`, `README.md`, `CHANGELOG.md`, `PLAN.md`, `AGENT_LOG.md`, and `ALTERNATIVES.jsonl`.
+- Cross-checked `repoListReleases`, `repoGetRelease`, `repoGetReleaseByTag`, `repoListReleaseAttachments`, and `repoGetReleaseAttachment` against `plugin-redoc-2.yaml`, including release-list query parameters and documented 404 response refs.
+- Ran validation: `git diff --check`, `./mill --no-server core.test`, `./mill --no-server client.test`, `./mill --no-server compatibility.check`, focused `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaEndpointAuditSpec`, and credential-stripped `it.test`; all passed, with all 11 live probes ignored without credentials.
+
+What was found:
+- No functional blocker or regression was found.
+- Release list/detail endpoint audit coverage is now consistent with README claims: operation IDs, methods, paths, required path parameters, optional release-list query names, success refs, non-2xx labels, body absence, and retryability are checked against the local Swagger file.
+- The new live probes are read-only and correctly gated by base credentials plus explicit owner/repo and release variables. Malformed numeric release IDs fail clearly through `liveEnvLong`; credential-free runs remain hermetic.
+- The release asset-list live probe currently accepts an empty list, which is reasonable when only `GITEA_RELEASE_ID` is configured but gives weak confidence when `GITEA_RELEASE_ASSET_ID` is also available.
+- The audit now makes a pre-existing product gap more visible: `repoListReleases` metadata includes Swagger `draft` and `pre-release` filters, but the public request/facade surface still only exposes paginated release streaming without those filters.
+
+Top improvement proposals:
+- Add `ReleaseListParams` with `draft`, `pre-release`, `page`, and `limit`, wire it through the low-level request builder and `ReleasesApi.releases`, and preserve the existing no-params call via a default argument.
+- Strengthen the live release asset-list probe so, when `GITEA_RELEASE_ASSET_ID` is present, the list probe asserts the configured asset id is returned by `client.releaseAssets`.
+- Consider `repoGetLatestRelease` as the next low-risk read-only release endpoint after release-list filtering, while keeping release writes, delete-by-tag, asset uploads, and binary asset downloads out of scope until their contracts are deliberately designed.
+2026-06-21T23:50:21Z iteration 5 reviewer completed status=0
+2026-06-21T23:50:21Z iteration 5 memory updated
+2026-06-21T23:50:21Z iteration 5 completed validation_status=0
+2026-06-21T23:50:21Z iteration 5 checkpoint started
+2026-06-21T23:50:21Z iteration 5 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  it/test/src/io/worxbend/gitea4s/it/LiveGiteaIntegrationSpec.scala
