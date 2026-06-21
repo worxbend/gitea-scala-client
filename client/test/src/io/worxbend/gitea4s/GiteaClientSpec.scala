@@ -2,6 +2,7 @@ package io.worxbend.gitea4s
 
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
+  ArchiveParams,
   CombinedStatusParams,
   CommitNoteParams,
   CommitStatusListParams,
@@ -1068,10 +1069,12 @@ object GiteaClientSpec extends ZIOSpecDefault:
       test("downloads archive path values as bytes through the ReposApi facade") {
         val zipBytes = Array[Byte](80, 75, 3, 4, 20, 0)
         val tarBytes = Array[Byte](31, -117, 8, 0, 0, 0, 0, 0)
+        val pathBytes = Array[Byte](80, 75, 6, 6)
         val zipBackend =
           taskStub.whenRequestMatches { request =>
             request.method == Method.GET &&
               request.uri.path.endsWith(List("repos", "alice", "myrepo", "archive", "main.zip")) &&
+              request.uri.paramsSeq.isEmpty &&
               request.header("Accept").contains("application/octet-stream") &&
               request.body == NoBody
           }.thenRespond(ResponseStub.adjust(zipBytes))
@@ -1079,18 +1082,35 @@ object GiteaClientSpec extends ZIOSpecDefault:
           taskStub.whenRequestMatches { request =>
             request.method == Method.GET &&
               request.uri.path.endsWith(List("repos", "alice", "myrepo", "archive", "v1.0.0.tar.gz")) &&
+              request.uri.paramsSeq.isEmpty &&
               request.header("Accept").contains("application/octet-stream") &&
               request.body == NoBody
           }.thenRespond(ResponseStub.adjust(tarBytes))
+        val pathBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "myrepo", "archive", "main.zip")) &&
+              request.uri.paramsSeq == Seq("path" -> "src", "path" -> "docs/readme.md") &&
+              request.header("Accept").contains("application/octet-stream") &&
+              request.body == NoBody
+          }.thenRespond(ResponseStub.adjust(pathBytes))
         val zipClient = GiteaClient.fromBackend(config, zipBackend)
         val tarClient = GiteaClient.fromBackend(config, tarBackend)
+        val pathClient = GiteaClient.fromBackend(config, pathBackend)
 
         for
           zip <- zipClient.archive("alice", "myrepo", "main.zip")
           tar <- tarClient.archive("alice", "myrepo", "v1.0.0.tar.gz")
+          path <- pathClient.archive(
+            "alice",
+            "myrepo",
+            "main.zip",
+            ArchiveParams(path = Chunk("src", "docs/readme.md"))
+          )
         yield assertTrue(
           zip == Chunk.fromArray(zipBytes),
-          tar == Chunk.fromArray(tarBytes)
+          tar == Chunk.fromArray(tarBytes),
+          path == Chunk.fromArray(pathBytes)
         )
       },
       test("propagates archive documented 404 error through the facade") {

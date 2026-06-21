@@ -1,9 +1,9 @@
 package io.worxbend.gitea4s.it
 
 import io.worxbend.gitea4s.backend.zio.ZioGiteaBackend
-import io.worxbend.gitea4s.http.{ContentsParams, RepoListParams}
+import io.worxbend.gitea4s.http.{ArchiveParams, ContentsParams, RepoListParams}
 import io.worxbend.gitea4s.{GiteaClient, GiteaConfig, GiteaConfigError}
-import zio.ZIO
+import zio.{Chunk, ZIO}
 import zio.test.*
 
 object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
@@ -83,11 +83,13 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
         TestAspect.ifEnv(Env.rawFilepath)(nonEmptyValue),
       test("downloads a configured repository archive through the live backend") {
         withLiveClient { client =>
+          val params = archiveParams(sys.env.toMap)
+
           for
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             archive <- liveEnv(Env.archive)
-            bytes <- client.archive(owner, repo, archive)
+            bytes <- client.archive(owner, repo, archive, params)
           yield assertTrue(bytes.nonEmpty)
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -116,6 +118,14 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
   private def nonBlank(env: Map[String, String], name: String): Option[String] =
     env.get(name).map(_.trim).filter(_.nonEmpty)
 
+  private def archiveParams(env: Map[String, String]): ArchiveParams =
+    val paths = nonBlank(env, Env.archivePaths)
+      .map(_.split(Env.archivePathsDelimiter).toIndexedSeq.map(_.trim).filter(_.nonEmpty))
+      .getOrElse(IndexedSeq.empty)
+
+    if paths.isEmpty then ArchiveParams.default
+    else ArchiveParams(path = Chunk.fromIterable(paths))
+
   private def nonEmptyValue(value: String): Boolean =
     value.trim.nonEmpty
 
@@ -129,3 +139,5 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
     val rawFilepath = "GITEA_RAW_FILEPATH"
     val rawRef = "GITEA_RAW_REF"
     val archive = "GITEA_ARCHIVE"
+    val archivePaths = "GITEA_ARCHIVE_PATHS"
+    val archivePathsDelimiter = ","

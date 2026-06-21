@@ -17,6 +17,7 @@ import io.worxbend.gitea4s.model.{
   SubmitPullReviewOptions
 }
 import sttp.client4.*
+import zio.Chunk
 import zio.test.*
 
 import java.nio.charset.StandardCharsets
@@ -270,11 +271,24 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   private val archiveRequests = List(
     AuditedRequest(
       request = GiteaRequests.repoGetArchive(config, "owner", "repo", archive = "main.zip"),
-      noBodyLifecyclePost = false
+      noBodyLifecyclePost = false,
+      expectedQueryParams = Nil
     ),
     AuditedRequest(
       request = GiteaRequests.repoGetArchive(config, "owner", "repo", archive = "v1.0.0.tar.gz"),
-      noBodyLifecyclePost = false
+      noBodyLifecyclePost = false,
+      expectedQueryParams = Nil
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoGetArchive(
+        config,
+        "owner",
+        "repo",
+        archive = "main.zip",
+        ArchiveParams(path = Chunk("src", "docs/readme.md"))
+      ),
+      noBodyLifecyclePost = false,
+      expectedQueryParams = Seq("path" -> "src", "path" -> "docs/readme.md")
     )
   )
 
@@ -745,9 +759,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           List(
             compare("produces", operation.produces, List("application/json")),
             compare("request Accept", audited.request.request.header("Accept"), Some("application/octet-stream")),
-            Option.when(audited.request.request.uri.paramsMap.nonEmpty)(
-              s"request query parameters actual=${audited.request.request.uri.paramsMap} expected=Map()"
-            )
+            compare("request query parameters", audited.request.request.uri.paramsSeq, audited.expectedQueryParams)
           ).flatten.map(message => s"${endpoint.operationId}: $message")
 
     metadataFailures ++ requestFailures
@@ -774,7 +786,8 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   private final case class AuditedRequest(
       request: GiteaRequest[?],
-      noBodyLifecyclePost: Boolean
+      noBodyLifecyclePost: Boolean,
+      expectedQueryParams: Seq[(String, String)] = Nil
   )
 
   private final case class PathEnumAudit(

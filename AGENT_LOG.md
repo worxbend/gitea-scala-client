@@ -2591,3 +2591,81 @@ A  core/src/io/worxbend/gitea4s/model/ArchiveFormat.scala
 A  core/src/io/worxbend/gitea4s/model/CreateRepo.scala
 A  core/src/io/worxbend/gitea4s/model/ForkRepo.scala
 M  it/test/src/io/worxbend/gitea4s/it/LiveGiteaIntegrationSpec.scala
+2026-06-21T22:39:36Z iteration 2 started remaining=16827s
+2026-06-21T22:39:36Z iteration 2 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-21T22:39:37Z iteration 2 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-zb6fgase/repo copied_entries=100
+2026-06-21T22:39:37Z iteration 2 ideator phase started count=3
+2026-06-21T22:39:37Z iteration 2 ideator phase concurrency workers=3
+2026-06-21T22:39:37Z iteration 2 ideator 1 role="the pragmatist" started
+2026-06-21T22:39:37Z iteration 2 ideator 2 role="the architect" started
+2026-06-21T22:39:37Z iteration 2 ideator 3 role="the contrarian" started
+2026-06-21T22:39:46Z iteration 2 ideator 3 role="the contrarian" completed status=0
+2026-06-21T22:39:47Z iteration 2 ideator 2 role="the architect" completed status=0
+2026-06-21T22:39:47Z iteration 2 ideator 1 role="the pragmatist" completed status=0
+2026-06-21T22:39:47Z iteration 2 ideator phase completed approaches=3
+2026-06-21T22:39:47Z iteration 2 selector started approaches=3
+2026-06-21T22:39:56Z iteration 2 selector completed status=0
+2026-06-21T22:39:56Z iteration 2 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-zb6fgase/repo
+2026-06-21T22:39:56Z iteration 2 selector rejected alternative role="the contrarian" approach="Rollback-First Contract Triage: treat the archive slice as contaminated until the public ABI is deliberately narrowed, then preserve only the smallest defensible whole-archive A..." reason="Strong on rollback discipline, but selected only as part of a broader contract reconciliation strategy. Pure subtraction could miss the need to explicitly decide and document archive subpath support and ArchiveFormat exposure."
+2026-06-21T22:39:56Z iteration 2 selector rejected alternative role="the architect" approach="Stabilize the Contract Boundary First: treat the archive slice as a public API quarantine exercise before adding any new endpoints. The next planner should prioritize deciding w..." reason="Very close to selected, but slightly too abstract. The final strategy makes the archive slice the concrete quarantine target and names the specific boundary artifacts that must be brought back into alignment."
+2026-06-21T22:39:56Z iteration 2 selector rejected alternative role="the pragmatist" approach="Stabilize the boundary before expanding surface: treat the archive slice as a contract-cleanup checkpoint, not another endpoint implementation pass. The next planner should firs..." reason="Also close, but selected strategy sharpens the planner guidance around release-contract cleanup over implementation momentum, while preserving the pragmatic distinction between whole-archive convenience and the documented multi-value pat..."
+2026-06-21T22:39:56Z iteration 2 selector alternatives persisted count=3
+2026-06-21T22:39:56Z iteration 2 selector structured alternatives persisted count=3
+2026-06-21T22:39:56Z iteration 2 planner started
+2026-06-21T22:40:35Z iteration 2 plan: 5 task(s) in 4 phase(s). The iteration is boundary-first: remove accidental public ABI before reshaping archive behavior, then make the archive contract match Swagger and implementation reality, then align docs/integration and finally update the plan with validation. Only docs and the hermetic live probe are parallel because they touch disjoint files after the code contract is settled.
+2026-06-21T22:40:35Z iteration 2 phase 1 started parallel=False tasks=1
+2026-06-21T22:45:16Z iteration 2 task t1 ('Quarantine accidental repository write API') status=0
+2026-06-21T22:45:16Z iteration 2 phase 2 started parallel=False tasks=1
+2026-06-21T22:51:05Z iteration 2 task t2 ('Stabilize archive request contract') status=0
+2026-06-21T22:51:05Z iteration 2 phase 3 started parallel=True tasks=2
+2026-06-21T22:52:15Z iteration 2 task t4 ('Keep integration archive probe hermetic') status=0
+2026-06-21T22:53:07Z iteration 2 task t3 ('Align archive documentation') status=0
+2026-06-21T22:53:07Z iteration 2 phase 4 started parallel=False tasks=1
+2026-06-21T22:57:26Z iteration 2 task t5 ('Update plan and validate cleanup') status=0
+2026-06-21T22:57:26Z iteration 2 reviewer started
+
+## Reviewer Summary - Iteration 2 - 2026-06-22T01:59:30+03:00
+
+What was done:
+- Inspected every changed file in the archive stabilization cleanup: source, tests, live integration probe, README, CHANGELOG, PLAN, API snapshots, telemetry files, and the removed `ArchiveFormat`, `CreateRepo`, and `ForkRepo` public model files.
+- Cross-checked `repoGetArchive` against `plugin-redoc-2.yaml`; the local Swagger operation has required `owner`/`repo`/`archive` path parameters, optional array query parameter `path` with `collectionFormat: multi`, `produces: application/json`, a bare `200` success description, and documented `404`.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, focused `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`, and credential-stripped `it.test`; all passed, with seven live probes ignored.
+
+What was found:
+- No functional blocker or regression was found.
+- The accidental repository write surface was successfully quarantined from source and snapshots: `CreateRepo`, `ForkRepo`, `ReposApi.create`, `ReposApi.fork`, `ReposApi.delete`, `createCurrentUserRepo`, `createFork`, `repoDelete`, and related request builders are gone.
+- `ArchiveParams(path: Chunk[String])` correctly models the documented multi-value `path` query; default archive calls omit query parameters and subpath calls emit repeated ordered `path` pairs.
+- Archive request/facade/audit tests cover byte decoding, 404 propagation, retryability, no request body/content type, slash-containing archive path encoding, repeated path query values, and the Swagger fact that archive success is `produces: application/json` with a bare `200`.
+- The live archive probe remains hermetic and now supports optional `GITEA_ARCHIVE_PATHS`, but the README live-probe section still documents only the default whole-archive probe.
+
+Top improvement proposals:
+- Update README live integration docs to mention optional `GITEA_ARCHIVE_PATHS` and include it in archive-related credential-stripped validation snippets.
+- Before adding another body-bearing endpoint, try narrowing `GiteaRequests.withJsonBody` back to `Request[String] => Request[String]`; keep the generic form only if current path-dependent request types still require it.
+- Preserve repeated query semantics in audits with `paramsSeq`, not `paramsMap`, for every Swagger `collectionFormat: multi` array parameter.
+- Proceed next with a narrow release-asset read/download slice, reusing the stabilized byte-response executor only where Swagger or live behavior justifies a binary facade.
+2026-06-21T23:00:46Z iteration 2 reviewer completed status=0
+2026-06-21T23:00:46Z iteration 2 memory updated
+2026-06-21T23:00:46Z iteration 2 completed validation_status=0
+2026-06-21T23:00:46Z iteration 2 checkpoint started
+2026-06-21T23:00:46Z iteration 2 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+A  client/src/io/worxbend/gitea4s/http/ArchiveParams.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+D  core/src/io/worxbend/gitea4s/model/ArchiveFormat.scala
+D  core/src/io/worxbend/gitea4s/model/CreateRepo.scala
+D  core/src/io/worxbend/gitea4s/model/ForkRepo.scala
+M  it/test/src/io/worxbend/gitea4s/it/LiveGiteaIntegrationSpec.scala

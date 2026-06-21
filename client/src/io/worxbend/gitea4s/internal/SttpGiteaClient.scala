@@ -4,11 +4,12 @@ import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.api.OrgsApi
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
-  GiteaRequests,
+  ArchiveParams,
   CombinedStatusParams,
   CommitNoteParams,
   CommitStatusListParams,
   ContentsParams,
+  GiteaRequests,
   GitTreeParams,
   IssueCommentListParams,
   IssueListParams,
@@ -39,7 +40,6 @@ import io.worxbend.gitea4s.model.{
   ContentsResponse,
   CreatePullRequestOption,
   CreatePullReviewOptions,
-  CreateRepo,
   CreateStatusOption,
   DismissPullReviewOptions,
   EditDeadlineOption,
@@ -47,7 +47,6 @@ import io.worxbend.gitea4s.model.{
   EditIssue,
   EditPullRequestOption,
   EditReactionOption,
-  ForkRepo,
   GitBlobResponse,
   GitTreeResponse,
   Issue,
@@ -209,17 +208,13 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   ): IO[GiteaError, Chunk[Byte]] =
     executor.send(GiteaRequests.repoMediaFile(config, owner, repo, filepath, params))
 
-  override def archive(owner: String, repo: String, archive: String): IO[GiteaError, Chunk[Byte]] =
-    executor.send(GiteaRequests.repoGetArchive(config, owner, repo, archive))
-
-  override def create(body: CreateRepo): IO[GiteaError, Repository] =
-    executor.send(GiteaRequests.createRepo(config, body))
-
-  override def fork(owner: String, repo: String, body: ForkRepo): IO[GiteaError, Repository] =
-    executor.send(GiteaRequests.forkRepo(config, owner, repo, body))
-
-  override def delete(owner: String, repo: String): IO[GiteaError, Unit] =
-    executor.send(GiteaRequests.deleteRepo(config, owner, repo))
+  override def archive(
+      owner: String,
+      repo: String,
+      archive: String,
+      params: ArchiveParams
+  ): IO[GiteaError, Chunk[Byte]] =
+    executor.send(GiteaRequests.repoGetArchive(config, owner, repo, archive, params))
 
   override def list(
       owner: String,

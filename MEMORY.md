@@ -27,3 +27,4 @@
 [learning] `repoGetArchive` documents an optional multi-value `path` query parameter for repository subpaths; a whole-archive facade is only a subset unless that query is modeled.
 [learning] Archive downloads may need byte decoding in practice even when local Swagger records `produces: application/json` and a bare `200` response; audits and docs must separate Swagger facts from pragmatic client behavior.
 [anti-pattern] Failed or abandoned endpoint work can leak into public ABI through source imports and snapshots; quarantine or complete accidental surface before compatibility snapshots are refreshed.
+[pattern] Swagger array query parameters with `collectionFormat: multi` must be tested via ordered repeated pairs (`paramsSeq`); map-shaped assertions hide duplicate keys.

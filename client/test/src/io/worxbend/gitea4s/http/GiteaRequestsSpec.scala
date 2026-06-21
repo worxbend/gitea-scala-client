@@ -1144,6 +1144,26 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           decoded == Right(Chunk.fromArray(bytes))
         )
       },
+      test("encodes repeated archive path query values") {
+        val built = GiteaRequests.repoGetArchive(
+          config,
+          "owner",
+          "repo",
+          "main.zip",
+          ArchiveParams(path = Chunk("src", "docs/readme.md"))
+        )
+        val request = built.request
+
+        assertTrue(
+          request.method == Method.GET,
+          request.uri.path == List("root", "api", "v1", "repos", "owner", "repo", "archive", "main.zip"),
+          request.uri.paramsSeq == Seq("path" -> "src", "path" -> "docs/readme.md"),
+          request.body == NoBody,
+          request.header("Accept").contains("application/octet-stream"),
+          request.header("Content-Type").isEmpty,
+          built.retryable == true
+        )
+      },
       test("encodes slash-containing archive values as one path segment") {
         val built = GiteaRequests.repoGetArchive(
           config,

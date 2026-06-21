@@ -2,6 +2,7 @@ package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
+  ArchiveParams,
   CombinedStatusParams,
   CommitNoteParams,
   CommitStatusListParams,
@@ -18,9 +19,7 @@ import io.worxbend.gitea4s.model.{
   CombinedStatus,
   CommitStatus,
   ContentsResponse,
-  CreateRepo,
   CreateStatusOption,
-  ForkRepo,
   GitBlobResponse,
   GitTreeResponse,
   NewIssuePinsAllowed,
@@ -93,13 +92,12 @@ trait ReposApi:
       params: ContentsParams = ContentsParams.default
   ): IO[GiteaError, Chunk[Byte]]
 
-  def archive(owner: String, repo: String, archive: String): IO[GiteaError, Chunk[Byte]]
-
-  def create(body: CreateRepo): IO[GiteaError, Repository]
-
-  def fork(owner: String, repo: String, body: ForkRepo): IO[GiteaError, Repository]
-
-  def delete(owner: String, repo: String): IO[GiteaError, Unit]
+  def archive(
+      owner: String,
+      repo: String,
+      archive: String,
+      params: ArchiveParams = ArchiveParams.default
+  ): IO[GiteaError, Chunk[Byte]]
 
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 

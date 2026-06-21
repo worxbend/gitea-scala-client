@@ -1461,42 +1461,6 @@ object GiteaEndpoints:
       response = "#/responses/empty"
     )
 
-  val createCurrentUserRepo: GiteaEndpoint =
-    GiteaEndpoint(
-      method = "POST",
-      path = "/user/repos",
-      operationId = "createCurrentUserRepo",
-      parameters = List(
-        GiteaParameter("body", "body", required = false)
-      ),
-      response = "#/responses/Repository"
-    )
-
-  val createFork: GiteaEndpoint =
-    GiteaEndpoint(
-      method = "POST",
-      path = "/repos/{owner}/{repo}/forks",
-      operationId = "createFork",
-      parameters = List(
-        GiteaParameter("owner", "path", required = true),
-        GiteaParameter("repo", "path", required = true),
-        GiteaParameter("body", "body", required = false)
-      ),
-      response = "#/responses/Repository"
-    )
-
-  val repoDelete: GiteaEndpoint =
-    GiteaEndpoint(
-      method = "DELETE",
-      path = "/repos/{owner}/{repo}",
-      operationId = "repoDelete",
-      parameters = List(
-        GiteaParameter("owner", "path", required = true),
-        GiteaParameter("repo", "path", required = true)
-      ),
-      response = "#/responses/empty"
-    )
-
   val userGetStopWatches: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

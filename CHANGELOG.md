@@ -112,8 +112,14 @@ surface is still being filled out.
   `GiteaRequests.repoGetArchive` and `ReposApi.archive`; the read-only API
   returns buffered `Chunk[Byte]`, accepts archive values such as `main.zip` and
   `v1.0.0.tar.gz`, encodes slash-containing archive values as one path
-  segment, sends `Accept: application/octet-stream`, sends no request body, and
-  propagates documented `404` failures through the shared error mapper.
+  segment, accepts `ArchiveParams` for repeated `path` query values such as
+  `path=src&path=docs/readme.md`, omits query parameters by default for whole
+  archive downloads, sends `Accept: application/octet-stream`, sends no request
+  body, and propagates documented `404` failures through the shared error
+  mapper. This is a pragmatic buffered byte-download facade; the local
+  `plugin-redoc-2.yaml` operation records `produces: application/json` and a
+  bare `200` success description, not an `application/octet-stream` Swagger
+  `type: file` response schema.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,
@@ -168,9 +174,9 @@ surface is still being filled out.
   response status/ref labels.
 - Repository archive endpoint metadata audit coverage for operation ID
   `repoGetArchive`, method, path, required `owner`/`repo`/`archive` path
-  parameters, no query parameters, absence of request bodies, read-only
-  retryability, success response shape as Swagger `type: file` /
-  `application/octet-stream`, and documented 404 response status/ref labels.
+  parameters, optional repeated `path` query parameter, absence of request
+  bodies, read-only retryability, bare `200` success description from
+  `plugin-redoc-2.yaml`, and documented 404 response status/ref labels.
 - Commit diff/patch endpoint metadata audit coverage for operation ID, method,
   path, required `owner`/`repo`/`sha`/`diffType` path parameters, success
   response, documented 404 response status/ref label, request-body absence,

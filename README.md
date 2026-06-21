@@ -16,17 +16,20 @@ and zio-json.
   commit statuses, single-commit lookup, commit note lookup, commit diff/patch
   downloads, Git tree reads, Git blob reads, Git reference reads, annotated tag
   reads, repository contents metadata reads, raw/media repository file byte
-  downloads, commit-to-pull-request lookup, releases, pull requests including
-  reviews, pinned pull-request reads, pull-request create/edit writes,
-  diff/patch downloads, merge-status checks, merge/update commands,
-  review-comment resolution, and notifications through a ZIO client API
+  downloads, repository archive byte downloads, commit-to-pull-request lookup,
+  releases, pull requests including reviews, pinned pull-request reads,
+  pull-request create/edit writes, diff/patch downloads, merge-status checks,
+  merge/update commands, review-comment resolution, and notifications through a
+  ZIO client API
 - Contract checks: implemented endpoint metadata is audited against
   `plugin-redoc-2.yaml` for pull-request review lifecycle, commit-status,
   pull-request create/edit, merge/update, commit-to-pull-request,
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
-  annotated tag, repository contents, and raw/media repository file endpoints,
+  annotated tag, repository contents, raw/media repository file, and repository
+  archive endpoints,
   including documented non-2xx response labels, optional query parameters,
-  `application/octet-stream`/Swagger `type: file` response shape, path enum
+  `application/octet-stream`/Swagger `type: file` response shape for raw/media
+  downloads, the archive operation's bare `200` success description, path enum
   values, and clear path/method/parameter mismatch failures
 - Endpoint audit-only non-success response labels live in test scope; the
   published client endpoint metadata exposes operation method, path, operation
@@ -327,12 +330,18 @@ remains metadata-oriented and continues returning `ContentsResponse`.
 Repository archive downloads cover
 `GET /repos/{owner}/{repo}/archive/{archive}` through `client.archive`.
 Successful responses return buffered `Chunk[Byte]` and advertise
-`Accept: application/octet-stream`; the request has no query parameters and no
-body. Pass the archive path exactly as Gitea documents it, such as `main.zip`
-or `v1.0.0.tar.gz`. Slash-containing archive values are encoded as one path
+`Accept: application/octet-stream`; this is a pragmatic client behavior for
+archive bytes. The local `plugin-redoc-2.yaml` operation is less precise: it
+records `produces: application/json` and a bare `200` success description, not
+an `application/octet-stream` Swagger `type: file` response schema. Pass the
+archive path exactly as Gitea documents it, such as `main.zip` or
+`v1.0.0.tar.gz`. Slash-containing archive values are encoded as one path
 segment, so refs such as `refs/heads/main.tar.gz` are preserved as a single
-`archive` parameter. Archive downloads are separate from metadata-oriented
-`contents` and from raw/media single-file downloads.
+`archive` parameter. `ArchiveParams.default` omits query parameters and
+downloads the whole archive. To request one or more subpaths, pass
+`ArchiveParams(path = Chunk("src", "docs/readme.md"))`; each value is sent as
+a repeated `path` query parameter. Archive downloads are separate from
+metadata-oriented `contents` and from raw/media single-file downloads.
 
 Commit diff/patch downloads cover
 `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` through
@@ -345,12 +354,14 @@ no request body.
 
 ```scala
 import io.worxbend.gitea4s.http.{
+  ArchiveParams,
   CommitNoteParams,
   ContentsParams,
   GitTreeParams,
   SingleCommitParams
 }
 import io.worxbend.gitea4s.model.CommitDiffType
+import zio.Chunk
 
 client.commit(owner = "my-org", repo = "my-repo", sha = "abc123")
 
@@ -426,6 +437,13 @@ client.mediaFile(
 )
 
 client.archive(owner = "my-org", repo = "my-repo", archive = "main.zip")
+
+client.archive(
+  owner = "my-org",
+  repo = "my-repo",
+  archive = "main.zip",
+  params = ArchiveParams(path = Chunk("src", "docs/readme.md"))
+)
 
 client.commitDiffOrPatch(
   owner = "my-org",
@@ -813,13 +831,14 @@ Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
 tree/blob/annotated-tag/refs, repository contents, and raw/media repository file
-endpoint groups against `plugin-redoc-2.yaml`, including documented non-2xx
-response status/ref labels, optional query parameters such as
-`recursive`/`page`/`per_page` and contents/raw/media `ref`,
+and repository archive endpoint groups against `plugin-redoc-2.yaml`, including
+documented non-2xx response status/ref labels, optional query parameters such as
+`recursive`/`page`/`per_page`, contents/raw/media `ref`, and archive `path`,
 `application/octet-stream`/Swagger `type: file` response shape for raw/media
-downloads, no-query/no-body checks for Git blob, annotated tag, and refs
-requests, no-body checks for contents and raw/media requests, and path enum
-values such as `diffType`.
+downloads, the archive operation's bare `200` success description,
+no-query/no-body checks for Git blob, annotated tag, and refs requests, no-body
+checks for contents, raw/media, and archive requests, and path enum values such
+as `diffType`.
 
 Live integration tests are opt-in:
 
@@ -878,8 +897,9 @@ GITEA_CONTENTS_REF=main \
 ./mill it.test
 ```
 
-The repository archive probe calls `ReposApi.archive(owner, repo, archive)` and
-requires a configured archive value such as `main.zip`:
+The repository archive probe calls `ReposApi.archive(owner, repo, archive)` with
+default whole-archive parameters and requires a configured archive value such as
+`main.zip`:
 
 ```bash
 GITEA_URL=https://gitea.example \
