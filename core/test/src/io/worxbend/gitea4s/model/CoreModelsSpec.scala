@@ -15,6 +15,7 @@ object CoreModelsSpec extends ZIOSpecDefault:
   )
 
   private val schemaChecklistSwaggerFields = Map(
+    "Attachment" -> Set("browser_download_url", "created_at", "download_count", "id", "name", "size", "uuid"),
     "Reference" -> Set("object", "ref", "url"),
     "GitObject" -> Set("sha", "type", "url"),
     "AnnotatedTag" -> Set("message", "object", "sha", "tag", "tagger", "url", "verification"),
@@ -46,6 +47,10 @@ object CoreModelsSpec extends ZIOSpecDefault:
   )
 
   private val schemaFieldChecklist = List(
+    SchemaFieldChecklist(
+      "Attachment",
+      Set("browser_download_url", "created_at", "download_count", "id", "name", "size", "uuid")
+    ),
     SchemaFieldChecklist("Reference", Set("object", "ref", "url")),
     SchemaFieldChecklist("GitObject", Set("sha", "type", "url")),
     SchemaFieldChecklist(
@@ -89,6 +94,16 @@ object CoreModelsSpec extends ZIOSpecDefault:
   )
 
   private val schemaFieldEncodedFixtures = Map(
+    "Attachment" ->
+      ReleaseAsset(
+        browserDownloadUrl = Some("https://gitea.example/octo/gitea4s/releases/download/v0.1.0/gitea4s.jar"),
+        createdAt = Some(Instant.parse("2026-06-19T10:00:00Z")),
+        downloadCount = Some(42L),
+        id = Some(500L),
+        name = Some("gitea4s.jar"),
+        size = Some(4096L),
+        uuid = Some("asset-uuid-500")
+      ).toJson,
     "Reference" ->
       Reference(
         gitObject = Some(
@@ -360,6 +375,109 @@ object CoreModelsSpec extends ZIOSpecDefault:
           thread.map(_.subject.flatMap(_.state)) == Right(Some(NotificationSubjectState.Merged)),
           thread.map(_.subject.flatMap(_.subjectType)) == Right(Some(NotificationSubjectType.Pull)),
           thread.map(_.updatedAt) == Right(Some(Instant.parse("2026-06-18T06:00:00Z")))
+        )
+      },
+      test("decodes release asset metadata from the Attachment response schema") {
+        val json =
+          """{
+            |  "browser_download_url": "https://gitea.example/octo/gitea4s/releases/download/v0.1.0/gitea4s.jar",
+            |  "created_at": "2026-06-19T10:00:00Z",
+            |  "download_count": 42,
+            |  "id": 500,
+            |  "name": "gitea4s.jar",
+            |  "size": 4096,
+            |  "uuid": "asset-uuid-500"
+            |}""".stripMargin
+
+        val asset = json.fromJson[ReleaseAsset]
+
+        assertTrue(
+          asset.map(_.browserDownloadUrl) ==
+            Right(Some("https://gitea.example/octo/gitea4s/releases/download/v0.1.0/gitea4s.jar")),
+          asset.map(_.createdAt) == Right(Some(Instant.parse("2026-06-19T10:00:00Z"))),
+          asset.map(_.downloadCount) == Right(Some(42L)),
+          asset.map(_.id) == Right(Some(500L)),
+          asset.map(_.name) == Right(Some("gitea4s.jar")),
+          asset.map(_.size) == Right(Some(4096L)),
+          asset.map(_.uuid) == Right(Some("asset-uuid-500"))
+        )
+      },
+      test("round-trips release asset metadata without losing Attachment JSON names") {
+        val payload = ReleaseAsset(
+          browserDownloadUrl = Some("https://gitea.example/octo/gitea4s/releases/download/v0.1.0/gitea4s.jar"),
+          createdAt = Some(Instant.parse("2026-06-19T10:00:00Z")),
+          downloadCount = Some(42L),
+          id = Some(500L),
+          name = Some("gitea4s.jar"),
+          size = Some(4096L),
+          uuid = Some("asset-uuid-500")
+        )
+        val json = payload.toJson
+
+        assertTrue(
+          json.fromJson[ReleaseAsset] == Right(payload),
+          json.contains(""""browser_download_url":"https://gitea.example/octo/gitea4s/releases/download/v0.1.0/gitea4s.jar""""),
+          json.contains(""""created_at":"2026-06-19T10:00:00Z""""),
+          json.contains(""""download_count":42"""),
+          !json.contains("browserDownloadUrl"),
+          !json.contains("createdAt"),
+          !json.contains("downloadCount"),
+          ReleaseAsset(id = Some(500L), name = Some("gitea4s.jar")).toJson ==
+            """{"id":500,"name":"gitea4s.jar"}""",
+          ReleaseAsset().toJson == "{}"
+        )
+      },
+      test("decodes release asset list responses as non-paginated AttachmentList arrays") {
+        val json =
+          """[
+            |  {
+            |    "browser_download_url": "https://gitea.example/octo/gitea4s/releases/download/v0.1.0/gitea4s.jar",
+            |    "created_at": "2026-06-19T10:00:00Z",
+            |    "download_count": 42,
+            |    "id": 500,
+            |    "name": "gitea4s.jar",
+            |    "size": 4096,
+            |    "uuid": "asset-uuid-500"
+            |  },
+            |  {
+            |    "browser_download_url": "https://gitea.example/octo/gitea4s/releases/download/v0.1.0/gitea4s-sources.jar",
+            |    "created_at": "2026-06-19T10:05:00Z",
+            |    "download_count": 7,
+            |    "id": 501,
+            |    "name": "gitea4s-sources.jar",
+            |    "size": 1024,
+            |    "uuid": "asset-uuid-501"
+            |  }
+            |]""".stripMargin
+
+        val expected = List(
+          ReleaseAsset(
+            browserDownloadUrl = Some("https://gitea.example/octo/gitea4s/releases/download/v0.1.0/gitea4s.jar"),
+            createdAt = Some(Instant.parse("2026-06-19T10:00:00Z")),
+            downloadCount = Some(42L),
+            id = Some(500L),
+            name = Some("gitea4s.jar"),
+            size = Some(4096L),
+            uuid = Some("asset-uuid-500")
+          ),
+          ReleaseAsset(
+            browserDownloadUrl =
+              Some("https://gitea.example/octo/gitea4s/releases/download/v0.1.0/gitea4s-sources.jar"),
+            createdAt = Some(Instant.parse("2026-06-19T10:05:00Z")),
+            downloadCount = Some(7L),
+            id = Some(501L),
+            name = Some("gitea4s-sources.jar"),
+            size = Some(1024L),
+            uuid = Some("asset-uuid-501")
+          )
+        )
+        val encoded = expected.toJson
+
+        assertTrue(
+          json.fromJson[List[ReleaseAsset]] == Right(expected),
+          encoded.fromJson[List[ReleaseAsset]] == Right(expected),
+          encoded.contains(""""name":"gitea4s.jar""""),
+          encoded.contains(""""name":"gitea4s-sources.jar"""")
         )
       },
       test("decodes issue, label, milestone, and comment payloads") {

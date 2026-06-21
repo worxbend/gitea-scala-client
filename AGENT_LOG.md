@@ -2669,3 +2669,81 @@ D  core/src/io/worxbend/gitea4s/model/ArchiveFormat.scala
 D  core/src/io/worxbend/gitea4s/model/CreateRepo.scala
 D  core/src/io/worxbend/gitea4s/model/ForkRepo.scala
 M  it/test/src/io/worxbend/gitea4s/it/LiveGiteaIntegrationSpec.scala
+2026-06-21T23:00:51Z iteration 3 started remaining=15553s
+2026-06-21T23:00:51Z iteration 3 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-21T23:00:51Z iteration 3 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-yixvpidz/repo copied_entries=98
+2026-06-21T23:00:51Z iteration 3 ideator phase started count=3
+2026-06-21T23:00:51Z iteration 3 ideator phase concurrency workers=3
+2026-06-21T23:00:51Z iteration 3 ideator 1 role="the pragmatist" started
+2026-06-21T23:00:51Z iteration 3 ideator 2 role="the architect" started
+2026-06-21T23:00:51Z iteration 3 ideator 3 role="the contrarian" started
+2026-06-21T23:01:01Z iteration 3 ideator 3 role="the contrarian" completed status=0
+2026-06-21T23:01:02Z iteration 3 ideator 2 role="the architect" completed status=0
+2026-06-21T23:01:03Z iteration 3 ideator 1 role="the pragmatist" completed status=0
+2026-06-21T23:01:03Z iteration 3 ideator phase completed approaches=3
+2026-06-21T23:01:03Z iteration 3 selector started approaches=3
+2026-06-21T23:01:14Z iteration 3 selector completed status=0
+2026-06-21T23:01:14Z iteration 3 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-yixvpidz/repo
+2026-06-21T23:01:14Z iteration 3 selector rejected alternative role="the contrarian" approach="Spec-First Release Asset Boundary Probe: pause endpoint expansion until the next planner treats release assets as a contract-boundary investigation, not a routine slice, using t..." reason="Not selected as-is because it over-emphasizes pausing endpoint expansion. The release-asset slice can proceed safely if boundary classification is treated as the gate rather than a separate blocking investigation."
+2026-06-21T23:01:14Z iteration 3 selector rejected alternative role="the architect" approach="Contract-First Release Asset Wedge: treat release assets as a narrow contract-hardening slice, using Swagger audits and public API boundary decisions before any facade expansion..." reason="Mostly accepted, but strengthened with the contrarian's explicit warning about binary/download boundary risk and accidental public-surface leakage from the prior archive iteration."
+2026-06-21T23:01:14Z iteration 3 selector rejected alternative role="the pragmatist" approach="Contract-First Narrow Slice: stabilize the small release-asset read surface by treating Swagger audits, response-body shape decisions, and public facade naming as gates before e..." reason="Mostly accepted, but its framing is slightly too implementation-adjacent. The planner needs a strategic contract-boundary rule first, then can derive the narrow endpoint slice from that."
+2026-06-21T23:01:14Z iteration 3 selector alternatives persisted count=3
+2026-06-21T23:01:14Z iteration 3 selector structured alternatives persisted count=3
+2026-06-21T23:01:14Z iteration 3 planner started
+2026-06-21T23:01:54Z iteration 3 plan: 6 task(s) in 5 phase(s). The first phase handles two independent cleanup/alignment items before new API work. Release asset implementation is then serialized because models feed request decoding, request builders feed facade wiring, and docs/snapshots must reflect the final public surface.
+2026-06-21T23:01:54Z iteration 3 phase 1 started parallel=True tasks=2
+2026-06-21T23:02:57Z iteration 3 task t1 ('Document archive live subpath probe') status=0
+2026-06-21T23:03:12Z iteration 3 task t2 ('Narrow JSON body helper if compatible') status=0
+2026-06-21T23:03:12Z iteration 3 phase 2 started parallel=False tasks=1
+2026-06-21T23:05:28Z iteration 3 task t3 ('Add release asset models') status=0
+2026-06-21T23:05:28Z iteration 3 phase 3 started parallel=False tasks=1
+2026-06-21T23:09:17Z iteration 3 task t4 ('Implement release asset HTTP requests') status=0
+2026-06-21T23:09:17Z iteration 3 phase 4 started parallel=False tasks=1
+2026-06-21T23:12:00Z iteration 3 task t5 ('Expose release asset facade') status=0
+2026-06-21T23:12:00Z iteration 3 phase 5 started parallel=False tasks=1
+2026-06-21T23:21:09Z iteration 3 task t6 ('Align docs snapshots and plan') status=0
+2026-06-21T23:21:09Z iteration 3 reviewer started
+
+## Reviewer Summary - Iteration 3 - 2026-06-22T02:45:00+03:00
+
+What was done:
+- Inspected the full working-tree patch for the release asset metadata slice, including the new `ReleaseAsset` model, release facade methods, request builders, endpoint metadata, request/facade/audit/model tests, README, CHANGELOG, PLAN, API snapshots, and telemetry files.
+- Cross-checked `repoListReleaseAttachments`, `repoGetReleaseAttachment`, `AttachmentList`, and `Attachment` against `plugin-redoc-2.yaml`. Both implemented endpoints are read-only JSON metadata endpoints with required path parameters only, success refs `#/responses/AttachmentList` and `#/responses/Attachment`, and documented `404` responses.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, focused `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`, and credential-stripped `it.test`; all passed, with seven live probes ignored.
+
+What was found:
+- No functional blocker or regression was found.
+- `ReleaseAsset` correctly preserves the Swagger `Attachment` fields `browser_download_url`, `created_at`, `download_count`, `id`, `name`, `size`, and `uuid`; codec tests and schema-field checklist coverage protect the JSON names without adding production schema metadata.
+- `GiteaRequests.repoReleaseAssets` and `repoReleaseAsset` build safe read-only GET requests, encode owner/repo path segments, send JSON accept/auth/OTP/user-agent headers, omit query parameters and request bodies, decode non-paginated asset lists as `Chunk[ReleaseAsset]`, decode single assets as `ReleaseAsset`, propagate documented 404 errors, and remain retryable.
+- `ReleasesApi.releaseAssets` and `releaseAsset` expose the metadata reads cleanly through `GiteaClient`; tests cover success, 404 propagation, and retry behavior.
+- The prior follow-up to narrow `GiteaRequests.withJsonBody` is complete and the public API snapshot reflects the intentional string-response-only helper.
+- Residual risk is design-level rather than functional: Swagger `Attachment` is a generic schema reused by release, issue, and comment attachment endpoints, so future attachment slices need an explicit model/facade decision instead of silently stretching `ReleaseAsset`.
+
+Top improvement proposals:
+- Implement `GET /repos/{owner}/{repo}/releases/tags/{tag}` next as `releaseByTag(owner, repo, tag)`, with one-segment encoding tests for tags such as `v1.0.0` and `release/candidate`, no query/body surface, 404 propagation, retry coverage, endpoint audit coverage, docs, changelog, and API snapshots.
+- Keep release create/edit/delete and release asset upload/edit/delete out of the next continuation; they need a deliberate write/upload contract and multipart/form-data handling plan.
+- Before implementing issue/comment/release attachment write or download endpoints, decide whether to promote a generic `Attachment` model or keep endpoint-specific aliases, and keep browser download URLs as metadata rather than implying an authenticated binary download API.
+- Consider a later opt-in live release metadata probe gated by explicit release and asset IDs, but do not let it block the release-by-tag slice.
+2026-06-21T23:24:46Z iteration 3 reviewer completed status=0
+2026-06-21T23:24:46Z iteration 3 memory updated
+2026-06-21T23:24:46Z iteration 3 completed validation_status=0
+2026-06-21T23:24:46Z iteration 3 checkpoint started
+2026-06-21T23:24:46Z iteration 3 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReleasesApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+A  core/src/io/worxbend/gitea4s/model/ReleaseAsset.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

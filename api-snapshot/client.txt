@@ -532,6 +532,8 @@ public interface io.worxbend.gitea4s.api.PullRequestsApi {
 public interface io.worxbend.gitea4s.api.ReleasesApi {
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> releases(java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> release(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.ReleaseAsset>> releaseAssets(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.ReleaseAsset> releaseAsset(java.lang.String, java.lang.String, long, long);
 }
 
 ## io.worxbend.gitea4s.api.ReposApi
@@ -1026,6 +1028,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetRawFile();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetRawFileOrLFS();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetRelease();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetReleaseAttachment();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetSingleCommit();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListAllGitRefs();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListBranches();
@@ -1034,6 +1037,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListPinnedPullRequests();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListPullRequests();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListPullReviews();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoListReleaseAttachments();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListReleases();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListStatuses();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoListStatusesByRef();
@@ -1076,6 +1080,8 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListTags();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListReleases();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetRelease();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoListReleaseAttachments();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoGetReleaseAttachment();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetCombinedStatusByRef();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListStatusesByRef();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListStatuses();
@@ -1347,6 +1353,8 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.PullReview>> repoPullReviews(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<java.lang.Object>> repoRawFile(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ContentsParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Release> repoRelease(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.ReleaseAsset> repoReleaseAsset(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
+  public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.ReleaseAsset>> repoReleaseAssets(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Release>> repoReleases(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Commit> repoSingleCommit(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.SingleCommitParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.CommitStatus>> repoStatuses(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CommitStatusListParams);
@@ -1370,7 +1378,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Repository>> userRepos(io.worxbend.gitea4s.GiteaConfig, java.lang.String, io.worxbend.gitea4s.http.RepoListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> userSearch(io.worxbend.gitea4s.GiteaConfig, io.worxbend.gitea4s.http.UserSearchParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.StopWatch>> userStopwatches(io.worxbend.gitea4s.GiteaConfig, int);
-  public static <B> sttp.client4.Request<B> withJsonBody(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Request<B>, java.lang.String);
+  public static sttp.client4.Request<java.lang.String> withJsonBody(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Request<java.lang.String>, java.lang.String);
   public static io.worxbend.gitea4s.http.NotificationListParams notifications$default$2();
   public static io.worxbend.gitea4s.http.UserSearchParams userSearch$default$2();
   public static int userStopwatches$default$2();
@@ -1440,6 +1448,8 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Release>> repoReleases(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
   public int repoReleases$default$4();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Release> repoRelease(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.ReleaseAsset>> repoReleaseAssets(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.ReleaseAsset> repoReleaseAsset(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.CombinedStatus> repoCombinedStatusByRef(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CombinedStatusParams);
   public io.worxbend.gitea4s.http.CombinedStatusParams repoCombinedStatusByRef$default$5();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.CommitStatus>> repoStatusesByRef(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CommitStatusListParams);
@@ -1561,7 +1571,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public int userFollowers$default$3();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> userFollowing(io.worxbend.gitea4s.GiteaConfig, java.lang.String, int);
   public int userFollowing$default$3();
-  public <B> sttp.client4.Request<B> withJsonBody(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Request<B>, java.lang.String);
+  public sttp.client4.Request<java.lang.String> withJsonBody(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Request<java.lang.String>, java.lang.String);
 }
 
 ## io.worxbend.gitea4s.http.GiteaResponseMapper

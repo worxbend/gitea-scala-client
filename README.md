@@ -17,16 +17,16 @@ and zio-json.
   downloads, Git tree reads, Git blob reads, Git reference reads, annotated tag
   reads, repository contents metadata reads, raw/media repository file byte
   downloads, repository archive byte downloads, commit-to-pull-request lookup,
-  releases, pull requests including reviews, pinned pull-request reads,
-  pull-request create/edit writes, diff/patch downloads, merge-status checks,
-  merge/update commands, review-comment resolution, and notifications through a
-  ZIO client API
+  releases, release asset metadata reads, pull requests including reviews,
+  pinned pull-request reads, pull-request create/edit writes, diff/patch
+  downloads, merge-status checks, merge/update commands, review-comment
+  resolution, and notifications through a ZIO client API
 - Contract checks: implemented endpoint metadata is audited against
   `plugin-redoc-2.yaml` for pull-request review lifecycle, commit-status,
   pull-request create/edit, merge/update, commit-to-pull-request,
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
-  annotated tag, repository contents, raw/media repository file, and repository
-  archive endpoints,
+  annotated tag, repository contents, raw/media repository file, repository
+  archive, and release asset endpoints,
   including documented non-2xx response labels, optional query parameters,
   `application/octet-stream`/Swagger `type: file` response shape for raw/media
   downloads, the archive operation's bare `200` success description, path enum
@@ -191,7 +191,9 @@ subscribers, issue tracked times, current-user stopwatches, repository-wide
 issue comments, branches, tags, releases, pull requests, and notification
 threads. Commit-status list APIs are also paginated streams. Pinned issues and
 pinned pull requests are exposed as non-paginated chunks because Gitea returns
-those endpoints as plain list responses without pagination parameters.
+those endpoints as plain list responses without pagination parameters. Release
+asset metadata lists are also non-paginated chunks in the local Swagger
+contract.
 
 ## Commit Statuses
 
@@ -343,6 +345,22 @@ downloads the whole archive. To request one or more subpaths, pass
 a repeated `path` query parameter. Archive downloads are separate from
 metadata-oriented `contents` and from raw/media single-file downloads.
 
+Repository release metadata covers paginated release listing through
+`client.releases(owner, repo)` and single release lookup through
+`client.release(owner, repo, id)`. Release asset metadata covers
+`GET /repos/{owner}/{repo}/releases/{id}/assets` through
+`client.releaseAssets(owner, repo, releaseId)` and
+`GET /repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}` through
+`client.releaseAsset(owner, repo, releaseId, assetId)`. The local Swagger
+contract names these response schemas `AttachmentList` and `Attachment`; this
+client exposes them as `ReleaseAsset` to keep the public API release-scoped.
+The asset list endpoint has no documented `page`, `limit`, or other query
+parameters, so it returns `IO[GiteaError, Chunk[ReleaseAsset]]` rather than a
+pagination stream. `ReleaseAsset` preserves metadata fields such as
+`browser_download_url`, `created_at`, `download_count`, `id`, `name`, `size`,
+and `uuid`. Upload, edit, delete, and binary asset download surfaces are not
+part of the current read-only API.
+
 Commit diff/patch downloads cover
 `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` through
 `client.commitDiffOrPatch`. Use `CommitDiffType.diff` or
@@ -443,6 +461,19 @@ client.archive(
   repo = "my-repo",
   archive = "main.zip",
   params = ArchiveParams(path = Chunk("src", "docs/readme.md"))
+)
+
+client.releases(owner = "my-org", repo = "my-repo").take(25).runCollect
+
+client.release(owner = "my-org", repo = "my-repo", id = 7)
+
+client.releaseAssets(owner = "my-org", repo = "my-repo", releaseId = 7)
+
+client.releaseAsset(
+  owner = "my-org",
+  repo = "my-repo",
+  releaseId = 7,
+  assetId = 91
 )
 
 client.commitDiffOrPatch(
@@ -831,14 +862,16 @@ Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
 tree/blob/annotated-tag/refs, repository contents, and raw/media repository file
-and repository archive endpoint groups against `plugin-redoc-2.yaml`, including
+and repository archive and release asset endpoint groups against
+`plugin-redoc-2.yaml`, including
 documented non-2xx response status/ref labels, optional query parameters such as
 `recursive`/`page`/`per_page`, contents/raw/media `ref`, and archive `path`,
 `application/octet-stream`/Swagger `type: file` response shape for raw/media
 downloads, the archive operation's bare `200` success description,
 no-query/no-body checks for Git blob, annotated tag, and refs requests, no-body
-checks for contents, raw/media, and archive requests, and path enum values such
-as `diffType`.
+checks for contents, raw/media, archive, and release asset requests, release
+asset `AttachmentList`/`Attachment` response refs, and path enum values such as
+`diffType`.
 
 Live integration tests are opt-in:
 
@@ -897,9 +930,13 @@ GITEA_CONTENTS_REF=main \
 ./mill it.test
 ```
 
-The repository archive probe calls `ReposApi.archive(owner, repo, archive)` with
-default whole-archive parameters and requires a configured archive value such as
-`main.zip`:
+The repository archive probe calls `ReposApi.archive(owner, repo, archive,
+params)` and requires a configured archive value such as `main.zip`.
+`GITEA_ARCHIVE_PATHS` is optional; when set, it is parsed as a comma-separated
+list of repository subpaths, with entries trimmed and empty entries ignored,
+then sent as repeated archive `path` query values. Omit
+`GITEA_ARCHIVE_PATHS` for the default whole-archive probe; include it when you
+want the live probe to exercise subpath archive queries:
 
 ```bash
 GITEA_URL=https://gitea.example \
@@ -907,16 +944,18 @@ GITEA_TOKEN=... \
 GITEA_OWNER=my-org \
 GITEA_REPO=my-repo \
 GITEA_ARCHIVE=main.zip \
+GITEA_ARCHIVE_PATHS=src,docs/readme.md \
 ./mill it.test
 ```
 
-Latest repository archive validation passed with:
+Latest release asset documentation and snapshot validation passed with:
 
 ```bash
 git diff --check
 ./mill --no-server compatibility.writeSnapshot
 ./mill --no-server core.test client.test compatibility.check
-env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD -u GITEA_OWNER -u GITEA_REPO -u GITEA_ARCHIVE ./mill --no-server it.test
+./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec
+env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD -u GITEA_OWNER -u GITEA_REPO -u GITEA_REF -u GITEA_ANNOTATED_TAG_SHA -u GITEA_CONTENTS_FILEPATH -u GITEA_CONTENTS_REF -u GITEA_RAW_FILEPATH -u GITEA_ARCHIVE -u GITEA_ARCHIVE_PATHS ./mill --no-server it.test
 ```
 
 ## Mill Commands

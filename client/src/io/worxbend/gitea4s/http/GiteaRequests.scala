@@ -47,6 +47,7 @@ import io.worxbend.gitea4s.model.{
   Reaction,
   Reference,
   Release,
+  ReleaseAsset,
   Repository,
   StopWatch,
   SubmitPullReviewOptions,
@@ -213,6 +214,35 @@ object GiteaRequests:
       List("repos", owner, repo, "releases", id.toString),
       Nil,
       GiteaResponseMapper.decodeJson[Release]
+    )
+
+  def repoReleaseAssets(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      releaseId: Long
+  ): GiteaRequest[Chunk[ReleaseAsset]] =
+    get(
+      config,
+      GiteaEndpoints.repoListReleaseAttachments,
+      List("repos", owner, repo, "releases", releaseId.toString, "assets"),
+      Nil,
+      GiteaResponseMapper.decodeChunk[ReleaseAsset]
+    )
+
+  def repoReleaseAsset(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      releaseId: Long,
+      attachmentId: Long
+  ): GiteaRequest[ReleaseAsset] =
+    get(
+      config,
+      GiteaEndpoints.repoGetReleaseAttachment,
+      List("repos", owner, repo, "releases", releaseId.toString, "assets", attachmentId.toString),
+      Nil,
+      GiteaResponseMapper.decodeJson[ReleaseAsset]
     )
 
   def repoCombinedStatusByRef(
@@ -1429,7 +1459,7 @@ object GiteaRequests:
       page = page
     )
 
-  def withJsonBody[B](config: GiteaConfig, request: Request[B], json: String): Request[B] =
+  def withJsonBody(config: GiteaConfig, request: Request[String], json: String): Request[String] =
     request
       .body(json)
       .contentType(MediaType.ApplicationJson)

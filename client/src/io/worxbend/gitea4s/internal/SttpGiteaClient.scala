@@ -69,6 +69,7 @@ import io.worxbend.gitea4s.model.{
   Reaction,
   Reference,
   Release,
+  ReleaseAsset,
   Repository,
   StopWatch,
   SubmitPullReviewOptions,
@@ -285,6 +286,17 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def release(owner: String, repo: String, id: Long): IO[GiteaError, Release] =
     executor.send(GiteaRequests.repoRelease(config, owner, repo, id))
+
+  override def releaseAssets(owner: String, repo: String, releaseId: Long): IO[GiteaError, Chunk[ReleaseAsset]] =
+    executor.send(GiteaRequests.repoReleaseAssets(config, owner, repo, releaseId))
+
+  override def releaseAsset(
+      owner: String,
+      repo: String,
+      releaseId: Long,
+      assetId: Long
+  ): IO[GiteaError, ReleaseAsset] =
+    executor.send(GiteaRequests.repoReleaseAsset(config, owner, repo, releaseId, assetId))
 
   override def pullRequests(
       owner: String,

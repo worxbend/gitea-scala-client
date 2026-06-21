@@ -2126,6 +2126,81 @@ object GiteaClientSpec extends ZIOSpecDefault:
           release.name.contains("Second")
         )
       },
+      test("loads repository release assets through the ReleasesApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "releases", "2", "assets")) &&
+              request.uri.paramsMap.isEmpty
+          }.thenRespond(
+            ResponseStub.adjust(
+              """[{"id":901,"name":"gitea4s.jar","download_count":7},{"id":902,"name":"gitea4s-sources.jar"}]"""
+            )
+          )
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "alice", "api", "releases", "2", "assets", "901")) &&
+                request.uri.paramsMap.isEmpty
+            }
+            .thenRespond(
+              ResponseStub.adjust("""{"id":901,"name":"gitea4s.jar","browser_download_url":"https://gitea.example/dl"}""")
+            )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          assets <- client.releaseAssets("alice", "api", releaseId = 2)
+          asset <- client.releaseAsset("alice", "api", releaseId = 2, assetId = 901)
+        yield assertTrue(
+          assets.map(_.name) == Chunk(Some("gitea4s.jar"), Some("gitea4s-sources.jar")),
+          assets.headOption.flatMap(_.downloadCount).contains(7L),
+          asset.id.contains(901L),
+          asset.browserDownloadUrl.contains("https://gitea.example/dl")
+        )
+      },
+      test("propagates release asset documented not-found errors through the facade") {
+        val listBody = """{"message":"release not found"}"""
+        val assetBody = """{"message":"asset not found"}"""
+        val listBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "releases", "404", "assets"))
+          }.thenRespond(ResponseStub.adjust(listBody, StatusCode.NotFound))
+        val assetBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "releases", "2", "assets", "404"))
+          }.thenRespond(ResponseStub.adjust(assetBody, StatusCode.NotFound))
+        val listClient = GiteaClient.fromBackend(config, listBackend)
+        val assetClient = GiteaClient.fromBackend(config, assetBackend)
+
+        for
+          listResult <- listClient.releaseAssets("alice", "api", releaseId = 404).either
+          assetResult <- assetClient.releaseAsset("alice", "api", releaseId = 2, assetId = 404).either
+        yield assertTrue(
+          listResult == Left(GiteaError.NotFound("release not found", listBody)),
+          assetResult == Left(GiteaError.NotFound("asset not found", assetBody))
+        )
+      },
+      test("retries release asset lookup because it is a read-only GET") {
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "releases", "2", "assets", "901"))
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""{"id":901,"name":"gitea4s.jar"}""")
+          )
+        val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
+
+        for
+          fiber <- client.releaseAsset("alice", "api", releaseId = 2, assetId = 901).fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          asset <- fiber.join
+        yield assertTrue(
+          asset.id.contains(901L),
+          asset.name.contains("gitea4s.jar")
+        )
+      },
       test("loads and streams repository pull requests") {
         val twoPageHeaders = List(Header("x-total-count", "2"))
         val backend =

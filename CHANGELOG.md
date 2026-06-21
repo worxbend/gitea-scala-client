@@ -120,6 +120,16 @@ surface is still being filled out.
   `plugin-redoc-2.yaml` operation records `produces: application/json` and a
   bare `200` success description, not an `application/octet-stream` Swagger
   `type: file` response schema.
+- Release asset metadata reads for
+  `GET /repos/{owner}/{repo}/releases/{id}/assets`
+  (`repoListReleaseAttachments`) and
+  `GET /repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}`
+  (`repoGetReleaseAttachment`) with `ReleaseAsset`,
+  `GiteaRequests.repoReleaseAssets`, `GiteaRequests.repoReleaseAsset`,
+  `ReleasesApi.releaseAssets`, and `ReleasesApi.releaseAsset`; the read-only
+  list decodes the non-paginated Swagger `AttachmentList` response as
+  `Chunk[ReleaseAsset]`, has no documented query params, and the detail lookup
+  decodes one `Attachment` as `ReleaseAsset`.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,
@@ -177,6 +187,12 @@ surface is still being filled out.
   parameters, optional repeated `path` query parameter, absence of request
   bodies, read-only retryability, bare `200` success description from
   `plugin-redoc-2.yaml`, and documented 404 response status/ref labels.
+- Release asset endpoint metadata audit coverage for operation IDs
+  `repoListReleaseAttachments` and `repoGetReleaseAttachment`, methods, paths,
+  required `owner`/`repo`/`id`/`attachment_id` path parameters, no query
+  parameters, absence of request bodies, read-only retryability, success
+  response refs `AttachmentList` and `Attachment`, and documented 404 response
+  status/ref labels.
 - Commit diff/patch endpoint metadata audit coverage for operation ID, method,
   path, required `owner`/`repo`/`sha`/`diffType` path parameters, success
   response, documented 404 response status/ref label, request-body absence,
@@ -283,6 +299,8 @@ surface is still being filled out.
   `GitBlobResponse`.
 - Test-side schema-field checklist coverage for Swagger repository contents
   response models: `ContentsResponse` and nested `FileLinksResponse`.
+- Test-side schema-field checklist coverage for Swagger release attachment
+  metadata through the public `ReleaseAsset` model.
 - Local Maven publishing metadata, source jars, and javadoc jars.
 - Java 21 CI validation and release-process documentation.
 - Sonatype Central Portal publishing groundwork through Mill and a manual
@@ -309,3 +327,9 @@ surface is still being filled out.
   `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.http.GiteaResponseMapperSpec io.worxbend.gitea4s.GiteaClientSpec`.
 - Credential-stripped integration validation passed with
   `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill --no-server it.test`; all five live probes were reported as ignored and no live credentials were required.
+- Release asset metadata documentation and snapshot validation passed with
+  `git diff --check`, `./mill --no-server compatibility.writeSnapshot`,
+  `./mill --no-server core.test client.test compatibility.check`, focused
+  request/audit/facade specs, and credential-stripped integration testing with
+  `GITEA_ARCHIVE_PATHS` unset alongside the other live-probe variables; all
+  seven live probes were reported as ignored.

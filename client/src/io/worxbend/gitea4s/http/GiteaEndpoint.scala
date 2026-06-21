@@ -199,6 +199,33 @@ object GiteaEndpoints:
       response = "#/responses/Release"
     )
 
+  val repoListReleaseAttachments: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/releases/{id}/assets",
+      operationId = "repoListReleaseAttachments",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("id", "path", required = true)
+      ),
+      response = "#/responses/AttachmentList"
+    )
+
+  val repoGetReleaseAttachment: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      operationId = "repoGetReleaseAttachment",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("id", "path", required = true),
+        GiteaParameter("attachment_id", "path", required = true)
+      ),
+      response = "#/responses/Attachment"
+    )
+
   val repoGetCombinedStatusByRef: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

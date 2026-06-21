@@ -32,6 +32,7 @@ import io.worxbend.gitea4s.model.{
   PullReviewRequestOptions,
   CreatePullRequestOption,
   EditPullRequestOption,
+  ReleaseAsset,
   SubmitPullReviewOptions,
   GitBlobResponse,
   WatchInfo
@@ -265,6 +266,87 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           endpoint.response == "#/responses/Release",
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/77"
+        )
+      },
+      test("builds and decodes schema-traceable release asset list request") {
+        val built = GiteaRequests.repoReleaseAssets(config, "worx bend", "gitea/scala", 77)
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """[{"id":901,"name":"gitea4s.jar","browser_download_url":"https://gitea.example/assets/901","download_count":3,"size":4096}]"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListReleaseAttachments,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoListReleaseAttachments",
+          endpoint.path == "/repos/{owner}/{repo}/releases/{id}/assets",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
+          endpoint.response == "#/responses/AttachmentList",
+          request.method == Method.GET,
+          request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/77/assets",
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            Chunk(
+              ReleaseAsset(
+                browserDownloadUrl = Some("https://gitea.example/assets/901"),
+                downloadCount = Some(3L),
+                id = Some(901L),
+                name = Some("gitea4s.jar"),
+                size = Some(4096L)
+              )
+            )
+          )
+        )
+      },
+      test("builds and decodes schema-traceable release asset detail request") {
+        val built = GiteaRequests.repoReleaseAsset(config, "worx bend", "gitea/scala", releaseId = 77, attachmentId = 901)
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """{"id":901,"name":"gitea4s.jar","browser_download_url":"https://gitea.example/assets/901","download_count":3,"size":4096}"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetReleaseAttachment,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetReleaseAttachment",
+          endpoint.path == "/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "id", "attachment_id"),
+          endpoint.response == "#/responses/Attachment",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/77/assets/901",
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            ReleaseAsset(
+              browserDownloadUrl = Some("https://gitea.example/assets/901"),
+              downloadCount = Some(3L),
+              id = Some(901L),
+              name = Some("gitea4s.jar"),
+              size = Some(4096L)
+            )
+          )
         )
       },
       test("builds and decodes schema-traceable combined commit status request") {
@@ -2758,7 +2840,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         )
       },
       test("adds JSON content type only when a JSON body is attached") {
-        val base = GiteaRequests.currentUser(config).request
+        val base = basicRequest.get(uri"https://gitea.example/root/api/v1/user").response(asStringAlways)
         val withBody = GiteaRequests.withJsonBody(config, base, """{"name":"repo"}""")
 
         assertTrue(
@@ -3427,10 +3509,14 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val releases = GiteaRequests.repoReleases(config, "owner", "missing")
         val release = GiteaRequests.repoRelease(config, "owner", "missing", 77)
+        val assets = GiteaRequests.repoReleaseAssets(config, "owner", "missing", 77)
+        val asset = GiteaRequests.repoReleaseAsset(config, "owner", "missing", releaseId = 77, attachmentId = 901)
 
         assertTrue(
           decodeWith(releases, backend) == Left(GiteaError.NotFound("missing release", body)),
-          decodeWith(release, backend) == Left(GiteaError.NotFound("missing release", body))
+          decodeWith(release, backend) == Left(GiteaError.NotFound("missing release", body)),
+          decodeWith(assets, backend) == Left(GiteaError.NotFound("missing release", body)),
+          decodeWith(asset, backend) == Left(GiteaError.NotFound("missing release", body))
         )
       },
       test("maps documented commit status failures") {
