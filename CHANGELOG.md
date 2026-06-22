@@ -46,6 +46,15 @@ surface is still being filled out.
   `ReleasesApi.releaseByTag`; slash-containing repository tag routing still
   needs real Gitea live observation before it should be claimed as live
   evidence.
+- Read-only repository language statistics for
+  `GET /repos/{owner}/{repo}/languages` (`repoGetLanguages`) with the new
+  map-shaped `LanguageStatistics` model, `GiteaRequests.repoLanguages`, and
+  `ReposApi.languages(owner, repo)`. The response preserves Gitea's plain JSON
+  object from language name to byte count, for example
+  `{"Scala":1234,"Java":55}`, rather than wrapping it in a nested wire field.
+  The request has no query parameters or body, sends no JSON `Content-Type`,
+  propagates documented `404` failures through the shared mapper, and is
+  read-only retryable. Repository language write behavior is not implemented.
 - Read-only repository tag-protection metadata APIs for
   `GET /repos/{owner}/{repo}/tag_protections` (`repoListTagProtection`) and
   `GET /repos/{owner}/{repo}/tag_protections/{id}` (`repoGetTagProtection`)

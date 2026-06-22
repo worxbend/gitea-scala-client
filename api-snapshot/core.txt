@@ -3126,6 +3126,41 @@ public final class io.worxbend.gitea4s.model.Label$ implements scala.deriving.Mi
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.LanguageStatistics
+public final class io.worxbend.gitea4s.model.LanguageStatistics implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.LanguageStatistics(scala.collection.immutable.Map<java.lang.String, java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.collection.immutable.Map<java.lang.String, java.lang.Object> bytesByLanguage();
+  public io.worxbend.gitea4s.model.LanguageStatistics copy(scala.collection.immutable.Map<java.lang.String, java.lang.Object>);
+  public scala.collection.immutable.Map<java.lang.String, java.lang.Object> copy$default$1();
+  public scala.collection.immutable.Map<java.lang.String, java.lang.Object> _1();
+  public static io.worxbend.gitea4s.model.LanguageStatistics apply(scala.collection.immutable.Map<java.lang.String, java.lang.Object>);
+  public static io.worxbend.gitea4s.model.LanguageStatistics fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.LanguageStatistics> given_JsonCodec_LanguageStatistics();
+  public static io.worxbend.gitea4s.model.LanguageStatistics unapply(io.worxbend.gitea4s.model.LanguageStatistics);
+  public static scala.collection.immutable.Map<java.lang.String, java.lang.Object> $lessinit$greater$default$1();
+}
+
+## io.worxbend.gitea4s.model.LanguageStatistics$
+public final class io.worxbend.gitea4s.model.LanguageStatistics$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.LanguageStatistics$ MODULE$;
+  public io.worxbend.gitea4s.model.LanguageStatistics apply(scala.collection.immutable.Map<java.lang.String, java.lang.Object>);
+  public io.worxbend.gitea4s.model.LanguageStatistics unapply(io.worxbend.gitea4s.model.LanguageStatistics);
+  public scala.collection.immutable.Map<java.lang.String, java.lang.Object> $lessinit$greater$default$1();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.LanguageStatistics> given_JsonCodec_LanguageStatistics();
+  public io.worxbend.gitea4s.model.LanguageStatistics fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.LockIssueOption
 public final class io.worxbend.gitea4s.model.LockIssueOption implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.LockIssueOption(scala.Option<java.lang.String>);

@@ -44,6 +44,7 @@ import io.worxbend.gitea4s.model.{
   EditPullRequestOption,
   EditReactionOption,
   IssueMeta,
+  LanguageStatistics,
   LockIssueOption,
   MergePullRequestMethod,
   MergePullRequestOption,
@@ -1954,6 +1955,54 @@ object GiteaClientSpec extends ZIOSpecDefault:
         yield assertTrue(
           branches.map(_.name) == Chunk(Some("main"), Some("release")),
           tags.map(_.name) == Chunk(Some("v1.0.0"), Some("v1.1.0"))
+        )
+      },
+      test("loads repository language statistics through the ReposApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "languages")) &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("Content-Type").isEmpty
+          }.thenRespond(ResponseStub.adjust("""{"Scala":1234,"Java":55}"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.languages("alice", "api"))(
+          Assertion.equalTo(LanguageStatistics(Map("Scala" -> 1234L, "Java" -> 55L)))
+        )
+      },
+      test("propagates repository language documented not-found errors through the facade") {
+        val body = """{"message":"repository not found"}"""
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "missing", "languages"))
+          }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.languages("alice", "missing").either)(
+          Assertion.equalTo(Left(GiteaError.NotFound("repository not found", body)))
+        )
+      },
+      test("retries repository language lookup because it is a read-only GET") {
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "languages"))
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""{"Scala":321,"TypeScript":12}""")
+          )
+        val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
+
+        for
+          fiber <- client.languages("alice", "api").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          languages <- fiber.join
+        yield assertTrue(
+          languages == LanguageStatistics(Map("Scala" -> 321L, "TypeScript" -> 12L))
         )
       },
       test("loads a single repository tag through the ReposApi tag method") {

@@ -23,6 +23,7 @@ import io.worxbend.gitea4s.model.{
   CreateStatusOption,
   GitBlobResponse,
   GitTreeResponse,
+  LanguageStatistics,
   NewIssuePinsAllowed,
   Note,
   Reference,
@@ -127,6 +128,8 @@ trait ReposApi:
   def branches(owner: String, repo: String): ZStream[Any, GiteaError, Branch]
 
   def tags(owner: String, repo: String): ZStream[Any, GiteaError, Tag]
+
+  def languages(owner: String, repo: String): IO[GiteaError, LanguageStatistics]
 
   def tag(owner: String, repo: String, tag: String): IO[GiteaError, Tag]
 

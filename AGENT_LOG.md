@@ -4066,3 +4066,81 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 M  core/src/io/worxbend/gitea4s/model/GiteaModels.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-22T08:46:01Z iteration 10 started remaining=10108s
+2026-06-22T08:46:01Z iteration 10 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-22T08:46:01Z iteration 10 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-7a_b7ts5/repo copied_entries=100
+2026-06-22T08:46:01Z iteration 10 ideator phase started count=3
+2026-06-22T08:46:01Z iteration 10 ideator phase concurrency workers=3
+2026-06-22T08:46:01Z iteration 10 ideator 1 role="the pragmatist" started
+2026-06-22T08:46:01Z iteration 10 ideator 2 role="the architect" started
+2026-06-22T08:46:01Z iteration 10 ideator 3 role="the contrarian" started
+2026-06-22T08:46:12Z iteration 10 ideator 2 role="the architect" completed status=0
+2026-06-22T08:46:12Z iteration 10 ideator 1 role="the pragmatist" completed status=0
+2026-06-22T08:46:12Z iteration 10 ideator 3 role="the contrarian" completed status=0
+2026-06-22T08:46:12Z iteration 10 ideator phase completed approaches=3
+2026-06-22T08:46:12Z iteration 10 selector started approaches=3
+2026-06-22T08:46:25Z iteration 10 selector completed status=0
+2026-06-22T08:46:25Z iteration 10 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-7a_b7ts5/repo
+2026-06-22T08:46:25Z iteration 10 selector rejected alternative role="the architect" approach="Spec-First Low-Entropy Read Slice: avoid another live-evidence loop unless complete fixtures are present, and advance with the smallest path-only Swagger-backed repository read..." reason="Strong fallback direction, but selected as-is it underemphasizes the explicit live-fixture gate that the recent plan calls out as the first decision point."
+2026-06-22T08:46:25Z iteration 10 selector rejected alternative role="the pragmatist" approach="Fixture-First Gate, Then Small Spec-Only Fallback: begin by treating live confidence as an explicit gate, and if the required real fixture is absent, pivot immediately to the sm..." reason="Closest to the chosen strategy, but it benefits from the architect's stricter low-entropy framing around repository languages and contract-surface control."
+2026-06-22T08:46:25Z iteration 10 selector rejected alternative role="the contrarian" approach="Evidence-First Contract Freeze: pause endpoint expansion and spend the next slice tightening confidence around already-public read-only surfaces, especially path parameters and..." reason="Its concern about confidence gaps is valid, but as a primary strategy it risks another low-output cycle when fixtures are unavailable. The selected approach preserves that evidence discipline without freezing additive progress."
+2026-06-22T08:46:25Z iteration 10 selector alternatives persisted count=3
+2026-06-22T08:46:25Z iteration 10 selector structured alternatives persisted count=3
+2026-06-22T08:46:25Z iteration 10 planner started
+2026-06-22T08:47:06Z iteration 10 plan: 6 task(s) in 5 phase(s). No complete live fixture is available in the current plan state, so this iteration should use the selected spec-first fallback: the small read-only repository languages slice. Core model and endpoint metadata can proceed in parallel after the Swagger contract is confirmed; request construction depends on both, facade wiring depends on the request builder, and documentation/snapshot work should happen last.
+2026-06-22T08:47:06Z iteration 10 phase 1 started parallel=False tasks=1
+2026-06-22T08:47:37Z iteration 10 task t1 ('Confirm languages Swagger contract') status=0
+2026-06-22T08:47:37Z iteration 10 phase 2 started parallel=True tasks=2
+2026-06-22T08:48:57Z iteration 10 task t3 ('Add languages endpoint metadata') status=0
+2026-06-22T08:52:08Z iteration 10 task t2 ('Add language statistics core model') status=0
+2026-06-22T08:52:08Z iteration 10 phase 3 started parallel=False tasks=1
+2026-06-22T08:54:08Z iteration 10 task t4 ('Implement languages request builder') status=0
+2026-06-22T08:54:08Z iteration 10 phase 4 started parallel=False tasks=1
+2026-06-22T08:56:39Z iteration 10 task t5 ('Wire languages facade') status=0
+2026-06-22T08:56:39Z iteration 10 phase 5 started parallel=False tasks=1
+2026-06-22T09:01:29Z iteration 10 task t6 ('Align docs snapshots and plan') status=0
+2026-06-22T09:01:29Z iteration 10 reviewer started
+
+## Reviewer Summary - Iteration 10 - 2026-06-22T12:03:06+03:00
+
+What was done:
+- Inspected every file changed in the repository language-statistics slice: `LanguageStatistics`, endpoint metadata, request builder, `ReposApi` and `SttpGiteaClient` facade wiring, request/facade/audit/core tests, README, CHANGELOG, PLAN, API snapshots, and telemetry files.
+- Cross-checked `repoGetLanguages` and `LanguageStatistics` against `plugin-redoc-2.yaml`. The endpoint is `GET /repos/{owner}/{repo}/languages`, requires only `owner` and `repo` path parameters, declares no query parameters and no request body, returns `#/responses/LanguageStatistics`, and documents `404`; the response schema is an object with `additionalProperties` integer `int64`.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, and focused `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`.
+
+What was found:
+- No functional blocker or production-code regression was found.
+- `LanguageStatistics` correctly uses a custom zio-json codec so the wire format remains a plain language-to-byte-count JSON object, not a wrapper containing `bytesByLanguage`.
+- `GiteaRequests.repoLanguages` builds a read-only bodyless GET with safe owner/repo path encoding, JSON accept/auth/OTP/user-agent headers, no query parameters, no JSON `Content-Type`, `LanguageStatistics` decoding, documented `404` propagation, and retry eligibility.
+- `ReposApi.languages(owner, repo)` is wired through `GiteaRequestExecutor`; repository language writes remain absent.
+- Request, facade, audit, schema checklist, docs, and API snapshots are aligned with the intentional public ABI additions.
+- Residual risk is low: the dynamic-map decoder rejects non-numeric and out-of-range values through `longValueExact`, but explicit fractional and overflow tests would be useful if another `additionalProperties` integer response is added.
+
+Top improvement proposals:
+- Add explicit fractional-number and overflow-number decode assertions the next time dynamic map-shaped response handling is touched.
+- If another Swagger `additionalProperties` response appears, consider extracting a tiny reusable codec helper for map-shaped wrappers instead of duplicating the custom decoder pattern.
+- Proceed next with the bounded read-only `repoGetAssignees` fallback if live fixtures remain unavailable; the local Swagger confirms it is path-only, returns `#/responses/UserList`, and documents `404`.
+- Continue keeping fixture-gated live evidence endpoint-specific, especially for collaborator/team/tag/release-tag routing, and avoid another documentation-only evidence loop without real enabled fixtures.
+2026-06-22T09:04:53Z iteration 10 reviewer completed status=0
+2026-06-22T09:04:53Z iteration 10 memory updated
+2026-06-22T09:04:53Z iteration 10 completed validation_status=0
+2026-06-22T09:04:53Z iteration 10 checkpoint started
+2026-06-22T09:04:53Z iteration 10 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+A  core/src/io/worxbend/gitea4s/model/LanguageStatistics.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

@@ -14,6 +14,12 @@ object CoreModelsSpec extends ZIOSpecDefault:
       jsonFields: Set[String]
   )
 
+  private final case class DynamicMapSchemaChecklist(
+      swaggerDefinition: String,
+      valueSchema: String,
+      sampleKeys: Set[String]
+  )
+
   private val schemaChecklistSwaggerFields = Map(
     "Attachment" -> Set("browser_download_url", "created_at", "download_count", "id", "name", "size", "uuid"),
     "RepoCollaboratorPermission" -> Set("permission", "role_name", "user"),
@@ -382,6 +388,24 @@ object CoreModelsSpec extends ZIOSpecDefault:
       ).toJson
   )
 
+  private val dynamicMapSchemaChecklist = List(
+    DynamicMapSchemaChecklist(
+      "LanguageStatistics",
+      "additionalProperties integer int64",
+      Set("Scala", "Java")
+    )
+  )
+
+  private val dynamicMapEncodedFixtures = Map(
+    "LanguageStatistics" ->
+      LanguageStatistics(
+        Map(
+          "Scala" -> 1234L,
+          "Java" -> 55L
+        )
+      ).toJson
+  )
+
   private def topLevelJsonFields(json: String): Either[String, Set[String]] =
     json.fromJson[Json].flatMap {
       case obj: Json.Obj => Right(obj.keys.toList.toSet)
@@ -429,6 +453,28 @@ object CoreModelsSpec extends ZIOSpecDefault:
           missingChecklistFields == Nil,
           missingEncodedFields == Nil
         )
+      },
+      test("records Swagger checklist for dynamic map-shaped response models") {
+        val missingFixtures =
+          dynamicMapSchemaChecklist.flatMap { checklist =>
+            dynamicMapEncodedFixtures.get(checklist.swaggerDefinition) match
+              case None =>
+                Some(s"${checklist.swaggerDefinition} fixture is missing")
+              case Some(json) =>
+                topLevelJsonFields(json) match
+                  case Left(error) =>
+                    Some(s"${checklist.swaggerDefinition} fixture could not be inspected: $error")
+                  case Right(actualFields) =>
+                    val missing = checklist.sampleKeys.diff(actualFields)
+                    val wrapperFieldLeaked = actualFields.contains("bytesByLanguage")
+                    val valueSchemaRecorded = checklist.valueSchema == "additionalProperties integer int64"
+
+                    Option.when(missing.nonEmpty || wrapperFieldLeaked || !valueSchemaRecorded)(
+                      s"${checklist.swaggerDefinition} dynamic map checklist failed"
+                    )
+          }
+
+        assertTrue(missingFixtures == Nil)
       },
       test("decodes user and organization fields from schema JSON names") {
         val userJson =
@@ -503,6 +549,49 @@ object CoreModelsSpec extends ZIOSpecDefault:
           repository.map(_.permissions.flatMap(_.admin)) == Right(Some(true)),
           repository.map(_.topics) == Right(Some(List("scala", "zio"))),
           repository.map(_.objectFormatName) == Right(Some(ObjectFormatName.Sha256))
+        )
+      },
+      test("decodes language statistics as a map-shaped JSON object") {
+        val json =
+          """{
+            |  "Scala": 1234,
+            |  "Java": 55
+            |}""".stripMargin
+
+        assertTrue(
+          json.fromJson[LanguageStatistics] ==
+            Right(LanguageStatistics(Map("Scala" -> 1234L, "Java" -> 55L)))
+        )
+      },
+      test("encodes and round-trips language statistics without a wrapper field") {
+        val payload = LanguageStatistics(Map("Scala" -> 1234L, "Java" -> 55L))
+        val json = payload.toJson
+
+        assertTrue(
+          json.fromJson[LanguageStatistics] == Right(payload),
+          topLevelJsonFields(json) == Right(Set("Scala", "Java")),
+          json.contains(""""Scala":1234"""),
+          json.contains(""""Java":55"""),
+          !json.contains("bytesByLanguage")
+        )
+      },
+      test("handles empty language statistics maps as empty JSON objects") {
+        val payload = LanguageStatistics()
+
+        assertTrue(
+          "{}".fromJson[LanguageStatistics] == Right(payload),
+          payload.toJson == "{}"
+        )
+      },
+      test("rejects non-numeric language byte counts") {
+        val stringValue = """{"Scala":"1234"}"""
+        val booleanValue = """{"Scala":true}"""
+        val objectValue = """{"Scala":{"bytes":1234}}"""
+
+        assertTrue(
+          stringValue.fromJson[LanguageStatistics].isLeft,
+          booleanValue.fromJson[LanguageStatistics].isLeft,
+          objectValue.fromJson[LanguageStatistics].isLeft
         )
       },
       test("decodes and round-trips repository collaborator permission response shape") {

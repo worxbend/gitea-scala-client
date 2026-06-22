@@ -33,6 +33,7 @@ import io.worxbend.gitea4s.model.{
   IssueMeta,
   IssueState,
   Label,
+  LanguageStatistics,
   LockIssueOption,
   MergePullRequestOption,
   NewIssuePinsAllowed,
@@ -198,6 +199,15 @@ object GiteaRequests:
       List("repos", owner, repo, "tags"),
       pageQuery(page, pageSize),
       response => GiteaResponseMapper.decodePage[Tag](response, page, pageSize)
+    )
+
+  def repoLanguages(config: GiteaConfig, owner: String, repo: String): GiteaRequest[LanguageStatistics] =
+    get(
+      config,
+      GiteaEndpoints.repoGetLanguages,
+      List("repos", owner, repo, "languages"),
+      Nil,
+      GiteaResponseMapper.decodeJson[LanguageStatistics]
     )
 
   def repoTag(config: GiteaConfig, owner: String, repo: String, tag: String): GiteaRequest[Tag] =

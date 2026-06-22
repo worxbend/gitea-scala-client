@@ -23,6 +23,7 @@ import io.worxbend.gitea4s.model.{
   IssueLabelsOption,
   IssueMeta,
   IssueState,
+  LanguageStatistics,
   LockIssueOption,
   MergePullRequestMethod,
   MergePullRequestOption,
@@ -242,6 +243,46 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/tags?"),
           request.uri.paramsMap.get("page").contains("4"),
           request.uri.paramsMap.get("limit").contains("25")
+        )
+      },
+      test("builds and decodes schema-traceable repository languages request") {
+        val built = GiteaRequests.repoLanguages(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"Scala":1234,"Java":55}""")
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetLanguages,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetLanguages",
+          endpoint.path == "/repos/{owner}/{repo}/languages",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.response == "#/responses/LanguageStatistics",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/languages",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "languages"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(LanguageStatistics(Map("Scala" -> 1234L, "Java" -> 55L)))
+        )
+      },
+      test("decodes empty repository language statistics") {
+        val built = GiteaRequests.repoLanguages(config, "owner", "repo")
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust("{}"))
+
+        assertTrue(
+          decodeWith(built, backend) == Right(LanguageStatistics(Map.empty))
         )
       },
       test("builds and decodes schema-traceable get repository tag request") {
@@ -4029,16 +4070,18 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           decodeWith(built, backend) == Left(GiteaError.NotFound("missing org", body))
         )
       },
-      test("maps repository branch and tag not-found responses") {
+      test("maps repository branch, tag, and language not-found responses") {
         val body = """{"message":"missing repo"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val branches = GiteaRequests.repoBranches(config, "owner", "missing")
         val tags = GiteaRequests.repoTags(config, "owner", "missing")
+        val languages = GiteaRequests.repoLanguages(config, "owner", "missing")
         val tag = GiteaRequests.repoTag(config, "owner", "missing", "release/candidate")
 
         assertTrue(
           decodeWith(branches, backend) == Left(GiteaError.NotFound("missing repo", body)),
           decodeWith(tags, backend) == Left(GiteaError.NotFound("missing repo", body)),
+          decodeWith(languages, backend) == Left(GiteaError.NotFound("missing repo", body)),
           decodeWith(tag, backend) == Left(GiteaError.NotFound("missing repo", body))
         )
       },

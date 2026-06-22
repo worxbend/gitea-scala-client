@@ -57,6 +57,7 @@ import io.worxbend.gitea4s.model.{
   IssueMeta,
   IssueState,
   Label,
+  LanguageStatistics,
   LockIssueOption,
   MergePullRequestOption,
   NewIssuePinsAllowed,
@@ -270,6 +271,9 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
     Pagination.paginated { page =>
       executor.send(GiteaRequests.repoTags(config, owner, repo, page))
     }
+
+  override def languages(owner: String, repo: String): IO[GiteaError, LanguageStatistics] =
+    executor.send(GiteaRequests.repoLanguages(config, owner, repo))
 
   override def tag(owner: String, repo: String, tag: String): IO[GiteaError, Tag] =
     executor.send(GiteaRequests.repoTag(config, owner, repo, tag))

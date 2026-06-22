@@ -170,6 +170,18 @@ object GiteaEndpoints:
       response = "#/responses/TagList"
     )
 
+  val repoGetLanguages: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/languages",
+      operationId = "repoGetLanguages",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true)
+      ),
+      response = "#/responses/LanguageStatistics"
+    )
+
   val repoGetTag: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

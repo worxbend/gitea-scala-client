@@ -42,3 +42,4 @@
 [learning] `repoListTagProtection` is a non-paginated path-only list in local Swagger; do not infer `page`/`limit` from adjacent repository list endpoints.
 [learning] `BranchProtection` is a broad metadata response compared with `TagProtection`; gate any read slice with explicit schema-field sizing before adding public ABI.
 [learning] `repoListBranchProtection` is a non-paginated path-only list in local Swagger; do not infer `page`/`limit` from branch or protection-adjacent endpoints.
+[pattern] Swagger `additionalProperties` response objects need map-shaped codecs that prove no wrapper field leaks onto the wire; extract a helper only after the pattern repeats.
