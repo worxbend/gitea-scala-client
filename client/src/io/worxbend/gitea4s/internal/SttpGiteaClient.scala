@@ -269,6 +269,9 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       executor.send(GiteaRequests.repoTags(config, owner, repo, page))
     }
 
+  override def tag(owner: String, repo: String, tag: String): IO[GiteaError, Tag] =
+    executor.send(GiteaRequests.repoTag(config, owner, repo, tag))
+
   override def combinedStatusByRef(
       owner: String,
       repo: String,

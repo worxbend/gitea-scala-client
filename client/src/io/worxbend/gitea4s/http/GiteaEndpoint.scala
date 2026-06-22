@@ -170,6 +170,19 @@ object GiteaEndpoints:
       response = "#/responses/TagList"
     )
 
+  val repoGetTag: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/tags/{tag}",
+      operationId = "repoGetTag",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("tag", "path", required = true)
+      ),
+      response = "#/responses/Tag"
+    )
+
   val repoListReleases: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

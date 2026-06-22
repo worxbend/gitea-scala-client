@@ -38,3 +38,4 @@
 [process] Normal release-tag probe success is not slash-routing evidence; slash-bearing path behavior needs an enabled probe with a real slash-containing tag.
 [learning] `repoCheckCollaborator` is a 204/404 membership probe; a boolean facade is ergonomic but cannot distinguish not-collaborator from every missing-resource 404 case.
 [learning] `repoListTeams` omits `page`/`limit` in local Swagger even though the client streams it with pagination query params; live validation should decide whether that pragmatic contract holds.
+[learning] Repository tag lookup (`repoGetTag` returning `Tag`) and release-by-tag lookup (`repoGetReleaseByTag` returning `Release`) are separate contracts; keep facade names, live variables, and routing evidence endpoint-specific.

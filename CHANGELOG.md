@@ -35,6 +35,17 @@ surface is still being filled out.
   slash/space team names as one path segment, documented `404`/`405` failures
   use the shared mapper, and both methods are read-only retryable. Team
   add/delete/write operations are not implemented.
+- Read-only repository tag lookup for
+  `GET /repos/{owner}/{repo}/tags/{tag}` (`repoGetTag`) with the existing
+  `Tag` model, `GiteaRequests.repoTag`, and `ReposApi.tag(owner, repo, tag)`.
+  The request has no query parameters or body, propagates documented `404`
+  failures through the shared mapper, and is read-only retryable. Tags with
+  punctuation such as `v1.0.0` and slash-containing names such as
+  `release/candidate` are covered by request-layer and facade tests as one
+  encoded path segment. This is repository tag metadata, not
+  `ReleasesApi.releaseByTag`; slash-containing repository tag routing still
+  needs real Gitea live observation before it should be claimed as live
+  evidence.
 - Typed commit-status models and repository APIs with `CommitStatus`,
   `CombinedStatus`, `CreateStatusOption`, `CommitStatusState`,
   `CommitStatusListParams`, and request construction for

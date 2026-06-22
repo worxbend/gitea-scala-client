@@ -18,7 +18,8 @@ and zio-json.
   reads, repository contents metadata reads, raw/media repository file byte
   downloads, repository archive byte downloads, repository collaborator
   list/check/permission reads, repository team list/lookup reads,
-  commit-to-pull-request lookup, release listing with typed filters,
+  repository tag list/lookup reads, commit-to-pull-request lookup,
+  release listing with typed filters,
   release detail/latest/tag lookup, release asset metadata reads, pull requests
   including reviews,
   pinned pull-request reads, pull-request create/edit writes, diff/patch
@@ -29,8 +30,9 @@ and zio-json.
   pull-request create/edit, merge/update, commit-to-pull-request,
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
   annotated tag, repository contents, raw/media repository file, repository
-  archive, repository collaborator, repository team, release list/detail,
-  latest-release, release-by-tag, and release asset metadata endpoints,
+  archive, repository collaborator, repository team, repository tag lookup,
+  release list/detail, latest-release, release-by-tag, and release asset
+  metadata endpoints,
   including documented non-2xx response labels, optional query parameters,
   `application/octet-stream`/Swagger `type: file` response shape for raw/media
   downloads, the archive operation's bare `200` success description, path enum
@@ -198,6 +200,24 @@ also paginated streams. Pinned issues and pinned pull requests are exposed as
 non-paginated chunks because Gitea returns those endpoints as plain list
 responses without pagination parameters. Release asset metadata lists are also
 non-paginated chunks in the local Swagger contract.
+
+## Repository Tags
+
+Repository tag APIs are separate from release tag APIs:
+
+- `client.tags(owner, repo)` streams paginated repository tags from
+  `GET /repos/{owner}/{repo}/tags`.
+- `client.tag(owner, repo, tag)` calls
+  `GET /repos/{owner}/{repo}/tags/{tag}` and returns the core `Tag` model.
+
+`client.tag` is a read-only retryable metadata lookup with no query parameters
+and no request body. Tag names with punctuation such as `v1.0.0` and
+slash-containing names such as `release/candidate` are encoded as one `tag`
+path segment in request-layer and facade tests. That slash-containing routing
+is unit-tested only; it still needs an enabled real Gitea run before it should
+be claimed as live evidence. Use `client.releaseByTag(owner, repo, tag)` when
+you need release metadata from `/releases/tags/{tag}` instead of repository
+tag metadata.
 
 ## Repository Collaborators
 
@@ -409,7 +429,9 @@ for a tag. Tag values with punctuation such as `v1.0.0` and values with
 slashes such as `release/candidate` are encoded as one `tag` path segment. The
 lookup has no query parameters or request body, sends JSON accept headers, is
 read-only retryable, and propagates documented `404` failures through the
-shared error mapper.
+shared error mapper. This release-by-tag API is distinct from
+`client.tag(owner, repo, tag)`, which calls the repository tag endpoint and
+returns `Tag` metadata instead of `Release` metadata.
 
 Release asset metadata covers
 `GET /repos/{owner}/{repo}/releases/{id}/assets` through
@@ -492,6 +514,8 @@ client.gitTree(
 client.gitBlob(owner = "my-org", repo = "my-repo", sha = "blob123")
 
 client.annotatedTag(owner = "my-org", repo = "my-repo", sha = "tag-object-sha")
+
+client.tag(owner = "my-org", repo = "my-repo", tag = "release/candidate")
 
 client.gitRefs(owner = "my-org", repo = "my-repo")
 
@@ -964,7 +988,8 @@ commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
 tree/blob/annotated-tag/refs, repository contents, raw/media repository file,
 repository archive, repository collaborator, repository team, release
-list/detail, latest-release, release-by-tag, and release asset metadata
+list/detail, latest-release, release-by-tag, repository tag lookup, and release
+asset metadata
 endpoint groups against
 `plugin-redoc-2.yaml`, including
 documented non-2xx response status/ref labels, optional query parameters such as
@@ -972,8 +997,9 @@ documented non-2xx response status/ref labels, optional query parameters such as
 `application/octet-stream`/Swagger `type: file` response shape for raw/media
 downloads, the archive operation's bare `200` success description,
 no-query/no-body checks for Git blob, annotated tag, and refs requests, no-body
-checks for contents, raw/media, archive, release list/detail, release-by-tag,
-latest-release, repository team list/lookup, and release asset requests,
+checks for contents, raw/media, archive, repository tag lookup, release
+list/detail, release-by-tag, latest-release, repository team list/lookup, and
+release asset requests,
 release list/detail/latest `ReleaseList`/`Release` response refs, release asset
 `AttachmentList`/`Attachment` response refs, repository team `TeamList`/`Team`
 response refs, and path enum values such as `diffType`.

@@ -37,6 +37,7 @@ import io.worxbend.gitea4s.model.{
   ReleaseAsset,
   SubmitPullReviewOptions,
   GitBlobResponse,
+  Tag,
   Team,
   TeamPermission,
   User,
@@ -239,6 +240,43 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/tags?"),
           request.uri.paramsMap.get("page").contains("4"),
           request.uri.paramsMap.get("limit").contains("25")
+        )
+      },
+      test("builds and decodes schema-traceable get repository tag request") {
+        val built = GiteaRequests.repoTag(config, "worx bend", "gitea/scala", "release/candidate")
+        val punctuationTag = GiteaRequests.repoTag(config, "worx bend", "gitea/scala", "v1.0.0")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"id":"abc123","name":"release/candidate","message":"Candidate"}""")
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetTag,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetTag",
+          endpoint.path == "/repos/{owner}/{repo}/tags/{tag}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "tag"),
+          endpoint.response == "#/responses/Tag",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/tags/release%2Fcandidate",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "tags", "release/candidate"),
+          uriOf(punctuationTag).toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/tags/v1.0.0",
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            Tag(id = Some("abc123"), name = Some("release/candidate"), message = Some("Candidate"))
+          )
         )
       },
       test("builds and decodes schema-traceable paginated repository collaborators request") {
@@ -3825,10 +3863,12 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val branches = GiteaRequests.repoBranches(config, "owner", "missing")
         val tags = GiteaRequests.repoTags(config, "owner", "missing")
+        val tag = GiteaRequests.repoTag(config, "owner", "missing", "release/candidate")
 
         assertTrue(
           decodeWith(branches, backend) == Left(GiteaError.NotFound("missing repo", body)),
-          decodeWith(tags, backend) == Left(GiteaError.NotFound("missing repo", body))
+          decodeWith(tags, backend) == Left(GiteaError.NotFound("missing repo", body)),
+          decodeWith(tag, backend) == Left(GiteaError.NotFound("missing repo", body))
         )
       },
       test("maps repository release not-found responses") {

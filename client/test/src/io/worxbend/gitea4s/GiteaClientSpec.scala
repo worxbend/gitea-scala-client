@@ -1954,6 +1954,79 @@ object GiteaClientSpec extends ZIOSpecDefault:
           tags.map(_.name) == Chunk(Some("v1.0.0"), Some("v1.1.0"))
         )
       },
+      test("loads a single repository tag through the ReposApi tag method") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "tags", "v1.0.0")) &&
+              request.uri.paramsMap.isEmpty
+          }.thenRespond(
+            ResponseStub.adjust(
+              """{"id":"abc123","name":"v1.0.0","message":"First stable","commit":{"sha":"commit123","url":"https://gitea.example/api/v1/repos/alice/api/git/commits/commit123"}}"""
+            )
+          )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.tag("alice", "api", "v1.0.0").map(tag => tag.id -> tag.name -> tag.message))(
+          Assertion.equalTo(Some("abc123") -> Some("v1.0.0") -> Some("First stable"))
+        )
+      },
+      test("routes slash-containing repository tags as one facade path segment") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/tags/release%2Fcandidate" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "tags",
+                "release/candidate"
+              ) &&
+              request.uri.paramsMap.isEmpty
+          }.thenRespond(ResponseStub.adjust("""{"id":"tag123","name":"release/candidate"}"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(
+          client.tag("space owner", "repo/slash", "release/candidate").map(_.name)
+        )(Assertion.equalTo(Some("release/candidate")))
+      },
+      test("propagates repository tag documented not-found errors through the facade") {
+        val body = """{"message":"tag not found"}"""
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "tags", "missing"))
+          }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.tag("alice", "api", "missing").either)(
+          Assertion.equalTo(Left(GiteaError.NotFound("tag not found", body)))
+        )
+      },
+      test("retries repository tag lookup because it is a read-only GET") {
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "tags", "v1.0.0"))
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""{"id":"tag123","name":"v1.0.0","message":"Retried tag"}""")
+          )
+        val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
+
+        for
+          fiber <- client.tag("alice", "api", "v1.0.0").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          tag <- fiber.join
+        yield assertTrue(
+          tag.id.contains("tag123"),
+          tag.message.contains("Retried tag")
+        )
+      },
       test("loads and streams commit statuses through the ReposApi methods") {
         val twoPageHeaders = List(Header("x-total-count", "2"))
         val listParams = CommitStatusListParams(

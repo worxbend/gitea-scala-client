@@ -126,6 +126,8 @@ trait ReposApi:
 
   def tags(owner: String, repo: String): ZStream[Any, GiteaError, Tag]
 
+  def tag(owner: String, repo: String, tag: String): IO[GiteaError, Tag]
+
   def combinedStatusByRef(
       owner: String,
       repo: String,

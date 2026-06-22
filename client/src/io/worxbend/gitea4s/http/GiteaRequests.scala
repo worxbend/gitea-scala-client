@@ -198,6 +198,15 @@ object GiteaRequests:
       response => GiteaResponseMapper.decodePage[Tag](response, page, pageSize)
     )
 
+  def repoTag(config: GiteaConfig, owner: String, repo: String, tag: String): GiteaRequest[Tag] =
+    get(
+      config,
+      GiteaEndpoints.repoGetTag,
+      List("repos", owner, repo, "tags", tag),
+      Nil,
+      GiteaResponseMapper.decodeJson[Tag]
+    )
+
   def repoReleases(
       config: GiteaConfig,
       owner: String,

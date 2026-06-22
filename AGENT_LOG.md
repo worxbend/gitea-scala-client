@@ -3839,3 +3839,75 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 M  core/src/io/worxbend/gitea4s/model/GiteaModels.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-22T07:54:14Z iteration 7 started remaining=13215s
+2026-06-22T07:54:14Z iteration 7 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-22T07:54:14Z iteration 7 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-ubkr25lv/repo copied_entries=100
+2026-06-22T07:54:14Z iteration 7 ideator phase started count=3
+2026-06-22T07:54:14Z iteration 7 ideator phase concurrency workers=3
+2026-06-22T07:54:14Z iteration 7 ideator 1 role="the pragmatist" started
+2026-06-22T07:54:14Z iteration 7 ideator 2 role="the architect" started
+2026-06-22T07:54:14Z iteration 7 ideator 3 role="the contrarian" started
+2026-06-22T07:54:26Z iteration 7 ideator 2 role="the architect" completed status=0
+2026-06-22T07:54:26Z iteration 7 ideator 3 role="the contrarian" completed status=0
+2026-06-22T07:54:26Z iteration 7 ideator 1 role="the pragmatist" completed status=0
+2026-06-22T07:54:26Z iteration 7 ideator phase completed approaches=3
+2026-06-22T07:54:26Z iteration 7 selector started approaches=3
+2026-06-22T07:54:42Z iteration 7 selector completed status=0
+2026-06-22T07:54:42Z iteration 7 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-ubkr25lv/repo
+2026-06-22T07:54:42Z iteration 7 selector rejected alternative role="the architect" approach="Evidence-Gated Contract Calibration: pause broad API expansion and use the next iteration to tighten confidence around already-added read-only surfaces, especially repository te..." reason="Strong on contract discipline, but too willing to pause broad API expansion around live evidence even when fixtures may not exist, which risks another stalled or documentation-only iteration."
+2026-06-22T07:54:42Z iteration 7 selector rejected alternative role="the contrarian" approach="Evidence-First Contract Gate: pause expansion of adjacent repository surfaces and use the next iteration to prove or retire shaky assumptions before adding more public API." reason="Correctly identifies the weakest assumptions, but its pause-first framing is too rigid for the current loop; the planner needs an explicit fallback that keeps progress bounded when live validation cannot run."
+2026-06-22T07:54:42Z iteration 7 selector rejected alternative role="the pragmatist" approach="Fixture-Gated Confidence Before Surface Expansion: prioritize opt-in live collaborator/team probes if real fixtures exist; otherwise pivot to one small read-only, path-only Swag..." reason="Selected as the base strategy, but strengthened with the architect and contrarian's emphasis that any live claims must be narrowly recorded as evidence quality, not generalized from credential-stripped or single-instance runs."
+2026-06-22T07:54:42Z iteration 7 selector alternatives persisted count=3
+2026-06-22T07:54:42Z iteration 7 selector structured alternatives persisted count=3
+2026-06-22T07:54:42Z iteration 7 planner started
+2026-06-22T07:55:16Z iteration 7 plan: 5 task(s) in 4 phase(s). This iteration follows the fixture-gated strategy by avoiding another documentation-only live-evidence cycle and selecting the bounded read-only fallback repoGetTag. Request-layer work comes first because facade wiring depends on the new request builder. Documentation and PLAN updates can proceed in parallel after behavior is known because they touch different files. Snapshot refresh and validation must be last.
+2026-06-22T07:55:16Z iteration 7 phase 1 started parallel=False tasks=1
+2026-06-22T07:58:48Z iteration 7 task t1 ('Implement repoGetTag request layer') status=0
+2026-06-22T07:58:48Z iteration 7 phase 2 started parallel=False tasks=1
+2026-06-22T08:00:47Z iteration 7 task t2 ('Expose repo tag facade') status=0
+2026-06-22T08:00:47Z iteration 7 phase 3 started parallel=True tasks=2
+2026-06-22T08:02:32Z iteration 7 task t4 ('Refresh plan continuation') status=0
+2026-06-22T08:03:28Z iteration 7 task t3 ('Document tag lookup slice') status=0
+2026-06-22T08:03:28Z iteration 7 phase 4 started parallel=False tasks=1
+2026-06-22T08:05:47Z iteration 7 task t5 ('Refresh API snapshots and validate') status=0
+2026-06-22T08:05:47Z iteration 7 reviewer started
+
+## Reviewer Summary - Iteration 7 - 2026-06-22T08:35:00Z
+
+What was done:
+- Inspected every file changed in the repository tag lookup slice: `ReposApi`, `SttpGiteaClient`, `GiteaEndpoint`, `GiteaRequests`, request/facade/audit tests, README, CHANGELOG, PLAN, API snapshot, and telemetry files.
+- Cross-checked `repoGetTag`, `/repos/{owner}/{repo}/tags/{tag}`, `#/responses/Tag`, and the documented `404` response against `plugin-redoc-2.yaml`.
+- Ran focused validation with `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, focused request/audit/facade specs, and credential-stripped `it.test`; all passed, with all twelve live probes ignored.
+
+What was found:
+- No functional blocker or production-code regression was found.
+- `GiteaRequests.repoTag` is a schema-traceable read-only GET with safe owner/repo/tag path encoding, JSON accept/auth/OTP/user-agent headers, no query parameters, no request body, no JSON `Content-Type`, `Tag` decoding, documented `404` propagation, and read-only retry eligibility.
+- `ReposApi.tag(owner, repo, tag)` is wired through `SttpGiteaClient` without changing the existing `ReposApi.tags(owner, repo)` paginated stream, and without introducing tag write/delete or release-tag behavior.
+- Stub-backed tests cover punctuation-heavy tags, slash-containing repository tag names as one encoded path segment, facade success, not-found propagation, retry behavior, and Swagger metadata audit registration with non-2xx expectations kept test-private.
+- Remaining risk is evidence quality, not unit correctness: slash-containing repository tag routing is unit-tested but unobserved against real Gitea, and it should not be generalized from release-by-tag evidence.
+
+Top improvement proposals:
+- Add an opt-in repository tag live probe only when a real fixture exists, gated by `GITEA_URL`, `GITEA_TOKEN`, `GITEA_OWNER`, `GITEA_REPO`, and a repository-specific variable such as `GITEA_REPO_TAG`; keep `GITEA_RELEASE_TAG` reserved for release-by-tag live confidence.
+- Add fixture-gated live collaborator and team probes when real fixtures exist, specifically proving team `page`/`limit` behavior because local Swagger omits those query parameters.
+- If live fixtures are unavailable, avoid another documentation-only cycle and implement a bounded read-only Swagger slice such as tag-protection list/detail, with `TagProtection` model sizing first and create/edit/delete operations deliberately out of scope.
+- Continue keeping audit-only documented non-2xx expectations private to `GiteaEndpointAuditSpec` and keep slash-bearing path-parameter live claims endpoint-specific.
+2026-06-22T08:09:13Z iteration 7 reviewer completed status=0
+2026-06-22T08:09:13Z iteration 7 memory updated
+2026-06-22T08:09:13Z iteration 7 completed validation_status=0
+2026-06-22T08:09:13Z iteration 7 checkpoint started
+2026-06-22T08:09:13Z iteration 7 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
