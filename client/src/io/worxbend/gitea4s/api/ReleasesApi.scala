@@ -15,6 +15,8 @@ trait ReleasesApi:
 
   def release(owner: String, repo: String, id: Long): IO[GiteaError, Release]
 
+  def latestRelease(owner: String, repo: String): IO[GiteaError, Release]
+
   def releaseByTag(owner: String, repo: String, tag: String): IO[GiteaError, Release]
 
   def releaseAssets(owner: String, repo: String, releaseId: Long): IO[GiteaError, Chunk[ReleaseAsset]]

@@ -316,6 +316,10 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     AuditedRequest(
       request = GiteaRequests.repoRelease(config, "owner", "repo", id = 77),
       noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoLatestRelease(config, "owner", "repo"),
+      noBodyLifecyclePost = false
     )
   )
 
@@ -546,6 +550,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoGetRelease" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoGetLatestRelease" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoListReleaseAttachments" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
@@ -634,7 +641,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository release list/detail metadata matches plugin-redoc-2.yaml") {
+      test("repository release list/detail/latest metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = releaseRequests.flatMap(auditRelease(swagger, _))
 

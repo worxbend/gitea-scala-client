@@ -199,6 +199,18 @@ object GiteaEndpoints:
       response = "#/responses/Release"
     )
 
+  val repoGetLatestRelease: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/releases/latest",
+      operationId = "repoGetLatestRelease",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true)
+      ),
+      response = "#/responses/Release"
+    )
+
   val repoGetReleaseByTag: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

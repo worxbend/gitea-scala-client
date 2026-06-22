@@ -307,6 +307,40 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/77"
         )
       },
+      test("builds and decodes schema-traceable get latest repository release request") {
+        val built = GiteaRequests.repoLatestRelease(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"id":89,"name":"Latest","tag_name":"v2.0.0"}""")
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetLatestRelease,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetLatestRelease",
+          endpoint.path == "/repos/{owner}/{repo}/releases/latest",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.response == "#/responses/Release",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/latest",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "releases", "latest"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            Release(id = Some(89L), name = Some("Latest"), tagName = Some("v2.0.0"))
+          )
+        )
+      },
       test("builds and decodes schema-traceable get repository release by tag request") {
         val built = GiteaRequests.repoReleaseByTag(config, "worx bend", "gitea/scala", "release/candidate")
         val punctuationTag = GiteaRequests.repoReleaseByTag(config, "worx bend", "gitea/scala", "v1.0.0")
@@ -3595,6 +3629,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val releases = GiteaRequests.repoReleases(config, "owner", "missing")
         val release = GiteaRequests.repoRelease(config, "owner", "missing", 77)
+        val latestRelease = GiteaRequests.repoLatestRelease(config, "owner", "missing")
         val releaseByTag = GiteaRequests.repoReleaseByTag(config, "owner", "missing", "release/candidate")
         val assets = GiteaRequests.repoReleaseAssets(config, "owner", "missing", 77)
         val asset = GiteaRequests.repoReleaseAsset(config, "owner", "missing", releaseId = 77, attachmentId = 901)
@@ -3602,6 +3637,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           decodeWith(releases, backend) == Left(GiteaError.NotFound("missing release", body)),
           decodeWith(release, backend) == Left(GiteaError.NotFound("missing release", body)),
+          decodeWith(latestRelease, backend) == Left(GiteaError.NotFound("missing release", body)),
           decodeWith(releaseByTag, backend) == Left(GiteaError.NotFound("missing release", body)),
           decodeWith(assets, backend) == Left(GiteaError.NotFound("missing release", body)),
           decodeWith(asset, backend) == Left(GiteaError.NotFound("missing release", body))

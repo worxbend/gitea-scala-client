@@ -33,3 +33,4 @@
 [learning] `repoListReleases` documents `draft` and `pre-release` filters in addition to pagination; release listing is not facade-complete until those filters are modeled.
 [pattern] Live list probes are more useful when an optional configured detail id makes them assert list membership; otherwise empty-list success can be only a weak endpoint check.
 [pattern] Stream facades driven by `Pagination.paginated` should treat `page` fields carefully: either keep page low-level-only or implement explicit start-page semantics so caller params are not silently overwritten.
+[learning] `repoGetLatestRelease` returns the most recent non-prerelease, non-draft release sorted by `created_at`; live checks need an explicit latest-tag assertion instead of comparing to arbitrary release IDs.

@@ -225,6 +225,15 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Release]
     )
 
+  def repoLatestRelease(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Release] =
+    get(
+      config,
+      GiteaEndpoints.repoGetLatestRelease,
+      List("repos", owner, repo, "releases", "latest"),
+      Nil,
+      GiteaResponseMapper.decodeJson[Release]
+    )
+
   def repoReleaseByTag(config: GiteaConfig, owner: String, repo: String, tag: String): GiteaRequest[Release] =
     get(
       config,

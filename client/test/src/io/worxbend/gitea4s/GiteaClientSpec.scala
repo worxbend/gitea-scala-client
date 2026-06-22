@@ -2127,26 +2127,58 @@ object GiteaClientSpec extends ZIOSpecDefault:
           release.name.contains("Second")
         )
       },
-      test("forwards release-list filters through paginated streaming") {
-        val twoPageHeaders = List(Header("x-total-count", "8"))
-        val params = ReleaseListParams(draft = Some(false), preRelease = Some(true), limit = Some(7))
-        val backend =
-          taskStub.whenRequestMatches { request =>
-            request.method == Method.GET &&
-              request.uri.path.endsWith(List("repos", "alice", "api", "releases")) &&
-              request.uri.paramsMap.get("draft").contains("false") &&
-              request.uri.paramsMap.get("pre-release").contains("true") &&
-              request.uri.paramsMap.get("page").exists(value => value == "1" || value == "2") &&
-              request.uri.paramsMap.get("limit").contains("7")
-          }.thenRespondCyclic(
-            ResponseStub.adjust("""[{"id":10,"tag_name":"v2.0.0-rc1"}]""", StatusCode.Ok, twoPageHeaders),
-            ResponseStub.adjust("""[{"id":11,"tag_name":"v2.0.0-rc2"}]""", StatusCode.Ok, twoPageHeaders)
-          )
-        val client = GiteaClient.fromBackend(config, backend)
+      test("starts release-list streams at page 1 while preserving filters and page size") {
+        val twoPageHeaders = List(Header("x-total-count", "4"))
+        val params =
+          ReleaseListParams(draft = Some(true), preRelease = Some(false), page = Some(7), limit = Some(2))
 
-        client.releases("alice", "api", params).runCollect.map { releases =>
-          assertTrue(releases.map(_.tagName) == Chunk(Some("v2.0.0-rc1"), Some("v2.0.0-rc2")))
-        }
+        for
+          seenQueries <- Ref.make(Vector.empty[Map[String, String]])
+          responses <- Ref.make(
+            List[Response[String]](
+              stringResponse("""[{"id":10,"tag_name":"v2.0.0-rc1"}]""", StatusCode.Ok, twoPageHeaders),
+              stringResponse("""[{"id":11,"tag_name":"v2.0.0-rc2"}]""", StatusCode.Ok, twoPageHeaders)
+            )
+          )
+          backend = new Backend[Task]:
+            private val taskMonad = new RIOMonadAsyncError[Any]
+
+            override def send[T](request: GenericRequest[T, Effect[Task]]): Task[Response[T]] =
+              for
+                _ <- ZIO
+                  .unless(
+                    request.method == Method.GET &&
+                      request.uri.path.endsWith(List("repos", "alice", "api", "releases"))
+                  )(ZIO.fail(IllegalStateException(s"unexpected request: ${request.method} ${request.uri}")))
+                _ <- seenQueries.update(_ :+ request.uri.paramsMap)
+                response <- responses.modify {
+                  case next :: rest => (ZIO.succeed(next.asInstanceOf[Response[T]]), rest)
+                  case Nil => (ZIO.fail(IllegalStateException("no release-list response left")), Nil)
+                }.flatten
+              yield response
+
+            override def close(): Task[Unit] =
+              ZIO.unit
+
+            override def monad: MonadError[Task] =
+              taskMonad
+          client = GiteaClient.fromBackend(config, backend)
+          releases <- client.releases("alice", "api", params).runCollect
+          queries <- seenQueries.get
+        yield assertTrue(
+          releases.map(_.tagName) == Chunk(Some("v2.0.0-rc1"), Some("v2.0.0-rc2")),
+          queries.headOption.exists { first =>
+            first.get("page").contains("1") &&
+            first.get("limit").contains("2") &&
+            first.get("draft").contains("true") &&
+            first.get("pre-release").contains("false")
+          },
+          queries.map(_("page")) == Vector("1", "2"),
+          queries.forall(_.get("draft").contains("true")),
+          queries.forall(_.get("pre-release").contains("false")),
+          queries.forall(_.get("limit").contains("2")),
+          !queries.exists(_.get("page").contains("7"))
+        )
       },
       test("propagates release-list documented not-found errors through the facade") {
         val body = """{"message":"repository not found"}"""
@@ -2179,6 +2211,52 @@ object GiteaClientSpec extends ZIOSpecDefault:
         yield assertTrue(
           releases.map(_.id) == Chunk(Some(2L)),
           releases.headOption.flatMap(_.name).contains("Retried release")
+        )
+      },
+      test("loads the latest repository release through the ReleasesApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "releases", "latest")) &&
+              request.uri.paramsMap.isEmpty
+          }.thenRespond(ResponseStub.adjust("""{"id":3,"tag_name":"v2.0.0","name":"Latest stable"}"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.latestRelease("alice", "api").map(release => release.id -> release.name))(
+          Assertion.equalTo(Some(3L) -> Some("Latest stable"))
+        )
+      },
+      test("propagates latest-release documented not-found errors through the facade") {
+        val body = """{"message":"latest release not found"}"""
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "releases", "latest"))
+          }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.latestRelease("alice", "api").either)(
+          Assertion.equalTo(Left(GiteaError.NotFound("latest release not found", body)))
+        )
+      },
+      test("retries latest-release lookup because it is a read-only GET") {
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "releases", "latest"))
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""{"id":3,"tag_name":"v2.0.0","name":"Retried latest release"}""")
+          )
+        val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
+
+        for
+          fiber <- client.latestRelease("alice", "api").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          release <- fiber.join
+        yield assertTrue(
+          release.id.contains(3L),
+          release.name.contains("Retried latest release")
         )
       },
       test("loads a repository release by tag through the ReleasesApi") {

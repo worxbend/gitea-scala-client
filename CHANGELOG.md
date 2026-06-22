@@ -138,12 +138,20 @@ surface is still being filled out.
   `v1.0.0` and slash-containing tags such as `release/candidate` as one path
   segment. Release create/edit/delete and release asset
   upload/edit/delete/download surfaces remain out of scope.
+- Latest-release metadata lookup for
+  `GET /repos/{owner}/{repo}/releases/latest` (`repoGetLatestRelease`) with
+  `GiteaRequests.repoLatestRelease` and
+  `ReleasesApi.latestRelease(owner, repo)`; the read-only request is retryable,
+  has no query parameters or request body, returns the server-selected latest
+  `Release` metadata, and propagates documented `404` failures through the
+  shared error mapper.
 - Release confidence hardening for the existing read-only release metadata
   surface: Swagger audit coverage now explicitly includes release list/detail
-  (`repoListReleases`, `repoGetRelease`) alongside release-by-tag and release
-  asset metadata endpoints, and opt-in live probes document the variables for
-  release detail, release-by-tag, release asset list, and single release asset
-  metadata lookups. This adds validation coverage only; it does not add release
+  (`repoListReleases`, `repoGetRelease`) and latest-release
+  (`repoGetLatestRelease`) alongside release-by-tag and release asset metadata
+  endpoints, and opt-in live probes document the variables for release detail,
+  release-by-tag, release asset list, and single release asset metadata
+  lookups. This adds validation coverage only; it does not add release
   create/edit/delete, release asset upload/edit/delete, or asset binary
   download APIs.
 - Typed release-list filtering for
@@ -153,7 +161,11 @@ surface is still being filled out.
   existing `client.releases(owner, repo)` call sites source-compatible through
   `ReleaseListParams.default`, omits absent filters by default, preserves the
   wire query name `pre-release` through the Scala field `preRelease`, and
-  forwards explicit `draft`, `pre-release`, `page`, and `limit` controls.
+  preserves explicit `draft`, `pre-release`, and page-size `limit` controls.
+  The high-level stream facade always starts at page 1 through the shared
+  pagination helper; `ReleaseListParams.page` remains a low-level
+  request-builder control for `GiteaRequests.repoReleases`, not a
+  `client.releases` stream start-page selector.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,
@@ -217,12 +229,13 @@ surface is still being filled out.
   parameters, absence of request bodies, read-only retryability, success
   response refs `AttachmentList` and `Attachment`, and documented 404 response
   status/ref labels.
-- Release list/detail endpoint metadata audit coverage for operation IDs
-  `repoListReleases` and `repoGetRelease`, methods, paths, required
-  `owner`/`repo`/`id` path parameters, optional release-list query parameters
-  `draft`, `pre-release`, `page`, and `limit`, absence of request bodies,
-  read-only retryability, success response refs `ReleaseList` and `Release`,
-  and documented non-2xx response status/ref labels.
+- Release list/detail/latest endpoint metadata audit coverage for operation
+  IDs `repoListReleases`, `repoGetRelease`, and `repoGetLatestRelease`,
+  methods, paths, required `owner`/`repo` path parameters plus release-detail
+  `id`, optional release-list query parameters `draft`, `pre-release`, `page`,
+  and `limit`, absence of request bodies, read-only retryability, success
+  response refs `ReleaseList` and `Release`, and documented non-2xx response
+  status/ref labels.
 - Commit diff/patch endpoint metadata audit coverage for operation ID, method,
   path, required `owner`/`repo`/`sha`/`diffType` path parameters, success
   response, documented 404 response status/ref label, request-body absence,

@@ -17,8 +17,8 @@ and zio-json.
   downloads, Git tree reads, Git blob reads, Git reference reads, annotated tag
   reads, repository contents metadata reads, raw/media repository file byte
   downloads, repository archive byte downloads, commit-to-pull-request lookup,
-  release listing with typed filters, release detail/tag lookup, release asset
-  metadata reads, pull requests including reviews,
+  release listing with typed filters, release detail/latest/tag lookup, release
+  asset metadata reads, pull requests including reviews,
   pinned pull-request reads, pull-request create/edit writes, diff/patch
   downloads, merge-status checks, merge/update commands, review-comment
   resolution, and notifications through a ZIO client API
@@ -27,8 +27,8 @@ and zio-json.
   pull-request create/edit, merge/update, commit-to-pull-request,
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
   annotated tag, repository contents, raw/media repository file, repository
-  archive, release list/detail, release-by-tag, and release asset metadata
-  endpoints,
+  archive, release list/detail, latest-release, release-by-tag, and release
+  asset metadata endpoints,
   including documented non-2xx response labels, optional query parameters,
   `application/octet-stream`/Swagger `type: file` response shape for raw/media
   downloads, the archive operation's bare `200` success description, path enum
@@ -348,13 +348,20 @@ a repeated `path` query parameter. Archive downloads are separate from
 metadata-oriented `contents` and from raw/media single-file downloads.
 
 Repository release metadata covers paginated release listing through
-`client.releases(owner, repo)` and single release lookup through
+`client.releases(owner, repo)`, latest release lookup through
+`client.latestRelease(owner, repo)`, and single release lookup through
 `client.release(owner, repo, id)`. Release listing accepts
-`ReleaseListParams` for the documented `draft`, `pre-release`, `page`, and
+`ReleaseListParams` for the documented `draft`, `pre-release`, and page-size
 `limit` query controls. `ReleaseListParams.default` omits filter keys, while
-the paginated stream helper continues supplying page and limit values as it
-fetches pages. Use the Scala field `preRelease` for the wire query name
-`pre-release`. Tag lookup uses
+the paginated stream helper always starts at page 1 and supplies page values as
+it fetches pages. `ReleaseListParams.page` remains a lower-level
+request-builder control for `GiteaRequests.repoReleases`; it is not a stream
+start-page selector for `client.releases`. Use the Scala field `preRelease`
+for the wire query name `pre-release`. Latest release lookup uses
+`GET /repos/{owner}/{repo}/releases/latest` to return the server-selected
+latest `Release` metadata. It has no query parameters or request body, sends
+JSON accept headers, is read-only retryable, and propagates documented `404`
+failures through the shared error mapper. Tag lookup uses
 `client.releaseByTag(owner, repo, tag)` and the Gitea endpoint
 `GET /repos/{owner}/{repo}/releases/tags/{tag}` to return `Release` metadata
 for a tag. Tag values with punctuation such as `v1.0.0` and values with
@@ -490,7 +497,6 @@ client
     params = ReleaseListParams(
       draft = Some(false),
       preRelease = Some(true),
-      page = Some(1),
       limit = Some(25)
     )
   )
@@ -498,6 +504,8 @@ client
   .runCollect
 
 client.release(owner = "my-org", repo = "my-repo", id = 7)
+
+client.latestRelease(owner = "my-org", repo = "my-repo")
 
 client.releaseByTag(owner = "my-org", repo = "my-repo", tag = "release/candidate")
 
@@ -896,8 +904,8 @@ Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
 tree/blob/annotated-tag/refs, repository contents, raw/media repository file,
-repository archive, release list/detail, release-by-tag, and release asset
-metadata endpoint groups against
+repository archive, release list/detail, latest-release, release-by-tag, and
+release asset metadata endpoint groups against
 `plugin-redoc-2.yaml`, including
 documented non-2xx response status/ref labels, optional query parameters such as
 `recursive`/`page`/`per_page`, contents/raw/media `ref`, and archive `path`,
@@ -905,9 +913,10 @@ documented non-2xx response status/ref labels, optional query parameters such as
 downloads, the archive operation's bare `200` success description,
 no-query/no-body checks for Git blob, annotated tag, and refs requests, no-body
 checks for contents, raw/media, archive, release list/detail, release-by-tag,
-and release asset requests, release list/detail `ReleaseList`/`Release`
-response refs, release asset `AttachmentList`/`Attachment` response refs, and
-path enum values such as `diffType`.
+latest-release, and release asset requests, release list/detail/latest
+`ReleaseList`/`Release` response refs, release asset
+`AttachmentList`/`Attachment` response refs, and path enum values such as
+`diffType`.
 
 Live integration tests are opt-in:
 
@@ -984,10 +993,12 @@ GITEA_ARCHIVE_PATHS=src,docs/readme.md \
 ./mill it.test
 ```
 
-Release metadata probes are read-only and metadata-only. They call the existing
-`client.release(owner, repo, id)`, `client.releaseByTag(owner, repo, tag)`,
+Release metadata APIs are read-only and metadata-only. The facade surface also
+includes `client.latestRelease(owner, repo)`, while the current live probes
+call `client.release(owner, repo, id)`,
+`client.releaseByTag(owner, repo, tag)`,
 `client.releaseAssets(owner, repo, releaseId)`, and
-`client.releaseAsset(owner, repo, releaseId, assetId)` facades. In addition to
+`client.releaseAsset(owner, repo, releaseId, assetId)`. In addition to
 `GITEA_URL`, `GITEA_TOKEN`, `GITEA_OWNER`, and `GITEA_REPO`, configure
 `GITEA_RELEASE_ID` for release detail and asset-list probes,
 `GITEA_RELEASE_TAG` for the release-by-tag probe, and both
