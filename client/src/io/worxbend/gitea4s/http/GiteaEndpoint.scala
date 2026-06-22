@@ -251,6 +251,46 @@ object GiteaEndpoints:
       response = "#/responses/Attachment"
     )
 
+  val repoListCollaborators: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/collaborators",
+      operationId = "repoListCollaborators",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      response = "#/responses/UserList"
+    )
+
+  val repoCheckCollaborator: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/collaborators/{collaborator}",
+      operationId = "repoCheckCollaborator",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("collaborator", "path", required = true)
+      ),
+      response = "#/responses/empty"
+    )
+
+  val repoGetRepoPermissions: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      operationId = "repoGetRepoPermissions",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("collaborator", "path", required = true)
+      ),
+      response = "#/responses/RepoCollaboratorPermission"
+    )
+
   val repoGetCombinedStatusByRef: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

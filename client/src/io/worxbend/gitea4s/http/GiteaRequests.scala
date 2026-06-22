@@ -48,6 +48,7 @@ import io.worxbend.gitea4s.model.{
   Reference,
   Release,
   ReleaseAsset,
+  RepoCollaboratorPermission,
   Repository,
   StopWatch,
   SubmitPullReviewOptions,
@@ -270,6 +271,42 @@ object GiteaRequests:
       List("repos", owner, repo, "releases", releaseId.toString, "assets", attachmentId.toString),
       Nil,
       GiteaResponseMapper.decodeJson[ReleaseAsset]
+    )
+
+  def repoCollaborators(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[User]] =
+    paginatedUsers(
+      config = config,
+      endpoint = GiteaEndpoints.repoListCollaborators,
+      path = List("repos", owner, repo, "collaborators"),
+      page = page
+    )
+
+  def repoCheckCollaborator(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      collaborator: String
+  ): GiteaRequest[Boolean] =
+    get(
+      config,
+      GiteaEndpoints.repoCheckCollaborator,
+      List("repos", owner, repo, "collaborators", collaborator),
+      Nil,
+      GiteaResponseMapper.decodeNoContentOrNotFoundBoolean
+    )
+
+  def repoCollaboratorPermission(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      collaborator: String
+  ): GiteaRequest[RepoCollaboratorPermission] =
+    get(
+      config,
+      GiteaEndpoints.repoGetRepoPermissions,
+      List("repos", owner, repo, "collaborators", collaborator, "permission"),
+      Nil,
+      GiteaResponseMapper.decodeJson[RepoCollaboratorPermission]
     )
 
   def repoCombinedStatusByRef(

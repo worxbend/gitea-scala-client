@@ -36,3 +36,4 @@
 [learning] `repoGetLatestRelease` returns the most recent non-prerelease, non-draft release sorted by `created_at`; live checks need an explicit latest-tag assertion instead of comparing to arbitrary release IDs.
 [process] Credential-stripped live integration runs prove hermetic skipping only; record real routing confidence only after an enabled probe observes the configured endpoint behavior.
 [process] Normal release-tag probe success is not slash-routing evidence; slash-bearing path behavior needs an enabled probe with a real slash-containing tag.
+[learning] `repoCheckCollaborator` is a 204/404 membership probe; a boolean facade is ergonomic but cannot distinguish not-collaborator from every missing-resource 404 case.

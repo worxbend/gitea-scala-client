@@ -32,10 +32,12 @@ import io.worxbend.gitea4s.model.{
   PullReviewRequestOptions,
   CreatePullRequestOption,
   EditPullRequestOption,
+  RepoCollaboratorPermission,
   Release,
   ReleaseAsset,
   SubmitPullReviewOptions,
   GitBlobResponse,
+  User,
   WatchInfo
 }
 import sttp.client4.*
@@ -235,6 +237,121 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/tags?"),
           request.uri.paramsMap.get("page").contains("4"),
           request.uri.paramsMap.get("limit").contains("25")
+        )
+      },
+      test("builds and decodes schema-traceable paginated repository collaborators request") {
+        val built = GiteaRequests.repoCollaborators(config, "worx bend", "gitea/scala", page = 3)
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""[{"id":42,"login":"octo"}]""", StatusCode.Ok, List(Header("x-total-count", "2")))
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListCollaborators,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoListCollaborators",
+          endpoint.path == "/repos/{owner}/{repo}/collaborators",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "page", "limit"),
+          endpoint.response == "#/responses/UserList",
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/collaborators?"),
+          request.uri.paramsMap.get("page").contains("3"),
+          request.uri.paramsMap.get("limit").contains("25"),
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend).map(_.data) == Right(Chunk(User(id = Some(42L), login = Some("octo")))),
+          decodeWith(built, backend).map(_.totalCount) == Right(Some(2L)),
+          decodeWith(built, backend).map(_.page) == Right(3),
+          decodeWith(built, backend).map(_.pageSize) == Right(25)
+        )
+      },
+      test("builds and decodes schema-traceable repository collaborator check request") {
+        val built = GiteaRequests.repoCheckCollaborator(config, "worx bend", "gitea/scala", "space user/slash")
+        val endpoint = built.endpoint
+        val request = built.request
+        val memberBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+        val missingBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"message":"not a collaborator"}""", StatusCode.NotFound)
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoCheckCollaborator,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoCheckCollaborator",
+          endpoint.path == "/repos/{owner}/{repo}/collaborators/{collaborator}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "collaborator"),
+          endpoint.response == "#/responses/empty",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/collaborators/space%20user%2Fslash",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "collaborators", "space user/slash"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, memberBackend) == Right(true),
+          decodeWith(built, missingBackend) == Right(false)
+        )
+      },
+      test("builds and decodes schema-traceable repository collaborator permission request") {
+        val built = GiteaRequests.repoCollaboratorPermission(config, "worx bend", "gitea/scala", "space user/slash")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"permission":"write","role_name":"Developer","user":{"id":42,"login":"octo"}}""")
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetRepoPermissions,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetRepoPermissions",
+          endpoint.path == "/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "collaborator"),
+          endpoint.response == "#/responses/RepoCollaboratorPermission",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/collaborators/space%20user%2Fslash/permission",
+          request.uri.path == List(
+            "root",
+            "api",
+            "v1",
+            "repos",
+            "worx bend",
+            "gitea/scala",
+            "collaborators",
+            "space user/slash",
+            "permission"
+          ),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            RepoCollaboratorPermission(
+              permission = Some("write"),
+              roleName = Some("Developer"),
+              user = Some(User(id = Some(42L), login = Some("octo")))
+            )
+          )
         )
       },
       test("builds schema-traceable paginated repository releases request") {
@@ -3641,6 +3758,30 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           decodeWith(releaseByTag, backend) == Left(GiteaError.NotFound("missing release", body)),
           decodeWith(assets, backend) == Left(GiteaError.NotFound("missing release", body)),
           decodeWith(asset, backend) == Left(GiteaError.NotFound("missing release", body))
+        )
+      },
+      test("maps repository collaborator documented error responses") {
+        val notFoundBody = """{"message":"missing repository"}"""
+        val validationBody = """{"message":"invalid collaborator"}"""
+        val forbiddenBody = """{"message":"forbidden"}"""
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val validationBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(validationBody, StatusCode.UnprocessableEntity)
+          )
+        val forbiddenBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(forbiddenBody, StatusCode.Forbidden))
+        val collaborators = GiteaRequests.repoCollaborators(config, "owner", "missing")
+        val check = GiteaRequests.repoCheckCollaborator(config, "owner", "repo", "bad-user")
+        val permission = GiteaRequests.repoCollaboratorPermission(config, "owner", "repo", "octo")
+
+        assertTrue(
+          decodeWith(collaborators, notFoundBackend) == Left(GiteaError.NotFound("missing repository", notFoundBody)),
+          decodeWith(check, validationBackend) ==
+            Left(GiteaError.UnprocessableEntity("invalid collaborator", validationBody)),
+          decodeWith(permission, forbiddenBackend) == Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
+          decodeWith(permission, notFoundBackend) == Left(GiteaError.NotFound("missing repository", notFoundBody))
         )
       },
       test("maps documented commit status failures") {

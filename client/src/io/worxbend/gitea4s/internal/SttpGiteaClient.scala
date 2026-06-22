@@ -71,6 +71,7 @@ import io.worxbend.gitea4s.model.{
   Reference,
   Release,
   ReleaseAsset,
+  RepoCollaboratorPermission,
   Repository,
   StopWatch,
   SubmitPullReviewOptions,
@@ -217,6 +218,21 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       params: ArchiveParams
   ): IO[GiteaError, Chunk[Byte]] =
     executor.send(GiteaRequests.repoGetArchive(config, owner, repo, archive, params))
+
+  override def collaborators(owner: String, repo: String): ZStream[Any, GiteaError, User] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoCollaborators(config, owner, repo, page))
+    }
+
+  override def isCollaborator(owner: String, repo: String, collaborator: String): IO[GiteaError, Boolean] =
+    executor.send(GiteaRequests.repoCheckCollaborator(config, owner, repo, collaborator))
+
+  override def collaboratorPermission(
+      owner: String,
+      repo: String,
+      collaborator: String
+  ): IO[GiteaError, RepoCollaboratorPermission] =
+    executor.send(GiteaRequests.repoCollaboratorPermission(config, owner, repo, collaborator))
 
   override def list(
       owner: String,

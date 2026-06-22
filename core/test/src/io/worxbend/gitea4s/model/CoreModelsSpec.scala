@@ -16,6 +16,7 @@ object CoreModelsSpec extends ZIOSpecDefault:
 
   private val schemaChecklistSwaggerFields = Map(
     "Attachment" -> Set("browser_download_url", "created_at", "download_count", "id", "name", "size", "uuid"),
+    "RepoCollaboratorPermission" -> Set("permission", "role_name", "user"),
     "Reference" -> Set("object", "ref", "url"),
     "GitObject" -> Set("sha", "type", "url"),
     "AnnotatedTag" -> Set("message", "object", "sha", "tag", "tagger", "url", "verification"),
@@ -50,6 +51,10 @@ object CoreModelsSpec extends ZIOSpecDefault:
     SchemaFieldChecklist(
       "Attachment",
       Set("browser_download_url", "created_at", "download_count", "id", "name", "size", "uuid")
+    ),
+    SchemaFieldChecklist(
+      "RepoCollaboratorPermission",
+      Set("permission", "role_name", "user")
     ),
     SchemaFieldChecklist("Reference", Set("object", "ref", "url")),
     SchemaFieldChecklist("GitObject", Set("sha", "type", "url")),
@@ -103,6 +108,12 @@ object CoreModelsSpec extends ZIOSpecDefault:
         name = Some("gitea4s.jar"),
         size = Some(4096L),
         uuid = Some("asset-uuid-500")
+      ).toJson,
+    "RepoCollaboratorPermission" ->
+      RepoCollaboratorPermission(
+        permission = Some("write"),
+        roleName = Some("Developer"),
+        user = Some(User(id = Some(42L), login = Some("octo")))
       ).toJson,
     "Reference" ->
       Reference(
@@ -312,6 +323,28 @@ object CoreModelsSpec extends ZIOSpecDefault:
           repository.map(_.permissions.flatMap(_.admin)) == Right(Some(true)),
           repository.map(_.topics) == Right(Some(List("scala", "zio"))),
           repository.map(_.objectFormatName) == Right(Some(ObjectFormatName.Sha256))
+        )
+      },
+      test("decodes and round-trips repository collaborator permission response shape") {
+        val json =
+          """{
+            |  "permission": "write",
+            |  "role_name": "Developer",
+            |  "user": { "id": 42, "login": "octo" }
+            |}""".stripMargin
+        val decoded = json.fromJson[RepoCollaboratorPermission]
+        val payload =
+          RepoCollaboratorPermission(
+            permission = Some("write"),
+            roleName = Some("Developer"),
+            user = Some(User(id = Some(42L), login = Some("octo")))
+          )
+
+        assertTrue(
+          decoded == Right(payload),
+          decoded.map(_.toJson) ==
+            Right("""{"permission":"write","role_name":"Developer","user":{"id":42,"login":"octo"}}"""),
+          !payload.toJson.contains("roleName")
         )
       },
       test("decodes topic names response shape") {

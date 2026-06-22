@@ -333,6 +333,21 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val collaboratorRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoCollaborators(config, "owner", "repo", page = 2),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoCheckCollaborator(config, "owner", "repo", collaborator = "octo"),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoCollaboratorPermission(config, "owner", "repo", collaborator = "octo"),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val commitDiffOrPatchRequests = List(
     AuditedRequest(
       request =
@@ -562,6 +577,17 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoGetReleaseByTag" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoListCollaborators" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoCheckCollaborator" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoGetRepoPermissions" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoDownloadCommitDiffOrPatch" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     )
@@ -656,6 +682,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("repository release by tag metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = releaseByTagRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository collaborator metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = collaboratorRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },

@@ -16,9 +16,10 @@ and zio-json.
   commit statuses, single-commit lookup, commit note lookup, commit diff/patch
   downloads, Git tree reads, Git blob reads, Git reference reads, annotated tag
   reads, repository contents metadata reads, raw/media repository file byte
-  downloads, repository archive byte downloads, commit-to-pull-request lookup,
-  release listing with typed filters, release detail/latest/tag lookup, release
-  asset metadata reads, pull requests including reviews,
+  downloads, repository archive byte downloads, repository collaborator
+  list/check/permission reads, commit-to-pull-request lookup, release listing
+  with typed filters, release detail/latest/tag lookup, release asset metadata
+  reads, pull requests including reviews,
   pinned pull-request reads, pull-request create/edit writes, diff/patch
   downloads, merge-status checks, merge/update commands, review-comment
   resolution, and notifications through a ZIO client API
@@ -190,12 +191,35 @@ client
 Current stream-oriented APIs include user followers/following/search, user and
 organization repositories, organization members, issues, issue reactions, issue
 subscribers, issue tracked times, current-user stopwatches, repository-wide
-issue comments, branches, tags, releases, pull requests, and notification
-threads. Commit-status list APIs are also paginated streams. Pinned issues and
-pinned pull requests are exposed as non-paginated chunks because Gitea returns
-those endpoints as plain list responses without pagination parameters. Release
-asset metadata lists are also non-paginated chunks in the local Swagger
-contract.
+issue comments, branches, tags, repository collaborators, releases, pull
+requests, and notification threads. Commit-status list APIs are also paginated
+streams. Pinned issues and pinned pull requests are exposed as non-paginated
+chunks because Gitea returns those endpoints as plain list responses without
+pagination parameters. Release asset metadata lists are also non-paginated
+chunks in the local Swagger contract.
+
+## Repository Collaborators
+
+Repository collaborator reads cover the three Swagger-documented `GET`
+operations under `/repos/{owner}/{repo}/collaborators`:
+
+- `client.collaborators(owner, repo)` streams paginated collaborators as
+  `User` values from `repoListCollaborators`. The stream starts at page 1 and
+  sends `page` plus the configured `GiteaConfig.pageSize` as `limit` on each
+  request.
+- `client.isCollaborator(owner, repo, collaborator)` calls
+  `repoCheckCollaborator` and returns `IO[GiteaError, Boolean]`. A `204`
+  response decodes as `true`, and the endpoint-specific `404` response decodes
+  as `false`; other failures flow through the shared error mapper.
+- `client.collaboratorPermission(owner, repo, collaborator)` calls
+  `repoGetRepoPermissions` and returns `RepoCollaboratorPermission` in
+  `IO[GiteaError, RepoCollaboratorPermission]`, with optional `permission`,
+  `roleName`, and `user` fields.
+
+All three collaborator methods are read-only and retryable under
+`GiteaConfig.maxRetries`. Owner, repository, and collaborator username values
+are encoded as path segments. Collaborator add/delete/write operations are not
+part of this API slice.
 
 ## Commit Statuses
 
@@ -486,6 +510,20 @@ client.archive(
   repo = "my-repo",
   archive = "main.zip",
   params = ArchiveParams(path = Chunk("src", "docs/readme.md"))
+)
+
+client.collaborators(owner = "my-org", repo = "my-repo").take(25).runCollect
+
+client.isCollaborator(
+  owner = "my-org",
+  repo = "my-repo",
+  collaborator = "alice"
+)
+
+client.collaboratorPermission(
+  owner = "my-org",
+  repo = "my-repo",
+  collaborator = "alice"
 )
 
 client.releases(owner = "my-org", repo = "my-repo").take(25).runCollect

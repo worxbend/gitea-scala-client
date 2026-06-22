@@ -65,6 +65,15 @@ final case class Permission(
 object Permission:
   given JsonCodec[Permission] = DeriveJsonCodec.gen[Permission]
 
+final case class RepoCollaboratorPermission(
+    permission: Option[String] = None,
+    @jsonField("role_name") roleName: Option[String] = None,
+    user: Option[User] = None
+)
+
+object RepoCollaboratorPermission:
+  given JsonCodec[RepoCollaboratorPermission] = DeriveJsonCodec.gen[RepoCollaboratorPermission]
+
 final case class Repository(
     id: Option[Long] = None,
     owner: Option[User] = None,

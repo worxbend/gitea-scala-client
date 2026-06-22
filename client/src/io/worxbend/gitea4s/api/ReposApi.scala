@@ -25,7 +25,9 @@ import io.worxbend.gitea4s.model.{
   NewIssuePinsAllowed,
   Note,
   Reference,
+  RepoCollaboratorPermission,
   Repository,
+  User,
   Tag
 }
 import zio.{Chunk, IO}
@@ -98,6 +100,16 @@ trait ReposApi:
       archive: String,
       params: ArchiveParams = ArchiveParams.default
   ): IO[GiteaError, Chunk[Byte]]
+
+  def collaborators(owner: String, repo: String): ZStream[Any, GiteaError, User]
+
+  def isCollaborator(owner: String, repo: String, collaborator: String): IO[GiteaError, Boolean]
+
+  def collaboratorPermission(
+      owner: String,
+      repo: String,
+      collaborator: String
+  ): IO[GiteaError, RepoCollaboratorPermission]
 
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 

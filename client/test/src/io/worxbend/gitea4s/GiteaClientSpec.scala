@@ -48,6 +48,7 @@ import io.worxbend.gitea4s.model.{
   MergePullRequestOption,
   PullReviewRequestOptions,
   PullReviewState,
+  RepoCollaboratorPermission,
   SubmitPullReviewOptions
 }
 import sttp.capabilities.Effect
@@ -2402,6 +2403,161 @@ object GiteaClientSpec extends ZIOSpecDefault:
         yield assertTrue(
           asset.id.contains(901L),
           asset.name.contains("gitea4s.jar")
+        )
+      },
+      test("streams repository collaborators from page 1 with the configured page size") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+
+        for
+          seenQueries <- Ref.make(Vector.empty[Map[String, String]])
+          responses <- Ref.make(
+            List[Response[String]](
+              stringResponse("""[{"id":42,"login":"octo"}]""", StatusCode.Ok, twoPageHeaders),
+              stringResponse("""[{"id":43,"login":"mona"}]""", StatusCode.Ok, twoPageHeaders)
+            )
+          )
+          backend = new Backend[Task]:
+            private val taskMonad = new RIOMonadAsyncError[Any]
+
+            override def send[T](request: GenericRequest[T, Effect[Task]]): Task[Response[T]] =
+              for
+                _ <- ZIO
+                  .unless(
+                    request.method == Method.GET &&
+                      request.uri.path.endsWith(List("repos", "alice", "api", "collaborators"))
+                  )(ZIO.fail(IllegalStateException(s"unexpected request: ${request.method} ${request.uri}")))
+                _ <- seenQueries.update(_ :+ request.uri.paramsMap)
+                response <- responses.modify {
+                  case next :: rest => (ZIO.succeed(next.asInstanceOf[Response[T]]), rest)
+                  case Nil          => (ZIO.fail(IllegalStateException("no collaborator response left")), Nil)
+                }.flatten
+              yield response
+
+            override def close(): Task[Unit] =
+              ZIO.unit
+
+            override def monad: MonadError[Task] =
+              taskMonad
+          client = GiteaClient.fromBackend(config, backend)
+          collaborators <- client.collaborators("alice", "api").runCollect
+          queries <- seenQueries.get
+        yield assertTrue(
+          collaborators.map(_.login) == Chunk(Some("octo"), Some("mona")),
+          queries.map(_("page")) == Vector("1", "2"),
+          queries.forall(_.get("limit").contains("1"))
+        )
+      },
+      test("checks collaborator membership and loads collaborator permissions through the ReposApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/collaborators/space%20user%2Fslash" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "collaborators",
+                "space user/slash"
+              ) &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret")
+          }.thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.path.endsWith(List("repos", "space owner", "repo/slash", "collaborators", "missing"))
+            }
+            .thenRespond(ResponseStub.adjust("""{"message":"not found"}""", StatusCode.NotFound))
+            .whenRequestMatches { request =>
+              request.method == Method.GET &&
+                request.uri.toString ==
+                  "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/collaborators/space%20user%2Fslash/permission" &&
+                request.uri.path == List(
+                  "api",
+                  "v1",
+                  "repos",
+                  "space owner",
+                  "repo/slash",
+                  "collaborators",
+                  "space user/slash",
+                  "permission"
+                ) &&
+                request.uri.paramsMap.isEmpty
+            }
+            .thenRespond(
+              ResponseStub.adjust("""{"permission":"write","role_name":"Developer","user":{"id":42,"login":"octo"}}""")
+            )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        for
+          isCollaborator <- client.isCollaborator("space owner", "repo/slash", "space user/slash")
+          missing <- client.isCollaborator("space owner", "repo/slash", "missing")
+          permission <- client.collaboratorPermission("space owner", "repo/slash", "space user/slash")
+        yield assertTrue(
+          isCollaborator,
+          !missing,
+          permission == RepoCollaboratorPermission(
+            permission = Some("write"),
+            roleName = Some("Developer"),
+            user = Some(io.worxbend.gitea4s.model.User(id = Some(42L), login = Some("octo")))
+          )
+        )
+      },
+      test("propagates collaborator documented errors through the facade") {
+        val notFoundBody = """{"message":"repository not found"}"""
+        val validationBody = """{"message":"invalid collaborator"}"""
+        val forbiddenBody = """{"message":"forbidden"}"""
+        val listBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "missing", "collaborators"))
+          }.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val checkBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "collaborators", "bad-user"))
+          }.thenRespond(ResponseStub.adjust(validationBody, StatusCode.UnprocessableEntity))
+        val permissionBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "collaborators", "octo", "permission"))
+          }.thenRespond(ResponseStub.adjust(forbiddenBody, StatusCode.Forbidden))
+        val listClient = GiteaClient.fromBackend(config, listBackend)
+        val checkClient = GiteaClient.fromBackend(config, checkBackend)
+        val permissionClient = GiteaClient.fromBackend(config, permissionBackend)
+
+        for
+          listResult <- listClient.collaborators("alice", "missing").runCollect.either
+          checkResult <- checkClient.isCollaborator("alice", "api", "bad-user").either
+          permissionResult <- permissionClient.collaboratorPermission("alice", "api", "octo").either
+        yield assertTrue(
+          listResult == Left(GiteaError.NotFound("repository not found", notFoundBody)),
+          checkResult == Left(GiteaError.UnprocessableEntity("invalid collaborator", validationBody)),
+          permissionResult == Left(GiteaError.Forbidden("forbidden", forbiddenBody))
+        )
+      },
+      test("retries collaborator permission lookup because it is a read-only GET") {
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "collaborators", "octo", "permission"))
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""{"permission":"read","role_name":"Reader","user":{"login":"octo"}}""")
+          )
+        val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
+
+        for
+          fiber <- client.collaboratorPermission("alice", "api", "octo").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          permission <- fiber.join
+        yield assertTrue(
+          permission.permission.contains("read"),
+          permission.roleName.contains("Reader"),
+          permission.user.flatMap(_.login).contains("octo")
         )
       },
       test("loads and streams repository pull requests") {

@@ -14,6 +14,18 @@ surface is still being filled out.
 - Typed core models, zio-json codecs, and the `GiteaError` ADT.
 - Read-only ZIO client APIs for users, organizations, repositories, issues,
   releases, pull requests, and notifications.
+- Read-only repository collaborator APIs for
+  `GET /repos/{owner}/{repo}/collaborators`
+  (`repoListCollaborators`),
+  `GET /repos/{owner}/{repo}/collaborators/{collaborator}`
+  (`repoCheckCollaborator`), and
+  `GET /repos/{owner}/{repo}/collaborators/{collaborator}/permission`
+  (`repoGetRepoPermissions`) with `ReposApi.collaborators`,
+  `ReposApi.isCollaborator`, and `ReposApi.collaboratorPermission`. The
+  collaborator list streams paginated `User` values, the check endpoint maps
+  `204` to `true` and endpoint-specific `404` to `false`, and the permission
+  endpoint decodes `RepoCollaboratorPermission`. These methods are read-only
+  retryable; collaborator add/delete/write operations remain out of scope.
 - Typed commit-status models and repository APIs with `CommitStatus`,
   `CombinedStatus`, `CreateStatusOption`, `CommitStatusState`,
   `CommitStatusListParams`, and request construction for
