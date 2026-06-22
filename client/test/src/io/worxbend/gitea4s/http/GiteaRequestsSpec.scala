@@ -211,6 +211,43 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.retryable == true
         )
       },
+      test("builds and decodes schema-traceable repository assignees request") {
+        val built = GiteaRequests.repoAssignees(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""[{"id":42,"login":"octo"},{"id":43,"login":"hub"}]""")
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetAssignees,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetAssignees",
+          endpoint.path == "/repos/{owner}/{repo}/assignees",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.response == "#/responses/UserList",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/assignees",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "assignees"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            Chunk(
+              User(id = Some(42L), login = Some("octo")),
+              User(id = Some(43L), login = Some("hub"))
+            )
+          )
+        )
+      },
       test("builds schema-traceable paginated repository branches request") {
         val built = GiteaRequests.repoBranches(config, "worx bend", "gitea/scala", page = 3)
         val endpoint = built.endpoint
@@ -4070,15 +4107,17 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           decodeWith(built, backend) == Left(GiteaError.NotFound("missing org", body))
         )
       },
-      test("maps repository branch, tag, and language not-found responses") {
+      test("maps repository branch, tag, assignee, and language not-found responses") {
         val body = """{"message":"missing repo"}"""
         val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val assignees = GiteaRequests.repoAssignees(config, "owner", "missing")
         val branches = GiteaRequests.repoBranches(config, "owner", "missing")
         val tags = GiteaRequests.repoTags(config, "owner", "missing")
         val languages = GiteaRequests.repoLanguages(config, "owner", "missing")
         val tag = GiteaRequests.repoTag(config, "owner", "missing", "release/candidate")
 
         assertTrue(
+          decodeWith(assignees, backend) == Left(GiteaError.NotFound("missing repo", body)),
           decodeWith(branches, backend) == Left(GiteaError.NotFound("missing repo", body)),
           decodeWith(tags, backend) == Left(GiteaError.NotFound("missing repo", body)),
           decodeWith(languages, backend) == Left(GiteaError.NotFound("missing repo", body)),

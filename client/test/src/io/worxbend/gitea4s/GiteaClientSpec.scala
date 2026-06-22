@@ -2005,6 +2005,80 @@ object GiteaClientSpec extends ZIOSpecDefault:
           languages == LanguageStatistics(Map("Scala" -> 321L, "TypeScript" -> 12L))
         )
       },
+      test("loads repository assignees as a non-paginated list through the ReposApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "assignees")) &&
+              request.uri.paramsMap.isEmpty &&
+              !request.uri.paramsMap.contains("page") &&
+              !request.uri.paramsMap.contains("limit") &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("Content-Type").isEmpty
+          }.thenRespond(ResponseStub.adjust("""[{"id":1,"login":"alice"},{"id":2,"login":"octo"}]"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.assignees("alice", "api").map(_.map(_.login)))(
+          Assertion.equalTo(Chunk(Some("alice"), Some("octo")))
+        )
+      },
+      test("routes repository assignee owner and repo values as encoded facade path segments") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/assignees" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "assignees"
+              ) &&
+              request.uri.paramsMap.isEmpty
+          }.thenRespond(ResponseStub.adjust("""[{"id":7,"login":"reviewer"}]"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.assignees("space owner", "repo/slash").map(_.map(_.login)))(
+          Assertion.equalTo(Chunk(Some("reviewer")))
+        )
+      },
+      test("propagates repository assignees documented not-found errors through the facade") {
+        val body = """{"message":"repository not found"}"""
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "missing", "assignees")) &&
+              request.uri.paramsMap.isEmpty
+          }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.assignees("alice", "missing").either)(
+          Assertion.equalTo(Left(GiteaError.NotFound("repository not found", body)))
+        )
+      },
+      test("retries repository assignees lookup because it is a read-only GET") {
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "assignees")) &&
+              request.uri.paramsMap.isEmpty
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""[{"id":42,"login":"retry"}]""")
+          )
+        val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
+
+        for
+          fiber <- client.assignees("alice", "api").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          assignees <- fiber.join
+        yield assertTrue(
+          assignees.map(_.login) == Chunk(Some("retry"))
+        )
+      },
       test("loads a single repository tag through the ReposApi tag method") {
         val backend =
           taskStub.whenRequestMatches { request =>

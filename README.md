@@ -16,8 +16,9 @@ and zio-json.
   commit statuses, single-commit lookup, commit note lookup, commit diff/patch
   downloads, Git tree reads, Git blob reads, Git reference reads, annotated tag
   reads, repository contents metadata reads, raw/media repository file byte
-  downloads, repository archive byte downloads, repository collaborator
-  list/check/permission reads, repository team list/lookup reads,
+  downloads, repository archive byte downloads, repository assignee metadata
+  reads, repository collaborator list/check/permission reads, repository team
+  list/lookup reads,
   repository tag list/lookup reads, repository language-statistics reads,
   repository tag-protection metadata reads, repository branch-protection
   metadata reads, commit-to-pull-request lookup,
@@ -31,9 +32,10 @@ and zio-json.
   pull-request create/edit, merge/update, commit-to-pull-request,
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
   annotated tag, repository contents, raw/media repository file, repository
-  archive, repository collaborator, repository team, repository tag lookup,
-  repository languages, repository tag-protection metadata, repository
-  branch-protection metadata, release list/detail, latest-release,
+  archive, repository assignees, repository collaborator, repository team,
+  repository tag lookup, repository languages, repository tag-protection
+  metadata, repository branch-protection metadata, release list/detail,
+  latest-release,
   release-by-tag, and release asset metadata endpoints,
   including documented non-2xx response labels, optional query parameters,
   `application/octet-stream`/Swagger `type: file` response shape for raw/media
@@ -199,10 +201,10 @@ subscribers, issue tracked times, current-user stopwatches, repository-wide
 issue comments, branches, tags, repository collaborators, repository teams,
 releases, pull requests, and notification threads. Commit-status list APIs are
 also paginated streams. Pinned issues, pinned pull requests, repository tag
-protections, and repository branch protections are exposed as non-paginated
-chunks because Gitea returns those endpoints as plain list responses without
-pagination parameters. Release asset metadata lists are also non-paginated
-chunks in the local Swagger contract.
+protections, repository branch protections, and repository assignees are
+exposed as non-paginated chunks because Gitea returns those endpoints as plain
+list responses without pagination parameters. Release asset metadata lists are
+also non-paginated chunks in the local Swagger contract.
 
 ## Repository Language Statistics
 
@@ -220,6 +222,22 @@ object from language name to byte count, for example
 `GiteaConfig.maxRetries`, sends JSON accept headers, sends no query
 parameters, sends no request body, and sends no JSON `Content-Type`.
 Repository language write operations are not implemented.
+
+## Repository Assignees
+
+Repository assignee metadata is exposed through the path-only
+`GET /repos/{owner}/{repo}/assignees` endpoint:
+
+```scala
+client.assignees(owner = "my-org", repo = "my-repo")
+```
+
+`client.assignees(owner, repo)` returns `IO[GiteaError, Chunk[User]]`.
+The local Swagger contract declares no `page`, `limit`, or other query
+parameters, so this is a non-paginated chunk rather than a stream. The request
+is read-only and retryable under `GiteaConfig.maxRetries`, sends JSON accept
+headers, sends no request body, and sends no JSON `Content-Type`. Assignee
+assignment and removal write operations are not implemented.
 
 ## Repository Tags
 
@@ -612,6 +630,8 @@ client.archive(
   archive = "main.zip",
   params = ArchiveParams(path = Chunk("src", "docs/readme.md"))
 )
+
+client.assignees(owner = "my-org", repo = "my-repo")
 
 client.collaborators(owner = "my-org", repo = "my-repo").take(25).runCollect
 
@@ -1056,7 +1076,8 @@ commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
 tree/blob/annotated-tag/refs, repository contents, raw/media repository file,
 repository archive, repository collaborator, repository team, repository tag
-lookup, repository languages, repository tag-protection metadata,
+lookup, repository assignees, repository languages, repository tag-protection
+metadata,
 release list/detail,
 latest-release, release-by-tag, and release asset metadata
 endpoint groups against
@@ -1067,12 +1088,14 @@ documented non-2xx response status/ref labels, optional query parameters such as
 downloads, the archive operation's bare `200` success description,
 no-query/no-body checks for Git blob, annotated tag, and refs requests, no-body
 checks for contents, raw/media, archive, repository tag lookup, repository
-languages, repository tag-protection metadata, release list/detail,
+assignees, repository languages, repository tag-protection metadata,
+release list/detail,
 release-by-tag, latest-release, repository team list/lookup, and release asset
 requests,
 release list/detail/latest `ReleaseList`/`Release` response refs, release asset
 `AttachmentList`/`Attachment` response refs, repository team `TeamList`/`Team`
-response refs, repository languages `LanguageStatistics` response refs,
+response refs, repository assignees `UserList` response refs, repository
+languages `LanguageStatistics` response refs,
 tag-protection `TagProtectionList`/`TagProtection` response refs, and path enum
 values such as `diffType`.
 

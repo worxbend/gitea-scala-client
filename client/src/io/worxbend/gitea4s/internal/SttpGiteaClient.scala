@@ -223,6 +223,9 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   ): IO[GiteaError, Chunk[Byte]] =
     executor.send(GiteaRequests.repoGetArchive(config, owner, repo, archive, params))
 
+  override def assignees(owner: String, repo: String): IO[GiteaError, Chunk[User]] =
+    executor.send(GiteaRequests.repoAssignees(config, owner, repo))
+
   override def collaborators(owner: String, repo: String): ZStream[Any, GiteaError, User] =
     Pagination.paginated { page =>
       executor.send(GiteaRequests.repoCollaborators(config, owner, repo, page))

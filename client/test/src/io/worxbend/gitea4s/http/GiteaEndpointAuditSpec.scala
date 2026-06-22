@@ -344,6 +344,13 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     GiteaEndpoints.repoGetLanguages
   )
 
+  private val repositoryAssigneeRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoAssignees(config, "owner", "repo"),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val tagProtectionEndpoints = List(
     GiteaEndpoints.repoListTagProtection,
     GiteaEndpoints.repoGetTagProtection
@@ -622,6 +629,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoGetLanguages" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoGetAssignees" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoListTagProtection" -> Nil,
     "repoGetTagProtection" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
@@ -754,6 +764,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("repository languages metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = repositoryLanguagesEndpoints.flatMap(auditEndpoint(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository assignees metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = repositoryAssigneeRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },

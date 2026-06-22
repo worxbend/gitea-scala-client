@@ -142,6 +142,18 @@ object GiteaEndpoints:
       response = "#/responses/RepoNewIssuePinsAllowed"
     )
 
+  val repoGetAssignees: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/assignees",
+      operationId = "repoGetAssignees",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true)
+      ),
+      response = "#/responses/UserList"
+    )
+
   val repoListBranches: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

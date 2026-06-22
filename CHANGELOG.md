@@ -55,6 +55,15 @@ surface is still being filled out.
   The request has no query parameters or body, sends no JSON `Content-Type`,
   propagates documented `404` failures through the shared mapper, and is
   read-only retryable. Repository language write behavior is not implemented.
+- Read-only repository assignee metadata for
+  `GET /repos/{owner}/{repo}/assignees` (`repoGetAssignees`) with the existing
+  `User` model, `GiteaRequests.repoAssignees`, and
+  `ReposApi.assignees(owner, repo)`. The local Swagger contract declares no
+  `page`, `limit`, or other query parameters, so the facade returns
+  `IO[GiteaError, Chunk[User]]` rather than a stream. The request sends no
+  body, sends no JSON `Content-Type`, propagates documented `404` failures
+  through the shared mapper, and is read-only retryable. Assignee assignment
+  and removal write operations are not implemented.
 - Read-only repository tag-protection metadata APIs for
   `GET /repos/{owner}/{repo}/tag_protections` (`repoListTagProtection`) and
   `GET /repos/{owner}/{repo}/tag_protections/{id}` (`repoGetTagProtection`)
@@ -307,6 +316,11 @@ surface is still being filled out.
   parameters, absence of request bodies, read-only retryability, success
   response refs `BranchProtectionList` and `BranchProtection`, and documented
   non-2xx response status/ref labels kept private to endpoint audit tests.
+- Repository assignee endpoint metadata audit coverage for operation ID
+  `repoGetAssignees`, method, path, required `owner`/`repo` path parameters,
+  exact absence of query parameters, absence of request bodies, read-only
+  retryability, success response ref `UserList`, and documented `404`
+  response status/ref labels kept private to endpoint audit tests.
 - Release asset endpoint metadata audit coverage for operation IDs
   `repoListReleaseAttachments` and `repoGetReleaseAttachment`, methods, paths,
   required `owner`/`repo`/`id`/`attachment_id` path parameters, no query

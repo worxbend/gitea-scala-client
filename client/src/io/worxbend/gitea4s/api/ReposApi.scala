@@ -105,6 +105,8 @@ trait ReposApi:
       params: ArchiveParams = ArchiveParams.default
   ): IO[GiteaError, Chunk[Byte]]
 
+  def assignees(owner: String, repo: String): IO[GiteaError, Chunk[User]]
+
   def collaborators(owner: String, repo: String): ZStream[Any, GiteaError, User]
 
   def isCollaborator(owner: String, repo: String, collaborator: String): IO[GiteaError, Boolean]

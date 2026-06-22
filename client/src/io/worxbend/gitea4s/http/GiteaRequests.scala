@@ -179,6 +179,15 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[NewIssuePinsAllowed]
     )
 
+  def repoAssignees(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Chunk[User]] =
+    get(
+      config,
+      GiteaEndpoints.repoGetAssignees,
+      List("repos", owner, repo, "assignees"),
+      Nil,
+      GiteaResponseMapper.decodeChunk[User]
+    )
+
   def repoBranches(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Branch]] =
     val pageSize = config.pageSize
 
