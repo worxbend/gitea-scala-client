@@ -3624,3 +3624,67 @@ M  MEMORY.md
 M  PLAN.md
 M  README.md
 M  SCORES.jsonl
+2026-06-22T07:03:29Z iteration 4 started remaining=16260s
+2026-06-22T07:03:29Z iteration 4 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-22T07:03:29Z iteration 4 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-zda4agpu/repo copied_entries=100
+2026-06-22T07:03:29Z iteration 4 ideator phase started count=3
+2026-06-22T07:03:29Z iteration 4 ideator phase concurrency workers=3
+2026-06-22T07:03:29Z iteration 4 ideator 1 role="the pragmatist" started
+2026-06-22T07:03:29Z iteration 4 ideator 2 role="the architect" started
+2026-06-22T07:03:29Z iteration 4 ideator 3 role="the contrarian" started
+2026-06-22T07:03:38Z iteration 4 ideator 3 role="the contrarian" completed status=0
+2026-06-22T07:03:39Z iteration 4 ideator 1 role="the pragmatist" completed status=0
+2026-06-22T07:03:39Z iteration 4 ideator 2 role="the architect" completed status=0
+2026-06-22T07:03:39Z iteration 4 ideator phase completed approaches=3
+2026-06-22T07:03:39Z iteration 4 selector started approaches=3
+2026-06-22T07:03:50Z iteration 4 selector completed status=0
+2026-06-22T07:03:50Z iteration 4 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-zda4agpu/repo
+2026-06-22T07:03:50Z iteration 4 selector rejected alternative role="the contrarian" approach="Evidence-First Release Freeze: pause endpoint expansion and treat the next continuation as a contract-confidence pass, prioritizing live observations, documentation truthfulness..." reason="Useful in spirit, but too broad as-is. A general release freeze covering byte downloads, Swagger/runtime mismatches, and boundary review could drift into process churn; the planner needs the narrower release-by-tag routing evidence gate..."
+2026-06-22T07:03:50Z iteration 4 selector rejected alternative role="the pragmatist" approach="Observation-First Release Routing Gate: pause new release API expansion and use the next slice to turn ambiguous live-routing assumptions into documented evidence, especially sl..." reason="Nearly selected as-is, but it frames the work mainly around release routing. The synthesized version adds the stricter evidence taxonomy: slash-tag proof, ordinary-tag confidence, and pending-observation status must remain distinct."
+2026-06-22T07:03:50Z iteration 4 selector rejected alternative role="the architect" approach="Evidence-Gated Confidence Pass: avoid adding new API surface and use the next iteration to turn the existing release-by-tag uncertainty into narrowly documented empirical eviden..." reason="Also strong, but slightly too minimal. The selected synthesis keeps the architect's no-new-surface discipline while making explicit that documentation, CHANGELOG, and PLAN wording must not claim broader release confidence than the exact..."
+2026-06-22T07:03:50Z iteration 4 selector alternatives persisted count=3
+2026-06-22T07:03:50Z iteration 4 selector structured alternatives persisted count=3
+2026-06-22T07:03:50Z iteration 4 planner started
+2026-06-22T07:04:22Z iteration 4 plan: 5 task(s) in 4 phase(s). This iteration is intentionally evidence-gated. The release-by-tag API already exists; the highest-value next slice is to verify or honestly document live routing behavior for slash-containing release tags without expanding release write, upload, delete, or binary-download surface.
+2026-06-22T07:04:22Z iteration 4 phase 1 started parallel=False tasks=1
+2026-06-22T07:05:09Z iteration 4 task t1 ('Run release-by-tag evidence gate') status=0
+2026-06-22T07:05:09Z iteration 4 phase 2 started parallel=True tasks=2
+2026-06-22T07:05:59Z iteration 4 task t2 ('Update README release probe evidence') status=0
+2026-06-22T07:06:03Z iteration 4 task t3 ('Update changelog release confidence entry') status=0
+2026-06-22T07:06:03Z iteration 4 phase 3 started parallel=False tasks=1
+2026-06-22T07:08:00Z iteration 4 task t4 ('Refresh PLAN continuation') status=0
+2026-06-22T07:08:00Z iteration 4 phase 4 started parallel=False tasks=1
+2026-06-22T07:08:29Z iteration 4 task t5 ('Run focused validation') status=0
+2026-06-22T07:08:29Z iteration 4 reviewer started
+
+## Reviewer Summary - Iteration 4 - 2026-06-22T07:35:00Z
+
+What was done:
+- Inspected every file changed in this iteration: `README.md`, `CHANGELOG.md`, `PLAN.md`, `AGENT_LOG.md`, and `ALTERNATIVES.jsonl`.
+- Inspected the existing `LiveGiteaIntegrationSpec.scala` release-by-tag and latest-release probes to verify the documentation matches actual live-test gates.
+- Validated the changed telemetry and docs with `git diff --check`, JSONL parsing for `ALTERNATIVES.jsonl`, `./mill --no-server core.test client.test compatibility.check`, and credential-stripped `it.test`.
+
+What was found:
+- No functional blocker or production-code regression was found.
+- This iteration did not add new source or integration-test code; it correctly narrowed README, CHANGELOG, and PLAN claims around the already-existing `client.releaseByTag(owner, repo, tag)` live probe.
+- The release-by-tag probe remains read-only and hermetic by default, gated on non-empty `GITEA_URL`, `GITEA_TOKEN`, `GITEA_OWNER`, `GITEA_REPO`, and `GITEA_RELEASE_TAG`, and asserts the returned `Release.tagName` contains the configured tag.
+- Credential-stripped `it.test` ignored all twelve live probes, proving hermetic skipping only. No enabled live run with a slash-containing release tag was performed, so slash-tag routing remains pending observation.
+- Documentation now correctly distinguishes ordinary tag confidence, such as `v1.0.0`, from slash-containing routing evidence, such as `release/candidate`.
+
+Top improvement proposals:
+- Run the opt-in release-by-tag live probe only when a real repository has a known slash-containing release tag, then record the exact accept/reject behavior narrowly as `repoGetReleaseByTag` evidence.
+- If only a normal tag can be tested, record it as generic release-by-tag confidence and keep slash-routing evidence pending.
+- Avoid another documentation-only cycle if no slash-tag live target exists; preserve the pending marker and choose the next deliberate API slice only after its contract boundary is explicit.
+- Keep release writes, delete-by-tag, multipart asset upload/edit/delete, and release asset binary download out of scope until those contracts are intentionally designed.
+2026-06-22T07:11:41Z iteration 4 reviewer completed status=0
+2026-06-22T07:11:41Z iteration 4 memory updated
+2026-06-22T07:11:41Z iteration 4 completed validation_status=0
+2026-06-22T07:11:41Z iteration 4 checkpoint started
+2026-06-22T07:11:41Z iteration 4 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl

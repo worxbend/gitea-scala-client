@@ -1006,7 +1006,13 @@ enables the release-by-tag probe only when all of `GITEA_URL`, `GITEA_TOKEN`,
 passes the configured tag unchanged to `client.releaseByTag(owner, repo, tag)`
 and asserts that the returned `Release.tagName` option contains exactly that
 configured value. Slash-containing tags such as `release/candidate` are the
-intended confidence case for validating this endpoint's live routing behavior.
+intended confidence case for validating this endpoint's live routing behavior,
+but no live slash-containing `GITEA_RELEASE_TAG` observation is currently
+recorded in this repository. Until that enabled probe succeeds against a real
+Gitea repository, slash-containing release-tag routing remains unverified live
+behavior. A probe run with a normal tag such as `v1.0.0` is useful generic
+release-by-tag confidence only; it should not be treated as slash-routing
+evidence.
 `GITEA_LATEST_RELEASE_TAG` enables the latest-release probe and must name the
 repository's actual latest non-draft, non-prerelease release tag; it is the
 only release variable that asserts latest-release semantics. When

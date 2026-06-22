@@ -356,9 +356,11 @@ surface is still being filled out.
   `client.releaseByTag(owner, repo, tag)` facade. This is validation coverage
   for already implemented release metadata lookup, not a new release API. The
   probe is gated by `GITEA_RELEASE_TAG` plus non-empty `GITEA_URL`,
-  `GITEA_TOKEN`, `GITEA_OWNER`, and `GITEA_REPO`, and is intended to validate
-  slash-bearing release tag routing such as `release/candidate` against real
-  Gitea.
+  `GITEA_TOKEN`, `GITEA_OWNER`, and `GITEA_REPO`. A live run with a normal tag
+  such as `v1.0.0` is only generic release-by-tag confidence; slash-containing
+  release-tag routing for values such as `release/candidate` remains pending
+  live observation until an enabled probe is run with a slash-containing
+  `GITEA_RELEASE_TAG`.
 - Test-side schema-field checklist coverage for recent Swagger Git response
   models: `Reference`, `GitObject`, `AnnotatedTag`, `AnnotatedTagObject`, and
   `GitBlobResponse`.
