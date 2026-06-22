@@ -76,6 +76,7 @@ import io.worxbend.gitea4s.model.{
   StopWatch,
   SubmitPullReviewOptions,
   Tag,
+  TagProtection,
   Team,
   TrackedTime,
   User,
@@ -271,6 +272,12 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def tag(owner: String, repo: String, tag: String): IO[GiteaError, Tag] =
     executor.send(GiteaRequests.repoTag(config, owner, repo, tag))
+
+  override def tagProtections(owner: String, repo: String): IO[GiteaError, Chunk[TagProtection]] =
+    executor.send(GiteaRequests.repoTagProtections(config, owner, repo))
+
+  override def tagProtection(owner: String, repo: String, id: Long): IO[GiteaError, TagProtection] =
+    executor.send(GiteaRequests.repoTagProtection(config, owner, repo, id))
 
   override def combinedStatusByRef(
       owner: String,

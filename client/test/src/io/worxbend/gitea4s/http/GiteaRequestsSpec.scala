@@ -38,6 +38,7 @@ import io.worxbend.gitea4s.model.{
   SubmitPullReviewOptions,
   GitBlobResponse,
   Tag,
+  TagProtection,
   Team,
   TeamPermission,
   User,
@@ -276,6 +277,90 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           built.retryable == true,
           decodeWith(built, backend) == Right(
             Tag(id = Some("abc123"), name = Some("release/candidate"), message = Some("Candidate"))
+          )
+        )
+      },
+      test("builds and decodes schema-traceable repository tag-protection list request") {
+        val built = GiteaRequests.repoTagProtections(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """[{"id":7,"name_pattern":"v*","whitelist_teams":["Maintainers"],"whitelist_usernames":["octo"]}]"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListTagProtection,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoListTagProtection",
+          endpoint.path == "/repos/{owner}/{repo}/tag_protections",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.response == "#/responses/TagProtectionList",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/tag_protections",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "tag_protections"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            Chunk(
+              TagProtection(
+                id = Some(7L),
+                namePattern = Some("v*"),
+                whitelistTeams = Some(List("Maintainers")),
+                whitelistUsernames = Some(List("octo"))
+              )
+            )
+          )
+        )
+      },
+      test("builds and decodes schema-traceable repository tag-protection detail request") {
+        val built = GiteaRequests.repoTagProtection(config, "worx bend", "gitea/scala", 7)
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """{"id":7,"name_pattern":"v*","created_at":"2026-06-01T00:00:00Z","updated_at":"2026-06-02T00:00:00Z"}"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetTagProtection,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetTagProtection",
+          endpoint.path == "/repos/{owner}/{repo}/tag_protections/{id}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
+          endpoint.response == "#/responses/TagProtection",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/tag_protections/7",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "tag_protections", "7"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            TagProtection(
+              createdAt = Some(Instant.parse("2026-06-01T00:00:00Z")),
+              id = Some(7L),
+              namePattern = Some("v*"),
+              updatedAt = Some(Instant.parse("2026-06-02T00:00:00Z"))
+            )
           )
         )
       },
@@ -3869,6 +3954,15 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           decodeWith(branches, backend) == Left(GiteaError.NotFound("missing repo", body)),
           decodeWith(tags, backend) == Left(GiteaError.NotFound("missing repo", body)),
           decodeWith(tag, backend) == Left(GiteaError.NotFound("missing repo", body))
+        )
+      },
+      test("maps repository tag-protection documented not-found responses") {
+        val body = """{"message":"missing tag protection"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val protection = GiteaRequests.repoTagProtection(config, "owner", "repo", 7)
+
+        assertTrue(
+          decodeWith(protection, backend) == Left(GiteaError.NotFound("missing tag protection", body))
         )
       },
       test("maps repository release not-found responses") {

@@ -658,6 +658,18 @@ final case class Tag(
 object Tag:
   given JsonCodec[Tag] = DeriveJsonCodec.gen[Tag]
 
+final case class TagProtection(
+    @jsonField("created_at") createdAt: Option[Instant] = None,
+    id: Option[Long] = None,
+    @jsonField("name_pattern") namePattern: Option[String] = None,
+    @jsonField("updated_at") updatedAt: Option[Instant] = None,
+    @jsonField("whitelist_teams") whitelistTeams: Option[List[String]] = None,
+    @jsonField("whitelist_usernames") whitelistUsernames: Option[List[String]] = None
+)
+
+object TagProtection:
+  given JsonCodec[TagProtection] = DeriveJsonCodec.gen[TagProtection]
+
 final case class PullRequestMeta(
     draft: Option[Boolean] = None,
     merged: Option[Boolean] = None,

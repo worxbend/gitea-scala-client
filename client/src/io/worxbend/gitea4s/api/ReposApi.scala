@@ -29,6 +29,7 @@ import io.worxbend.gitea4s.model.{
   Repository,
   User,
   Tag,
+  TagProtection,
   Team
 }
 import zio.{Chunk, IO}
@@ -127,6 +128,10 @@ trait ReposApi:
   def tags(owner: String, repo: String): ZStream[Any, GiteaError, Tag]
 
   def tag(owner: String, repo: String, tag: String): IO[GiteaError, Tag]
+
+  def tagProtections(owner: String, repo: String): IO[GiteaError, Chunk[TagProtection]]
+
+  def tagProtection(owner: String, repo: String, id: Long): IO[GiteaError, TagProtection]
 
   def combinedStatusByRef(
       owner: String,

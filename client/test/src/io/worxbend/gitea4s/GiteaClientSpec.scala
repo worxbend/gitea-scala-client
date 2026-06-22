@@ -50,6 +50,7 @@ import io.worxbend.gitea4s.model.{
   PullReviewState,
   RepoCollaboratorPermission,
   SubmitPullReviewOptions,
+  TagProtection,
   Team,
   TeamPermission
 }
@@ -2025,6 +2026,108 @@ object GiteaClientSpec extends ZIOSpecDefault:
         yield assertTrue(
           tag.id.contains("tag123"),
           tag.message.contains("Retried tag")
+        )
+      },
+      test("loads repository tag protections as a non-paginated list through the ReposApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "tag_protections")) &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("Content-Type").isEmpty
+          }.thenRespond(
+            ResponseStub.adjust(
+              """[{"id":7,"name_pattern":"v*","whitelist_teams":["Maintainers"],"whitelist_usernames":["octo"]}]"""
+            )
+          )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.tagProtections("alice", "api"))(
+          Assertion.equalTo(
+            Chunk(
+              TagProtection(
+                id = Some(7L),
+                namePattern = Some("v*"),
+                whitelistTeams = Some(List("Maintainers")),
+                whitelistUsernames = Some(List("octo"))
+              )
+            )
+          )
+        )
+      },
+      test("loads a repository tag protection through the ReposApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "tag_protections", "7")) &&
+              request.uri.paramsMap.isEmpty
+          }.thenRespond(
+            ResponseStub.adjust(
+              """{"id":7,"name_pattern":"v*","created_at":"2026-06-01T00:00:00Z","updated_at":"2026-06-02T00:00:00Z"}"""
+            )
+          )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.tagProtection("alice", "api", 7))(
+          Assertion.equalTo(
+            TagProtection(
+              createdAt = Some(Instant.parse("2026-06-01T00:00:00Z")),
+              id = Some(7L),
+              namePattern = Some("v*"),
+              updatedAt = Some(Instant.parse("2026-06-02T00:00:00Z"))
+            )
+          )
+        )
+      },
+      test("propagates repository tag-protection documented not-found errors through the facade") {
+        val body = """{"message":"tag protection not found"}"""
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "tag_protections", "7"))
+          }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.tagProtection("alice", "api", 7).either)(
+          Assertion.equalTo(Left(GiteaError.NotFound("tag protection not found", body)))
+        )
+      },
+      test("retries repository tag-protection requests because they are read-only GETs") {
+        val listBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "tag_protections")) &&
+              request.uri.paramsMap.isEmpty
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""[{"id":7,"name_pattern":"v*"}]""")
+          )
+        val detailBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "tag_protections", "7")) &&
+              request.uri.paramsMap.isEmpty
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""{"id":7,"name_pattern":"v*"}""")
+          )
+        val listClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), listBackend)
+        val detailClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), detailBackend)
+
+        for
+          listFiber <- listClient.tagProtections("alice", "api").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          protections <- listFiber.join
+          detailFiber <- detailClient.tagProtection("alice", "api", 7).fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          protection <- detailFiber.join
+        yield assertTrue(
+          protections.map(_.id) == Chunk(Some(7L)),
+          protections.headOption.flatMap(_.namePattern).contains("v*"),
+          protection.id.contains(7L),
+          protection.namePattern.contains("v*")
         )
       },
       test("loads and streams commit statuses through the ReposApi methods") {

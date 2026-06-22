@@ -39,3 +39,5 @@
 [learning] `repoCheckCollaborator` is a 204/404 membership probe; a boolean facade is ergonomic but cannot distinguish not-collaborator from every missing-resource 404 case.
 [learning] `repoListTeams` omits `page`/`limit` in local Swagger even though the client streams it with pagination query params; live validation should decide whether that pragmatic contract holds.
 [learning] Repository tag lookup (`repoGetTag` returning `Tag`) and release-by-tag lookup (`repoGetReleaseByTag` returning `Release`) are separate contracts; keep facade names, live variables, and routing evidence endpoint-specific.
+[learning] `repoListTagProtection` is a non-paginated path-only list in local Swagger; do not infer `page`/`limit` from adjacent repository list endpoints.
+[learning] `BranchProtection` is a broad metadata response compared with `TagProtection`; gate any read slice with explicit schema-field sizing before adding public ABI.

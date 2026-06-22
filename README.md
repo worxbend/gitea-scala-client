@@ -18,8 +18,8 @@ and zio-json.
   reads, repository contents metadata reads, raw/media repository file byte
   downloads, repository archive byte downloads, repository collaborator
   list/check/permission reads, repository team list/lookup reads,
-  repository tag list/lookup reads, commit-to-pull-request lookup,
-  release listing with typed filters,
+  repository tag list/lookup reads, repository tag-protection metadata reads,
+  commit-to-pull-request lookup, release listing with typed filters,
   release detail/latest/tag lookup, release asset metadata reads, pull requests
   including reviews,
   pinned pull-request reads, pull-request create/edit writes, diff/patch
@@ -31,8 +31,8 @@ and zio-json.
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
   annotated tag, repository contents, raw/media repository file, repository
   archive, repository collaborator, repository team, repository tag lookup,
-  release list/detail, latest-release, release-by-tag, and release asset
-  metadata endpoints,
+  repository tag-protection metadata, release list/detail, latest-release,
+  release-by-tag, and release asset metadata endpoints,
   including documented non-2xx response labels, optional query parameters,
   `application/octet-stream`/Swagger `type: file` response shape for raw/media
   downloads, the archive operation's bare `200` success description, path enum
@@ -196,10 +196,10 @@ organization repositories, organization members, issues, issue reactions, issue
 subscribers, issue tracked times, current-user stopwatches, repository-wide
 issue comments, branches, tags, repository collaborators, repository teams,
 releases, pull requests, and notification threads. Commit-status list APIs are
-also paginated streams. Pinned issues and pinned pull requests are exposed as
-non-paginated chunks because Gitea returns those endpoints as plain list
-responses without pagination parameters. Release asset metadata lists are also
-non-paginated chunks in the local Swagger contract.
+also paginated streams. Pinned issues, pinned pull requests, and repository
+tag protections are exposed as non-paginated chunks because Gitea returns those
+endpoints as plain list responses without pagination parameters. Release asset
+metadata lists are also non-paginated chunks in the local Swagger contract.
 
 ## Repository Tags
 
@@ -218,6 +218,24 @@ is unit-tested only; it still needs an enabled real Gitea run before it should
 be claimed as live evidence. Use `client.releaseByTag(owner, repo, tag)` when
 you need release metadata from `/releases/tags/{tag}` instead of repository
 tag metadata.
+
+## Repository Tag Protections
+
+Repository tag-protection metadata covers the two Swagger-documented read
+operations under `/repos/{owner}/{repo}/tag_protections`:
+
+- `client.tagProtections(owner, repo)` calls `repoListTagProtection` and
+  returns `IO[GiteaError, Chunk[TagProtection]]`. The local Swagger contract
+  declares no `page`, `limit`, or other query parameters, so this is a
+  non-paginated chunk rather than a stream.
+- `client.tagProtection(owner, repo, id)` calls `repoGetTagProtection` and
+  returns `IO[GiteaError, TagProtection]`.
+
+Both methods are read-only and retryable under `GiteaConfig.maxRetries`. They
+send JSON accept headers, no request body, and no JSON `Content-Type`.
+`TagProtection` preserves the Swagger fields `created_at`, `id`,
+`name_pattern`, `updated_at`, `whitelist_teams`, and `whitelist_usernames`.
+Tag-protection create, edit, and delete operations are not implemented.
 
 ## Repository Collaborators
 
@@ -570,6 +588,10 @@ client.collaboratorPermission(
 client.teams(owner = "my-org", repo = "my-repo").take(25).runCollect
 
 client.team(owner = "my-org", repo = "my-repo", team = "release/managers")
+
+client.tagProtections(owner = "my-org", repo = "my-repo")
+
+client.tagProtection(owner = "my-org", repo = "my-repo", id = 42)
 
 client.releases(owner = "my-org", repo = "my-repo").take(25).runCollect
 
@@ -987,9 +1009,9 @@ Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
 tree/blob/annotated-tag/refs, repository contents, raw/media repository file,
-repository archive, repository collaborator, repository team, release
-list/detail, latest-release, release-by-tag, repository tag lookup, and release
-asset metadata
+repository archive, repository collaborator, repository team, repository tag
+lookup, repository tag-protection metadata, release list/detail,
+latest-release, release-by-tag, and release asset metadata
 endpoint groups against
 `plugin-redoc-2.yaml`, including
 documented non-2xx response status/ref labels, optional query parameters such as
@@ -997,12 +1019,13 @@ documented non-2xx response status/ref labels, optional query parameters such as
 `application/octet-stream`/Swagger `type: file` response shape for raw/media
 downloads, the archive operation's bare `200` success description,
 no-query/no-body checks for Git blob, annotated tag, and refs requests, no-body
-checks for contents, raw/media, archive, repository tag lookup, release
-list/detail, release-by-tag, latest-release, repository team list/lookup, and
-release asset requests,
+checks for contents, raw/media, archive, repository tag lookup, repository
+tag-protection metadata, release list/detail, release-by-tag, latest-release,
+repository team list/lookup, and release asset requests,
 release list/detail/latest `ReleaseList`/`Release` response refs, release asset
 `AttachmentList`/`Attachment` response refs, repository team `TeamList`/`Team`
-response refs, and path enum values such as `diffType`.
+response refs, tag-protection `TagProtectionList`/`TagProtection` response
+refs, and path enum values such as `diffType`.
 
 Live integration tests are opt-in:
 

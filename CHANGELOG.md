@@ -46,6 +46,18 @@ surface is still being filled out.
   `ReleasesApi.releaseByTag`; slash-containing repository tag routing still
   needs real Gitea live observation before it should be claimed as live
   evidence.
+- Read-only repository tag-protection metadata APIs for
+  `GET /repos/{owner}/{repo}/tag_protections` (`repoListTagProtection`) and
+  `GET /repos/{owner}/{repo}/tag_protections/{id}` (`repoGetTagProtection`)
+  with the new `TagProtection` model, `GiteaRequests.repoTagProtections`,
+  `GiteaRequests.repoTagProtection`, `ReposApi.tagProtections`, and
+  `ReposApi.tagProtection`. The list endpoint decodes the Swagger
+  `TagProtectionList` array as a non-paginated `Chunk[TagProtection]`, because
+  the local Swagger contract declares no `page`, `limit`, or other query
+  parameters. Both methods are read-only retryable, send no request body, send
+  no JSON `Content-Type`, and preserve `created_at`, `id`, `name_pattern`,
+  `updated_at`, `whitelist_teams`, and `whitelist_usernames`. Tag-protection
+  create/edit/delete write operations are not implemented.
 - Typed commit-status models and repository APIs with `CommitStatus`,
   `CombinedStatus`, `CreateStatusOption`, `CommitStatusState`,
   `CommitStatusListParams`, and request construction for
@@ -255,6 +267,13 @@ surface is still being filled out.
   parameters, optional repeated `path` query parameter, absence of request
   bodies, read-only retryability, bare `200` success description from
   `plugin-redoc-2.yaml`, and documented 404 response status/ref labels.
+- Repository tag-protection endpoint metadata audit coverage for operation IDs
+  `repoListTagProtection` and `repoGetTagProtection`, methods, paths, required
+  `owner`/`repo`/`id` path parameters, exact absence of query parameters,
+  absence of request bodies, read-only retryability, success response refs
+  `TagProtectionList` and `TagProtection`, no documented non-2xx responses for
+  the list endpoint, and documented `404` response status/ref labels for the
+  detail endpoint.
 - Release asset endpoint metadata audit coverage for operation IDs
   `repoListReleaseAttachments` and `repoGetReleaseAttachment`, methods, paths,
   required `owner`/`repo`/`id`/`attachment_id` path parameters, no query
@@ -398,6 +417,8 @@ surface is still being filled out.
   `GitBlobResponse`.
 - Test-side schema-field checklist coverage for Swagger repository contents
   response models: `ContentsResponse` and nested `FileLinksResponse`.
+- Test-side schema-field checklist coverage for Swagger repository
+  tag-protection metadata through the public `TagProtection` model.
 - Test-side schema-field checklist coverage for Swagger release attachment
   metadata through the public `ReleaseAsset` model.
 - Local Maven publishing metadata, source jars, and javadoc jars.

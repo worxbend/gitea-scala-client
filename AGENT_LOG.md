@@ -3911,3 +3911,80 @@ M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
 M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+2026-06-22T08:09:17Z iteration 8 started remaining=12312s
+2026-06-22T08:09:17Z iteration 8 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-22T08:09:17Z iteration 8 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-9v81ucug/repo copied_entries=100
+2026-06-22T08:09:17Z iteration 8 ideator phase started count=3
+2026-06-22T08:09:17Z iteration 8 ideator phase concurrency workers=3
+2026-06-22T08:09:17Z iteration 8 ideator 1 role="the pragmatist" started
+2026-06-22T08:09:17Z iteration 8 ideator 2 role="the architect" started
+2026-06-22T08:09:17Z iteration 8 ideator 3 role="the contrarian" started
+2026-06-22T08:09:28Z iteration 8 ideator 2 role="the architect" completed status=0
+2026-06-22T08:09:29Z iteration 8 ideator 1 role="the pragmatist" completed status=0
+2026-06-22T08:09:30Z iteration 8 ideator 3 role="the contrarian" completed status=0
+2026-06-22T08:09:30Z iteration 8 ideator phase completed approaches=3
+2026-06-22T08:09:30Z iteration 8 selector started approaches=3
+2026-06-22T08:09:42Z iteration 8 selector completed status=0
+2026-06-22T08:09:42Z iteration 8 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-9v81ucug/repo
+2026-06-22T08:09:42Z iteration 8 selector rejected alternative role="the architect" approach="Evidence-Gated Read Surface Expansion: prioritize fixture-gated live confidence for collaborator/team/tag routing when real fixtures exist; otherwise advance only a bounded read..." reason="Strong overall direction, but selected as a hybrid with sharper planner guidance: fixture availability should be an explicit decision gate before any live-confidence work, and fallback must avoid broad read-surface expansion."
+2026-06-22T08:09:42Z iteration 8 selector rejected alternative role="the pragmatist" approach="Fixture-First Confidence Gate: prioritize opt-in live probes for collaborator and team visibility only when explicit real fixtures are present; otherwise pivot immediately to a..." reason="Very close to selected, but too focused on collaborator and team. The current unresolved evidence also includes slash-bearing repository-tag and release-tag routing, so the strategy should include those fixture checks while still keeping..."
+2026-06-22T08:09:42Z iteration 8 selector rejected alternative role="the contrarian" approach="Evidence-First Contract Gate: pause expansion of endpoint surface and spend the next iteration converting existing uncertainty into explicit live/spec evidence, especially colla..." reason="Its evidence-first stance is useful, but pausing endpoint expansion entirely is too likely to stall when fixtures are unavailable. The Planner needs a built-in bounded fallback to avoid another documentation-only loop."
+2026-06-22T08:09:42Z iteration 8 selector alternatives persisted count=3
+2026-06-22T08:09:42Z iteration 8 selector structured alternatives persisted count=3
+2026-06-22T08:09:42Z iteration 8 planner started
+2026-06-22T08:10:22Z iteration 8 plan: 6 task(s) in 4 phase(s). The first phase enforces the strategic gate: use real fixture evidence if it exists, otherwise avoid another evidence-only cycle. The fallback implementation is a narrow read-only Swagger slice. Model and endpoint-audit work can start in parallel because they touch separate source and test files; request/facade wiring depends on both. Behavior tests and docs/snapshots are last because they depend on the final public API shape.
+2026-06-22T08:10:22Z iteration 8 phase 1 started parallel=False tasks=1
+2026-06-22T08:12:43Z iteration 8 task t1 ('Select iteration path') status=0
+2026-06-22T08:12:43Z iteration 8 phase 2 started parallel=True tasks=2
+2026-06-22T08:14:57Z iteration 8 task t3 ('Add tag-protection endpoint metadata') status=0
+2026-06-22T08:15:36Z iteration 8 task t2 ('Add TagProtection model') status=0
+2026-06-22T08:15:36Z iteration 8 phase 3 started parallel=False tasks=1
+2026-06-22T08:17:43Z iteration 8 task t4 ('Wire tag-protection requests and facade') status=0
+2026-06-22T08:17:43Z iteration 8 phase 4 started parallel=True tasks=2
+2026-06-22T08:20:30Z iteration 8 task t5 ('Test tag-protection behavior') status=0
+2026-06-22T08:23:42Z iteration 8 task t6 ('Update docs, snapshots, and plan') status=0
+2026-06-22T08:23:42Z iteration 8 reviewer started
+
+## Reviewer Summary - Iteration 8 - 2026-06-22T11:26:02+03:00
+
+What was done:
+- Inspected every file changed in the repository tag-protection metadata slice: `TagProtection`, endpoint metadata, request builders, `ReposApi` and `SttpGiteaClient` facade wiring, request/facade/audit/core tests, README, CHANGELOG, PLAN, API snapshots, and telemetry files.
+- Cross-checked `repoListTagProtection`, `repoGetTagProtection`, `TagProtection`, and `TagProtectionList` against `plugin-redoc-2.yaml`. The list endpoint is a path-only GET with no documented non-2xx responses, the detail endpoint is a path-only GET with documented 404, and the response model is bounded to six optional metadata fields.
+- Ran validation: `git diff --check`, line-by-line JSONL validation for `ALTERNATIVES.jsonl`, `./mill --no-server core.test client.test compatibility.check`, focused `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`, and credential-stripped `it.test`; all passed, with all twelve live probes ignored.
+
+What was found:
+- No functional blocker or production-code regression was found.
+- `TagProtection` preserves the local Swagger field names `created_at`, `id`, `name_pattern`, `updated_at`, `whitelist_teams`, and `whitelist_usernames`; codecs, array decoding, and schema-field checklist coverage are present.
+- `GiteaRequests.repoTagProtections` and `repoTagProtection` build read-only GETs with safe owner/repo/id path segments, JSON accept/auth/OTP/user-agent headers, no query parameters, no request body, no JSON `Content-Type`, non-paginated list decoding, documented detail 404 propagation, and retry eligibility.
+- `ReposApi.tagProtections` and `ReposApi.tagProtection` are wired through `GiteaRequestExecutor`; create/edit/delete tag-protection writes remain absent.
+- Swagger audit coverage is correctly test-private and checks method, path, operation ID, required path parameters, absent query/body surface, success refs, non-2xx labels, and retryability.
+- Remaining risk is evidence quality, not unit correctness: there is no live tag-protection probe, and empty-list success would be weak confidence unless a configured tag-protection id is asserted.
+
+Top improvement proposals:
+- Add fixture-gated tag-protection live confidence only when a repository has a known protected-tag rule, gated by explicit variables such as `GITEA_TAG_PROTECTION_ID`; assert list membership and detail lookup when that id is supplied.
+- If live fixtures remain unavailable, proceed with branch-protection metadata only after a model-sizing gate because `BranchProtection` is much wider than `TagProtection`.
+- For branch-protection reads, keep list/detail non-paginated unless Swagger says otherwise, test slash-containing branch/rule names as one path segment, and add full schema-field checklist coverage before snapshotting the public model.
+- Keep branch-protection/tag-protection create, edit, delete, and priority/write operations out of scope until a deliberate write slice models payloads, non-retryability, and documented 403/404/422/423 failures.
+2026-06-22T08:27:16Z iteration 8 reviewer completed status=0
+2026-06-22T08:27:16Z iteration 8 memory updated
+2026-06-22T08:27:16Z iteration 8 completed validation_status=0
+2026-06-22T08:27:16Z iteration 8 checkpoint started
+2026-06-22T08:27:16Z iteration 8 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+M  core/src/io/worxbend/gitea4s/model/GiteaModels.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

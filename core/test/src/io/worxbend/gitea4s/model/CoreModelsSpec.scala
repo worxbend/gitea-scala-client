@@ -28,6 +28,14 @@ object CoreModelsSpec extends ZIOSpecDefault:
       "units",
       "units_map"
     ),
+    "TagProtection" -> Set(
+      "created_at",
+      "id",
+      "name_pattern",
+      "updated_at",
+      "whitelist_teams",
+      "whitelist_usernames"
+    ),
     "Reference" -> Set("object", "ref", "url"),
     "GitObject" -> Set("sha", "type", "url"),
     "AnnotatedTag" -> Set("message", "object", "sha", "tag", "tagger", "url", "verification"),
@@ -79,6 +87,17 @@ object CoreModelsSpec extends ZIOSpecDefault:
         "permission",
         "units",
         "units_map"
+      )
+    ),
+    SchemaFieldChecklist(
+      "TagProtection",
+      Set(
+        "created_at",
+        "id",
+        "name_pattern",
+        "updated_at",
+        "whitelist_teams",
+        "whitelist_usernames"
       )
     ),
     SchemaFieldChecklist("Reference", Set("object", "ref", "url")),
@@ -157,6 +176,15 @@ object CoreModelsSpec extends ZIOSpecDefault:
             "repo.pulls" -> "owner"
           )
         )
+      ).toJson,
+    "TagProtection" ->
+      TagProtection(
+        createdAt = Some(Instant.parse("2026-06-20T10:00:00Z")),
+        id = Some(64L),
+        namePattern = Some("release/*"),
+        updatedAt = Some(Instant.parse("2026-06-20T11:00:00Z")),
+        whitelistTeams = Some(List("release-managers", "maintainers")),
+        whitelistUsernames = Some(List("octo", "release-bot"))
       ).toJson,
     "Reference" ->
       Reference(
@@ -482,6 +510,97 @@ object CoreModelsSpec extends ZIOSpecDefault:
           json.fromJson[List[Team]] == Right(expected),
           encoded.fromJson[List[Team]] == Right(expected),
           encoded.contains(""""units_map"""")
+        )
+      },
+      test("decodes tag protection response shape from Swagger JSON names") {
+        val json =
+          """{
+            |  "created_at": "2026-06-20T10:00:00Z",
+            |  "id": 64,
+            |  "name_pattern": "release/*",
+            |  "updated_at": "2026-06-20T11:00:00Z",
+            |  "whitelist_teams": ["release-managers", "maintainers"],
+            |  "whitelist_usernames": ["octo", "release-bot"]
+            |}""".stripMargin
+
+        val tagProtection = json.fromJson[TagProtection]
+
+        assertTrue(
+          tagProtection.map(_.createdAt) == Right(Some(Instant.parse("2026-06-20T10:00:00Z"))),
+          tagProtection.map(_.id) == Right(Some(64L)),
+          tagProtection.map(_.namePattern) == Right(Some("release/*")),
+          tagProtection.map(_.updatedAt) == Right(Some(Instant.parse("2026-06-20T11:00:00Z"))),
+          tagProtection.map(_.whitelistTeams) == Right(Some(List("release-managers", "maintainers"))),
+          tagProtection.map(_.whitelistUsernames) == Right(Some(List("octo", "release-bot")))
+        )
+      },
+      test("round-trips tag protection response shape without losing Swagger JSON names") {
+        val payload =
+          TagProtection(
+            createdAt = Some(Instant.parse("2026-06-20T10:00:00Z")),
+            id = Some(64L),
+            namePattern = Some("release/*"),
+            updatedAt = Some(Instant.parse("2026-06-20T11:00:00Z")),
+            whitelistTeams = Some(List("release-managers", "maintainers")),
+            whitelistUsernames = Some(List("octo", "release-bot"))
+          )
+        val json = payload.toJson
+
+        assertTrue(
+          json.fromJson[TagProtection] == Right(payload),
+          json.contains(""""created_at":"2026-06-20T10:00:00Z""""),
+          json.contains(""""name_pattern":"release/*""""),
+          json.contains(""""updated_at":"2026-06-20T11:00:00Z""""),
+          json.contains(""""whitelist_teams":["release-managers","maintainers"]"""),
+          json.contains(""""whitelist_usernames":["octo","release-bot"]"""),
+          !json.contains("createdAt"),
+          !json.contains("namePattern"),
+          !json.contains("updatedAt"),
+          !json.contains("whitelistTeams"),
+          !json.contains("whitelistUsernames"),
+          TagProtection(id = Some(64L), namePattern = Some("release/*")).toJson ==
+            """{"id":64,"name_pattern":"release/*"}""",
+          TagProtection().toJson == "{}"
+        )
+      },
+      test("decodes tag protection list responses as non-paginated TagProtectionList arrays") {
+        val json =
+          """[
+            |  {
+            |    "created_at": "2026-06-20T10:00:00Z",
+            |    "id": 64,
+            |    "name_pattern": "release/*",
+            |    "updated_at": "2026-06-20T11:00:00Z",
+            |    "whitelist_teams": ["release-managers"],
+            |    "whitelist_usernames": ["octo"]
+            |  },
+            |  {
+            |    "id": 65,
+            |    "name_pattern": "v*"
+            |  }
+            |]""".stripMargin
+        val expected =
+          List(
+            TagProtection(
+              createdAt = Some(Instant.parse("2026-06-20T10:00:00Z")),
+              id = Some(64L),
+              namePattern = Some("release/*"),
+              updatedAt = Some(Instant.parse("2026-06-20T11:00:00Z")),
+              whitelistTeams = Some(List("release-managers")),
+              whitelistUsernames = Some(List("octo"))
+            ),
+            TagProtection(
+              id = Some(65L),
+              namePattern = Some("v*")
+            )
+          )
+        val encoded = expected.toJson
+
+        assertTrue(
+          json.fromJson[List[TagProtection]] == Right(expected),
+          encoded.fromJson[List[TagProtection]] == Right(expected),
+          encoded.contains(""""name_pattern":"release/*""""),
+          encoded.contains(""""name_pattern":"v*"""")
         )
       },
       test("decodes topic names response shape") {

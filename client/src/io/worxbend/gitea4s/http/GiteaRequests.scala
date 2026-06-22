@@ -53,6 +53,7 @@ import io.worxbend.gitea4s.model.{
   StopWatch,
   SubmitPullReviewOptions,
   Tag,
+  TagProtection,
   Team,
   TrackedTime,
   User,
@@ -205,6 +206,24 @@ object GiteaRequests:
       List("repos", owner, repo, "tags", tag),
       Nil,
       GiteaResponseMapper.decodeJson[Tag]
+    )
+
+  def repoTagProtections(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Chunk[TagProtection]] =
+    get(
+      config,
+      GiteaEndpoints.repoListTagProtection,
+      List("repos", owner, repo, "tag_protections"),
+      Nil,
+      GiteaResponseMapper.decodeChunk[TagProtection]
+    )
+
+  def repoTagProtection(config: GiteaConfig, owner: String, repo: String, id: Long): GiteaRequest[TagProtection] =
+    get(
+      config,
+      GiteaEndpoints.repoGetTagProtection,
+      List("repos", owner, repo, "tag_protections", id.toString),
+      Nil,
+      GiteaResponseMapper.decodeJson[TagProtection]
     )
 
   def repoReleases(

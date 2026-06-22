@@ -183,6 +183,31 @@ object GiteaEndpoints:
       response = "#/responses/Tag"
     )
 
+  val repoListTagProtection: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/tag_protections",
+      operationId = "repoListTagProtection",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true)
+      ),
+      response = "#/responses/TagProtectionList"
+    )
+
+  val repoGetTagProtection: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/tag_protections/{id}",
+      operationId = "repoGetTagProtection",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("id", "path", required = true)
+      ),
+      response = "#/responses/TagProtection"
+    )
+
   val repoListReleases: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

@@ -340,6 +340,11 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val tagProtectionEndpoints = List(
+    GiteaEndpoints.repoListTagProtection,
+    GiteaEndpoints.repoGetTagProtection
+  )
+
   private val collaboratorRequests = List(
     AuditedRequest(
       request = GiteaRequests.repoCollaborators(config, "owner", "repo", page = 2),
@@ -599,6 +604,10 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoGetTag" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoListTagProtection" -> Nil,
+    "repoGetTagProtection" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoListCollaborators" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
@@ -717,6 +726,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("repository tag lookup metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = repoTagRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository tag-protection metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = tagProtectionEndpoints.flatMap(auditEndpoint(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
