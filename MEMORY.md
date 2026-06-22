@@ -37,3 +37,4 @@
 [process] Credential-stripped live integration runs prove hermetic skipping only; record real routing confidence only after an enabled probe observes the configured endpoint behavior.
 [process] Normal release-tag probe success is not slash-routing evidence; slash-bearing path behavior needs an enabled probe with a real slash-containing tag.
 [learning] `repoCheckCollaborator` is a 204/404 membership probe; a boolean facade is ergonomic but cannot distinguish not-collaborator from every missing-resource 404 case.
+[learning] `repoListTeams` omits `page`/`limit` in local Swagger even though the client streams it with pagination query params; live validation should decide whether that pragmatic contract holds.

@@ -28,7 +28,8 @@ import io.worxbend.gitea4s.model.{
   RepoCollaboratorPermission,
   Repository,
   User,
-  Tag
+  Tag,
+  Team
 }
 import zio.{Chunk, IO}
 import zio.stream.ZStream
@@ -110,6 +111,10 @@ trait ReposApi:
       repo: String,
       collaborator: String
   ): IO[GiteaError, RepoCollaboratorPermission]
+
+  def teams(owner: String, repo: String): ZStream[Any, GiteaError, Team]
+
+  def team(owner: String, repo: String, team: String): IO[GiteaError, Team]
 
   def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
 

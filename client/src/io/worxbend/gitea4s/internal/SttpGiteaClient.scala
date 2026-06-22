@@ -76,6 +76,7 @@ import io.worxbend.gitea4s.model.{
   StopWatch,
   SubmitPullReviewOptions,
   Tag,
+  Team,
   TrackedTime,
   User,
   WatchInfo
@@ -233,6 +234,14 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
       collaborator: String
   ): IO[GiteaError, RepoCollaboratorPermission] =
     executor.send(GiteaRequests.repoCollaboratorPermission(config, owner, repo, collaborator))
+
+  override def teams(owner: String, repo: String): ZStream[Any, GiteaError, Team] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoTeams(config, owner, repo, page))
+    }
+
+  override def team(owner: String, repo: String, team: String): IO[GiteaError, Team] =
+    executor.send(GiteaRequests.repoTeam(config, owner, repo, team))
 
   override def list(
       owner: String,

@@ -348,6 +348,18 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val repositoryTeamRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoTeams(config, "owner", "repo", page = 2),
+      noBodyLifecyclePost = false,
+      expectedQueryParams = Seq("page" -> "2", "limit" -> config.pageSize.toString)
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoTeam(config, "owner", "repo", team = "space team/slash"),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val commitDiffOrPatchRequests = List(
     AuditedRequest(
       request =
@@ -588,6 +600,13 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       GiteaResponseLabel("403", "#/responses/forbidden"),
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoListTeams" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoCheckTeam" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("405", "#/responses/error")
+    ),
     "repoDownloadCommitDiffOrPatch" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     )
@@ -688,6 +707,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("repository collaborator metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = collaboratorRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository team metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = repositoryTeamRequests.flatMap(auditRepositoryTeam(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
@@ -901,6 +926,16 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       }.toList.flatten
 
     metadataFailures ++ releaseListQueryFailures
+
+  private def auditRepositoryTeam(swagger: SwaggerAudit, audited: AuditedRequest): List[String] =
+    val endpoint = audited.request.endpoint
+    val metadataFailures = audit(swagger, audited)
+    val requestFailures =
+      Option.when(endpoint.operationId == "repoListTeams") {
+        compare("request query parameters", audited.request.request.uri.paramsSeq, audited.expectedQueryParams).toList
+      }.toList.flatten
+
+    metadataFailures ++ requestFailures.map(message => s"${endpoint.operationId}: $message")
 
   private def compare[A](label: String, actual: A, expected: A): Option[String] =
     Option.when(actual != expected)(s"$label actual=$actual expected=$expected")

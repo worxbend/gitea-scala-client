@@ -291,6 +291,31 @@ object GiteaEndpoints:
       response = "#/responses/RepoCollaboratorPermission"
     )
 
+  val repoListTeams: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/teams",
+      operationId = "repoListTeams",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true)
+      ),
+      response = "#/responses/TeamList"
+    )
+
+  val repoCheckTeam: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/teams/{team}",
+      operationId = "repoCheckTeam",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("team", "path", required = true)
+      ),
+      response = "#/responses/Team"
+    )
+
   val repoGetCombinedStatusByRef: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

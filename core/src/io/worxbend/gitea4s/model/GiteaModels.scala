@@ -696,7 +696,8 @@ final case class Team(
     permission: Option[TeamPermission] = None,
     @jsonField("includes_all_repositories") includesAllRepositories: Option[Boolean] = None,
     @jsonField("can_create_org_repo") canCreateOrgRepo: Option[Boolean] = None,
-    units: Option[List[String]] = None
+    units: Option[List[String]] = None,
+    @jsonField("units_map") unitsMap: Option[Map[String, String]] = None
 )
 
 object Team:

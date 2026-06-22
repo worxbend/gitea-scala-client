@@ -3764,3 +3764,78 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 M  core/src/io/worxbend/gitea4s/model/GiteaModels.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-22T07:32:34Z iteration 6 started remaining=14515s
+2026-06-22T07:32:34Z iteration 6 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-22T07:32:34Z iteration 6 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-zcs140yx/repo copied_entries=100
+2026-06-22T07:32:34Z iteration 6 ideator phase started count=3
+2026-06-22T07:32:34Z iteration 6 ideator phase concurrency workers=3
+2026-06-22T07:32:34Z iteration 6 ideator 1 role="the pragmatist" started
+2026-06-22T07:32:34Z iteration 6 ideator 2 role="the architect" started
+2026-06-22T07:32:34Z iteration 6 ideator 3 role="the contrarian" started
+2026-06-22T07:32:44Z iteration 6 ideator 2 role="the architect" completed status=0
+2026-06-22T07:32:45Z iteration 6 ideator 1 role="the pragmatist" completed status=0
+2026-06-22T07:32:47Z iteration 6 ideator 3 role="the contrarian" completed status=0
+2026-06-22T07:32:47Z iteration 6 ideator phase completed approaches=3
+2026-06-22T07:32:47Z iteration 6 selector started approaches=3
+2026-06-22T07:32:59Z iteration 6 selector completed status=0
+2026-06-22T07:32:59Z iteration 6 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-zcs140yx/repo
+2026-06-22T07:32:59Z iteration 6 selector rejected alternative role="the architect" approach="Spec-First Team Surface Triage: treat the repository team visibility slice as a contract-sizing exercise before implementation, accepting it only if the Swagger Team response ca..." reason="Strong on contract sizing and ABI caution, but too narrowly framed around the Team model and less explicit about pivoting quickly to another narrow GET-only slice if Team is too broad."
+2026-06-22T07:32:59Z iteration 6 selector rejected alternative role="the pragmatist" approach="Schema-gated read-only expansion: continue with the repository team visibility slice only if a quick Swagger inspection confirms the `Team` response can be modeled narrowly; oth..." reason="Closest to the selected strategy and strong on scope control, but it underemphasizes the evidence-quality distinction between Swagger/unit confidence and real live-routing or permission behavior."
+2026-06-22T07:32:59Z iteration 6 selector rejected alternative role="the contrarian" approach="Evidence-First Narrow Slice: pause routine endpoint expansion until the next slice can prove its contract through Swagger audit, facade ergonomics, and live-routing confidence w..." reason="Useful emphasis on evidence quality, but selected as-is it risks slowing routine endpoint progress too much. The planner still needs a concrete next direction, with evidence gates rather than a general pause."
+2026-06-22T07:32:59Z iteration 6 selector alternatives persisted count=3
+2026-06-22T07:32:59Z iteration 6 selector structured alternatives persisted count=3
+2026-06-22T07:32:59Z iteration 6 planner started
+2026-06-22T07:33:35Z iteration 6 plan: 4 task(s) in 4 phase(s). The slice is gated first because the Team schema may be too broad for a narrow public model. Request construction must land before facade wiring because facade methods depend on stable builder names and response decoding. Documentation and compatibility snapshots are last because they depend on the final public API shape.
+2026-06-22T07:33:35Z iteration 6 phase 1 started parallel=False tasks=1
+2026-06-22T07:36:50Z iteration 6 task t1 ('Gate and model repository Team') status=0
+2026-06-22T07:36:50Z iteration 6 phase 2 started parallel=False tasks=1
+2026-06-22T07:41:39Z iteration 6 task t2 ('Add repository team request builders') status=0
+2026-06-22T07:41:39Z iteration 6 phase 3 started parallel=False tasks=1
+2026-06-22T07:45:21Z iteration 6 task t3 ('Expose repository team facade') status=0
+2026-06-22T07:45:21Z iteration 6 phase 4 started parallel=False tasks=1
+2026-06-22T07:50:39Z iteration 6 task t4 ('Align docs, snapshots, and plan') status=0
+2026-06-22T07:50:39Z iteration 6 reviewer started
+
+## Reviewer Summary - Iteration 6 - 2026-06-22T08:20:00Z
+
+What was done:
+- Inspected every file changed in the repository team visibility slice: `ReposApi`, `SttpGiteaClient`, `GiteaEndpoint`, `GiteaRequests`, `GiteaModels`, request/facade/audit/core tests, README, CHANGELOG, PLAN, API snapshots, and telemetry files.
+- Cross-checked `repoListTeams`, `repoCheckTeam`, `TeamList`, `Team`, `TeamPermission`, and the `units_map` schema against `plugin-redoc-2.yaml`.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, focused `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`, and credential-stripped `it.test`; all passed, with all twelve live probes ignored.
+
+What was found:
+- No functional blocker or production-code regression was found.
+- `Team` now preserves the local Swagger response fields, including `can_create_org_repo`, `includes_all_repositories`, `units`, and `units_map`, while reusing `Organization` and `TeamPermission` without pulling team write/admin payloads into core.
+- `repoTeams` and `repoTeam` are read-only GET request builders with safe owner/repo/team path encoding, JSON accept/auth/OTP/user-agent headers, no body or JSON `Content-Type`, JSON/page decoding, documented `404`/`405` mapping, and read-only retry eligibility.
+- `ReposApi.teams` streams `Team` values from page 1 through the shared pagination helper, and `ReposApi.team` fetches a single repository team; add/delete/write team operations remain absent.
+- Request, facade, audit, schema-field checklist, enum rejection, docs, and API snapshots are aligned with the intentional public ABI additions.
+- Residual risk is live-contract confidence: local Swagger does not declare `page` or `limit` for `repoListTeams`, but the client sends them to support streaming. Unit/audit tests document that choice; only an enabled live probe can prove real Gitea accepts it for the configured fixture.
+
+Top improvement proposals:
+- Add opt-in live probes for repository teams and collaborators when real fixtures exist. For teams, assert both `client.teams(owner, repo)` list membership and `client.team(owner, repo, team)` detail lookup, and explicitly record whether the current `page`/`limit` query behavior works against real Gitea.
+- Gate collaborator live confidence on a known collaborator account and sufficient token permissions; do not treat credential-stripped ignored runs as evidence.
+- If no live fixtures are available, avoid another documentation-only cycle and choose a bounded read-only Swagger slice such as `repoGetTag`, which can reuse the existing `Tag` model and independently test tag-name path encoding.
+- Keep team add/delete/write endpoints, repository writes, release writes, multipart uploads, and binary release asset downloads out of scope until their request and error contracts are deliberately designed.
+2026-06-22T07:54:11Z iteration 6 reviewer completed status=0
+2026-06-22T07:54:11Z iteration 6 memory updated
+2026-06-22T07:54:11Z iteration 6 completed validation_status=0
+2026-06-22T07:54:11Z iteration 6 checkpoint started
+2026-06-22T07:54:11Z iteration 6 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+M  core/src/io/worxbend/gitea4s/model/GiteaModels.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

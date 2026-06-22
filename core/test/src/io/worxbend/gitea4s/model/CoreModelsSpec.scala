@@ -17,6 +17,17 @@ object CoreModelsSpec extends ZIOSpecDefault:
   private val schemaChecklistSwaggerFields = Map(
     "Attachment" -> Set("browser_download_url", "created_at", "download_count", "id", "name", "size", "uuid"),
     "RepoCollaboratorPermission" -> Set("permission", "role_name", "user"),
+    "Team" -> Set(
+      "can_create_org_repo",
+      "description",
+      "id",
+      "includes_all_repositories",
+      "name",
+      "organization",
+      "permission",
+      "units",
+      "units_map"
+    ),
     "Reference" -> Set("object", "ref", "url"),
     "GitObject" -> Set("sha", "type", "url"),
     "AnnotatedTag" -> Set("message", "object", "sha", "tag", "tagger", "url", "verification"),
@@ -55,6 +66,20 @@ object CoreModelsSpec extends ZIOSpecDefault:
     SchemaFieldChecklist(
       "RepoCollaboratorPermission",
       Set("permission", "role_name", "user")
+    ),
+    SchemaFieldChecklist(
+      "Team",
+      Set(
+        "can_create_org_repo",
+        "description",
+        "id",
+        "includes_all_repositories",
+        "name",
+        "organization",
+        "permission",
+        "units",
+        "units_map"
+      )
     ),
     SchemaFieldChecklist("Reference", Set("object", "ref", "url")),
     SchemaFieldChecklist("GitObject", Set("sha", "type", "url")),
@@ -114,6 +139,24 @@ object CoreModelsSpec extends ZIOSpecDefault:
         permission = Some("write"),
         roleName = Some("Developer"),
         user = Some(User(id = Some(42L), login = Some("octo")))
+      ).toJson,
+    "Team" ->
+      Team(
+        canCreateOrgRepo = Some(true),
+        description = Some("Repository maintainers"),
+        id = Some(77L),
+        includesAllRepositories = Some(false),
+        name = Some("maintainers"),
+        organization = Some(Organization(id = Some(12L), name = Some("octo"))),
+        permission = Some(TeamPermission.Write),
+        units = Some(List("repo.code", "repo.issues", "repo.pulls")),
+        unitsMap = Some(
+          Map(
+            "repo.code" -> "read",
+            "repo.issues" -> "write",
+            "repo.pulls" -> "owner"
+          )
+        )
       ).toJson,
     "Reference" ->
       Reference(
@@ -345,6 +388,100 @@ object CoreModelsSpec extends ZIOSpecDefault:
           decoded.map(_.toJson) ==
             Right("""{"permission":"write","role_name":"Developer","user":{"id":42,"login":"octo"}}"""),
           !payload.toJson.contains("roleName")
+        )
+      },
+      test("decodes and round-trips repository team response shape") {
+        val json =
+          """{
+            |  "can_create_org_repo": true,
+            |  "description": "Repository maintainers",
+            |  "id": 77,
+            |  "includes_all_repositories": false,
+            |  "name": "maintainers",
+            |  "organization": { "id": 12, "name": "octo", "full_name": "Octo Org" },
+            |  "permission": "write",
+            |  "units": ["repo.code", "repo.issues", "repo.pulls"],
+            |  "units_map": {
+            |    "repo.code": "read",
+            |    "repo.issues": "write",
+            |    "repo.pulls": "owner"
+            |  }
+            |}""".stripMargin
+        val payload =
+          Team(
+            canCreateOrgRepo = Some(true),
+            description = Some("Repository maintainers"),
+            id = Some(77L),
+            includesAllRepositories = Some(false),
+            name = Some("maintainers"),
+            organization = Some(
+              Organization(id = Some(12L), name = Some("octo"), fullName = Some("Octo Org"))
+            ),
+            permission = Some(TeamPermission.Write),
+            units = Some(List("repo.code", "repo.issues", "repo.pulls")),
+            unitsMap = Some(
+              Map(
+                "repo.code" -> "read",
+                "repo.issues" -> "write",
+                "repo.pulls" -> "owner"
+              )
+            )
+          )
+        val decoded = json.fromJson[Team]
+        val encoded = payload.toJson
+
+        assertTrue(
+          decoded == Right(payload),
+          encoded.fromJson[Team] == Right(payload),
+          encoded.contains(""""can_create_org_repo":true"""),
+          encoded.contains(""""includes_all_repositories":false"""),
+          encoded.contains(""""units_map""""),
+          !encoded.contains("canCreateOrgRepo"),
+          !encoded.contains("includesAllRepositories"),
+          !encoded.contains("unitsMap")
+        )
+      },
+      test("decodes repository team lists through the TeamList response shape") {
+        val json =
+          """[
+            |  {
+            |    "id": 77,
+            |    "name": "maintainers",
+            |    "permission": "write",
+            |    "units": ["repo.code", "repo.issues"],
+            |    "units_map": { "repo.code": "read", "repo.issues": "write" }
+            |  },
+            |  {
+            |    "id": 78,
+            |    "name": "triage",
+            |    "permission": "read",
+            |    "can_create_org_repo": false,
+            |    "includes_all_repositories": true
+            |  }
+            |]""".stripMargin
+        val expected =
+          List(
+            Team(
+              id = Some(77L),
+              name = Some("maintainers"),
+              permission = Some(TeamPermission.Write),
+              units = Some(List("repo.code", "repo.issues")),
+              unitsMap = Some(Map("repo.code" -> "read", "repo.issues" -> "write"))
+            ),
+            Team(
+              id = Some(78L),
+              name = Some("triage"),
+              permission = Some(TeamPermission.Read),
+              canCreateOrgRepo = Some(false),
+              includesAllRepositories = Some(true)
+            )
+          )
+        val encoded = expected.toJson
+
+        assertTrue(
+          json.fromJson[List[Team]] == Right(expected),
+          encoded.fromJson[List[Team]] == Right(expected),
+          encoded.contains(""""units_map"""")
         )
       },
       test("decodes topic names response shape") {
@@ -1658,6 +1795,7 @@ object CoreModelsSpec extends ZIOSpecDefault:
       test("rejects unknown closed-set enum values") {
         val issue = """{ "id": 1, "state": "paused" }""".fromJson[Issue]
         val repository = """{ "id": 1, "object_format_name": "md5" }""".fromJson[Repository]
+        val team = """{ "id": 1, "permission": "maintain" }""".fromJson[Team]
         val notificationSubject =
           """{ "title": "Invalid", "state": "stale", "type": "Message" }""".fromJson[NotificationSubject]
         val pullReview = """{ "id": 1, "state": "STALE" }""".fromJson[PullReview]
@@ -1668,6 +1806,7 @@ object CoreModelsSpec extends ZIOSpecDefault:
         assertTrue(
           issue.isLeft,
           repository.isLeft,
+          team.isLeft,
           notificationSubject.isLeft,
           pullReview.isLeft,
           commitStatus.isLeft,

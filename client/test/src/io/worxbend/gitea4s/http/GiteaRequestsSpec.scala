@@ -37,6 +37,8 @@ import io.worxbend.gitea4s.model.{
   ReleaseAsset,
   SubmitPullReviewOptions,
   GitBlobResponse,
+  Team,
+  TeamPermission,
   User,
   WatchInfo
 }
@@ -351,6 +353,94 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
               roleName = Some("Developer"),
               user = Some(User(id = Some(42L), login = Some("octo")))
             )
+          )
+        )
+      },
+      test("builds and decodes schema-traceable paginated repository teams request") {
+        val built = GiteaRequests.repoTeams(config, "worx bend", "gitea/scala", page = 4)
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """[{"id":12,"name":"Platform","permission":"write","includes_all_repositories":false}]""",
+              StatusCode.Ok,
+              List(Header("x-total-count", "9"))
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListTeams,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoListTeams",
+          endpoint.path == "/repos/{owner}/{repo}/teams",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.response == "#/responses/TeamList",
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/teams?"),
+          request.uri.paramsMap.get("page").contains("4"),
+          request.uri.paramsMap.get("limit").contains("25"),
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend).map(_.data) == Right(
+            Chunk(
+              Team(
+                id = Some(12L),
+                name = Some("Platform"),
+                permission = Some(TeamPermission.Write),
+                includesAllRepositories = Some(false)
+              )
+            )
+          ),
+          decodeWith(built, backend).map(_.totalCount) == Right(Some(9L)),
+          decodeWith(built, backend).map(_.page) == Right(4),
+          decodeWith(built, backend).map(_.pageSize) == Right(25)
+        )
+      },
+      test("builds and decodes schema-traceable repository team lookup request") {
+        val built = GiteaRequests.repoTeam(config, "worx bend", "gitea/scala", "space team/slash")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""{"id":12,"name":"space team/slash","permission":"read"}""")
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoCheckTeam,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoCheckTeam",
+          endpoint.path == "/repos/{owner}/{repo}/teams/{team}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "team"),
+          endpoint.response == "#/responses/Team",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/teams/space%20team%2Fslash",
+          request.uri.path == List(
+            "root",
+            "api",
+            "v1",
+            "repos",
+            "worx bend",
+            "gitea/scala",
+            "teams",
+            "space team/slash"
+          ),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            Team(id = Some(12L), name = Some("space team/slash"), permission = Some(TeamPermission.Read))
           )
         )
       },
@@ -3782,6 +3872,25 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
             Left(GiteaError.UnprocessableEntity("invalid collaborator", validationBody)),
           decodeWith(permission, forbiddenBackend) == Left(GiteaError.Forbidden("forbidden", forbiddenBody)),
           decodeWith(permission, notFoundBackend) == Left(GiteaError.NotFound("missing repository", notFoundBody))
+        )
+      },
+      test("maps repository team documented error responses") {
+        val notFoundBody = """{"message":"missing repository"}"""
+        val methodNotAllowedBody = """{"message":"team assignment unavailable"}"""
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val methodNotAllowedBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(methodNotAllowedBody, StatusCode.MethodNotAllowed)
+          )
+        val teams = GiteaRequests.repoTeams(config, "owner", "missing")
+        val team = GiteaRequests.repoTeam(config, "owner", "repo", "missing-team")
+
+        assertTrue(
+          decodeWith(teams, notFoundBackend) == Left(GiteaError.NotFound("missing repository", notFoundBody)),
+          decodeWith(team, notFoundBackend) == Left(GiteaError.NotFound("missing repository", notFoundBody)),
+          decodeWith(team, methodNotAllowedBackend) ==
+            Left(GiteaError.MethodNotAllowed("team assignment unavailable", methodNotAllowedBody))
         )
       },
       test("maps documented commit status failures") {

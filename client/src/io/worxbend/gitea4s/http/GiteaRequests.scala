@@ -53,6 +53,7 @@ import io.worxbend.gitea4s.model.{
   StopWatch,
   SubmitPullReviewOptions,
   Tag,
+  Team,
   TrackedTime,
   User,
   WatchInfo
@@ -307,6 +308,26 @@ object GiteaRequests:
       List("repos", owner, repo, "collaborators", collaborator, "permission"),
       Nil,
       GiteaResponseMapper.decodeJson[RepoCollaboratorPermission]
+    )
+
+  def repoTeams(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Team]] =
+    val pageSize = config.pageSize
+
+    get(
+      config,
+      GiteaEndpoints.repoListTeams,
+      List("repos", owner, repo, "teams"),
+      pageQuery(page, pageSize),
+      response => GiteaResponseMapper.decodePage[Team](response, page, pageSize)
+    )
+
+  def repoTeam(config: GiteaConfig, owner: String, repo: String, team: String): GiteaRequest[Team] =
+    get(
+      config,
+      GiteaEndpoints.repoCheckTeam,
+      List("repos", owner, repo, "teams", team),
+      Nil,
+      GiteaResponseMapper.decodeJson[Team]
     )
 
   def repoCombinedStatusByRef(

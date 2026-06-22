@@ -17,9 +17,10 @@ and zio-json.
   downloads, Git tree reads, Git blob reads, Git reference reads, annotated tag
   reads, repository contents metadata reads, raw/media repository file byte
   downloads, repository archive byte downloads, repository collaborator
-  list/check/permission reads, commit-to-pull-request lookup, release listing
-  with typed filters, release detail/latest/tag lookup, release asset metadata
-  reads, pull requests including reviews,
+  list/check/permission reads, repository team list/lookup reads,
+  commit-to-pull-request lookup, release listing with typed filters,
+  release detail/latest/tag lookup, release asset metadata reads, pull requests
+  including reviews,
   pinned pull-request reads, pull-request create/edit writes, diff/patch
   downloads, merge-status checks, merge/update commands, review-comment
   resolution, and notifications through a ZIO client API
@@ -28,8 +29,8 @@ and zio-json.
   pull-request create/edit, merge/update, commit-to-pull-request,
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
   annotated tag, repository contents, raw/media repository file, repository
-  archive, release list/detail, latest-release, release-by-tag, and release
-  asset metadata endpoints,
+  archive, repository collaborator, repository team, release list/detail,
+  latest-release, release-by-tag, and release asset metadata endpoints,
   including documented non-2xx response labels, optional query parameters,
   `application/octet-stream`/Swagger `type: file` response shape for raw/media
   downloads, the archive operation's bare `200` success description, path enum
@@ -191,12 +192,12 @@ client
 Current stream-oriented APIs include user followers/following/search, user and
 organization repositories, organization members, issues, issue reactions, issue
 subscribers, issue tracked times, current-user stopwatches, repository-wide
-issue comments, branches, tags, repository collaborators, releases, pull
-requests, and notification threads. Commit-status list APIs are also paginated
-streams. Pinned issues and pinned pull requests are exposed as non-paginated
-chunks because Gitea returns those endpoints as plain list responses without
-pagination parameters. Release asset metadata lists are also non-paginated
-chunks in the local Swagger contract.
+issue comments, branches, tags, repository collaborators, repository teams,
+releases, pull requests, and notification threads. Commit-status list APIs are
+also paginated streams. Pinned issues and pinned pull requests are exposed as
+non-paginated chunks because Gitea returns those endpoints as plain list
+responses without pagination parameters. Release asset metadata lists are also
+non-paginated chunks in the local Swagger contract.
 
 ## Repository Collaborators
 
@@ -220,6 +221,22 @@ All three collaborator methods are read-only and retryable under
 `GiteaConfig.maxRetries`. Owner, repository, and collaborator username values
 are encoded as path segments. Collaborator add/delete/write operations are not
 part of this API slice.
+
+## Repository Teams
+
+Repository team visibility covers the two Swagger-documented `GET` operations
+under `/repos/{owner}/{repo}/teams`:
+
+- `client.teams(owner, repo)` streams paginated repository teams as `Team`
+  values from `repoListTeams`. The stream starts at page 1 and sends `page`
+  plus the configured `GiteaConfig.pageSize` as `limit` on each request.
+- `client.team(owner, repo, team)` calls `repoCheckTeam` and returns
+  `IO[GiteaError, Team]`. Team names are encoded as one path segment, including
+  names containing spaces or slashes.
+
+Both team methods are read-only and retryable under `GiteaConfig.maxRetries`.
+Team add, delete, membership, and permission-write operations are not
+implemented.
 
 ## Commit Statuses
 
@@ -525,6 +542,10 @@ client.collaboratorPermission(
   repo = "my-repo",
   collaborator = "alice"
 )
+
+client.teams(owner = "my-org", repo = "my-repo").take(25).runCollect
+
+client.team(owner = "my-org", repo = "my-repo", team = "release/managers")
 
 client.releases(owner = "my-org", repo = "my-repo").take(25).runCollect
 
@@ -942,8 +963,9 @@ Endpoint audit tests compare the current pull-request review lifecycle,
 commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
 tree/blob/annotated-tag/refs, repository contents, raw/media repository file,
-repository archive, release list/detail, latest-release, release-by-tag, and
-release asset metadata endpoint groups against
+repository archive, repository collaborator, repository team, release
+list/detail, latest-release, release-by-tag, and release asset metadata
+endpoint groups against
 `plugin-redoc-2.yaml`, including
 documented non-2xx response status/ref labels, optional query parameters such as
 `recursive`/`page`/`per_page`, contents/raw/media `ref`, and archive `path`,
@@ -951,10 +973,10 @@ documented non-2xx response status/ref labels, optional query parameters such as
 downloads, the archive operation's bare `200` success description,
 no-query/no-body checks for Git blob, annotated tag, and refs requests, no-body
 checks for contents, raw/media, archive, release list/detail, release-by-tag,
-latest-release, and release asset requests, release list/detail/latest
-`ReleaseList`/`Release` response refs, release asset
-`AttachmentList`/`Attachment` response refs, and path enum values such as
-`diffType`.
+latest-release, repository team list/lookup, and release asset requests,
+release list/detail/latest `ReleaseList`/`Release` response refs, release asset
+`AttachmentList`/`Attachment` response refs, repository team `TeamList`/`Team`
+response refs, and path enum values such as `diffType`.
 
 Live integration tests are opt-in:
 

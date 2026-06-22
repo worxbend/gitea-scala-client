@@ -26,6 +26,15 @@ surface is still being filled out.
   `204` to `true` and endpoint-specific `404` to `false`, and the permission
   endpoint decodes `RepoCollaboratorPermission`. These methods are read-only
   retryable; collaborator add/delete/write operations remain out of scope.
+- Read-only repository team visibility APIs for
+  `GET /repos/{owner}/{repo}/teams` (`repoListTeams`) and
+  `GET /repos/{owner}/{repo}/teams/{team}` (`repoCheckTeam`) with the new
+  `Team` model, `GiteaRequests.repoTeams`, `GiteaRequests.repoTeam`,
+  `ReposApi.teams`, and `ReposApi.team`. Team lists stream paginated `Team`
+  values from page 1 with the configured page size, single-team lookups encode
+  slash/space team names as one path segment, documented `404`/`405` failures
+  use the shared mapper, and both methods are read-only retryable. Team
+  add/delete/write operations are not implemented.
 - Typed commit-status models and repository APIs with `CommitStatus`,
   `CombinedStatus`, `CreateStatusOption`, `CommitStatusState`,
   `CommitStatusListParams`, and request construction for

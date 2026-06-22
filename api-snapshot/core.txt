@@ -5128,7 +5128,7 @@ public final class io.worxbend.gitea4s.model.Tag$ implements scala.deriving.Mirr
 
 ## io.worxbend.gitea4s.model.Team
 public final class io.worxbend.gitea4s.model.Team implements scala.Product,java.io.Serializable {
-  public io.worxbend.gitea4s.model.Team(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.Organization>, scala.Option<io.worxbend.gitea4s.model.TeamPermission>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>);
+  public io.worxbend.gitea4s.model.Team(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.Organization>, scala.Option<io.worxbend.gitea4s.model.TeamPermission>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.Map<java.lang.String, java.lang.String>>);
   public scala.collection.Iterator<java.lang.Object> productIterator();
   public scala.collection.Iterator<java.lang.String> productElementNames();
   public int hashCode();
@@ -5147,7 +5147,8 @@ public final class io.worxbend.gitea4s.model.Team implements scala.Product,java.
   public scala.Option<java.lang.Object> includesAllRepositories();
   public scala.Option<java.lang.Object> canCreateOrgRepo();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> units();
-  public io.worxbend.gitea4s.model.Team copy(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.Organization>, scala.Option<io.worxbend.gitea4s.model.TeamPermission>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>);
+  public scala.Option<scala.collection.immutable.Map<java.lang.String, java.lang.String>> unitsMap();
+  public io.worxbend.gitea4s.model.Team copy(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.Organization>, scala.Option<io.worxbend.gitea4s.model.TeamPermission>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.Map<java.lang.String, java.lang.String>>);
   public scala.Option<java.lang.Object> copy$default$1();
   public scala.Option<java.lang.String> copy$default$2();
   public scala.Option<java.lang.String> copy$default$3();
@@ -5156,6 +5157,7 @@ public final class io.worxbend.gitea4s.model.Team implements scala.Product,java.
   public scala.Option<java.lang.Object> copy$default$6();
   public scala.Option<java.lang.Object> copy$default$7();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$8();
+  public scala.Option<scala.collection.immutable.Map<java.lang.String, java.lang.String>> copy$default$9();
   public scala.Option<java.lang.Object> _1();
   public scala.Option<java.lang.String> _2();
   public scala.Option<java.lang.String> _3();
@@ -5164,7 +5166,8 @@ public final class io.worxbend.gitea4s.model.Team implements scala.Product,java.
   public scala.Option<java.lang.Object> _6();
   public scala.Option<java.lang.Object> _7();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> _8();
-  public static io.worxbend.gitea4s.model.Team apply(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.Organization>, scala.Option<io.worxbend.gitea4s.model.TeamPermission>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>);
+  public scala.Option<scala.collection.immutable.Map<java.lang.String, java.lang.String>> _9();
+  public static io.worxbend.gitea4s.model.Team apply(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.Organization>, scala.Option<io.worxbend.gitea4s.model.TeamPermission>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.Map<java.lang.String, java.lang.String>>);
   public static io.worxbend.gitea4s.model.Team fromProduct(scala.Product);
   public static zio.json.JsonCodec<io.worxbend.gitea4s.model.Team> given_JsonCodec_Team();
   public static io.worxbend.gitea4s.model.Team unapply(io.worxbend.gitea4s.model.Team);
@@ -5176,12 +5179,13 @@ public final class io.worxbend.gitea4s.model.Team implements scala.Product,java.
   public static scala.Option<java.lang.Object> $lessinit$greater$default$6();
   public static scala.Option<java.lang.Object> $lessinit$greater$default$7();
   public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$8();
+  public static scala.Option<scala.collection.immutable.Map<java.lang.String, java.lang.String>> $lessinit$greater$default$9();
 }
 
 ## io.worxbend.gitea4s.model.Team$
 public final class io.worxbend.gitea4s.model.Team$ implements scala.deriving.Mirror$Product,java.io.Serializable {
   public static final io.worxbend.gitea4s.model.Team$ MODULE$;
-  public io.worxbend.gitea4s.model.Team apply(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.Organization>, scala.Option<io.worxbend.gitea4s.model.TeamPermission>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>);
+  public io.worxbend.gitea4s.model.Team apply(scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.Organization>, scala.Option<io.worxbend.gitea4s.model.TeamPermission>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.Map<java.lang.String, java.lang.String>>);
   public io.worxbend.gitea4s.model.Team unapply(io.worxbend.gitea4s.model.Team);
   public scala.Option<java.lang.Object> $lessinit$greater$default$1();
   public scala.Option<java.lang.String> $lessinit$greater$default$2();
@@ -5191,6 +5195,7 @@ public final class io.worxbend.gitea4s.model.Team$ implements scala.deriving.Mir
   public scala.Option<java.lang.Object> $lessinit$greater$default$6();
   public scala.Option<java.lang.Object> $lessinit$greater$default$7();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$8();
+  public scala.Option<scala.collection.immutable.Map<java.lang.String, java.lang.String>> $lessinit$greater$default$9();
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.Team> given_JsonCodec_Team();
   public io.worxbend.gitea4s.model.Team fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);

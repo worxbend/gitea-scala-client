@@ -49,7 +49,9 @@ import io.worxbend.gitea4s.model.{
   PullReviewRequestOptions,
   PullReviewState,
   RepoCollaboratorPermission,
-  SubmitPullReviewOptions
+  SubmitPullReviewOptions,
+  Team,
+  TeamPermission
 }
 import sttp.capabilities.Effect
 import sttp.client4.*
@@ -2558,6 +2560,139 @@ object GiteaClientSpec extends ZIOSpecDefault:
           permission.permission.contains("read"),
           permission.roleName.contains("Reader"),
           permission.user.flatMap(_.login).contains("octo")
+        )
+      },
+      test("streams repository teams from page 1 with the configured page size") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+
+        for
+          seenQueries <- Ref.make(Vector.empty[Map[String, String]])
+          responses <- Ref.make(
+            List[Response[String]](
+              stringResponse("""[{"id":12,"name":"reviewers","permission":"read"}]""", StatusCode.Ok, twoPageHeaders),
+              stringResponse("""[{"id":13,"name":"maintainers","permission":"write"}]""", StatusCode.Ok, twoPageHeaders)
+            )
+          )
+          backend = new Backend[Task]:
+            private val taskMonad = new RIOMonadAsyncError[Any]
+
+            override def send[T](request: GenericRequest[T, Effect[Task]]): Task[Response[T]] =
+              for
+                _ <- ZIO
+                  .unless(
+                    request.method == Method.GET &&
+                      request.uri.path.endsWith(List("repos", "alice", "api", "teams"))
+                  )(ZIO.fail(IllegalStateException(s"unexpected request: ${request.method} ${request.uri}")))
+                _ <- seenQueries.update(_ :+ request.uri.paramsMap)
+                response <- responses.modify {
+                  case next :: rest => (ZIO.succeed(next.asInstanceOf[Response[T]]), rest)
+                  case Nil          => (ZIO.fail(IllegalStateException("no team response left")), Nil)
+                }.flatten
+              yield response
+
+            override def close(): Task[Unit] =
+              ZIO.unit
+
+            override def monad: MonadError[Task] =
+              taskMonad
+          client = GiteaClient.fromBackend(config, backend)
+          teams <- client.teams("alice", "api").runCollect
+          queries <- seenQueries.get
+        yield assertTrue(
+          teams.map(_.name) == Chunk(Some("reviewers"), Some("maintainers")),
+          teams.map(_.permission) == Chunk(Some(TeamPermission.Read), Some(TeamPermission.Write)),
+          queries.map(_("page")) == Vector("1", "2"),
+          queries.forall(_.get("limit").contains("1"))
+        )
+      },
+      test("loads a repository team with path-safe team name encoding") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/teams/space%20team%2Fslash" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "teams",
+                "space team/slash"
+              ) &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret")
+          }.thenRespond(
+            ResponseStub.adjust(
+              """{"id":12,"name":"space team/slash","description":"Repository reviewers","permission":"read"}"""
+            )
+          )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.team("space owner", "repo/slash", "space team/slash"))(
+          Assertion.equalTo(
+            Team(
+              id = Some(12L),
+              name = Some("space team/slash"),
+              description = Some("Repository reviewers"),
+              permission = Some(TeamPermission.Read)
+            )
+          )
+        )
+      },
+      test("propagates repository team documented errors through the facade") {
+        val listBody = """{"message":"repository not found"}"""
+        val teamBody = """{"message":"team not found"}"""
+        val methodBody = """{"message":"team assignment unavailable"}"""
+        val listBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "missing", "teams"))
+          }.thenRespond(ResponseStub.adjust(listBody, StatusCode.NotFound))
+        val teamBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "teams", "missing-team"))
+          }.thenRespond(ResponseStub.adjust(teamBody, StatusCode.NotFound))
+        val methodBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "teams", "blocked-team"))
+          }.thenRespond(ResponseStub.adjust(methodBody, StatusCode.MethodNotAllowed))
+        val listClient = GiteaClient.fromBackend(config, listBackend)
+        val teamClient = GiteaClient.fromBackend(config, teamBackend)
+        val methodClient = GiteaClient.fromBackend(config, methodBackend)
+
+        for
+          listResult <- listClient.teams("alice", "missing").runCollect.either
+          teamResult <- teamClient.team("alice", "api", "missing-team").either
+          methodResult <- methodClient.team("alice", "api", "blocked-team").either
+        yield assertTrue(
+          listResult == Left(GiteaError.NotFound("repository not found", listBody)),
+          teamResult == Left(GiteaError.NotFound("team not found", teamBody)),
+          methodResult == Left(GiteaError.MethodNotAllowed("team assignment unavailable", methodBody))
+        )
+      },
+      test("retries repository team lookup because it is a read-only GET") {
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "teams", "maintainers"))
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""{"id":13,"name":"maintainers","permission":"write"}""")
+          )
+        val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
+
+        for
+          fiber <- client.team("alice", "api", "maintainers").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          team <- fiber.join
+        yield assertTrue(
+          team.id.contains(13L),
+          team.name.contains("maintainers"),
+          team.permission.contains(TeamPermission.Write)
         )
       },
       test("loads and streams repository pull requests") {
