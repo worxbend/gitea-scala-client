@@ -352,6 +352,13 @@ surface is still being filled out.
   `GITEA_LATEST_RELEASE_TAG` is configured alongside the required live
   repository credentials, and asserts that the returned tag matches the
   repository's actual latest non-draft, non-prerelease release tag.
+- Opt-in release-by-tag live confidence probe for the existing read-only
+  `client.releaseByTag(owner, repo, tag)` facade. This is validation coverage
+  for already implemented release metadata lookup, not a new release API. The
+  probe is gated by `GITEA_RELEASE_TAG` plus non-empty `GITEA_URL`,
+  `GITEA_TOKEN`, `GITEA_OWNER`, and `GITEA_REPO`, and is intended to validate
+  slash-bearing release tag routing such as `release/candidate` against real
+  Gitea.
 - Test-side schema-field checklist coverage for recent Swagger Git response
   models: `Reference`, `GitObject`, `AnnotatedTag`, `AnnotatedTagObject`, and
   `GitBlobResponse`.

@@ -999,14 +999,19 @@ Release metadata APIs are read-only and metadata-only. The live probes call
 `client.releaseAsset(owner, repo, releaseId, assetId)`, and
 `client.latestRelease(owner, repo)`. In addition to `GITEA_URL`,
 `GITEA_TOKEN`, `GITEA_OWNER`, and `GITEA_REPO`, configure `GITEA_RELEASE_ID`
-for release detail and asset-list probes, `GITEA_RELEASE_TAG` for the
-release-by-tag probe, and both `GITEA_RELEASE_ID` and
-`GITEA_RELEASE_ASSET_ID` for the single asset lookup. `GITEA_LATEST_RELEASE_TAG`
-enables the latest-release probe and must name the repository's actual latest
-non-draft, non-prerelease release tag; it is the only release variable that
-asserts latest-release semantics. When `GITEA_RELEASE_ASSET_ID` is set, the
-asset-list probe also checks that the configured asset id appears in
-`client.releaseAssets(owner, repo, releaseId)`:
+for release detail and asset-list probes, and both `GITEA_RELEASE_ID` and
+`GITEA_RELEASE_ASSET_ID` for the single asset lookup. `GITEA_RELEASE_TAG`
+enables the release-by-tag probe only when all of `GITEA_URL`, `GITEA_TOKEN`,
+`GITEA_OWNER`, `GITEA_REPO`, and `GITEA_RELEASE_TAG` are non-empty. That probe
+passes the configured tag unchanged to `client.releaseByTag(owner, repo, tag)`
+and asserts that the returned `Release.tagName` option contains exactly that
+configured value. Slash-containing tags such as `release/candidate` are the
+intended confidence case for validating this endpoint's live routing behavior.
+`GITEA_LATEST_RELEASE_TAG` enables the latest-release probe and must name the
+repository's actual latest non-draft, non-prerelease release tag; it is the
+only release variable that asserts latest-release semantics. When
+`GITEA_RELEASE_ASSET_ID` is set, the asset-list probe also checks that the
+configured asset id appears in `client.releaseAssets(owner, repo, releaseId)`:
 
 ```bash
 GITEA_URL=https://gitea.example \
@@ -1014,7 +1019,7 @@ GITEA_TOKEN=... \
 GITEA_OWNER=my-org \
 GITEA_REPO=my-repo \
 GITEA_RELEASE_ID=7 \
-GITEA_RELEASE_TAG=v1.0.0 \
+GITEA_RELEASE_TAG=release/candidate \
 GITEA_LATEST_RELEASE_TAG=v1.2.3 \
 GITEA_RELEASE_ASSET_ID=42 \
 ./mill it.test
