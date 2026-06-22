@@ -41,3 +41,4 @@
 [learning] Repository tag lookup (`repoGetTag` returning `Tag`) and release-by-tag lookup (`repoGetReleaseByTag` returning `Release`) are separate contracts; keep facade names, live variables, and routing evidence endpoint-specific.
 [learning] `repoListTagProtection` is a non-paginated path-only list in local Swagger; do not infer `page`/`limit` from adjacent repository list endpoints.
 [learning] `BranchProtection` is a broad metadata response compared with `TagProtection`; gate any read slice with explicit schema-field sizing before adding public ABI.
+[learning] `repoListBranchProtection` is a non-paginated path-only list in local Swagger; do not infer `page`/`limit` from branch or protection-adjacent endpoints.

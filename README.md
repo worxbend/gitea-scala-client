@@ -19,9 +19,9 @@ and zio-json.
   downloads, repository archive byte downloads, repository collaborator
   list/check/permission reads, repository team list/lookup reads,
   repository tag list/lookup reads, repository tag-protection metadata reads,
-  commit-to-pull-request lookup, release listing with typed filters,
-  release detail/latest/tag lookup, release asset metadata reads, pull requests
-  including reviews,
+  repository branch-protection metadata reads, commit-to-pull-request lookup,
+  release listing with typed filters, release detail/latest/tag lookup,
+  release asset metadata reads, pull requests including reviews,
   pinned pull-request reads, pull-request create/edit writes, diff/patch
   downloads, merge-status checks, merge/update commands, review-comment
   resolution, and notifications through a ZIO client API
@@ -31,8 +31,9 @@ and zio-json.
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
   annotated tag, repository contents, raw/media repository file, repository
   archive, repository collaborator, repository team, repository tag lookup,
-  repository tag-protection metadata, release list/detail, latest-release,
-  release-by-tag, and release asset metadata endpoints,
+  repository tag-protection metadata, repository branch-protection metadata,
+  release list/detail, latest-release, release-by-tag, and release asset
+  metadata endpoints,
   including documented non-2xx response labels, optional query parameters,
   `application/octet-stream`/Swagger `type: file` response shape for raw/media
   downloads, the archive operation's bare `200` success description, path enum
@@ -196,10 +197,11 @@ organization repositories, organization members, issues, issue reactions, issue
 subscribers, issue tracked times, current-user stopwatches, repository-wide
 issue comments, branches, tags, repository collaborators, repository teams,
 releases, pull requests, and notification threads. Commit-status list APIs are
-also paginated streams. Pinned issues, pinned pull requests, and repository
-tag protections are exposed as non-paginated chunks because Gitea returns those
-endpoints as plain list responses without pagination parameters. Release asset
-metadata lists are also non-paginated chunks in the local Swagger contract.
+also paginated streams. Pinned issues, pinned pull requests, repository tag
+protections, and repository branch protections are exposed as non-paginated
+chunks because Gitea returns those endpoints as plain list responses without
+pagination parameters. Release asset metadata lists are also non-paginated
+chunks in the local Swagger contract.
 
 ## Repository Tags
 
@@ -236,6 +238,28 @@ send JSON accept headers, no request body, and no JSON `Content-Type`.
 `TagProtection` preserves the Swagger fields `created_at`, `id`,
 `name_pattern`, `updated_at`, `whitelist_teams`, and `whitelist_usernames`.
 Tag-protection create, edit, and delete operations are not implemented.
+
+## Repository Branch Protections
+
+Repository branch-protection metadata covers the two Swagger-documented read
+operations under `/repos/{owner}/{repo}/branch_protections`:
+
+- `client.branchProtections(owner, repo)` calls `repoListBranchProtection` and
+  returns `IO[GiteaError, Chunk[BranchProtection]]`. The local Swagger contract
+  declares no `page`, `limit`, or other query parameters, so this is a
+  non-paginated chunk rather than a stream.
+- `client.branchProtection(owner, repo, name)` calls
+  `repoGetBranchProtection` and returns `IO[GiteaError, BranchProtection]`.
+
+Both methods are read-only and retryable under `GiteaConfig.maxRetries`. They
+send JSON accept headers, no request body, and no JSON `Content-Type`.
+Slash-containing branch or rule names such as `release/2026` are encoded as
+one `name` path segment in request-layer and facade tests. `BranchProtection`
+preserves the local Swagger response fields for approval whitelists, review
+blockers, deprecated `branch_name`, timestamps, `enable_*` toggles,
+force-push/merge/push allowlists, priority, file patterns, required approvals,
+rule names, and status-check contexts. Branch-protection create, edit, delete,
+and priority write operations are not implemented.
 
 ## Repository Collaborators
 
@@ -592,6 +616,10 @@ client.team(owner = "my-org", repo = "my-repo", team = "release/managers")
 client.tagProtections(owner = "my-org", repo = "my-repo")
 
 client.tagProtection(owner = "my-org", repo = "my-repo", id = 42)
+
+client.branchProtections(owner = "my-org", repo = "my-repo")
+
+client.branchProtection(owner = "my-org", repo = "my-repo", name = "release/2026")
 
 client.releases(owner = "my-org", repo = "my-repo").take(25).runCollect
 

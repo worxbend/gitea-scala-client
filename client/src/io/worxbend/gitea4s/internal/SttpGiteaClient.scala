@@ -30,6 +30,7 @@ import io.worxbend.gitea4s.model.{
   AddTimeOption,
   AnnotatedTag,
   Branch,
+  BranchProtection,
   ChangedFile,
   Comment,
   CombinedStatus,
@@ -278,6 +279,12 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
 
   override def tagProtection(owner: String, repo: String, id: Long): IO[GiteaError, TagProtection] =
     executor.send(GiteaRequests.repoTagProtection(config, owner, repo, id))
+
+  override def branchProtections(owner: String, repo: String): IO[GiteaError, Chunk[BranchProtection]] =
+    executor.send(GiteaRequests.repoBranchProtections(config, owner, repo))
+
+  override def branchProtection(owner: String, repo: String, name: String): IO[GiteaError, BranchProtection] =
+    executor.send(GiteaRequests.repoBranchProtection(config, owner, repo, name))
 
   override def combinedStatusByRef(
       owner: String,

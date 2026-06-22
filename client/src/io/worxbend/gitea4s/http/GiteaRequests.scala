@@ -6,6 +6,7 @@ import io.worxbend.gitea4s.model.{
   AnnotatedTag,
   Auth,
   Branch,
+  BranchProtection,
   ChangedFile,
   Comment,
   Commit,
@@ -224,6 +225,25 @@ object GiteaRequests:
       List("repos", owner, repo, "tag_protections", id.toString),
       Nil,
       GiteaResponseMapper.decodeJson[TagProtection]
+    )
+
+  def repoBranchProtections(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Chunk[BranchProtection]] =
+    get(
+      config,
+      GiteaEndpoints.repoListBranchProtection,
+      List("repos", owner, repo, "branch_protections"),
+      Nil,
+      GiteaResponseMapper.decodeChunk[BranchProtection]
+    )
+
+  def repoBranchProtection(config: GiteaConfig, owner: String, repo: String, name: String)
+      : GiteaRequest[BranchProtection] =
+    get(
+      config,
+      GiteaEndpoints.repoGetBranchProtection,
+      List("repos", owner, repo, "branch_protections", name),
+      Nil,
+      GiteaResponseMapper.decodeJson[BranchProtection]
     )
 
   def repoReleases(

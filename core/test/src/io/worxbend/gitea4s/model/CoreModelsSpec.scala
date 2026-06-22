@@ -36,6 +36,41 @@ object CoreModelsSpec extends ZIOSpecDefault:
       "whitelist_teams",
       "whitelist_usernames"
     ),
+    "BranchProtection" -> Set(
+      "approvals_whitelist_teams",
+      "approvals_whitelist_username",
+      "block_admin_merge_override",
+      "block_on_official_review_requests",
+      "block_on_outdated_branch",
+      "block_on_rejected_reviews",
+      "branch_name",
+      "created_at",
+      "dismiss_stale_approvals",
+      "enable_approvals_whitelist",
+      "enable_force_push",
+      "enable_force_push_allowlist",
+      "enable_merge_whitelist",
+      "enable_push",
+      "enable_push_whitelist",
+      "enable_status_check",
+      "force_push_allowlist_deploy_keys",
+      "force_push_allowlist_teams",
+      "force_push_allowlist_usernames",
+      "ignore_stale_approvals",
+      "merge_whitelist_teams",
+      "merge_whitelist_usernames",
+      "priority",
+      "protected_file_patterns",
+      "push_whitelist_deploy_keys",
+      "push_whitelist_teams",
+      "push_whitelist_usernames",
+      "require_signed_commits",
+      "required_approvals",
+      "rule_name",
+      "status_check_contexts",
+      "unprotected_file_patterns",
+      "updated_at"
+    ),
     "Reference" -> Set("object", "ref", "url"),
     "GitObject" -> Set("sha", "type", "url"),
     "AnnotatedTag" -> Set("message", "object", "sha", "tag", "tagger", "url", "verification"),
@@ -98,6 +133,44 @@ object CoreModelsSpec extends ZIOSpecDefault:
         "updated_at",
         "whitelist_teams",
         "whitelist_usernames"
+      )
+    ),
+    SchemaFieldChecklist(
+      "BranchProtection",
+      Set(
+        "approvals_whitelist_teams",
+        "approvals_whitelist_username",
+        "block_admin_merge_override",
+        "block_on_official_review_requests",
+        "block_on_outdated_branch",
+        "block_on_rejected_reviews",
+        "branch_name",
+        "created_at",
+        "dismiss_stale_approvals",
+        "enable_approvals_whitelist",
+        "enable_force_push",
+        "enable_force_push_allowlist",
+        "enable_merge_whitelist",
+        "enable_push",
+        "enable_push_whitelist",
+        "enable_status_check",
+        "force_push_allowlist_deploy_keys",
+        "force_push_allowlist_teams",
+        "force_push_allowlist_usernames",
+        "ignore_stale_approvals",
+        "merge_whitelist_teams",
+        "merge_whitelist_usernames",
+        "priority",
+        "protected_file_patterns",
+        "push_whitelist_deploy_keys",
+        "push_whitelist_teams",
+        "push_whitelist_usernames",
+        "require_signed_commits",
+        "required_approvals",
+        "rule_name",
+        "status_check_contexts",
+        "unprotected_file_patterns",
+        "updated_at"
       )
     ),
     SchemaFieldChecklist("Reference", Set("object", "ref", "url")),
@@ -185,6 +258,42 @@ object CoreModelsSpec extends ZIOSpecDefault:
         updatedAt = Some(Instant.parse("2026-06-20T11:00:00Z")),
         whitelistTeams = Some(List("release-managers", "maintainers")),
         whitelistUsernames = Some(List("octo", "release-bot"))
+      ).toJson,
+    "BranchProtection" ->
+      BranchProtection(
+        approvalsWhitelistTeams = Some(List("maintainers", "qa")),
+        approvalsWhitelistUsernames = Some(List("octo", "reviewer")),
+        blockAdminMergeOverride = Some(true),
+        blockOnOfficialReviewRequests = Some(true),
+        blockOnOutdatedBranch = Some(true),
+        blockOnRejectedReviews = Some(true),
+        branchName = Some("release/2026"),
+        createdAt = Some(Instant.parse("2026-06-21T10:00:00Z")),
+        dismissStaleApprovals = Some(true),
+        enableApprovalsWhitelist = Some(true),
+        enableForcePush = Some(false),
+        enableForcePushAllowlist = Some(true),
+        enableMergeWhitelist = Some(true),
+        enablePush = Some(true),
+        enablePushWhitelist = Some(true),
+        enableStatusCheck = Some(true),
+        forcePushAllowlistDeployKeys = Some(false),
+        forcePushAllowlistTeams = Some(List("release-managers")),
+        forcePushAllowlistUsernames = Some(List("release-bot")),
+        ignoreStaleApprovals = Some(false),
+        mergeWhitelistTeams = Some(List("maintainers")),
+        mergeWhitelistUsernames = Some(List("octo")),
+        priority = Some(25L),
+        protectedFilePatterns = Some("src/**"),
+        pushWhitelistDeployKeys = Some(true),
+        pushWhitelistTeams = Some(List("maintainers", "qa")),
+        pushWhitelistUsernames = Some(List("octo", "release-bot")),
+        requireSignedCommits = Some(true),
+        requiredApprovals = Some(2L),
+        ruleName = Some("release/*"),
+        statusCheckContexts = Some(List("ci/mill", "security/scan")),
+        unprotectedFilePatterns = Some("docs/**"),
+        updatedAt = Some(Instant.parse("2026-06-21T11:00:00Z"))
       ).toJson,
     "Reference" ->
       Reference(
@@ -601,6 +710,213 @@ object CoreModelsSpec extends ZIOSpecDefault:
           encoded.fromJson[List[TagProtection]] == Right(expected),
           encoded.contains(""""name_pattern":"release/*""""),
           encoded.contains(""""name_pattern":"v*"""")
+        )
+      },
+      test("decodes branch protection response shape from Swagger JSON names") {
+        val json =
+          """{
+            |  "approvals_whitelist_teams": ["maintainers", "qa"],
+            |  "approvals_whitelist_username": ["octo", "reviewer"],
+            |  "block_admin_merge_override": true,
+            |  "block_on_official_review_requests": true,
+            |  "block_on_outdated_branch": true,
+            |  "block_on_rejected_reviews": true,
+            |  "branch_name": "release/2026",
+            |  "created_at": "2026-06-21T10:00:00Z",
+            |  "dismiss_stale_approvals": true,
+            |  "enable_approvals_whitelist": true,
+            |  "enable_force_push": false,
+            |  "enable_force_push_allowlist": true,
+            |  "enable_merge_whitelist": true,
+            |  "enable_push": true,
+            |  "enable_push_whitelist": true,
+            |  "enable_status_check": true,
+            |  "force_push_allowlist_deploy_keys": false,
+            |  "force_push_allowlist_teams": ["release-managers"],
+            |  "force_push_allowlist_usernames": ["release-bot"],
+            |  "ignore_stale_approvals": false,
+            |  "merge_whitelist_teams": ["maintainers"],
+            |  "merge_whitelist_usernames": ["octo"],
+            |  "priority": 25,
+            |  "protected_file_patterns": "src/**",
+            |  "push_whitelist_deploy_keys": true,
+            |  "push_whitelist_teams": ["maintainers", "qa"],
+            |  "push_whitelist_usernames": ["octo", "release-bot"],
+            |  "require_signed_commits": true,
+            |  "required_approvals": 2,
+            |  "rule_name": "release/*",
+            |  "status_check_contexts": ["ci/mill", "security/scan"],
+            |  "unprotected_file_patterns": "docs/**",
+            |  "updated_at": "2026-06-21T11:00:00Z"
+            |}""".stripMargin
+
+        val branchProtection = json.fromJson[BranchProtection]
+
+        assertTrue(
+          branchProtection.map(_.approvalsWhitelistTeams) == Right(Some(List("maintainers", "qa"))),
+          branchProtection.map(_.approvalsWhitelistUsernames) == Right(Some(List("octo", "reviewer"))),
+          branchProtection.map(_.blockAdminMergeOverride) == Right(Some(true)),
+          branchProtection.map(_.blockOnOfficialReviewRequests) == Right(Some(true)),
+          branchProtection.map(_.blockOnOutdatedBranch) == Right(Some(true)),
+          branchProtection.map(_.blockOnRejectedReviews) == Right(Some(true)),
+          branchProtection.map(_.branchName) == Right(Some("release/2026")),
+          branchProtection.map(_.createdAt) == Right(Some(Instant.parse("2026-06-21T10:00:00Z"))),
+          branchProtection.map(_.dismissStaleApprovals) == Right(Some(true)),
+          branchProtection.map(_.enableApprovalsWhitelist) == Right(Some(true)),
+          branchProtection.map(_.enableForcePush) == Right(Some(false)),
+          branchProtection.map(_.enableForcePushAllowlist) == Right(Some(true)),
+          branchProtection.map(_.enableMergeWhitelist) == Right(Some(true)),
+          branchProtection.map(_.enablePush) == Right(Some(true)),
+          branchProtection.map(_.enablePushWhitelist) == Right(Some(true)),
+          branchProtection.map(_.enableStatusCheck) == Right(Some(true)),
+          branchProtection.map(_.forcePushAllowlistDeployKeys) == Right(Some(false)),
+          branchProtection.map(_.forcePushAllowlistTeams) == Right(Some(List("release-managers"))),
+          branchProtection.map(_.forcePushAllowlistUsernames) == Right(Some(List("release-bot"))),
+          branchProtection.map(_.ignoreStaleApprovals) == Right(Some(false)),
+          branchProtection.map(_.mergeWhitelistTeams) == Right(Some(List("maintainers"))),
+          branchProtection.map(_.mergeWhitelistUsernames) == Right(Some(List("octo"))),
+          branchProtection.map(_.priority) == Right(Some(25L)),
+          branchProtection.map(_.protectedFilePatterns) == Right(Some("src/**")),
+          branchProtection.map(_.pushWhitelistDeployKeys) == Right(Some(true)),
+          branchProtection.map(_.pushWhitelistTeams) == Right(Some(List("maintainers", "qa"))),
+          branchProtection.map(_.pushWhitelistUsernames) == Right(Some(List("octo", "release-bot"))),
+          branchProtection.map(_.requireSignedCommits) == Right(Some(true)),
+          branchProtection.map(_.requiredApprovals) == Right(Some(2L)),
+          branchProtection.map(_.ruleName) == Right(Some("release/*")),
+          branchProtection.map(_.statusCheckContexts) == Right(Some(List("ci/mill", "security/scan"))),
+          branchProtection.map(_.unprotectedFilePatterns) == Right(Some("docs/**")),
+          branchProtection.map(_.updatedAt) == Right(Some(Instant.parse("2026-06-21T11:00:00Z")))
+        )
+      },
+      test("round-trips branch protection response shape without losing Swagger JSON names") {
+        val payload =
+          BranchProtection(
+            approvalsWhitelistTeams = Some(List("maintainers", "qa")),
+            approvalsWhitelistUsernames = Some(List("octo", "reviewer")),
+            blockAdminMergeOverride = Some(true),
+            blockOnOfficialReviewRequests = Some(true),
+            blockOnOutdatedBranch = Some(true),
+            blockOnRejectedReviews = Some(true),
+            branchName = Some("release/2026"),
+            createdAt = Some(Instant.parse("2026-06-21T10:00:00Z")),
+            dismissStaleApprovals = Some(true),
+            enableApprovalsWhitelist = Some(true),
+            enableForcePush = Some(false),
+            enableForcePushAllowlist = Some(true),
+            enableMergeWhitelist = Some(true),
+            enablePush = Some(true),
+            enablePushWhitelist = Some(true),
+            enableStatusCheck = Some(true),
+            forcePushAllowlistDeployKeys = Some(false),
+            forcePushAllowlistTeams = Some(List("release-managers")),
+            forcePushAllowlistUsernames = Some(List("release-bot")),
+            ignoreStaleApprovals = Some(false),
+            mergeWhitelistTeams = Some(List("maintainers")),
+            mergeWhitelistUsernames = Some(List("octo")),
+            priority = Some(25L),
+            protectedFilePatterns = Some("src/**"),
+            pushWhitelistDeployKeys = Some(true),
+            pushWhitelistTeams = Some(List("maintainers", "qa")),
+            pushWhitelistUsernames = Some(List("octo", "release-bot")),
+            requireSignedCommits = Some(true),
+            requiredApprovals = Some(2L),
+            ruleName = Some("release/*"),
+            statusCheckContexts = Some(List("ci/mill", "security/scan")),
+            unprotectedFilePatterns = Some("docs/**"),
+            updatedAt = Some(Instant.parse("2026-06-21T11:00:00Z"))
+          )
+        val json = payload.toJson
+
+        assertTrue(
+          json.fromJson[BranchProtection] == Right(payload),
+          json.contains(""""approvals_whitelist_teams":["maintainers","qa"]"""),
+          json.contains(""""approvals_whitelist_username":["octo","reviewer"]"""),
+          json.contains(""""block_admin_merge_override":true"""),
+          json.contains(""""block_on_official_review_requests":true"""),
+          json.contains(""""block_on_outdated_branch":true"""),
+          json.contains(""""block_on_rejected_reviews":true"""),
+          json.contains(""""branch_name":"release/2026""""),
+          json.contains(""""created_at":"2026-06-21T10:00:00Z""""),
+          json.contains(""""dismiss_stale_approvals":true"""),
+          json.contains(""""enable_approvals_whitelist":true"""),
+          json.contains(""""enable_force_push":false"""),
+          json.contains(""""enable_force_push_allowlist":true"""),
+          json.contains(""""enable_merge_whitelist":true"""),
+          json.contains(""""enable_push":true"""),
+          json.contains(""""enable_push_whitelist":true"""),
+          json.contains(""""enable_status_check":true"""),
+          json.contains(""""force_push_allowlist_deploy_keys":false"""),
+          json.contains(""""force_push_allowlist_teams":["release-managers"]"""),
+          json.contains(""""force_push_allowlist_usernames":["release-bot"]"""),
+          json.contains(""""ignore_stale_approvals":false"""),
+          json.contains(""""merge_whitelist_teams":["maintainers"]"""),
+          json.contains(""""merge_whitelist_usernames":["octo"]"""),
+          json.contains(""""priority":25"""),
+          json.contains(""""protected_file_patterns":"src/**""""),
+          json.contains(""""push_whitelist_deploy_keys":true"""),
+          json.contains(""""push_whitelist_teams":["maintainers","qa"]"""),
+          json.contains(""""push_whitelist_usernames":["octo","release-bot"]"""),
+          json.contains(""""require_signed_commits":true"""),
+          json.contains(""""required_approvals":2"""),
+          json.contains(""""rule_name":"release/*""""),
+          json.contains(""""status_check_contexts":["ci/mill","security/scan"]"""),
+          json.contains(""""unprotected_file_patterns":"docs/**""""),
+          json.contains(""""updated_at":"2026-06-21T11:00:00Z""""),
+          !json.contains("approvalsWhitelistTeams"),
+          !json.contains("approvalsWhitelistUsernames"),
+          !json.contains("requiredApprovals"),
+          !json.contains("statusCheckContexts"),
+          BranchProtection(ruleName = Some("main"), requiredApprovals = Some(1L)).toJson ==
+            """{"required_approvals":1,"rule_name":"main"}""",
+          BranchProtection().toJson == "{}"
+        )
+      },
+      test("decodes branch protection list responses as non-paginated BranchProtectionList arrays") {
+        val json =
+          """[
+            |  {
+            |    "rule_name": "main",
+            |    "required_approvals": 2,
+            |    "status_check_contexts": ["ci/mill"]
+            |  },
+            |  {
+            |    "branch_name": "release/2026",
+            |    "priority": 25,
+            |    "enable_push": true
+            |  }
+            |]""".stripMargin
+        val expected =
+          List(
+            BranchProtection(
+              ruleName = Some("main"),
+              requiredApprovals = Some(2L),
+              statusCheckContexts = Some(List("ci/mill"))
+            ),
+            BranchProtection(
+              branchName = Some("release/2026"),
+              priority = Some(25L),
+              enablePush = Some(true)
+            )
+          )
+        val encoded = expected.toJson
+
+        assertTrue(
+          json.fromJson[List[BranchProtection]] == Right(expected),
+          encoded.fromJson[List[BranchProtection]] == Right(expected),
+          encoded.contains(""""rule_name":"main""""),
+          encoded.contains(""""branch_name":"release/2026"""")
+        )
+      },
+      test("keeps branch protection fields optional and ignores unknown response metadata") {
+        val minimalJson =
+          """{
+            |  "rule_name": "main",
+            |  "future_server_field": "ignored"
+            |}""".stripMargin
+
+        assertTrue(
+          "{}".fromJson[BranchProtection] == Right(BranchProtection()),
+          minimalJson.fromJson[BranchProtection] == Right(BranchProtection(ruleName = Some("main")))
         )
       },
       test("decodes topic names response shape") {

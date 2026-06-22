@@ -3988,3 +3988,81 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 M  core/src/io/worxbend/gitea4s/model/GiteaModels.scala
 M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala
+2026-06-22T08:27:30Z iteration 9 started remaining=11219s
+2026-06-22T08:27:30Z iteration 9 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-22T08:27:30Z iteration 9 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-exxswgi6/repo copied_entries=100
+2026-06-22T08:27:30Z iteration 9 ideator phase started count=3
+2026-06-22T08:27:30Z iteration 9 ideator phase concurrency workers=3
+2026-06-22T08:27:30Z iteration 9 ideator 1 role="the pragmatist" started
+2026-06-22T08:27:30Z iteration 9 ideator 2 role="the architect" started
+2026-06-22T08:27:30Z iteration 9 ideator 3 role="the contrarian" started
+2026-06-22T08:27:39Z iteration 9 ideator 2 role="the architect" completed status=0
+2026-06-22T08:27:41Z iteration 9 ideator 1 role="the pragmatist" completed status=0
+2026-06-22T08:27:44Z iteration 9 ideator 3 role="the contrarian" completed status=0
+2026-06-22T08:27:44Z iteration 9 ideator phase completed approaches=3
+2026-06-22T08:27:44Z iteration 9 selector started approaches=3
+2026-06-22T08:27:55Z iteration 9 selector completed status=0
+2026-06-22T08:27:55Z iteration 9 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-exxswgi6/repo
+2026-06-22T08:27:55Z iteration 9 selector rejected alternative role="the architect" approach="Contract-Gated Metadata Slice: treat branch protection as a model-sizing and ABI-risk decision before treating it as the next endpoint expansion, advancing only if the Swagger r..." reason="Strong direction, but selected synthesis makes the ABI-admission decision more explicit and adds live-confidence and documentation honesty as first-class planning criteria."
+2026-06-22T08:27:55Z iteration 9 selector rejected alternative role="the pragmatist" approach="Schema-Size Gate Before Surface Growth: treat branch-protection as a deliberate contract-sizing decision before adding any code, and only proceed if the full Swagger response ca..." reason="Strongest individual approach and largely adopted, but it underemphasizes the need to reject or defer the slice if facade semantics become too policy-heavy."
+2026-06-22T08:27:55Z iteration 9 selector rejected alternative role="the contrarian" approach="Contract-First Skeptic Gate: before adding branch-protection ABI, force the next planner to prove the endpoint is worth exposing by treating Swagger shape, facade ergonomics, an..." reason="Useful skepticism, but as-is it risks slowing a well-established bounded read-only implementation path. The synthesis keeps the skepticism as a gate without making non-growth the default."
+2026-06-22T08:27:55Z iteration 9 selector alternatives persisted count=3
+2026-06-22T08:27:55Z iteration 9 selector structured alternatives persisted count=3
+2026-06-22T08:27:55Z iteration 9 planner started
+2026-06-22T08:28:41Z iteration 9 plan: 6 task(s) in 5 phase(s). The next highest-value slice is the bounded read-only branch-protection metadata fallback. The decomposition gates public ABI through the core model first, then layers request construction/audit, facade wiring, documentation/snapshots, and validation. Only documentation and snapshot refresh are parallel because they touch disjoint files after the code shape is fixed.
+2026-06-22T08:28:41Z iteration 9 phase 1 started parallel=False tasks=1
+2026-06-22T08:32:16Z iteration 9 task t1 ('Model BranchProtection') status=0
+2026-06-22T08:32:16Z iteration 9 phase 2 started parallel=False tasks=1
+2026-06-22T08:35:29Z iteration 9 task t2 ('Add Branch Protection Requests') status=0
+2026-06-22T08:35:29Z iteration 9 phase 3 started parallel=False tasks=1
+2026-06-22T08:38:10Z iteration 9 task t3 ('Wire Facade Methods') status=0
+2026-06-22T08:38:10Z iteration 9 phase 4 started parallel=True tasks=2
+2026-06-22T08:39:55Z iteration 9 task t4 ('Refresh API Snapshots') status=0
+2026-06-22T08:41:03Z iteration 9 task t5 ('Update Docs And Plan') status=0
+2026-06-22T08:41:03Z iteration 9 phase 5 started parallel=False tasks=1
+2026-06-22T08:42:31Z iteration 9 task t6 ('Validate Branch Protection Slice') status=0
+2026-06-22T08:42:31Z iteration 9 reviewer started
+
+## Reviewer Summary - Iteration 9 - 2026-06-22T09:10:00Z
+
+What was done:
+- Inspected every changed file in the repository branch-protection metadata slice: `BranchProtection`, endpoint metadata, request builders, `ReposApi` and `SttpGiteaClient` facade wiring, request/facade/audit/core tests, README, CHANGELOG, PLAN, API snapshots, and telemetry files.
+- Cross-checked `repoListBranchProtection`, `repoGetBranchProtection`, `BranchProtection`, and `BranchProtectionList` against `plugin-redoc-2.yaml`. The list endpoint is a path-only `GET` with no query parameters and no documented non-2xx responses; the detail endpoint is a path-only `GET` with documented `404`; the response model has 33 bounded metadata fields.
+- Ran validation: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, focused `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`, and credential-stripped `it.test`; all passed, with all twelve live probes ignored.
+
+What was found:
+- No functional blocker or production-code regression was found.
+- `BranchProtection` preserves every local Swagger response field, including the singular wire name `approvals_whitelist_username`, timestamps as `Instant`, deprecated `branch_name`, allowlists, status checks, priorities, and file-pattern metadata; codec tests and the schema-field checklist cover the full field set.
+- `GiteaRequests.repoBranchProtections` and `repoBranchProtection` build read-only GETs with safe owner/repo/name path segments, JSON accept/auth/OTP/user-agent headers, no query parameters, no request body, no JSON `Content-Type`, non-paginated list decoding, documented detail `404` propagation, and retry eligibility.
+- `ReposApi.branchProtections` and `ReposApi.branchProtection` are wired through `GiteaRequestExecutor`; branch-protection create, edit, delete, and priority writes remain absent.
+- Swagger audit coverage is correctly test-private and verifies method, path, operation ID, required path parameters, absent query/body surface, success refs, documented non-2xx labels, and retryability.
+- Remaining risk is evidence and ABI size rather than unit correctness: branch-protection live behavior is unobserved without a configured protection-rule fixture, and the wide optional-field case class is now public ABI.
+
+Top improvement proposals:
+- Add fixture-gated branch-protection live confidence only when a repository has a known rule, gated by `GITEA_BRANCH_PROTECTION_NAME`; assert both list membership and detail lookup for that configured name.
+- If live fixtures remain unavailable, avoid another documentation-only cycle and implement the small read-only `repoGetLanguages` fallback with a map-shaped `LanguageStatistics` response, path-only request tests, Swagger audit coverage, and documented `404` propagation.
+- Keep branch-protection create/edit/delete/priority writes out of scope until a deliberate write slice models payloads, non-retryability, and documented `403`/`404`/`422`/`423` failures.
+- Treat future `BranchProtection` changes as compatibility-sensitive because the public case class has many constructor parameters; prefer additive Swagger-driven changes plus snapshot refresh over refactoring churn.
+2026-06-22T08:45:57Z iteration 9 reviewer completed status=0
+2026-06-22T08:45:57Z iteration 9 memory updated
+2026-06-22T08:45:57Z iteration 9 completed validation_status=0
+2026-06-22T08:45:57Z iteration 9 checkpoint started
+2026-06-22T08:45:57Z iteration 9 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  api-snapshot/core.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+M  core/src/io/worxbend/gitea4s/model/GiteaModels.scala
+M  core/test/src/io/worxbend/gitea4s/model/CoreModelsSpec.scala

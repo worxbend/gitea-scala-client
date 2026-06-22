@@ -345,6 +345,17 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     GiteaEndpoints.repoGetTagProtection
   )
 
+  private val branchProtectionRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoBranchProtections(config, "owner", "repo"),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoBranchProtection(config, "owner", "repo", name = "release/2026"),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val collaboratorRequests = List(
     AuditedRequest(
       request = GiteaRequests.repoCollaborators(config, "owner", "repo", page = 2),
@@ -608,6 +619,10 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoGetTagProtection" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoListBranchProtection" -> Nil,
+    "repoGetBranchProtection" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoListCollaborators" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
@@ -732,6 +747,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("repository tag-protection metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = tagProtectionEndpoints.flatMap(auditEndpoint(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository branch-protection metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = branchProtectionRequests.flatMap(auditBranchProtection(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
@@ -965,6 +986,14 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       Option.when(endpoint.operationId == "repoListTeams") {
         compare("request query parameters", audited.request.request.uri.paramsSeq, audited.expectedQueryParams).toList
       }.toList.flatten
+
+    metadataFailures ++ requestFailures.map(message => s"${endpoint.operationId}: $message")
+
+  private def auditBranchProtection(swagger: SwaggerAudit, audited: AuditedRequest): List[String] =
+    val endpoint = audited.request.endpoint
+    val metadataFailures = audit(swagger, audited)
+    val requestFailures =
+      compare("request query parameters", audited.request.request.uri.paramsSeq, audited.expectedQueryParams).toList
 
     metadataFailures ++ requestFailures.map(message => s"${endpoint.operationId}: $message")
 

@@ -208,6 +208,31 @@ object GiteaEndpoints:
       response = "#/responses/TagProtection"
     )
 
+  val repoListBranchProtection: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/branch_protections",
+      operationId = "repoListBranchProtection",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true)
+      ),
+      response = "#/responses/BranchProtectionList"
+    )
+
+  val repoGetBranchProtection: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/branch_protections/{name}",
+      operationId = "repoGetBranchProtection",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("name", "path", required = true)
+      ),
+      response = "#/responses/BranchProtection"
+    )
+
   val repoListReleases: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

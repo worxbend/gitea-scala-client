@@ -14,6 +14,7 @@ import io.worxbend.gitea4s.http.{
 import io.worxbend.gitea4s.model.{
   AnnotatedTag,
   Branch,
+  BranchProtection,
   Commit,
   CommitDiffType,
   CombinedStatus,
@@ -132,6 +133,10 @@ trait ReposApi:
   def tagProtections(owner: String, repo: String): IO[GiteaError, Chunk[TagProtection]]
 
   def tagProtection(owner: String, repo: String, id: Long): IO[GiteaError, TagProtection]
+
+  def branchProtections(owner: String, repo: String): IO[GiteaError, Chunk[BranchProtection]]
+
+  def branchProtection(owner: String, repo: String, name: String): IO[GiteaError, BranchProtection]
 
   def combinedStatusByRef(
       owner: String,

@@ -58,6 +58,24 @@ surface is still being filled out.
   no JSON `Content-Type`, and preserve `created_at`, `id`, `name_pattern`,
   `updated_at`, `whitelist_teams`, and `whitelist_usernames`. Tag-protection
   create/edit/delete write operations are not implemented.
+- Read-only repository branch-protection metadata APIs for
+  `GET /repos/{owner}/{repo}/branch_protections`
+  (`repoListBranchProtection`) and
+  `GET /repos/{owner}/{repo}/branch_protections/{name}`
+  (`repoGetBranchProtection`) with the new `BranchProtection` model,
+  `GiteaRequests.repoBranchProtections`, `GiteaRequests.repoBranchProtection`,
+  `ReposApi.branchProtections`, and `ReposApi.branchProtection`. The list
+  endpoint decodes the Swagger `BranchProtectionList` array as a
+  non-paginated `Chunk[BranchProtection]`, because the local Swagger contract
+  declares no `page`, `limit`, or other query parameters. The detail endpoint
+  encodes slash-containing branch/rule names such as `release/2026` as one
+  path segment. Both methods are read-only retryable, send no request body,
+  send no JSON `Content-Type`, and preserve the broad local Swagger metadata
+  response, including approval whitelists, review blockers, deprecated
+  `branch_name`, timestamps, `enable_*` toggles, force-push/merge/push
+  allowlists, priority, file patterns, required approvals, rule names, and
+  status-check contexts. Branch-protection create/edit/delete/priority write
+  operations are not implemented.
 - Typed commit-status models and repository APIs with `CommitStatus`,
   `CombinedStatus`, `CreateStatusOption`, `CommitStatusState`,
   `CommitStatusListParams`, and request construction for
@@ -274,6 +292,12 @@ surface is still being filled out.
   `TagProtectionList` and `TagProtection`, no documented non-2xx responses for
   the list endpoint, and documented `404` response status/ref labels for the
   detail endpoint.
+- Repository branch-protection endpoint metadata audit coverage for operation
+  IDs `repoListBranchProtection` and `repoGetBranchProtection`, methods,
+  paths, required `owner`/`repo`/`name` path parameters, exact absence of query
+  parameters, absence of request bodies, read-only retryability, success
+  response refs `BranchProtectionList` and `BranchProtection`, and documented
+  non-2xx response status/ref labels kept private to endpoint audit tests.
 - Release asset endpoint metadata audit coverage for operation IDs
   `repoListReleaseAttachments` and `repoGetReleaseAttachment`, methods, paths,
   required `owner`/`repo`/`id`/`attachment_id` path parameters, no query
@@ -419,6 +443,8 @@ surface is still being filled out.
   response models: `ContentsResponse` and nested `FileLinksResponse`.
 - Test-side schema-field checklist coverage for Swagger repository
   tag-protection metadata through the public `TagProtection` model.
+- Test-side schema-field checklist coverage for Swagger repository
+  branch-protection metadata through the public `BranchProtection` model.
 - Test-side schema-field checklist coverage for Swagger release attachment
   metadata through the public `ReleaseAsset` model.
 - Local Maven publishing metadata, source jars, and javadoc jars.

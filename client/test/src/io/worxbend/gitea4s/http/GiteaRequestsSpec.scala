@@ -6,6 +6,7 @@ import io.worxbend.gitea4s.internal.GiteaRequestExecutor
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
   Auth,
+  BranchProtection,
   ChangedFile,
   CommitDiffType,
   CreateIssue,
@@ -359,6 +360,91 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
               createdAt = Some(Instant.parse("2026-06-01T00:00:00Z")),
               id = Some(7L),
               namePattern = Some("v*"),
+              updatedAt = Some(Instant.parse("2026-06-02T00:00:00Z"))
+            )
+          )
+        )
+      },
+      test("builds and decodes non-paginated repository branch-protection list request") {
+        val built = GiteaRequests.repoBranchProtections(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """[{"rule_name":"main","required_approvals":2,"status_check_contexts":["ci/test"]}]"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListBranchProtection,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoListBranchProtection",
+          endpoint.path == "/repos/{owner}/{repo}/branch_protections",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.response == "#/responses/BranchProtectionList",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/branch_protections",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "branch_protections"),
+          request.uri.paramsMap.isEmpty,
+          !request.uri.paramsMap.contains("page"),
+          !request.uri.paramsMap.contains("limit"),
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            Chunk(
+              BranchProtection(
+                ruleName = Some("main"),
+                requiredApprovals = Some(2L),
+                statusCheckContexts = Some(List("ci/test"))
+              )
+            )
+          )
+        )
+      },
+      test("builds and decodes repository branch-protection detail request with slash-containing name") {
+        val built = GiteaRequests.repoBranchProtection(config, "worx bend", "gitea/scala", "release/2026")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust(
+              """{"rule_name":"release/2026","enable_push":true,"created_at":"2026-06-01T00:00:00Z","updated_at":"2026-06-02T00:00:00Z"}"""
+            )
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetBranchProtection,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetBranchProtection",
+          endpoint.path == "/repos/{owner}/{repo}/branch_protections/{name}",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "name"),
+          endpoint.response == "#/responses/BranchProtection",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/branch_protections/release%2F2026",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "branch_protections", "release/2026"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            BranchProtection(
+              ruleName = Some("release/2026"),
+              enablePush = Some(true),
+              createdAt = Some(Instant.parse("2026-06-01T00:00:00Z")),
               updatedAt = Some(Instant.parse("2026-06-02T00:00:00Z"))
             )
           )
@@ -3963,6 +4049,15 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           decodeWith(protection, backend) == Left(GiteaError.NotFound("missing tag protection", body))
+        )
+      },
+      test("maps repository branch-protection documented not-found responses") {
+        val body = """{"message":"missing branch protection"}"""
+        val backend = BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val protection = GiteaRequests.repoBranchProtection(config, "owner", "repo", "release/2026")
+
+        assertTrue(
+          decodeWith(protection, backend) == Left(GiteaError.NotFound("missing branch protection", body))
         )
       },
       test("maps repository release not-found responses") {

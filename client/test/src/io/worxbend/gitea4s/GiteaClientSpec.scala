@@ -30,6 +30,7 @@ import io.worxbend.gitea4s.internal.GiteaRequestExecutor
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
   Auth,
+  BranchProtection,
   CommitDiffType,
   CommitStatusState,
   CreateIssue,
@@ -2128,6 +2129,120 @@ object GiteaClientSpec extends ZIOSpecDefault:
           protections.headOption.flatMap(_.namePattern).contains("v*"),
           protection.id.contains(7L),
           protection.namePattern.contains("v*")
+        )
+      },
+      test("loads repository branch protections as a non-paginated list through the ReposApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "branch_protections")) &&
+              request.uri.paramsMap.isEmpty &&
+              !request.uri.paramsMap.contains("page") &&
+              !request.uri.paramsMap.contains("limit") &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("Content-Type").isEmpty
+          }.thenRespond(
+            ResponseStub.adjust(
+              """[{"rule_name":"main","required_approvals":2,"status_check_contexts":["ci/test"]}]"""
+            )
+          )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.branchProtections("alice", "api"))(
+          Assertion.equalTo(
+            Chunk(
+              BranchProtection(
+                ruleName = Some("main"),
+                requiredApprovals = Some(2L),
+                statusCheckContexts = Some(List("ci/test"))
+              )
+            )
+          )
+        )
+      },
+      test("loads a repository branch protection with a slash-containing name through the ReposApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/branch_protections/release%2F2026" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "branch_protections",
+                "release/2026"
+              ) &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Content-Type").isEmpty
+          }.thenRespond(
+            ResponseStub.adjust(
+              """{"rule_name":"release/2026","enable_push":true,"created_at":"2026-06-01T00:00:00Z","updated_at":"2026-06-02T00:00:00Z"}"""
+            )
+          )
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.branchProtection("space owner", "repo/slash", "release/2026"))(
+          Assertion.equalTo(
+            BranchProtection(
+              ruleName = Some("release/2026"),
+              enablePush = Some(true),
+              createdAt = Some(Instant.parse("2026-06-01T00:00:00Z")),
+              updatedAt = Some(Instant.parse("2026-06-02T00:00:00Z"))
+            )
+          )
+        )
+      },
+      test("propagates repository branch-protection documented not-found errors through the facade") {
+        val body = """{"message":"branch protection not found"}"""
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "branch_protections", "release/2026"))
+          }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.branchProtection("alice", "api", "release/2026").either)(
+          Assertion.equalTo(Left(GiteaError.NotFound("branch protection not found", body)))
+        )
+      },
+      test("retries repository branch-protection requests because they are read-only GETs") {
+        val listBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "branch_protections")) &&
+              request.uri.paramsMap.isEmpty
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""[{"rule_name":"main","required_approvals":2}]""")
+          )
+        val detailBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "branch_protections", "release/2026")) &&
+              request.uri.paramsMap.isEmpty
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""{"rule_name":"release/2026","required_approvals":1}""")
+          )
+        val listClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), listBackend)
+        val detailClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), detailBackend)
+
+        for
+          listFiber <- listClient.branchProtections("alice", "api").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          protections <- listFiber.join
+          detailFiber <- detailClient.branchProtection("alice", "api", "release/2026").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          protection <- detailFiber.join
+        yield assertTrue(
+          protections.map(_.ruleName) == Chunk(Some("main")),
+          protections.headOption.flatMap(_.requiredApprovals).contains(2L),
+          protection.ruleName.contains("release/2026"),
+          protection.requiredApprovals.contains(1L)
         )
       },
       test("loads and streams commit statuses through the ReposApi methods") {
