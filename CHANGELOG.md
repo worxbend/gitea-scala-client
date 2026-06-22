@@ -347,6 +347,11 @@ surface is still being filled out.
   `GITEA_RELEASE_ASSET_ID` is configured by asserting that the listed release
   assets include the configured id; without that variable, the probe remains a
   read-only endpoint check that can accept an empty list.
+- Opt-in latest-release live confidence probe for the existing
+  `client.latestRelease(owner, repo)` facade. The probe runs only when
+  `GITEA_LATEST_RELEASE_TAG` is configured alongside the required live
+  repository credentials, and asserts that the returned tag matches the
+  repository's actual latest non-draft, non-prerelease release tag.
 - Test-side schema-field checklist coverage for recent Swagger Git response
   models: `Reference`, `GitObject`, `AnnotatedTag`, `AnnotatedTagObject`, and
   `GitBlobResponse`.

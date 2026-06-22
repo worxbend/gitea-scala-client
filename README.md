@@ -993,19 +993,20 @@ GITEA_ARCHIVE_PATHS=src,docs/readme.md \
 ./mill it.test
 ```
 
-Release metadata APIs are read-only and metadata-only. The facade surface also
-includes `client.latestRelease(owner, repo)`, while the current live probes
-call `client.release(owner, repo, id)`,
-`client.releaseByTag(owner, repo, tag)`,
-`client.releaseAssets(owner, repo, releaseId)`, and
-`client.releaseAsset(owner, repo, releaseId, assetId)`. In addition to
-`GITEA_URL`, `GITEA_TOKEN`, `GITEA_OWNER`, and `GITEA_REPO`, configure
-`GITEA_RELEASE_ID` for release detail and asset-list probes,
-`GITEA_RELEASE_TAG` for the release-by-tag probe, and both
-`GITEA_RELEASE_ID` and `GITEA_RELEASE_ASSET_ID` for the single asset lookup.
-When `GITEA_RELEASE_ASSET_ID` is set, the asset-list probe also checks that
-the configured asset id appears in `client.releaseAssets(owner, repo,
-releaseId)`:
+Release metadata APIs are read-only and metadata-only. The live probes call
+`client.release(owner, repo, id)`, `client.releaseByTag(owner, repo, tag)`,
+`client.releaseAssets(owner, repo, releaseId)`,
+`client.releaseAsset(owner, repo, releaseId, assetId)`, and
+`client.latestRelease(owner, repo)`. In addition to `GITEA_URL`,
+`GITEA_TOKEN`, `GITEA_OWNER`, and `GITEA_REPO`, configure `GITEA_RELEASE_ID`
+for release detail and asset-list probes, `GITEA_RELEASE_TAG` for the
+release-by-tag probe, and both `GITEA_RELEASE_ID` and
+`GITEA_RELEASE_ASSET_ID` for the single asset lookup. `GITEA_LATEST_RELEASE_TAG`
+enables the latest-release probe and must name the repository's actual latest
+non-draft, non-prerelease release tag; it is the only release variable that
+asserts latest-release semantics. When `GITEA_RELEASE_ASSET_ID` is set, the
+asset-list probe also checks that the configured asset id appears in
+`client.releaseAssets(owner, repo, releaseId)`:
 
 ```bash
 GITEA_URL=https://gitea.example \
@@ -1014,6 +1015,7 @@ GITEA_OWNER=my-org \
 GITEA_REPO=my-repo \
 GITEA_RELEASE_ID=7 \
 GITEA_RELEASE_TAG=v1.0.0 \
+GITEA_LATEST_RELEASE_TAG=v1.2.3 \
 GITEA_RELEASE_ASSET_ID=42 \
 ./mill it.test
 ```
@@ -1022,7 +1024,7 @@ For credential-stripped integration validation, unset the full live-variable
 set so `it.test` reports the probes as ignored and makes no network calls:
 
 ```bash
-env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD -u GITEA_OWNER -u GITEA_REPO -u GITEA_REF -u GITEA_ANNOTATED_TAG_SHA -u GITEA_CONTENTS_FILEPATH -u GITEA_CONTENTS_REF -u GITEA_RAW_FILEPATH -u GITEA_RAW_REF -u GITEA_ARCHIVE -u GITEA_ARCHIVE_PATHS -u GITEA_RELEASE_ID -u GITEA_RELEASE_TAG -u GITEA_RELEASE_ASSET_ID ./mill --no-server it.test
+env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD -u GITEA_OWNER -u GITEA_REPO -u GITEA_REF -u GITEA_ANNOTATED_TAG_SHA -u GITEA_CONTENTS_FILEPATH -u GITEA_CONTENTS_REF -u GITEA_RAW_FILEPATH -u GITEA_RAW_REF -u GITEA_ARCHIVE -u GITEA_ARCHIVE_PATHS -u GITEA_RELEASE_ID -u GITEA_RELEASE_TAG -u GITEA_LATEST_RELEASE_TAG -u GITEA_RELEASE_ASSET_ID ./mill --no-server it.test
 ```
 
 ## Mill Commands

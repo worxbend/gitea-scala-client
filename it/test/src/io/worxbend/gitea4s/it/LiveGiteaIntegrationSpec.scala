@@ -119,6 +119,18 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
         TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
         TestAspect.ifEnv(Env.releaseTag)(nonEmptyValue),
+      test("loads the configured latest release through the live backend") {
+        withLiveClient { client =>
+          for
+            owner <- liveEnv(Env.owner)
+            repo <- liveEnv(Env.repo)
+            expectedTag <- liveEnv(Env.latestReleaseTag)
+            release <- client.latestRelease(owner, repo)
+          yield assertTrue(release.tagName.contains(expectedTag))
+        }
+      } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
+        TestAspect.ifEnv(Env.latestReleaseTag)(nonEmptyValue),
       test("loads configured release asset metadata list through the live backend") {
         withLiveClient { client =>
           for
@@ -207,4 +219,5 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
     val archivePathsDelimiter = ","
     val releaseId = "GITEA_RELEASE_ID"
     val releaseTag = "GITEA_RELEASE_TAG"
+    val latestReleaseTag = "GITEA_LATEST_RELEASE_TAG"
     val releaseAssetId = "GITEA_RELEASE_ASSET_ID"
