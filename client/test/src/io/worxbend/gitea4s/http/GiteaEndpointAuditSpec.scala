@@ -305,7 +305,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   private val releaseRequests = List(
     AuditedRequest(
-      request = GiteaRequests.repoReleases(config, "owner", "repo", page = 2),
+      request = GiteaRequests.repoReleases(
+        config,
+        "owner",
+        "repo",
+        ReleaseListParams(draft = Some(true), preRelease = Some(false), page = Some(2), limit = Some(25))
+      ),
       noBodyLifecyclePost = false
     ),
     AuditedRequest(
@@ -313,6 +318,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       noBodyLifecyclePost = false
     )
   )
+
+  private val releaseListOptionalQueryParameterNames =
+    List("draft", "pre-release", "page", "limit")
 
   private val releaseByTagRequests = List(
     AuditedRequest(
@@ -628,7 +636,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       },
       test("repository release list/detail metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
-        val failures = releaseRequests.flatMap(audit(swagger, _))
+        val failures = releaseRequests.flatMap(auditRelease(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
@@ -825,6 +833,35 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           ).flatten.map(message => s"${endpoint.operationId}: $message")
 
     metadataFailures ++ requestFailures
+
+  private def auditRelease(swagger: SwaggerAudit, audited: AuditedRequest): List[String] =
+    val endpoint = audited.request.endpoint
+    val metadataFailures = audit(swagger, audited)
+    val releaseListQueryFailures =
+      Option.when(endpoint.operationId == "repoListReleases") {
+        swagger.operation(endpoint.path, endpoint.method) match
+          case Left(message) => List(s"${endpoint.operationId}: $message")
+          case Right(operation) =>
+            val endpointOptionalQueryParameterNames =
+              endpoint.parameters.collect {
+                case GiteaParameter(name, "query", false) => name
+              }
+
+            List(
+              compare(
+                "release-list documented optional query parameters",
+                operation.optionalQueryParameters,
+                releaseListOptionalQueryParameterNames
+              ),
+              compare(
+                "release-list endpoint optional query parameters",
+                endpointOptionalQueryParameterNames,
+                releaseListOptionalQueryParameterNames
+              )
+            ).flatten.map(message => s"${endpoint.operationId}: $message")
+      }.toList.flatten
+
+    metadataFailures ++ releaseListQueryFailures
 
   private def compare[A](label: String, actual: A, expected: A): Option[String] =
     Option.when(actual != expected)(s"$label actual=$actual expected=$expected")

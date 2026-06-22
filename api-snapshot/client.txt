@@ -530,7 +530,9 @@ public interface io.worxbend.gitea4s.api.PullRequestsApi {
 
 ## io.worxbend.gitea4s.api.ReleasesApi
 public interface io.worxbend.gitea4s.api.ReleasesApi {
-  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> releases(java.lang.String, java.lang.String);
+  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> releases(java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ReleaseListParams);
+  public static io.worxbend.gitea4s.http.ReleaseListParams releases$default$3$(io.worxbend.gitea4s.api.ReleasesApi);
+  public default io.worxbend.gitea4s.http.ReleaseListParams releases$default$3();
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> release(java.lang.String, java.lang.String, long);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> releaseByTag(java.lang.String, java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.ReleaseAsset>> releaseAssets(java.lang.String, java.lang.String, long);
@@ -1360,6 +1362,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.ReleaseAsset>> repoReleaseAssets(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Release> repoReleaseByTag(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Release>> repoReleases(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Release>> repoReleases(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ReleaseListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Commit> repoSingleCommit(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.SingleCommitParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.CommitStatus>> repoStatuses(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CommitStatusListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.CommitStatus>> repoStatusesByRef(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.CommitStatusListParams);
@@ -1397,7 +1400,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.ContentsParams repoContentsList$default$4();
   public static io.worxbend.gitea4s.http.RepositoryCommentListParams repoIssueComments$default$4();
   public static io.worxbend.gitea4s.http.PullRequestListParams repoPullRequests$default$4();
-  public static int repoReleases$default$4();
+  public static io.worxbend.gitea4s.http.ReleaseListParams repoReleases$default$4();
   public static int repoTags$default$4();
   public static int repoTopics$default$4();
   public static io.worxbend.gitea4s.http.GitTreeParams gitTree$default$5();
@@ -1449,8 +1452,9 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public int repoBranches$default$4();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Tag>> repoTags(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
   public int repoTags$default$4();
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Release>> repoReleases(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ReleaseListParams);
+  public io.worxbend.gitea4s.http.ReleaseListParams repoReleases$default$4();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Release>> repoReleases(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, int);
-  public int repoReleases$default$4();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Release> repoRelease(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Release> repoReleaseByTag(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.ReleaseAsset>> repoReleaseAssets(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
@@ -2269,6 +2273,57 @@ public final class io.worxbend.gitea4s.http.PullRequestUpdateStyle$ implements s
   public io.worxbend.gitea4s.http.PullRequestUpdateStyle fromOrdinal(int);
   public int ordinal(io.worxbend.gitea4s.http.PullRequestUpdateStyle);
   public int ordinal(java.lang.Object);
+}
+
+## io.worxbend.gitea4s.http.ReleaseListParams
+public final class io.worxbend.gitea4s.http.ReleaseListParams implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.http.ReleaseListParams(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.Object> draft();
+  public scala.Option<java.lang.Object> preRelease();
+  public scala.Option<java.lang.Object> page();
+  public scala.Option<java.lang.Object> limit();
+  public io.worxbend.gitea4s.http.ReleaseListParams copy(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.lang.Object> copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.Object> copy$default$3();
+  public scala.Option<java.lang.Object> copy$default$4();
+  public scala.Option<java.lang.Object> _1();
+  public scala.Option<java.lang.Object> _2();
+  public scala.Option<java.lang.Object> _3();
+  public scala.Option<java.lang.Object> _4();
+  public static io.worxbend.gitea4s.http.ReleaseListParams apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.http.ReleaseListParams default();
+  public static io.worxbend.gitea4s.http.ReleaseListParams fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.http.ReleaseListParams unapply(io.worxbend.gitea4s.http.ReleaseListParams);
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$4();
+}
+
+## io.worxbend.gitea4s.http.ReleaseListParams$
+public final class io.worxbend.gitea4s.http.ReleaseListParams$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.http.ReleaseListParams$ MODULE$;
+  public static {};
+  public io.worxbend.gitea4s.http.ReleaseListParams apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.http.ReleaseListParams unapply(io.worxbend.gitea4s.http.ReleaseListParams);
+  public scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public io.worxbend.gitea4s.http.ReleaseListParams default();
+  public io.worxbend.gitea4s.http.ReleaseListParams fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
 }
 
 ## io.worxbend.gitea4s.http.RepoListParams

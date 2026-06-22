@@ -20,6 +20,7 @@ import io.worxbend.gitea4s.http.{
   PullRequestFilesParams,
   PullRequestListParams,
   PullRequestUpdateStyle,
+  ReleaseListParams,
   RepoListParams,
   RepositoryCommentListParams,
   SingleCommitParams,
@@ -279,9 +280,13 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   ): IO[GiteaError, CommitStatus] =
     executor.send(GiteaRequests.createStatus(config, owner, repo, sha, body))
 
-  override def releases(owner: String, repo: String): ZStream[Any, GiteaError, Release] =
+  override def releases(
+      owner: String,
+      repo: String,
+      params: ReleaseListParams = ReleaseListParams.default
+  ): ZStream[Any, GiteaError, Release] =
     Pagination.paginated { page =>
-      executor.send(GiteaRequests.repoReleases(config, owner, repo, page))
+      executor.send(GiteaRequests.repoReleases(config, owner, repo, params.copy(page = Some(page))))
     }
 
   override def release(owner: String, repo: String, id: Long): IO[GiteaError, Release] =

@@ -254,6 +254,44 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.uri.paramsMap.get("limit").contains("25")
         )
       },
+      test("forwards release-list filters and custom pagination query parameters") {
+        val draftPreRelease =
+          GiteaRequests.repoReleases(
+            config,
+            "worx bend",
+            "gitea/scala",
+            ReleaseListParams(draft = Some(true), preRelease = Some(true), page = Some(2), limit = Some(10))
+          ).request
+        val publishedStable =
+          GiteaRequests.repoReleases(
+            config,
+            "worx bend",
+            "gitea/scala",
+            ReleaseListParams(draft = Some(false), preRelease = Some(false), page = Some(3), limit = Some(11))
+          ).request
+
+        assertTrue(
+          draftPreRelease.uri.paramsMap.get("draft").contains("true"),
+          draftPreRelease.uri.paramsMap.get("pre-release").contains("true"),
+          draftPreRelease.uri.paramsMap.get("page").contains("2"),
+          draftPreRelease.uri.paramsMap.get("limit").contains("10"),
+          publishedStable.uri.paramsMap.get("draft").contains("false"),
+          publishedStable.uri.paramsMap.get("pre-release").contains("false"),
+          publishedStable.uri.paramsMap.get("page").contains("3"),
+          publishedStable.uri.paramsMap.get("limit").contains("11")
+        )
+      },
+      test("omits optional release-list filters by default") {
+        val request =
+          GiteaRequests.repoReleases(config, "worx bend", "gitea/scala", ReleaseListParams.default).request
+
+        assertTrue(
+          !request.uri.paramsMap.contains("draft"),
+          !request.uri.paramsMap.contains("pre-release"),
+          request.uri.paramsMap.get("page").contains("1"),
+          request.uri.paramsMap.get("limit").contains("25")
+        )
+      },
       test("builds schema-traceable get repository release request") {
         val built = GiteaRequests.repoRelease(config, "worx bend", "gitea/scala", 77)
         val endpoint = built.endpoint

@@ -2881,3 +2881,78 @@ M  README.md
 M  SCORES.jsonl
 M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  it/test/src/io/worxbend/gitea4s/it/LiveGiteaIntegrationSpec.scala
+2026-06-21T23:50:24Z iteration 6 started remaining=12579s
+2026-06-21T23:50:24Z iteration 6 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-21T23:50:24Z iteration 6 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-52fme8ct/repo copied_entries=99
+2026-06-21T23:50:24Z iteration 6 ideator phase started count=3
+2026-06-21T23:50:24Z iteration 6 ideator phase concurrency workers=3
+2026-06-21T23:50:24Z iteration 6 ideator 1 role="the pragmatist" started
+2026-06-21T23:50:24Z iteration 6 ideator 2 role="the architect" started
+2026-06-21T23:50:24Z iteration 6 ideator 3 role="the contrarian" started
+2026-06-21T23:50:33Z iteration 6 ideator 3 role="the contrarian" completed status=0
+2026-06-21T23:50:33Z iteration 6 ideator 2 role="the architect" completed status=0
+2026-06-21T23:50:33Z iteration 6 ideator 1 role="the pragmatist" completed status=0
+2026-06-21T23:50:33Z iteration 6 ideator phase completed approaches=3
+2026-06-21T23:50:33Z iteration 6 selector started approaches=3
+2026-06-21T23:50:44Z iteration 6 selector completed status=0
+2026-06-21T23:50:44Z iteration 6 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-52fme8ct/repo
+2026-06-21T23:50:44Z iteration 6 selector rejected alternative role="the contrarian" approach="Release Surface Freeze: stop expanding endpoints briefly and harden the existing release metadata boundary as a coherent mini-domain before adding `latest` or any write/upload A..." reason="The release-surface stabilization instinct is useful, but a broad freeze is too process-heavy for the immediate continuation. The context already identifies a concrete incomplete contract: release list filters."
+2026-06-21T23:50:44Z iteration 6 selector rejected alternative role="the architect" approach="Contract-First Release Surface Consolidation: finish the release read API by treating Swagger audit, facade ergonomics, live probe confidence, documentation, and API snapshot co..." reason="The contract-first framing is strong and largely selected, but as stated it is a bit broad. Planning should narrow it to `ReleaseListParams` first so the next iteration remains bounded and verifiable."
+2026-06-21T23:50:44Z iteration 6 selector rejected alternative role="the pragmatist" approach="Release-read ergonomics first: finish the already-audited release list contract by making filters explicit while preserving the current facade shape, then use that slice as a sm..." reason="This is the closest fit, but it benefits from the architect's explicit contract-pass framing so docs, audits, snapshots, and live-probe confidence stay first-class rather than incidental cleanup."
+2026-06-21T23:50:44Z iteration 6 selector alternatives persisted count=3
+2026-06-21T23:50:44Z iteration 6 selector structured alternatives persisted count=3
+2026-06-21T23:50:44Z iteration 6 planner started
+2026-06-21T23:51:22Z iteration 6 plan: 6 task(s) in 3 phase(s). The slice is centered on closing the known `repoListReleases` query-parameter gap without expanding into release writes, multipart upload, delete-by-tag, or binary asset downloads. Code wiring must land first; tests, audits, and the live probe can then proceed independently because they touch separate files. Documentation and compatibility snapshot work comes last because it should reflect the final public API and validation status.
+2026-06-21T23:51:22Z iteration 6 phase 1 started parallel=False tasks=1
+2026-06-21T23:54:07Z iteration 6 task t1 ('Add release-list parameters') status=0
+2026-06-21T23:54:07Z iteration 6 phase 2 started parallel=True tasks=3
+2026-06-21T23:55:18Z iteration 6 task t4 ('Improve release asset live probe') status=0
+2026-06-21T23:56:04Z iteration 6 task t3 ('Harden release endpoint audit') status=0
+2026-06-21T23:56:29Z iteration 6 task t2 ('Test release-list params') status=0
+2026-06-21T23:56:29Z iteration 6 phase 3 started parallel=True tasks=2
+2026-06-21T23:58:51Z iteration 6 task t6 ('Refresh API snapshot and validate') status=0
+2026-06-22T00:00:10Z iteration 6 task t5 ('Update docs and plan') status=0
+2026-06-22T00:00:10Z iteration 6 reviewer started
+
+## Reviewer Summary - Iteration 6 - 2026-06-22T03:28:00+03:00
+
+What was done:
+- Inspected every changed file in the release-list filtering slice: `ReleaseListParams`, release request/facade wiring, request/client/audit tests, live integration probe changes, README, CHANGELOG, PLAN, API snapshot, and telemetry files.
+- Cross-checked `repoListReleases` against `plugin-redoc-2.yaml`; the local Swagger operation documents `draft`, `pre-release`, `page`, and `limit` optional query parameters, `#/responses/ReleaseList` success, and documented `404`.
+- Ran focused validation after reviewer plan/log/memory updates: `git diff --check`, `./mill --no-server core.test client.test compatibility.check`, focused request/audit/facade specs, and credential-stripped `it.test`.
+
+What was found:
+- No functional blocker was found in low-level request construction or the normal streaming facade path.
+- `ReleaseListParams` models `draft`, `preRelease`/wire `pre-release`, `page`, and `limit`; `GiteaRequests.repoReleases` honors them, preserves default filter omission, and decodes paginated release lists with the selected page size.
+- `ReleasesApi.releases(owner, repo, params = ReleaseListParams.default)` keeps Scala call sites source-compatible and forwards filter/limit values through `SttpGiteaClient`.
+- Request, facade, audit, retry, and 404 tests cover the new release-list filtering behavior; the audit checks both Swagger optional query names and local endpoint metadata names.
+- The live release asset-list probe is stronger when `GITEA_RELEASE_ASSET_ID` is set because it now asserts list membership for the configured asset id.
+- Main gap: `ReleaseListParams.page` has split semantics. The low-level builder honors it, but the high-level stream overwrites it with pages from `Pagination.paginated`; the README example currently passes `page = Some(1)`, which can imply caller-controlled stream start-page behavior that the facade does not provide.
+- The public ABI changed from a two-argument `ReleasesApi.releases` method to a three-argument method with Scala default accessors. This is intentional for the current pre-1.0 surface but should be understood as snapshot churn, not binary compatibility preservation.
+
+Top improvement proposals:
+- Before adding `repoGetLatestRelease`, reconcile release stream pagination semantics: either document/test `page` as low-level-only for streams, or add deliberate start-page behavior to `ReleasesApi.releases`.
+- Update README examples so release streaming examples use `draft`, `preRelease`, and `limit` unless start-page semantics are implemented.
+- Add `repoGetLatestRelease` next as a narrow read-only release metadata endpoint with no query/body surface, `Release` decoding, 404 propagation, retry coverage, and Swagger-backed audit registration.
+- Add latest-release live confidence only with an explicit environment contract such as `GITEA_LATEST_RELEASE_TAG`; do not infer latest correctness from arbitrary configured release IDs.
+2026-06-22T00:04:28Z iteration 6 reviewer completed status=0
+2026-06-22T00:04:28Z iteration 6 memory updated
+2026-06-22T00:04:28Z iteration 6 completed validation_status=0
+2026-06-22T00:04:28Z iteration 6 checkpoint started
+2026-06-22T00:04:28Z iteration 6 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  client/src/io/worxbend/gitea4s/api/ReleasesApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+A  client/src/io/worxbend/gitea4s/http/ReleaseListParams.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+M  it/test/src/io/worxbend/gitea4s/it/LiveGiteaIntegrationSpec.scala

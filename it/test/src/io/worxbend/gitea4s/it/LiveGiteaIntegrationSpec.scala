@@ -125,8 +125,11 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             releaseId <- liveEnvLong(Env.releaseId)
+            expectedAssetId <- optionalLiveEnvLong(Env.releaseAssetId)
             assets <- client.releaseAssets(owner, repo, releaseId)
-          yield assertTrue(assets.forall(_.id.forall(_ > 0L)))
+          yield expectedAssetId match
+            case Some(assetId) => assertTrue(assets.exists(_.id.contains(assetId)))
+            case None          => assertTrue(assets.forall(_.id.forall(_ > 0L)))
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
         TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
@@ -169,6 +172,12 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
     liveEnv(name).flatMap { value =>
       ZIO.fromOption(value.toLongOption).orElseFail(s"$name must be a whole number for this live test")
     }
+
+  private def optionalLiveEnvLong(name: String): ZIO[Any, String, Option[Long]] =
+    nonBlank(sys.env.toMap, name) match
+      case Some(value) =>
+        ZIO.fromOption(value.toLongOption).map(Some(_)).orElseFail(s"$name must be a whole number for this live test")
+      case None => ZIO.succeed(None)
 
   private def nonBlank(env: Map[String, String], name: String): Option[String] =
     env.get(name).map(_.trim).filter(_.nonEmpty)

@@ -146,6 +146,14 @@ surface is still being filled out.
   metadata lookups. This adds validation coverage only; it does not add release
   create/edit/delete, release asset upload/edit/delete, or asset binary
   download APIs.
+- Typed release-list filtering for
+  `GET /repos/{owner}/{repo}/releases` (`repoListReleases`) with
+  `ReleaseListParams`, `GiteaRequests.repoReleases`, and
+  `ReleasesApi.releases(owner, repo, params)`. The read-only stream keeps
+  existing `client.releases(owner, repo)` call sites source-compatible through
+  `ReleaseListParams.default`, omits absent filters by default, preserves the
+  wire query name `pre-release` through the Scala field `preRelease`, and
+  forwards explicit `draft`, `pre-release`, `page`, and `limit` controls.
 - Typed commit diff/patch downloads for
   `GET /repos/{owner}/{repo}/git/commits/{sha}.{diffType}` with
   `CommitDiffType.diff`, `CommitDiffType.patch`,
@@ -322,6 +330,10 @@ surface is still being filled out.
   asset probe requires both `GITEA_RELEASE_ID` and
   `GITEA_RELEASE_ASSET_ID`, in addition to non-empty `GITEA_URL`,
   `GITEA_TOKEN`, `GITEA_OWNER`, and `GITEA_REPO`.
+- Release asset-list live probe confidence now improves when
+  `GITEA_RELEASE_ASSET_ID` is configured by asserting that the listed release
+  assets include the configured id; without that variable, the probe remains a
+  read-only endpoint check that can accept an empty list.
 - Test-side schema-field checklist coverage for recent Swagger Git response
   models: `Reference`, `GitObject`, `AnnotatedTag`, `AnnotatedTagObject`, and
   `GitBlobResponse`.
@@ -365,3 +377,10 @@ surface is still being filled out.
   `GITEA_RELEASE_ID`, `GITEA_RELEASE_TAG`, and `GITEA_RELEASE_ASSET_ID`; the
   credential-stripped integration command unsets those release variables
   alongside the existing live-probe variables.
+- Release-list filtering documentation is aligned with `ReleaseListParams`.
+  Documentation whitespace validation passed with `git diff --check`; full
+  implementation validation is expected through
+  `./mill --no-server compatibility.writeSnapshot`,
+  `git diff --check`,
+  `./mill --no-server core.test client.test compatibility.check`, focused
+  request/audit/facade specs, and credential-stripped `it.test`.

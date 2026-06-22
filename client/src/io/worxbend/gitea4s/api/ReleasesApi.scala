@@ -1,12 +1,17 @@
 package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
+import io.worxbend.gitea4s.http.ReleaseListParams
 import io.worxbend.gitea4s.model.{Release, ReleaseAsset}
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
 trait ReleasesApi:
-  def releases(owner: String, repo: String): ZStream[Any, GiteaError, Release]
+  def releases(
+      owner: String,
+      repo: String,
+      params: ReleaseListParams = ReleaseListParams.default
+  ): ZStream[Any, GiteaError, Release]
 
   def release(owner: String, repo: String, id: Long): IO[GiteaError, Release]
 

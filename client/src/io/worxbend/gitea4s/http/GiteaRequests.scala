@@ -196,16 +196,25 @@ object GiteaRequests:
       response => GiteaResponseMapper.decodePage[Tag](response, page, pageSize)
     )
 
-  def repoReleases(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Release]] =
-    val pageSize = config.pageSize
+  def repoReleases(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      params: ReleaseListParams = ReleaseListParams.default
+  ): GiteaRequest[Page[Release]] =
+    val page = params.page.getOrElse(1)
+    val pageSize = params.limit.getOrElse(config.pageSize)
 
     get(
       config,
       GiteaEndpoints.repoListReleases,
       List("repos", owner, repo, "releases"),
-      pageQuery(page, pageSize),
+      releaseQuery(params, page, pageSize),
       response => GiteaResponseMapper.decodePage[Release](response, page, pageSize)
     )
+
+  def repoReleases(config: GiteaConfig, owner: String, repo: String, page: Int): GiteaRequest[Page[Release]] =
+    repoReleases(config, owner, repo, ReleaseListParams(page = Some(page)))
 
   def repoRelease(config: GiteaConfig, owner: String, repo: String, id: Long): GiteaRequest[Release] =
     get(
@@ -1720,6 +1729,14 @@ object GiteaRequests:
       Some("page" -> page.toString),
       Some("limit" -> pageSize.toString)
     ).flatten ++ params.labels.map(label => "labels" -> label.toString)
+
+  private def releaseQuery(params: ReleaseListParams, page: Int, pageSize: Int): List[(String, String)] =
+    List(
+      params.draft.map(value => "draft" -> value.toString),
+      params.preRelease.map(value => "pre-release" -> value.toString),
+      Some("page" -> page.toString),
+      Some("limit" -> pageSize.toString)
+    ).flatten
 
   private def pullRequestFilesQuery(
       params: PullRequestFilesParams,

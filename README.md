@@ -17,8 +17,8 @@ and zio-json.
   downloads, Git tree reads, Git blob reads, Git reference reads, annotated tag
   reads, repository contents metadata reads, raw/media repository file byte
   downloads, repository archive byte downloads, commit-to-pull-request lookup,
-  release listing/detail/tag lookup, release asset metadata reads, pull
-  requests including reviews,
+  release listing with typed filters, release detail/tag lookup, release asset
+  metadata reads, pull requests including reviews,
   pinned pull-request reads, pull-request create/edit writes, diff/patch
   downloads, merge-status checks, merge/update commands, review-comment
   resolution, and notifications through a ZIO client API
@@ -349,7 +349,12 @@ metadata-oriented `contents` and from raw/media single-file downloads.
 
 Repository release metadata covers paginated release listing through
 `client.releases(owner, repo)` and single release lookup through
-`client.release(owner, repo, id)`. Tag lookup uses
+`client.release(owner, repo, id)`. Release listing accepts
+`ReleaseListParams` for the documented `draft`, `pre-release`, `page`, and
+`limit` query controls. `ReleaseListParams.default` omits filter keys, while
+the paginated stream helper continues supplying page and limit values as it
+fetches pages. Use the Scala field `preRelease` for the wire query name
+`pre-release`. Tag lookup uses
 `client.releaseByTag(owner, repo, tag)` and the Gitea endpoint
 `GET /repos/{owner}/{repo}/releases/tags/{tag}` to return `Release` metadata
 for a tag. Tag values with punctuation such as `v1.0.0` and values with
@@ -388,6 +393,7 @@ import io.worxbend.gitea4s.http.{
   CommitNoteParams,
   ContentsParams,
   GitTreeParams,
+  ReleaseListParams,
   SingleCommitParams
 }
 import io.worxbend.gitea4s.model.CommitDiffType
@@ -476,6 +482,20 @@ client.archive(
 )
 
 client.releases(owner = "my-org", repo = "my-repo").take(25).runCollect
+
+client
+  .releases(
+    owner = "my-org",
+    repo = "my-repo",
+    params = ReleaseListParams(
+      draft = Some(false),
+      preRelease = Some(true),
+      page = Some(1),
+      limit = Some(25)
+    )
+  )
+  .take(25)
+  .runCollect
 
 client.release(owner = "my-org", repo = "my-repo", id = 7)
 
@@ -971,7 +991,10 @@ Release metadata probes are read-only and metadata-only. They call the existing
 `GITEA_URL`, `GITEA_TOKEN`, `GITEA_OWNER`, and `GITEA_REPO`, configure
 `GITEA_RELEASE_ID` for release detail and asset-list probes,
 `GITEA_RELEASE_TAG` for the release-by-tag probe, and both
-`GITEA_RELEASE_ID` and `GITEA_RELEASE_ASSET_ID` for the single asset lookup:
+`GITEA_RELEASE_ID` and `GITEA_RELEASE_ASSET_ID` for the single asset lookup.
+When `GITEA_RELEASE_ASSET_ID` is set, the asset-list probe also checks that
+the configured asset id appears in `client.releaseAssets(owner, repo,
+releaseId)`:
 
 ```bash
 GITEA_URL=https://gitea.example \
