@@ -453,6 +453,42 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           decodeWith(built, backend) == Right(LanguageStatistics(Map.empty))
         )
       },
+      test("builds and decodes schema-traceable repository GPG signing-key request") {
+        val built = GiteaRequests.repoSigningKey(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+        val key =
+          """-----BEGIN PGP PUBLIC KEY BLOCK-----
+            |
+            |xsBNBGitea4SBCADK...
+            |-----END PGP PUBLIC KEY BLOCK-----
+            |""".stripMargin
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(key))
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoSigningKey,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoSigningKey",
+          endpoint.path == "/repos/{owner}/{repo}/signing-key.gpg",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.response == "#/responses/string",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/signing-key.gpg",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "signing-key.gpg"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("text/plain"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(key)
+        )
+      },
       test("builds and decodes schema-traceable get repository tag request") {
         val built = GiteaRequests.repoTag(config, "worx bend", "gitea/scala", "release/candidate")
         val punctuationTag = GiteaRequests.repoTag(config, "worx bend", "gitea/scala", "v1.0.0")

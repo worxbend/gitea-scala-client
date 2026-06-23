@@ -55,6 +55,14 @@ surface is still being filled out.
   The request has no query parameters or body, sends no JSON `Content-Type`,
   propagates documented `404` failures through the shared mapper, and is
   read-only retryable. Repository language write behavior is not implemented.
+- Read-only repository GPG signing-key lookup for
+  `GET /repos/{owner}/{repo}/signing-key.gpg` (`repoSigningKey`) with
+  `GiteaRequests.repoSigningKey` and `ReposApi.gpgSigningKey(owner, repo)`.
+  The API returns the raw `text/plain` response body as `String`, sends
+  `Accept: text/plain`, sends no query parameters or request body, sends no
+  JSON `Content-Type`, and is read-only retryable. SSH signing-key reads,
+  default `/signing-key.*` endpoints, repository key management, and
+  signing-key write endpoints are not implemented.
 - Read-only repository assignee metadata for
   `GET /repos/{owner}/{repo}/assignees` (`repoGetAssignees`) with the existing
   `User` model, `GiteaRequests.repoAssignees`, and

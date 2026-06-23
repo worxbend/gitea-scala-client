@@ -139,6 +139,8 @@ trait ReposApi:
 
   def languages(owner: String, repo: String): IO[GiteaError, LanguageStatistics]
 
+  def gpgSigningKey(owner: String, repo: String): IO[GiteaError, String]
+
   def tag(owner: String, repo: String, tag: String): IO[GiteaError, Tag]
 
   def tagProtections(owner: String, repo: String): IO[GiteaError, Chunk[TagProtection]]

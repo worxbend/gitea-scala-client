@@ -44,3 +44,4 @@
 [learning] `repoListBranchProtection` is a non-paginated path-only list in local Swagger; do not infer `page`/`limit` from branch or protection-adjacent endpoints.
 [pattern] Swagger `additionalProperties` response objects need map-shaped codecs that prove no wrapper field leaks onto the wire; extract a helper only after the pattern repeats.
 [learning] Repository watchers are exposed by Swagger as `repoListSubscribers` under `/subscribers`; facade names can be ergonomic only when request names, docs, and tests preserve that traceability.
+[pattern] Inline Swagger `text/plain` string responses should use explicit `Accept: text/plain`, `decodeString`, and audits that distinguish inline `type:string` success from local `#/responses/string` metadata.

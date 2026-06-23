@@ -4616,3 +4616,76 @@ M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
 M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
 M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
+2026-06-23T12:37:41Z iteration 2 started remaining=16842s
+2026-06-23T12:37:41Z iteration 2 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-23T12:37:41Z iteration 2 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-26rb2isr/repo copied_entries=101
+2026-06-23T12:37:41Z iteration 2 ideator phase started count=3
+2026-06-23T12:37:41Z iteration 2 ideator phase concurrency workers=3
+2026-06-23T12:37:41Z iteration 2 ideator 1 role="the pragmatist" started
+2026-06-23T12:37:41Z iteration 2 ideator 2 role="the architect" started
+2026-06-23T12:37:41Z iteration 2 ideator 3 role="the contrarian" started
+2026-06-23T12:37:51Z iteration 2 ideator 2 role="the architect" completed status=0
+2026-06-23T12:37:52Z iteration 2 ideator 1 role="the pragmatist" completed status=0
+2026-06-23T12:37:54Z iteration 2 ideator 3 role="the contrarian" completed status=0
+2026-06-23T12:37:54Z iteration 2 ideator phase completed approaches=3
+2026-06-23T12:37:54Z iteration 2 selector started approaches=3
+2026-06-23T12:38:05Z iteration 2 selector completed status=0
+2026-06-23T12:38:05Z iteration 2 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-26rb2isr/repo
+2026-06-23T12:38:05Z iteration 2 selector rejected alternative role="the architect" approach="Text-Body Repository Metadata Wedge: prioritize a tiny, path-only read slice such as repository signing-key reads before broader endpoint expansion, using it to harden non-JSON..." reason="Strong direction, but too narrowly framed around a single wedge without explicitly carrying the recent consolidation concerns around duplicated test infrastructure and evidence discipline."
+2026-06-23T12:38:05Z iteration 2 selector rejected alternative role="the pragmatist" approach="Read-Only Text Endpoint Consolidation: prioritize a small cluster of path-only repository metadata endpoints with simple scalar or text/plain responses, starting only after conf..." reason="Useful framing, but a cluster of text/scalar endpoints risks scope creep. The next iteration should start with one confirmed endpoint, not a small batch."
+2026-06-23T12:38:05Z iteration 2 selector rejected alternative role="the contrarian" approach="Consolidation Before Expansion: pause new endpoint growth and spend the next iteration hardening the reusable contract/test infrastructure that endpoint slices now depend on." reason="The infrastructure concerns are real, but a pure consolidation pass is less compelling right now because the next candidate can be narrow enough to avoid new repeated stream-test pressure while still advancing API coverage."
+2026-06-23T12:38:05Z iteration 2 selector alternatives persisted count=3
+2026-06-23T12:38:05Z iteration 2 selector structured alternatives persisted count=3
+2026-06-23T12:38:05Z iteration 2 planner started
+2026-06-23T12:39:12Z iteration 2 plan: 6 task(s) in 3 phase(s). This iteration selects the bounded text-response wedge: one path-only repository GPG signing-key read endpoint. Source wiring is first because tests, docs, and snapshots depend on the public method/request names. Request/audit tests, facade tests, and docs/snapshot updates can then proceed independently because they touch different files. Live-confidence work is intentionally deferred because no real fixtures are available.
+2026-06-23T12:39:12Z iteration 2 phase 1 started parallel=False tasks=2
+2026-06-23T12:41:01Z iteration 2 task t1 ('Add repository GPG signing-key request layer') status=0
+2026-06-23T12:42:08Z iteration 2 task t2 ('Wire repository GPG signing-key facade') status=0
+2026-06-23T12:42:08Z iteration 2 phase 2 started parallel=True tasks=3
+2026-06-23T12:44:39Z iteration 2 task t4 ('Cover signing-key facade behavior') status=0
+2026-06-23T12:44:47Z iteration 2 task t5 ('Update docs and public API snapshot') status=0
+2026-06-23T12:44:47Z iteration 2 task t3 ('Cover signing-key request and Swagger audit contracts') status=0
+2026-06-23T12:44:47Z iteration 2 phase 3 started parallel=False tasks=1
+2026-06-23T12:47:05Z iteration 2 task t6 ('Validate and refresh PLAN continuation') status=0
+2026-06-23T12:47:05Z iteration 2 reviewer started
+
+## Reviewer Summary - Iteration 2 - 2026-06-23T12:49:53Z
+
+What was done:
+- Inspected every file changed in the repository GPG signing-key slice: `ReposApi`, `SttpGiteaClient`, `GiteaEndpoint`, `GiteaRequests`, request/facade/audit tests, README, CHANGELOG, PLAN, API snapshot, and telemetry files.
+- Cross-checked `repoSigningKey` against `plugin-redoc-2.yaml`. The local Swagger confirms `GET /repos/{owner}/{repo}/signing-key.gpg`, required `owner`/`repo` path parameters, `produces: text/plain`, an inline `200` string schema, and no documented non-2xx responses.
+- Ran validation: `git diff --check`, JSONL validation for `ALTERNATIVES.jsonl`, `./mill --no-server core.test client.test compatibility.check`, focused request/audit/facade specs, and credential-stripped `it.test`; all passed, with all twelve live probes ignored.
+
+What was found:
+- No functional blocker or regression was found.
+- `GiteaRequests.repoSigningKey` correctly builds a read-only bodyless GET, safely encodes owner/repo path segments, sends shared auth/OTP/user-agent headers, sends `Accept: text/plain`, avoids JSON `Content-Type`, and decodes successful text bodies as `String`.
+- `ReposApi.gpgSigningKey(owner, repo)` is wired through `GiteaRequestExecutor`, so the unsafe public raw request execution boundary remains closed.
+- Swagger audit coverage correctly checks both facts that matter for this endpoint: the Swagger success response is inline `type: string`, while local endpoint metadata continues to expose the established `#/responses/string` label.
+- SSH signing-key, default `/signing-key.*` endpoints, repository key CRUD, writes, hooks, multipart, and broad download surfaces remain absent.
+- Remaining risk is evidence-level only: no enabled live run has observed a real repository GPG signing key; credential-stripped `it.test` proves hermetic skipping, not live behavior.
+
+Top improvement proposals:
+- Add a fixture-gated live GPG signing-key probe only when a repository is known to expose a signing key; assert a narrow public property such as a non-empty armored `PGP PUBLIC KEY BLOCK` and do not log the key body.
+- If another `text/plain` string endpoint is implemented, extract the signing-key audit helper into a reusable test-private scalar/text audit path instead of duplicating it.
+- Add an endpoint-specific non-JSON failure-body assertion when the next text endpoint is added or when text response mapping is touched.
+- Do not add `repoSigningKeySSH`, default `/signing-key.*`, repository key management, or key write APIs by adjacency; select and audit each exact Swagger contract deliberately.
+2026-06-23T12:51:06Z iteration 2 reviewer completed status=0
+2026-06-23T12:51:06Z iteration 2 memory updated
+2026-06-23T12:51:06Z iteration 2 completed validation_status=0
+2026-06-23T12:51:06Z iteration 2 checkpoint started
+2026-06-23T12:51:06Z iteration 2 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala

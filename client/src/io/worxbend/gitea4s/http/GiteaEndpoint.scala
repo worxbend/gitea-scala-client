@@ -234,6 +234,18 @@ object GiteaEndpoints:
       response = "#/responses/LanguageStatistics"
     )
 
+  val repoSigningKey: GiteaEndpoint =
+    GiteaEndpoint(
+      method = "GET",
+      path = "/repos/{owner}/{repo}/signing-key.gpg",
+      operationId = "repoSigningKey",
+      parameters = List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true)
+      ),
+      response = "#/responses/string"
+    )
+
   val repoGetTag: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",

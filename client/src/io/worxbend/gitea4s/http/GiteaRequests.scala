@@ -244,6 +244,16 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[LanguageStatistics]
     )
 
+  def repoSigningKey(config: GiteaConfig, owner: String, repo: String): GiteaRequest[String] =
+    get(
+      config,
+      GiteaEndpoints.repoSigningKey,
+      List("repos", owner, repo, "signing-key.gpg"),
+      Nil,
+      GiteaResponseMapper.decodeString,
+      accept = MediaType.TextPlain.toString
+    )
+
   def repoTag(config: GiteaConfig, owner: String, repo: String, tag: String): GiteaRequest[Tag] =
     get(
       config,

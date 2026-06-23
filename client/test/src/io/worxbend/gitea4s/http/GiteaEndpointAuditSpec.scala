@@ -344,6 +344,13 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     GiteaEndpoints.repoGetLanguages
   )
 
+  private val repositorySigningKeyRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoSigningKey(config, "owner", "repo"),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val repositoryAssigneeRequests = List(
     AuditedRequest(
       request = GiteaRequests.repoAssignees(config, "owner", "repo"),
@@ -644,6 +651,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoGetLanguages" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoSigningKey" -> Nil,
     "repoGetAssignees" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
@@ -789,6 +797,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("repository languages metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = repositoryLanguagesEndpoints.flatMap(auditEndpoint(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository GPG signing-key metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = repositorySigningKeyRequests.flatMap(auditTextPlainString(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
@@ -1010,6 +1024,42 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
     metadataFailures ++ requestFailures
 
+  private def auditTextPlainString(swagger: SwaggerAudit, audited: AuditedRequest): List[String] =
+    val endpoint = audited.request.endpoint
+    val expectedNonSuccessResponses = expectedNonSuccessResponseLabels.get(endpoint.operationId)
+    swagger.operation(endpoint.path, endpoint.method) match
+      case Left(message) => List(s"${endpoint.operationId}: $message")
+      case Right(operation) =>
+        val requiredPathParameterNames =
+          endpoint.parameters.collect {
+            case GiteaParameter(name, "path", true) => name
+          }
+        val optionalQueryParameterNames =
+          endpoint.parameters.collect {
+            case GiteaParameter(name, "query", false) => name
+          }
+        val endpointHasBody = endpoint.parameters.exists(_.in == "body")
+        val requestHasBody = audited.request.request.body != NoBody
+        val expectedRetryable = endpoint.method.equalsIgnoreCase("GET") || endpoint.method.equalsIgnoreCase("HEAD")
+
+        List(
+          compare("operationId", endpoint.operationId, operation.operationId),
+          compare("method", endpoint.method.toUpperCase, operation.method),
+          compare("path", endpoint.path, operation.path),
+          compare("required path parameters", requiredPathParameterNames, operation.requiredPathParameters),
+          compare("optional query parameters", optionalQueryParameterNames, operation.optionalQueryParameters),
+          compare("success response", operation.successResponses, List(GiteaResponseLabel("200", "type:string"))),
+          compare("endpoint success response label", endpoint.response, "#/responses/string"),
+          expectedNonSuccessResponses.fold(
+            Some("non-2xx response label lookup failed: no expected labels registered for audited endpoint")
+          )(expected => compare("non-2xx response labels", expected, operation.nonSuccessResponses)),
+          compare("endpoint body presence", endpointHasBody, operation.hasRequestBody),
+          compare("request body presence", requestHasBody, operation.hasRequestBody),
+          compare("produces", operation.produces, List("text/plain")),
+          compare("request Accept", audited.request.request.header("Accept"), Some("text/plain")),
+          compare("retryable", audited.request.retryable, expectedRetryable)
+        ).flatten.map(message => s"${endpoint.operationId}: $message")
+
   private def auditRelease(swagger: SwaggerAudit, audited: AuditedRequest): List[String] =
     val endpoint = audited.request.endpoint
     val metadataFailures = audit(swagger, audited)
@@ -1096,6 +1146,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       requiredPathParameters: List[String],
       optionalQueryParameters: List[String],
       successResponseLabels: List[String],
+      successResponses: List[GiteaResponseLabel],
       nonSuccessResponses: List[GiteaResponseLabel],
       produces: List[String],
       hasRequestBody: Boolean
@@ -1125,6 +1176,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
         successResponseLabels = responses.collect {
           case GiteaResponseLabel(status, label) if status.startsWith("2") => label
         },
+        successResponses = responses.filter(_.status.startsWith("2")),
         nonSuccessResponses = responses.filterNot(_.status.startsWith("2")),
         produces = parseProduces(methodBlock),
         hasRequestBody = parameters.exists(_.in == "body")

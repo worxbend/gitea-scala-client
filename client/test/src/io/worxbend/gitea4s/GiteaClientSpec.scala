@@ -2005,6 +2005,84 @@ object GiteaClientSpec extends ZIOSpecDefault:
           languages == LanguageStatistics(Map("Scala" -> 321L, "TypeScript" -> 12L))
         )
       },
+      test("loads a repository GPG signing key as raw text through the ReposApi") {
+        val facadeConfig = config.copy(userAgent = Some("gitea4s-test"), otp = Some("654321"))
+        val armoredKey =
+          "-----BEGIN PGP PUBLIC KEY BLOCK-----\nVersion: Gitea\n\nabc123\n-----END PGP PUBLIC KEY BLOCK-----\n"
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "signing-key.gpg")) &&
+              request.uri.paramsMap.isEmpty &&
+              request.header("Accept").contains("text/plain") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("User-Agent").contains("gitea4s-test") &&
+              request.header("X-Gitea-OTP").contains("654321") &&
+              request.header("Content-Type").isEmpty &&
+              request.body == NoBody
+          }.thenRespond(ResponseStub.adjust(armoredKey))
+        val client = GiteaClient.fromBackend(facadeConfig, backend)
+
+        assertZIO(client.gpgSigningKey("alice", "api"))(
+          Assertion.equalTo(armoredKey)
+        )
+      },
+      test("routes repository GPG signing-key owner and repo values as encoded facade path segments") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/signing-key.gpg" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "signing-key.gpg"
+              ) &&
+              request.uri.paramsMap.isEmpty
+          }.thenRespond(ResponseStub.adjust("encoded-key"))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.gpgSigningKey("space owner", "repo/slash"))(
+          Assertion.equalTo("encoded-key")
+        )
+      },
+      test("propagates repository GPG signing-key non-2xx errors through the facade") {
+        val body = """{"message":"repository signing key failed"}"""
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "signing-key.gpg")) &&
+              request.uri.paramsMap.isEmpty
+          }.thenRespond(ResponseStub.adjust(body, StatusCode.InternalServerError))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.gpgSigningKey("alice", "api").either)(
+          Assertion.equalTo(Left(GiteaError.ServerError(500, body)))
+        )
+      },
+      test("retries repository GPG signing-key lookup because it is a read-only GET") {
+        val backend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "signing-key.gpg")) &&
+              request.uri.paramsMap.isEmpty
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("retried-key")
+          )
+        val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
+
+        for
+          fiber <- client.gpgSigningKey("alice", "api").fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          signingKey <- fiber.join
+        yield assertTrue(
+          signingKey == "retried-key"
+        )
+      },
       test("loads repository assignees as a non-paginated list through the ReposApi") {
         val backend =
           taskStub.whenRequestMatches { request =>

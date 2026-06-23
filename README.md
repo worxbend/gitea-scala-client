@@ -21,6 +21,7 @@ and zio-json.
   reads, repository collaborator list/check/permission reads, repository team
   list/lookup reads,
   repository tag list/lookup reads, repository language-statistics reads,
+  repository GPG signing-key reads,
   repository tag-protection metadata reads, repository branch-protection
   metadata reads, commit-to-pull-request lookup,
   release listing with typed filters, release detail/latest/tag lookup,
@@ -35,7 +36,8 @@ and zio-json.
   annotated tag, repository contents, raw/media repository file, repository
   archive, repository assignees, repository social metadata, repository
   collaborator, repository team, repository tag lookup, repository languages,
-  repository tag-protection metadata, repository branch-protection metadata,
+  repository GPG signing-key, repository tag-protection metadata,
+  repository branch-protection metadata,
   release list/detail, latest-release,
   release-by-tag, and release asset metadata endpoints,
   including documented non-2xx response labels, optional query parameters,
@@ -224,6 +226,22 @@ object from language name to byte count, for example
 `GiteaConfig.maxRetries`, sends JSON accept headers, sends no query
 parameters, sends no request body, and sends no JSON `Content-Type`.
 Repository language write operations are not implemented.
+
+## Repository GPG Signing Key
+
+Repository GPG signing-key reads are exposed through the path-only
+`GET /repos/{owner}/{repo}/signing-key.gpg` endpoint:
+
+```scala
+client.gpgSigningKey(owner = "my-org", repo = "my-repo")
+```
+
+`client.gpgSigningKey(owner, repo)` returns `IO[GiteaError, String]` with the
+raw `text/plain` signing key body. The request is read-only and retryable under
+`GiteaConfig.maxRetries`, sends `Accept: text/plain`, sends no query
+parameters, sends no request body, and sends no JSON `Content-Type`.
+SSH signing-key reads, default `/signing-key.*` endpoints, repository key
+management, and signing-key write endpoints are not implemented.
 
 ## Repository Assignees
 
@@ -1109,7 +1127,7 @@ commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
 tree/blob/annotated-tag/refs, repository contents, raw/media repository file,
 repository archive, repository collaborator, repository team, repository tag
 lookup, repository assignees, repository social metadata, repository languages,
-repository tag-protection metadata,
+repository GPG signing-key, repository tag-protection metadata,
 release list/detail,
 latest-release, release-by-tag, and release asset metadata
 endpoint groups against
@@ -1120,7 +1138,8 @@ documented non-2xx response status/ref labels, optional query parameters such as
 downloads, the archive operation's bare `200` success description,
 no-query/no-body checks for Git blob, annotated tag, and refs requests, no-body
 checks for contents, raw/media, archive, repository tag lookup, repository
-assignees, repository languages, repository tag-protection metadata,
+assignees, repository languages, repository GPG signing-key,
+repository tag-protection metadata,
 release list/detail,
 release-by-tag, latest-release, repository team list/lookup, and release asset
 requests,
@@ -1128,6 +1147,7 @@ release list/detail/latest `ReleaseList`/`Release` response refs, release asset
 `AttachmentList`/`Attachment` response refs, repository team `TeamList`/`Team`
 response refs, repository assignees `UserList` response refs, repository
 languages `LanguageStatistics` response refs,
+repository GPG signing-key `text/plain` string response refs,
 tag-protection `TagProtectionList`/`TagProtection` response refs, and path enum
 values such as `diffType`.
 
