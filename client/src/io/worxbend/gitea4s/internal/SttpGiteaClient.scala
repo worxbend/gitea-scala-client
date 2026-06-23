@@ -226,6 +226,19 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override def assignees(owner: String, repo: String): IO[GiteaError, Chunk[User]] =
     executor.send(GiteaRequests.repoAssignees(config, owner, repo))
 
+  override def reviewers(owner: String, repo: String): IO[GiteaError, Chunk[User]] =
+    executor.send(GiteaRequests.repoReviewers(config, owner, repo))
+
+  override def stargazers(owner: String, repo: String): ZStream[Any, GiteaError, User] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoStargazers(config, owner, repo, page))
+    }
+
+  override def watchers(owner: String, repo: String): ZStream[Any, GiteaError, User] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoSubscribers(config, owner, repo, page))
+    }
+
   override def collaborators(owner: String, repo: String): ZStream[Any, GiteaError, User] =
     Pagination.paginated { page =>
       executor.send(GiteaRequests.repoCollaborators(config, owner, repo, page))

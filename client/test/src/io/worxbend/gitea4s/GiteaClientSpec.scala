@@ -2079,6 +2079,203 @@ object GiteaClientSpec extends ZIOSpecDefault:
           assignees.map(_.login) == Chunk(Some("retry"))
         )
       },
+      test("loads repository reviewers as a non-paginated list through the ReposApi") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "reviewers")) &&
+              request.uri.paramsMap.isEmpty &&
+              !request.uri.paramsMap.contains("page") &&
+              !request.uri.paramsMap.contains("limit") &&
+              request.header("Accept").contains("application/json") &&
+              request.header("Authorization").contains("token secret") &&
+              request.header("Content-Type").isEmpty
+          }.thenRespond(ResponseStub.adjust("""[{"id":1,"login":"reviewer-a"},{"id":2,"login":"reviewer-b"}]"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.reviewers("alice", "api").map(_.map(_.login)))(
+          Assertion.equalTo(Chunk(Some("reviewer-a"), Some("reviewer-b")))
+        )
+      },
+      test("routes repository reviewer owner and repo values as encoded facade path segments") {
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.toString ==
+                "https://gitea.example/api/v1/repos/space%20owner/repo%2Fslash/reviewers" &&
+              request.uri.path == List(
+                "api",
+                "v1",
+                "repos",
+                "space owner",
+                "repo/slash",
+                "reviewers"
+              ) &&
+              request.uri.paramsMap.isEmpty
+          }.thenRespond(ResponseStub.adjust("""[{"id":7,"login":"encoded-reviewer"}]"""))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        assertZIO(client.reviewers("space owner", "repo/slash").map(_.map(_.login)))(
+          Assertion.equalTo(Chunk(Some("encoded-reviewer")))
+        )
+      },
+      test("streams repository stargazers from page 1 with the configured page size") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+
+        for
+          seenQueries <- Ref.make(Vector.empty[Map[String, String]])
+          responses <- Ref.make(
+            List[Response[String]](
+              stringResponse("""[{"id":42,"login":"octo"}]""", StatusCode.Ok, twoPageHeaders),
+              stringResponse("""[{"id":43,"login":"mona"}]""", StatusCode.Ok, twoPageHeaders)
+            )
+          )
+          backend = new Backend[Task]:
+            private val taskMonad = new RIOMonadAsyncError[Any]
+
+            override def send[T](request: GenericRequest[T, Effect[Task]]): Task[Response[T]] =
+              for
+                _ <- ZIO
+                  .unless(
+                    request.method == Method.GET &&
+                      request.uri.path.endsWith(List("repos", "alice", "api", "stargazers"))
+                  )(ZIO.fail(IllegalStateException(s"unexpected request: ${request.method} ${request.uri}")))
+                _ <- seenQueries.update(_ :+ request.uri.paramsMap)
+                response <- responses.modify {
+                  case next :: rest => (ZIO.succeed(next.asInstanceOf[Response[T]]), rest)
+                  case Nil          => (ZIO.fail(IllegalStateException("no stargazer response left")), Nil)
+                }.flatten
+              yield response
+
+            override def close(): Task[Unit] =
+              ZIO.unit
+
+            override def monad: MonadError[Task] =
+              taskMonad
+          client = GiteaClient.fromBackend(config, backend)
+          stargazers <- client.stargazers("alice", "api").runCollect
+          queries <- seenQueries.get
+        yield assertTrue(
+          stargazers.map(_.login) == Chunk(Some("octo"), Some("mona")),
+          queries.map(_("page")) == Vector("1", "2"),
+          queries.forall(_.get("limit").contains("1"))
+        )
+      },
+      test("streams repository watchers through the subscribers endpoint from page 1 with the configured page size") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+
+        for
+          seenQueries <- Ref.make(Vector.empty[Map[String, String]])
+          responses <- Ref.make(
+            List[Response[String]](
+              stringResponse("""[{"id":44,"login":"watcher-a"}]""", StatusCode.Ok, twoPageHeaders),
+              stringResponse("""[{"id":45,"login":"watcher-b"}]""", StatusCode.Ok, twoPageHeaders)
+            )
+          )
+          backend = new Backend[Task]:
+            private val taskMonad = new RIOMonadAsyncError[Any]
+
+            override def send[T](request: GenericRequest[T, Effect[Task]]): Task[Response[T]] =
+              for
+                _ <- ZIO
+                  .unless(
+                    request.method == Method.GET &&
+                      request.uri.path.endsWith(List("repos", "alice", "api", "subscribers"))
+                  )(ZIO.fail(IllegalStateException(s"unexpected request: ${request.method} ${request.uri}")))
+                _ <- seenQueries.update(_ :+ request.uri.paramsMap)
+                response <- responses.modify {
+                  case next :: rest => (ZIO.succeed(next.asInstanceOf[Response[T]]), rest)
+                  case Nil          => (ZIO.fail(IllegalStateException("no watcher response left")), Nil)
+                }.flatten
+              yield response
+
+            override def close(): Task[Unit] =
+              ZIO.unit
+
+            override def monad: MonadError[Task] =
+              taskMonad
+          client = GiteaClient.fromBackend(config, backend)
+          watchers <- client.watchers("alice", "api").runCollect
+          queries <- seenQueries.get
+        yield assertTrue(
+          watchers.map(_.login) == Chunk(Some("watcher-a"), Some("watcher-b")),
+          queries.map(_("page")) == Vector("1", "2"),
+          queries.forall(_.get("limit").contains("1"))
+        )
+      },
+      test("propagates repository social metadata documented errors through the facade") {
+        val reviewersBody = """{"message":"repository not found"}"""
+        val stargazersForbiddenBody = """{"message":"forbidden"}"""
+        val stargazersNotFoundBody = """{"message":"stargazers not found"}"""
+        val watchersBody = """{"message":"watchers not found"}"""
+        val reviewersBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "missing", "reviewers"))
+          }.thenRespond(ResponseStub.adjust(reviewersBody, StatusCode.NotFound))
+        val stargazersForbiddenBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "private", "stargazers"))
+          }.thenRespond(ResponseStub.adjust(stargazersForbiddenBody, StatusCode.Forbidden))
+        val stargazersNotFoundBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "missing", "stargazers"))
+          }.thenRespond(ResponseStub.adjust(stargazersNotFoundBody, StatusCode.NotFound))
+        val watchersBackend =
+          taskStub.whenRequestMatches { request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "missing", "subscribers"))
+          }.thenRespond(ResponseStub.adjust(watchersBody, StatusCode.NotFound))
+        val reviewersClient = GiteaClient.fromBackend(config, reviewersBackend)
+        val stargazersForbiddenClient = GiteaClient.fromBackend(config, stargazersForbiddenBackend)
+        val stargazersNotFoundClient = GiteaClient.fromBackend(config, stargazersNotFoundBackend)
+        val watchersClient = GiteaClient.fromBackend(config, watchersBackend)
+
+        for
+          reviewersResult <- reviewersClient.reviewers("alice", "missing").either
+          stargazersForbidden <- stargazersForbiddenClient.stargazers("alice", "private").runCollect.either
+          stargazersNotFound <- stargazersNotFoundClient.stargazers("alice", "missing").runCollect.either
+          watchersResult <- watchersClient.watchers("alice", "missing").runCollect.either
+        yield assertTrue(
+          reviewersResult == Left(GiteaError.NotFound("repository not found", reviewersBody)),
+          stargazersForbidden == Left(GiteaError.Forbidden("forbidden", stargazersForbiddenBody)),
+          stargazersNotFound == Left(GiteaError.NotFound("stargazers not found", stargazersNotFoundBody)),
+          watchersResult == Left(GiteaError.NotFound("watchers not found", watchersBody))
+        )
+      },
+      test("retries repository social metadata lookups because they are read-only GET requests") {
+        val reviewerBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "reviewers"))
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""[{"id":42,"login":"retry-reviewer"}]""")
+          )
+        val watcherBackend =
+          taskStub.whenRequestMatches(request =>
+            request.method == Method.GET &&
+              request.uri.path.endsWith(List("repos", "alice", "api", "subscribers"))
+          ).thenRespondCyclic(
+            ResponseStub.adjust("""{"message":"temporarily unavailable"}""", StatusCode.ServiceUnavailable),
+            ResponseStub.adjust("""[{"id":43,"login":"retry-watcher"}]""")
+          )
+        val reviewerClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), reviewerBackend)
+        val watcherClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), watcherBackend)
+
+        for
+          reviewerFiber <- reviewerClient.reviewers("alice", "api").fork
+          watcherFiber <- watcherClient.watchers("alice", "api").runCollect.fork
+          _ <- TestClock.adjust(Duration.ofSeconds(1))
+          reviewers <- reviewerFiber.join
+          watchers <- watcherFiber.join
+        yield assertTrue(
+          reviewers.map(_.login) == Chunk(Some("retry-reviewer")),
+          watchers.map(_.login) == Chunk(Some("retry-watcher"))
+        )
+      },
       test("loads a single repository tag through the ReposApi tag method") {
         val backend =
           taskStub.whenRequestMatches { request =>

@@ -64,6 +64,22 @@ surface is still being filled out.
   body, sends no JSON `Content-Type`, propagates documented `404` failures
   through the shared mapper, and is read-only retryable. Assignee assignment
   and removal write operations are not implemented.
+- Read-only repository social metadata for
+  `GET /repos/{owner}/{repo}/reviewers` (`repoGetReviewers`),
+  `GET /repos/{owner}/{repo}/stargazers` (`repoListStargazers`), and
+  `GET /repos/{owner}/{repo}/subscribers` (`repoListSubscribers`) with the
+  existing `User` model, `GiteaRequests.repoReviewers`,
+  `GiteaRequests.repoStargazers`, `GiteaRequests.repoSubscribers`,
+  `ReposApi.reviewers`, `ReposApi.stargazers`, and `ReposApi.watchers`.
+  Reviewers return `IO[GiteaError, Chunk[User]]` because the local Swagger
+  contract declares no pagination parameters for that endpoint. Stargazers and
+  watchers stream paginated `User` values from page 1 with the configured page
+  size; the public `watchers` facade maps to the `/subscribers` operation to
+  match Gitea's summary wording while keeping request names traceable to
+  Swagger. These methods send no request body, send no JSON `Content-Type`,
+  propagate documented reviewer `404`, stargazer `403`/`404`, and subscriber
+  `404` failures through the shared mapper, and are read-only retryable. Star,
+  watch, and reviewer write behavior is not implemented.
 - Read-only repository tag-protection metadata APIs for
   `GET /repos/{owner}/{repo}/tag_protections` (`repoListTagProtection`) and
   `GET /repos/{owner}/{repo}/tag_protections/{id}` (`repoGetTagProtection`)
@@ -321,6 +337,14 @@ surface is still being filled out.
   exact absence of query parameters, absence of request bodies, read-only
   retryability, success response ref `UserList`, and documented `404`
   response status/ref labels kept private to endpoint audit tests.
+- Repository social metadata endpoint audit coverage for operation IDs
+  `repoGetReviewers`, `repoListStargazers`, and `repoListSubscribers`, methods,
+  paths, required `owner`/`repo` path parameters, exact reviewers no-query
+  contract, stargazers/subscribers `page` and `limit` query parameters,
+  absence of request bodies, read-only retryability, success response ref
+  `UserList`, and documented reviewer `404`, stargazer `403`/`404`, and
+  subscriber `404` response status/ref labels kept private to endpoint audit
+  tests.
 - Release asset endpoint metadata audit coverage for operation IDs
   `repoListReleaseAttachments` and `repoGetReleaseAttachment`, methods, paths,
   required `owner`/`repo`/`id`/`attachment_id` path parameters, no query
@@ -513,3 +537,14 @@ surface is still being filled out.
   `git diff --check`,
   `./mill --no-server core.test client.test compatibility.check`, focused
   request/audit/facade specs, and credential-stripped `it.test`.
+- Repository social metadata documentation and validation are aligned with the
+  implemented `client.reviewers(owner, repo)`,
+  `client.stargazers(owner, repo)`, and `client.watchers(owner, repo)` facade.
+  Validation passed with `git diff --check`,
+  `./mill --no-server core.test client.test compatibility.check`, focused
+  `./mill --no-server client.test.testOnly io.worxbend.gitea4s.http.GiteaRequestsSpec io.worxbend.gitea4s.http.GiteaEndpointAuditSpec io.worxbend.gitea4s.GiteaClientSpec`,
+  and credential-stripped
+  `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD -u GITEA_OWNER -u GITEA_REPO -u GITEA_COLLABORATOR -u GITEA_TEAM -u GITEA_REPO_TAG -u GITEA_REF -u GITEA_ANNOTATED_TAG_SHA -u GITEA_CONTENTS_FILEPATH -u GITEA_CONTENTS_REF -u GITEA_RAW_FILEPATH -u GITEA_RAW_REF -u GITEA_ARCHIVE -u GITEA_ARCHIVE_PATHS -u GITEA_RELEASE_ID -u GITEA_RELEASE_TAG -u GITEA_LATEST_RELEASE_TAG -u GITEA_RELEASE_ASSET_ID -u GITEA_ORG -u GITEA_USER_QUERY -u GITEA_PAGE_SIZE -u GITEA_TIMEOUT -u GITEA_MAX_RETRIES -u GITEA_BRANCH_PROTECTION_NAME -u GITEA_TAG_PROTECTION_ID ./mill --no-server it.test`;
+  all twelve live probes were ignored without credentials, so this is
+  hermetic skip evidence only and not live reviewers/stargazers/watchers
+  evidence.

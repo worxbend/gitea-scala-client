@@ -351,6 +351,21 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     )
   )
 
+  private val repositorySocialMetadataRequests = List(
+    AuditedRequest(
+      request = GiteaRequests.repoReviewers(config, "owner", "repo"),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoStargazers(config, "owner", "repo", page = 2),
+      noBodyLifecyclePost = false
+    ),
+    AuditedRequest(
+      request = GiteaRequests.repoSubscribers(config, "owner", "repo", page = 2),
+      noBodyLifecyclePost = false
+    )
+  )
+
   private val tagProtectionEndpoints = List(
     GiteaEndpoints.repoListTagProtection,
     GiteaEndpoints.repoGetTagProtection
@@ -632,6 +647,16 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     "repoGetAssignees" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
     ),
+    "repoGetReviewers" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoListStargazers" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoListSubscribers" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "repoListTagProtection" -> Nil,
     "repoGetTagProtection" -> List(
       GiteaResponseLabel("404", "#/responses/notFound")
@@ -770,6 +795,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       test("repository assignees metadata matches plugin-redoc-2.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = repositoryAssigneeRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository social metadata matches plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = repositorySocialMetadataRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },

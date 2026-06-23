@@ -248,6 +248,137 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           )
         )
       },
+      test("builds and decodes schema-traceable repository reviewers request") {
+        val built = GiteaRequests.repoReviewers(config, "worx bend", "gitea/scala")
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""[{"id":44,"login":"reviewer"},{"id":45,"login":"maintainer"}]""")
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoGetReviewers,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoGetReviewers",
+          endpoint.path == "/repos/{owner}/{repo}/reviewers",
+          endpoint.parameters.map(_.name) == List("owner", "repo"),
+          endpoint.response == "#/responses/UserList",
+          request.method == Method.GET,
+          request.uri.toString ==
+            "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/reviewers",
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "reviewers"),
+          request.uri.paramsMap.isEmpty,
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend) == Right(
+            Chunk(
+              User(id = Some(44L), login = Some("reviewer")),
+              User(id = Some(45L), login = Some("maintainer"))
+            )
+          )
+        )
+      },
+      test("builds and decodes schema-traceable paginated repository stargazers request") {
+        val built = GiteaRequests.repoStargazers(config, "worx bend", "gitea/scala", page = 3)
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""[{"id":46,"login":"star"}]""", StatusCode.Ok, List(Header("x-total-count", "76")))
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListStargazers,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoListStargazers",
+          endpoint.path == "/repos/{owner}/{repo}/stargazers",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "page", "limit"),
+          endpoint.response == "#/responses/UserList",
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/stargazers?"),
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "stargazers"),
+          request.uri.paramsMap.get("page").contains("3"),
+          request.uri.paramsMap.get("limit").contains("25"),
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend).map(_.data) == Right(Chunk(User(id = Some(46L), login = Some("star")))),
+          decodeWith(built, backend).map(_.totalCount) == Right(Some(76L)),
+          decodeWith(built, backend).map(_.page) == Right(3),
+          decodeWith(built, backend).map(_.pageSize) == Right(25),
+          decodeWith(built, backend).map(_.hasNext) == Right(true)
+        )
+      },
+      test("builds and decodes schema-traceable paginated repository subscribers request") {
+        val built = GiteaRequests.repoSubscribers(config, "worx bend", "gitea/scala", page = 4)
+        val endpoint = built.endpoint
+        val request = built.request
+        val backend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(
+            ResponseStub.adjust("""[{"id":47,"login":"watcher"}]""", StatusCode.Ok, List(Header("x-total-count", "90")))
+          )
+
+        assertTrue(
+          endpoint == GiteaEndpoints.repoListSubscribers,
+          endpoint.method == "GET",
+          endpoint.operationId == "repoListSubscribers",
+          endpoint.path == "/repos/{owner}/{repo}/subscribers",
+          endpoint.parameters.map(_.name) == List("owner", "repo", "page", "limit"),
+          endpoint.response == "#/responses/UserList",
+          request.method == Method.GET,
+          request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/subscribers?"),
+          request.uri.path ==
+            List("root", "api", "v1", "repos", "worx bend", "gitea/scala", "subscribers"),
+          request.uri.paramsMap.get("page").contains("4"),
+          request.uri.paramsMap.get("limit").contains("25"),
+          request.header("Accept").contains("application/json"),
+          request.header("Authorization").contains("token secret"),
+          request.header("User-Agent").contains("gitea4s-test"),
+          request.header("X-Gitea-OTP").contains("123456"),
+          request.header("Content-Type").isEmpty,
+          request.body == NoBody,
+          built.retryable == true,
+          decodeWith(built, backend).map(_.data) == Right(Chunk(User(id = Some(47L), login = Some("watcher")))),
+          decodeWith(built, backend).map(_.totalCount) == Right(Some(90L)),
+          decodeWith(built, backend).map(_.page) == Right(4),
+          decodeWith(built, backend).map(_.pageSize) == Right(25),
+          decodeWith(built, backend).map(_.hasNext) == Right(false)
+        )
+      },
+      test("maps documented repository social metadata failures") {
+        val reviewers = GiteaRequests.repoReviewers(config, "owner", "repo")
+        val stargazers = GiteaRequests.repoStargazers(config, "owner", "repo")
+        val subscribers = GiteaRequests.repoSubscribers(config, "owner", "repo")
+        val notFoundBody = """{"message":"missing repository"}"""
+        val forbiddenBody = """{"message":"stargazers are private"}"""
+        val notFoundBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(notFoundBody, StatusCode.NotFound))
+        val forbiddenBackend =
+          BackendStub.synchronous.whenAnyRequest.thenRespond(ResponseStub.adjust(forbiddenBody, StatusCode.Forbidden))
+
+        assertTrue(
+          decodeWith(reviewers, notFoundBackend) ==
+            Left(GiteaError.NotFound("missing repository", notFoundBody)),
+          decodeWith(stargazers, forbiddenBackend) ==
+            Left(GiteaError.Forbidden("stargazers are private", forbiddenBody)),
+          decodeWith(stargazers, notFoundBackend) ==
+            Left(GiteaError.NotFound("missing repository", notFoundBody)),
+          decodeWith(subscribers, notFoundBackend) ==
+            Left(GiteaError.NotFound("missing repository", notFoundBody))
+        )
+      },
       test("builds schema-traceable paginated repository branches request") {
         val built = GiteaRequests.repoBranches(config, "worx bend", "gitea/scala", page = 3)
         val endpoint = built.endpoint

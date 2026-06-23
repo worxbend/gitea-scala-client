@@ -188,6 +188,31 @@ object GiteaRequests:
       GiteaResponseMapper.decodeChunk[User]
     )
 
+  def repoReviewers(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Chunk[User]] =
+    get(
+      config,
+      GiteaEndpoints.repoGetReviewers,
+      List("repos", owner, repo, "reviewers"),
+      Nil,
+      GiteaResponseMapper.decodeChunk[User]
+    )
+
+  def repoStargazers(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[User]] =
+    paginatedUsers(
+      config = config,
+      endpoint = GiteaEndpoints.repoListStargazers,
+      path = List("repos", owner, repo, "stargazers"),
+      page = page
+    )
+
+  def repoSubscribers(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[User]] =
+    paginatedUsers(
+      config = config,
+      endpoint = GiteaEndpoints.repoListSubscribers,
+      path = List("repos", owner, repo, "subscribers"),
+      page = page
+    )
+
   def repoBranches(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Branch]] =
     val pageSize = config.pageSize
 

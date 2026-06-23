@@ -4542,3 +4542,77 @@ M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala
 2026-06-22T09:18:27Z iteration final-telemetry checkpoint status before commit:
 M  AGENT_LOG.md
 M  SCORES.jsonl
+2026-06-22T09:18:31Z orchestrator finished iterations_run=30 iterations_attempted=30 iterations_completed_successfully=11 had_nonfatal_failures=true nonfatal_failure_count=19 last_nonfatal_exit_code=1 last_nonfatal_failure_reason=planner_failed loop_exit_code=0 process_exit_code=0 fatal=false terminal_reason=iterations_complete_with_failures final_checkpoint_behavior=telemetry_only
+2026-06-23T12:18:23Z orchestrator started provider=codex budget=18000s iterations=2 max_workers=4
+2026-06-23T12:18:23Z iteration 1 started remaining=18000s
+2026-06-23T12:18:23Z iteration 1 preplanner effective budgets untracked_scan_max_bytes=536870912 untracked_scan_max_count=10000 snapshot_copy_max_bytes=536870912 snapshot_copy_max_count=10000 snapshot_copy_max_file_bytes=134217728
+2026-06-23T12:18:23Z iteration 1 disposable preplanner repo created path=/tmp/agent-loop-preplanner-repo-7y1e_e9m/repo copied_entries=101
+2026-06-23T12:18:23Z iteration 1 ideator phase started count=3
+2026-06-23T12:18:23Z iteration 1 ideator phase concurrency workers=3
+2026-06-23T12:18:23Z iteration 1 ideator 1 role="the pragmatist" started
+2026-06-23T12:18:23Z iteration 1 ideator 2 role="the architect" started
+2026-06-23T12:18:23Z iteration 1 ideator 3 role="the contrarian" started
+2026-06-23T12:18:34Z iteration 1 ideator 2 role="the architect" completed status=0
+2026-06-23T12:18:34Z iteration 1 ideator 1 role="the pragmatist" completed status=0
+2026-06-23T12:18:35Z iteration 1 ideator 3 role="the contrarian" completed status=0
+2026-06-23T12:18:35Z iteration 1 ideator phase completed approaches=3
+2026-06-23T12:18:35Z iteration 1 selector started approaches=3
+2026-06-23T12:18:48Z iteration 1 selector completed status=0
+2026-06-23T12:18:48Z iteration 1 disposable preplanner repo cleanup path=/tmp/agent-loop-preplanner-repo-7y1e_e9m/repo
+2026-06-23T12:18:48Z iteration 1 selector rejected alternative role="the architect" approach="Evidence-Gated Read-Only Expansion: continue growing only bounded repository metadata surfaces, but let real fixture availability override the backlog by prioritizing the highes..." reason="Strong direction, but selected as part of a stricter plateau: fixture availability should guide the iteration, while fallback endpoint growth must be more constrained by ABI and contract-risk criteria."
+2026-06-23T12:18:48Z iteration 1 selector rejected alternative role="the pragmatist" approach="Contract-First Metadata Expansion: prioritize the next smallest read-only repository metadata endpoint whose Swagger contract is path-only, non-multipart, and model-bounded, the..." reason="Useful fallback strategy, but not sufficient as-is because it can keep widening public API surface while live-routing and Swagger-anomaly risks remain unobserved."
+2026-06-23T12:18:48Z iteration 1 selector rejected alternative role="the contrarian" approach="Contract Plateau: temporarily optimize for confidence and ABI discipline over endpoint count, selecting only slices that either validate disputed live-routing assumptions or exe..." reason="Correctly emphasizes confidence and ABI restraint, but too conservative alone; when no live fixtures exist, a small contract-first metadata slice is still productive and aligned with the project plan."
+2026-06-23T12:18:48Z iteration 1 selector alternatives persisted count=3
+2026-06-23T12:18:48Z iteration 1 selector structured alternatives persisted count=3
+2026-06-23T12:18:48Z iteration 1 planner started
+2026-06-23T12:19:58Z iteration 1 plan: 5 task(s) in 4 phase(s). This continuation follows the evidence-gated contract plateau: no complete live fixtures are available, so the next slice is a small Swagger-confirmed read-only repository metadata surface that reuses the existing User model, existing pagination/error/retry paths, and avoids write, upload, admin, hook, and search APIs. Request/audit work must precede facade wiring; snapshots and docs can proceed in parallel after code is in place.
+2026-06-23T12:19:58Z iteration 1 phase 1 started parallel=False tasks=1
+2026-06-23T12:23:50Z iteration 1 task t1 ('Add repository social metadata request layer') status=0
+2026-06-23T12:23:50Z iteration 1 phase 2 started parallel=False tasks=1
+2026-06-23T12:26:37Z iteration 1 task t2 ('Wire repository social metadata facade') status=0
+2026-06-23T12:26:37Z iteration 1 phase 3 started parallel=True tasks=2
+2026-06-23T12:28:13Z iteration 1 task t3 ('Refresh public API snapshots') status=0
+2026-06-23T12:30:32Z iteration 1 task t4 ('Update documentation and plan') status=0
+2026-06-23T12:30:32Z iteration 1 phase 4 started parallel=False tasks=1
+2026-06-23T12:33:00Z iteration 1 task t5 ('Validate and record results') status=0
+2026-06-23T12:33:00Z iteration 1 reviewer started
+
+## Reviewer Summary - Iteration 1 - 2026-06-23T12:36:04Z
+
+What was done:
+- Inspected every file changed in the repository social metadata slice: `ReposApi`, `SttpGiteaClient`, `GiteaEndpoint`, `GiteaRequests`, request/facade/audit tests, README, CHANGELOG, PLAN, API snapshot, and telemetry files.
+- Cross-checked `repoGetReviewers`, `repoListStargazers`, and `repoListSubscribers` against `plugin-redoc-2.yaml`. The local Swagger confirms reviewers as a non-paginated `UserList`, stargazers and subscribers as paginated `UserList` endpoints with `page`/`limit`, documented reviewer/subscriber `404`, and documented stargazer `403`/`404`.
+- Reviewed the public facade naming decision that exposes `/subscribers` as `watchers(owner, repo)` while keeping low-level endpoint/request names traceable to `repoListSubscribers`.
+
+What was found:
+- No functional blocker or regression was found.
+- The implementation is schema-traceable, read-only, and correctly reuses the existing `User`, pagination, retry, and error-mapping paths.
+- Request builders safely encode owner/repo path segments, preserve expected query behavior, send no request body or JSON `Content-Type`, and keep documented non-2xx expectations private to `GiteaEndpointAuditSpec`.
+- Facade tests cover reviewer success, stargazer and watcher multi-page streaming, path encoding, documented error propagation, and read-only retry behavior.
+- The main residual risk is evidence-level: no enabled live run has observed reviewers, stargazers, or watchers behavior against a real Gitea repository; credential-stripped `it.test` only proves hermetic skipping.
+
+Top improvement proposals:
+- Add fixture-gated live social metadata probes only when the repository has known reviewer, stargazer, or watcher identities; assert configured identities such as `GITEA_REVIEWER`, `GITEA_STARGAZER`, and `GITEA_WATCHER` rather than treating empty-list success as strong evidence.
+- Extract the repeated request-recording backend pattern from stream facade tests before adding another sequential-query streaming assertion.
+- If no live fixtures are available, continue with only small read-only Swagger-confirmed metadata endpoints and avoid write, upload, hook, key, search, admin, and broad download surfaces.
+- Keep the public `watchers` facade documentation explicit that the Swagger operation remains `repoListSubscribers` at `/subscribers`.
+2026-06-23T12:37:38Z iteration 1 reviewer completed status=0
+2026-06-23T12:37:38Z iteration 1 memory updated
+2026-06-23T12:37:38Z iteration 1 completed validation_status=0
+2026-06-23T12:37:38Z iteration 1 checkpoint started
+2026-06-23T12:37:38Z iteration 1 checkpoint status before commit:
+M  AGENT_LOG.md
+M  ALTERNATIVES.jsonl
+M  CHANGELOG.md
+M  MEMORY.md
+M  PLAN.md
+M  README.md
+M  SCORES.jsonl
+M  api-snapshot/client.txt
+M  client/src/io/worxbend/gitea4s/api/ReposApi.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala
+M  client/src/io/worxbend/gitea4s/http/GiteaRequests.scala
+M  client/src/io/worxbend/gitea4s/internal/SttpGiteaClient.scala
+M  client/test/src/io/worxbend/gitea4s/GiteaClientSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaEndpointAuditSpec.scala
+M  client/test/src/io/worxbend/gitea4s/http/GiteaRequestsSpec.scala

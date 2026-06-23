@@ -17,6 +17,7 @@ and zio-json.
   downloads, Git tree reads, Git blob reads, Git reference reads, annotated tag
   reads, repository contents metadata reads, raw/media repository file byte
   downloads, repository archive byte downloads, repository assignee metadata
+  reads, repository social metadata reviewers/stargazers/watchers
   reads, repository collaborator list/check/permission reads, repository team
   list/lookup reads,
   repository tag list/lookup reads, repository language-statistics reads,
@@ -32,10 +33,10 @@ and zio-json.
   pull-request create/edit, merge/update, commit-to-pull-request,
   single-commit, commit note, commit diff/patch, Git tree, Git blob, Git refs,
   annotated tag, repository contents, raw/media repository file, repository
-  archive, repository assignees, repository collaborator, repository team,
-  repository tag lookup, repository languages, repository tag-protection
-  metadata, repository branch-protection metadata, release list/detail,
-  latest-release,
+  archive, repository assignees, repository social metadata, repository
+  collaborator, repository team, repository tag lookup, repository languages,
+  repository tag-protection metadata, repository branch-protection metadata,
+  release list/detail, latest-release,
   release-by-tag, and release asset metadata endpoints,
   including documented non-2xx response labels, optional query parameters,
   `application/octet-stream`/Swagger `type: file` response shape for raw/media
@@ -199,12 +200,13 @@ Current stream-oriented APIs include user followers/following/search, user and
 organization repositories, organization members, issues, issue reactions, issue
 subscribers, issue tracked times, current-user stopwatches, repository-wide
 issue comments, branches, tags, repository collaborators, repository teams,
-releases, pull requests, and notification threads. Commit-status list APIs are
-also paginated streams. Pinned issues, pinned pull requests, repository tag
-protections, repository branch protections, and repository assignees are
-exposed as non-paginated chunks because Gitea returns those endpoints as plain
-list responses without pagination parameters. Release asset metadata lists are
-also non-paginated chunks in the local Swagger contract.
+repository stargazers, repository watchers, releases, pull requests, and
+notification threads. Commit-status list APIs are also paginated streams.
+Pinned issues, pinned pull requests, repository tag protections, repository
+branch protections, repository reviewers, and repository assignees are exposed
+as non-paginated chunks because Gitea returns those endpoints as plain list
+responses without pagination parameters. Release asset metadata lists are also
+non-paginated chunks in the local Swagger contract.
 
 ## Repository Language Statistics
 
@@ -238,6 +240,30 @@ parameters, so this is a non-paginated chunk rather than a stream. The request
 is read-only and retryable under `GiteaConfig.maxRetries`, sends JSON accept
 headers, sends no request body, and sends no JSON `Content-Type`. Assignee
 assignment and removal write operations are not implemented.
+
+## Repository Social Metadata
+
+Repository social metadata covers the Swagger-documented user-list read
+operations for reviewers, stargazers, and watchers:
+
+- `client.reviewers(owner, repo)` calls `repoGetReviewers` at
+  `GET /repos/{owner}/{repo}/reviewers` and returns
+  `IO[GiteaError, Chunk[User]]`. The local Swagger contract declares no
+  `page`, `limit`, or other query parameters, so reviewers are exposed as a
+  non-paginated chunk.
+- `client.stargazers(owner, repo)` calls `repoListStargazers` at
+  `GET /repos/{owner}/{repo}/stargazers` and streams paginated `User` values.
+  The stream starts at page 1 and sends `page` plus the configured
+  `GiteaConfig.pageSize` as `limit` on each request.
+- `client.watchers(owner, repo)` calls `repoListSubscribers` at
+  `GET /repos/{owner}/{repo}/subscribers` and streams paginated repository
+  watchers as `User` values. The public name is `watchers` to match Gitea's
+  summary wording while the request/endpoint names remain traceable to the
+  `/subscribers` operation.
+
+All three methods are read-only and retryable under `GiteaConfig.maxRetries`.
+They send JSON accept headers, send no request body, and send no JSON
+`Content-Type`. Star, watch, and reviewer write behavior is not implemented.
 
 ## Repository Tags
 
@@ -632,6 +658,12 @@ client.archive(
 )
 
 client.assignees(owner = "my-org", repo = "my-repo")
+
+client.reviewers(owner = "my-org", repo = "my-repo")
+
+client.stargazers(owner = "my-org", repo = "my-repo").take(25).runCollect
+
+client.watchers(owner = "my-org", repo = "my-repo").take(25).runCollect
 
 client.collaborators(owner = "my-org", repo = "my-repo").take(25).runCollect
 
@@ -1076,8 +1108,8 @@ commit-status, pull-request create/edit, pull-request merge/update,
 commit-to-pull-request, single-commit, commit note, commit diff/patch, and Git
 tree/blob/annotated-tag/refs, repository contents, raw/media repository file,
 repository archive, repository collaborator, repository team, repository tag
-lookup, repository assignees, repository languages, repository tag-protection
-metadata,
+lookup, repository assignees, repository social metadata, repository languages,
+repository tag-protection metadata,
 release list/detail,
 latest-release, release-by-tag, and release asset metadata
 endpoint groups against
