@@ -2,11 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-This project follows semantic versioning after `1.0.0`. Before `1.0.0`, minor
-versions may change source or binary compatibility while the typed Gitea API
-surface is still being filled out.
+This project follows [Semantic Versioning](https://semver.org). From `1.0.0`
+onward the public API of the published modules is stable: breaking changes
+require a major version. `1.0.0` does not imply full Gitea API coverage — the
+typed endpoint surface keeps growing in backward-compatible minor releases,
+guarded by the `api-snapshot/` binary-compatibility check.
 
 ## Unreleased
+
+## 1.0.0 - 2026-06-27
+
+First stable release. The public API of `gitea4s-core`, `gitea4s-client`,
+`gitea4s-backend-zio`, and `gitea4s-backend-okhttp` is now covered by the
+semantic-versioning guarantee above. Notable work since the pre-1.0 line:
 
 ### Changed
 
@@ -571,8 +579,9 @@ surface is still being filled out.
 
 ### Notes
 
-- No Maven Central release has been cut yet. Local snapshots use
-  `0.1.0-SNAPSHOT`.
+- `1.0.0` is the first version published from this Mill rewrite. The Maven
+  Central deployment runs through the gated `Publish Central` workflow described
+  in `RELEASE.md`.
 - Git refs slice validation passed with `./mill core.test`, `./mill client.test`,
   `./mill compatibility.check`, and
   `env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD ./mill __.test it.test examples.run`;

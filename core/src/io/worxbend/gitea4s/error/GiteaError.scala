@@ -2,6 +2,13 @@ package io.worxbend.gitea4s.error
 
 import java.time.Instant
 
+/** The error channel for every gitea4s call.
+  *
+  * HTTP failures keep the response body; resource-state statuses map to explicit
+  * cases (`MethodNotAllowed` 405, `PreconditionFailed` 412, `Locked` 423, …);
+  * `RateLimited` carries the reset time when Gitea sends one; `DecodeError` keeps
+  * the raw body; and `TransportError` preserves the underlying cause.
+  */
 sealed trait GiteaError extends Product with Serializable
 
 object GiteaError:

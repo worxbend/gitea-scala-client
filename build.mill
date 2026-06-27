@@ -10,7 +10,7 @@ import scalalib.*
 object Versions:
   // renovate: datasource=github-releases depName=scala/scala3 versioning=semver
   val scala = "3.8.4"
-  val library = "0.1.0-SNAPSHOT"
+  val library = "1.0.0"
   // renovate: datasource=maven depName=dev.zio:zio_3 versioning=maven
   val zio = "2.1.26"
   // renovate: datasource=maven depName=dev.zio:zio-json_3 versioning=maven

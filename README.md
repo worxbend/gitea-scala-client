@@ -7,7 +7,7 @@ A Scala 3 client library for the [Gitea](https://gitea.io) API, built with
 - **Package root:** `io.worxbend.gitea4s`
 - **JVM baseline:** Java 21 · **Scala:** 3.x
 - **API target:** Gitea `1.26.2` (local `plugin-redoc-2.yaml` is the contract)
-- **Version:** `0.1.0-SNAPSHOT` · **License:** Apache-2.0
+- **Version:** `1.0.0` · **License:** Apache-2.0
 - **Backends:** `backend-zio` (Java `HttpClient`, default) and an optional
   `backend-okhttp` bridge
 
@@ -18,21 +18,21 @@ A Scala 3 client library for the [Gitea](https://gitea.io) API, built with
 
 ## Installation
 
-Not yet published to Maven Central. Build or publish locally:
-
-```bash
-./mill __.compile
-./mill __.test
-./mill __.publishM2Local   # publishes to your local Maven repo
+```scala
+"io.worxbend" %% "gitea4s-core"           % "1.0.0"
+"io.worxbend" %% "gitea4s-client"         % "1.0.0"
+"io.worxbend" %% "gitea4s-backend-zio"    % "1.0.0"
+"io.worxbend" %% "gitea4s-backend-okhttp" % "1.0.0"
 ```
 
-Local snapshot coordinates:
+Most applications only need `gitea4s-backend-zio` (it pulls in `client` and
+`core`). Maven Central publishing runs through the gated `Publish Central`
+workflow; see `RELEASE.md`. To build or publish to your local Maven repo
+instead:
 
-```scala
-"io.worxbend" %% "gitea4s-core"          % "0.1.0-SNAPSHOT"
-"io.worxbend" %% "gitea4s-client"        % "0.1.0-SNAPSHOT"
-"io.worxbend" %% "gitea4s-backend-zio"   % "0.1.0-SNAPSHOT"
-"io.worxbend" %% "gitea4s-backend-okhttp" % "0.1.0-SNAPSHOT"
+```bash
+./mill __.compile __.test
+./mill __.publishM2Local
 ```
 
 Module dependency direction:

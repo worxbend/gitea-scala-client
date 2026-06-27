@@ -6,6 +6,9 @@ import io.worxbend.gitea4s.model.{Organization, Repository, User}
 import zio.IO
 import zio.stream.ZStream
 
+/** Organization operations, reached through `client.orgs`: organization
+  * metadata, members and public members, and organization repositories.
+  */
 trait OrgsApi:
   def get(org: String): IO[GiteaError, Organization]
 

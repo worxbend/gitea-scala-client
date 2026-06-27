@@ -123,7 +123,8 @@ Dependency PRs should run the full release-readiness validation:
 
 ## Releasing
 
-Versioning starts at `0.1.0-SNAPSHOT`. Pre-`1.0.0`, minor versions may change
-source or binary compatibility while the typed API surface is filled out. Release
-notes are tracked in `CHANGELOG.md`; the release checklist and Sonatype Central
+From `1.0.0` the published modules follow Semantic Versioning: breaking public
+API changes require a major version, additive endpoints/models go in minors, and
+the `api-snapshot/` check enforces it. Release notes are tracked in
+`CHANGELOG.md`; the release checklist, compatibility policy, and Sonatype Central
 process are in `RELEASE.md`.

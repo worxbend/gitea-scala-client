@@ -1,8 +1,8 @@
 # Release Process
 
-This project has Maven Central publishing groundwork through Mill's Sonatype
-Central Portal support. These notes define local release readiness checks and
-the manual Central publishing path for the pre-`1.0.0` line.
+This project publishes to Maven Central through Mill's Sonatype Central Portal
+support. These notes define local release readiness checks and the manual
+Central publishing path. The project is at `1.0.0`.
 
 ## Preconditions
 
@@ -102,10 +102,19 @@ Before the first Central release:
 
 ## Compatibility Policy
 
-Before `1.0.0`, minor versions may add, rename, or reshape typed endpoints and
-models as the client converges on the Gitea API `1.26.2` contract. Patch
-versions should be limited to bug fixes, documentation updates, and build or
-publishing fixes.
+From `1.0.0` the published modules follow [Semantic Versioning](https://semver.org):
+
+- **Major** — breaking changes to the public API of `core`, `client`,
+  `backend-zio`, or `backend-okhttp`.
+- **Minor** — backward-compatible additions, including new typed endpoints and
+  models as the client fills out more of the Gitea API `1.26.2` contract.
+  `1.0.0` is an API-stability commitment, not a coverage commitment.
+- **Patch** — bug fixes, documentation, and build/publishing fixes.
+
+Every release must pass `./mill compatibility.check`. A change that alters the
+`api-snapshot/` baseline is by definition a public-API change: it is allowed only
+in a minor release (additive) or a major release (breaking), and the baseline is
+refreshed with `./mill compatibility.writeSnapshot`.
 
 `./mill compatibility.check` compares the current published module JVM public
 signatures against the checked-in `api-snapshot/` baseline. The baseline covers

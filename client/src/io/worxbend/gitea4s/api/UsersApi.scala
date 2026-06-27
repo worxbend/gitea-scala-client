@@ -6,6 +6,9 @@ import io.worxbend.gitea4s.model.{StopWatch, User}
 import zio.IO
 import zio.stream.ZStream
 
+/** User operations, reached through `client.users`: the authenticated user
+  * ([[me]]), user lookup and search, followers/following, and active stopwatches.
+  */
 trait UsersApi:
   def me: IO[GiteaError, User]
 

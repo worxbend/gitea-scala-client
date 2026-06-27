@@ -100,10 +100,18 @@ built as a separate module on top of the library.
 - [ ] Split `GiteaRequests.scala` by resource group as it grows past ~2k lines.
 - [ ] Each endpoint keeps contract-audit + hermetic-stub + opt-in-live tests.
 
-### Phase E — 1.0 cut
-- [ ] Freeze the public API; publish a Scaladoc site; formalize binary-compat
-      guarantees.
-- [ ] Design multi-host config (profiles + token storage) so the CLI inherits it.
+### Phase E — 1.0 cut *(in progress)*
+- [x] Bumped `Versions.library` to `1.0.0`; verified `__.publishM2Local`
+      produces jar/sources/javadoc/pom for all four modules.
+- [x] Formalized the post-1.0 SemVer compatibility policy (README, RELEASE.md,
+      CONTRIBUTING.md, CHANGELOG.md), backed by the `api-snapshot/` check.
+- [x] Scaladoc on the public entry points (`GiteaClient`, the seven API traits,
+      `GiteaObserver`, `GiteaDownloads`, `GiteaError`); `__.docJar` builds clean.
+- [ ] Publish to Maven Central via the gated `Publish Central` workflow (needs
+      the configured secrets; manual, user-triggered).
+- [ ] Optional: a hosted Scaladoc site (GitHub Pages) and multi-host config
+      (profiles + token storage) — the latter is really a Phase F / CLI concern,
+      since the library already supports per-host clients.
 
 ### Phase F — `cli` module
 - [ ] New `cli` module → `backend-zio`; command framework; auth-profile storage;

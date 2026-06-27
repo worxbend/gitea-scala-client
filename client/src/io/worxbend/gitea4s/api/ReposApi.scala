@@ -37,6 +37,10 @@ import io.worxbend.gitea4s.model.{
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
+/** Repository operations, reached through `client.repos`: repository metadata,
+  * Git data (commits, trees, blobs, refs, tags), file contents and downloads,
+  * collaborators and teams, branch/tag protections, and commit statuses.
+  */
 trait ReposApi:
   def get(owner: String, repo: String): IO[GiteaError, Repository]
 

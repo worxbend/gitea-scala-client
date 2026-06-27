@@ -28,6 +28,10 @@ import io.worxbend.gitea4s.model.{
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
+/** Issue operations, reached through `client.issues`: issues and their
+  * comments, labels, reactions, subscriptions, dependencies, locking, deadlines,
+  * tracked time, and stopwatches.
+  */
 trait IssuesApi:
   def get(owner: String, repo: String, index: Long): IO[GiteaError, Issue]
 
