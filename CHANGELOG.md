@@ -8,6 +8,19 @@ surface is still being filled out.
 
 ## Unreleased
 
+### Changed
+
+- **Relicensed from GPL-2.0-only to Apache-2.0** (`LICENSE` and generated POM
+  metadata) to make the library freely depended upon. No code changes.
+- Reworked documentation: `README.md` slimmed to a user guide, with build,
+  testing, and API-design conventions moved to a new `CONTRIBUTING.md`. Added a
+  forward-looking `PLAN.md` roadmap (replacing the prior changelog-style plan).
+
+### Removed
+
+- Stray empty marker files and directories (`core/.hiden`, `http-client/`,
+  `util/`).
+
 ### Added
 
 - Mill-built Scala 3 rewrite under the `io.worxbend.gitea4s` package root.

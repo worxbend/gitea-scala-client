@@ -51,9 +51,9 @@ trait PublishableGitea4sModule extends Gitea4sModule, SonatypeCentralPublishModu
     url = "https://github.com/worxbend/gitea-scala-client",
     licenses = Seq(
       License(
-        id = "GPL-2.0-only",
-        name = "GNU General Public License v2.0 only",
-        url = "https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html",
+        id = "Apache-2.0",
+        name = "Apache License 2.0",
+        url = "https://www.apache.org/licenses/LICENSE-2.0",
         isOsiApproved = true,
         isFsfLibre = true,
         distribution = "repo"
