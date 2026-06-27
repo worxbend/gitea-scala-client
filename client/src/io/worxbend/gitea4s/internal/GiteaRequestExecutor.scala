@@ -2,16 +2,40 @@ package io.worxbend.gitea4s.internal
 
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.GiteaRequest
+import io.worxbend.gitea4s.observability.{GiteaObserver, RequestEvent, RequestOutcome}
 import sttp.client4.Backend
-import zio.{Clock, IO, Random, Task, UIO, ZIO}
+import zio.{Clock, Exit, IO, Random, Task, UIO, ZIO}
 
 import java.time.{Duration, Instant}
 
-final class GiteaRequestExecutor(backend: Backend[Task], maxRetries: Int):
+final class GiteaRequestExecutor(
+    backend: Backend[Task],
+    maxRetries: Int,
+    observer: GiteaObserver = GiteaObserver.noop
+):
   def send[A](request: GiteaRequest[A]): IO[GiteaError, A] =
     val retries = math.max(0, maxRetries)
-    if request.retryable && retries > 0 then sendWithRetries(request, attempt = 1, remainingRetries = retries)
-    else sendOnce(request)
+    val core =
+      if request.retryable && retries > 0 then sendWithRetries(request, attempt = 1, remainingRetries = retries)
+      else sendOnce(request)
+    if observer eq GiteaObserver.noop then core
+    else observed(request, core)
+
+  private def observed[A](request: GiteaRequest[A], core: IO[GiteaError, A]): IO[GiteaError, A] =
+    for
+      start <- Clock.nanoTime
+      exit <- core.exit
+      stop <- Clock.nanoTime
+      outcome = exit match
+        case Exit.Success(_) => Some(RequestOutcome.Success)
+        case Exit.Failure(cause) => cause.failureOption.map(RequestOutcome.Failure.apply)
+      _ <- ZIO.foreachDiscard(outcome) { result =>
+        observer
+          .onComplete(RequestEvent(request.endpoint, Duration.ofNanos(stop - start), result))
+          .catchAllCause(_ => ZIO.unit)
+      }
+      value <- exit
+    yield value
 
   private def sendWithRetries[A](
       request: GiteaRequest[A],

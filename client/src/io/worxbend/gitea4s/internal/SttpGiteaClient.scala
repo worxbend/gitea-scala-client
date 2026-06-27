@@ -20,7 +20,7 @@ import zio.Task
   * `Sttp*Api` class so the surface can grow without a single god-object.
   */
 final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends GiteaClient:
-  private val executor = GiteaRequestExecutor(backend, config.maxRetries)
+  private val executor = GiteaRequestExecutor(backend, config.maxRetries, config.observer)
 
   override val repos: ReposApi = SttpReposApi(config, executor)
   override val issues: IssuesApi = SttpIssuesApi(config, executor)

@@ -2,6 +2,7 @@ package io.worxbend.gitea4s
 
 import com.typesafe.config.{Config, ConfigException, ConfigFactory}
 import io.worxbend.gitea4s.model.Auth
+import io.worxbend.gitea4s.observability.GiteaObserver
 import sttp.model.Uri
 import zio.{ZIO, ZLayer}
 
@@ -16,7 +17,8 @@ final case class GiteaConfig(
     pageSize: Int,
     userAgent: Option[String],
     otp: Option[String],
-    maxRetries: Int
+    maxRetries: Int,
+    observer: GiteaObserver = GiteaObserver.noop
 )
 
 sealed trait GiteaConfigError extends Product with Serializable:

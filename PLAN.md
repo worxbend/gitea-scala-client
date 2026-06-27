@@ -78,9 +78,11 @@ built as a separate module on top of the library.
   (CI provides them via setup-java; locally, add the JDK `bin` and use
   `./mill --no-server`).
 
-### Phase C — Production hardening
-- [ ] Middleware/interceptor seam around `GiteaRequestExecutor` for request
-      logging, timing metrics, and an OpenTelemetry hook (opt-in, no-op default).
+### Phase C — Production hardening *(in progress)*
+- [x] Observability seam: `GiteaObserver` hook around `GiteaRequestExecutor`
+      (endpoint + duration + outcome), with `noop`/`logging`/`metrics` built-ins,
+      `++` composition, and defect-safety. Threaded via `GiteaConfig.observer`.
+      OpenTelemetry is a `GiteaObserver.fromFunction` user implementation.
 - [ ] Streaming byte downloads: `ZStream[Any, GiteaError, Byte]` variants for
       archive/raw/media.
 - [ ] Pagination ergonomics: verify `hasNext` does not fetch a trailing empty

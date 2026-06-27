@@ -216,6 +216,28 @@ client.users.me.foldZIO(
 )
 ```
 
+## Observability
+
+Set a `GiteaObserver` to hook logging, metrics, or tracing into every request.
+It runs after each call completes (with the endpoint, total duration, and
+outcome), cannot change the result, and a faulty observer can never break a
+request. The default is a no-op with zero overhead.
+
+```scala
+import io.worxbend.gitea4s.observability.GiteaObserver
+
+val config = GiteaConfig
+  .withToken(uri"https://gitea.example", token)
+  .copy(observer = GiteaObserver.logging ++ GiteaObserver.metrics)
+```
+
+- `GiteaObserver.logging` — one ZIO log line per request (error type only,
+  never bodies or credentials).
+- `GiteaObserver.metrics` — a `gitea4s_requests_total` counter and a
+  `gitea4s_request_duration_ms` histogram, tagged by method/operation/outcome.
+- `GiteaObserver.fromFunction(event => ...)` — write your own (e.g. an
+  OpenTelemetry span).
+
 ## Retry & Rate Limits
 
 Read-only requests honor `GiteaConfig.maxRetries` with jittered exponential

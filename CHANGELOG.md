@@ -44,6 +44,15 @@ surface is still being filled out.
 
 ### Added
 
+- Observability seam: a `GiteaObserver` hook (in
+  `io.worxbend.gitea4s.observability`) invoked after every request with the
+  endpoint, total duration (including retries), and success/failure outcome.
+  Set it through `GiteaConfig.copy(observer = ...)`. Built-ins: `noop` (default,
+  fully short-circuited so zero overhead), `logging` (per-request ZIO log lines;
+  error type only, never bodies/credentials), and `metrics` (a
+  `gitea4s_requests_total` counter and `gitea4s_request_duration_ms` histogram
+  tagged by method/operation/outcome). Observers compose with `++` and a
+  defecting observer can never break the underlying request.
 - Mill-built Scala 3 rewrite under the `io.worxbend.gitea4s` package root.
 - Typed core models, zio-json codecs, and the `GiteaError` ADT.
 - Read-only ZIO client APIs for users, organizations, repositories, issues,
