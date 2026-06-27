@@ -78,16 +78,16 @@ built as a separate module on top of the library.
   (CI provides them via setup-java; locally, add the JDK `bin` and use
   `./mill --no-server`).
 
-### Phase C — Production hardening *(in progress)*
+### Phase C — Production hardening *(done 2026-06-27)*
 - [x] Observability seam: `GiteaObserver` hook around `GiteaRequestExecutor`
       (endpoint + duration + outcome), with `noop`/`logging`/`metrics` built-ins,
       `++` composition, and defect-safety. Threaded via `GiteaConfig.observer`.
       OpenTelemetry is a `GiteaObserver.fromFunction` user implementation.
-- [ ] Streaming byte downloads: `ZStream[Any, GiteaError, Byte]` variants for
-      archive/raw/media. *(Needs a design decision: streaming responses require a
-      `StreamBackend[Task, ZioStreams]`, but the client boundary is
-      `Backend[Task]` — either capability-type the backend or make streaming a
-      backend-zio-only addition. Surfaced for review before implementing.)*
+- [x] Streaming byte downloads: backend-zio-only `GiteaDownloads` service
+      (`rawFile`/`mediaFile`/`archive` → `ZStream[Any, GiteaError, Byte]`),
+      decided as a backend-zio add-on so the core `Backend[Task]` boundary and
+      the OkHttp bridge stay intact. Shared request shape lives in the client
+      module as `GiteaDownloadRequest` + `GiteaRequests.*Download`.
 - [x] Pagination ergonomics: added an empty-page guard in `Pagination.paginated`
       so a missing/misleading `rel="next"`/total-count header can never fetch a
       trailing empty page or loop past the end. Covered by `PaginationSpec`.

@@ -933,6 +933,48 @@ public final class io.worxbend.gitea4s.http.GitTreeParams$ implements scala.deri
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.http.GiteaDownloadRequest
+public final class io.worxbend.gitea4s.http.GiteaDownloadRequest implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.http.GiteaDownloadRequest(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.model.Uri, scala.collection.immutable.Map<java.lang.String, java.lang.String>, scala.concurrent.duration.FiniteDuration);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public io.worxbend.gitea4s.http.GiteaEndpoint endpoint();
+  public sttp.model.Uri uri();
+  public scala.collection.immutable.Map<java.lang.String, java.lang.String> headers();
+  public scala.concurrent.duration.FiniteDuration timeout();
+  public io.worxbend.gitea4s.http.GiteaDownloadRequest copy(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.model.Uri, scala.collection.immutable.Map<java.lang.String, java.lang.String>, scala.concurrent.duration.FiniteDuration);
+  public io.worxbend.gitea4s.http.GiteaEndpoint copy$default$1();
+  public sttp.model.Uri copy$default$2();
+  public scala.collection.immutable.Map<java.lang.String, java.lang.String> copy$default$3();
+  public scala.concurrent.duration.FiniteDuration copy$default$4();
+  public io.worxbend.gitea4s.http.GiteaEndpoint _1();
+  public sttp.model.Uri _2();
+  public scala.collection.immutable.Map<java.lang.String, java.lang.String> _3();
+  public scala.concurrent.duration.FiniteDuration _4();
+  public static io.worxbend.gitea4s.http.GiteaDownloadRequest apply(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.model.Uri, scala.collection.immutable.Map<java.lang.String, java.lang.String>, scala.concurrent.duration.FiniteDuration);
+  public static io.worxbend.gitea4s.http.GiteaDownloadRequest fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.http.GiteaDownloadRequest unapply(io.worxbend.gitea4s.http.GiteaDownloadRequest);
+}
+
+## io.worxbend.gitea4s.http.GiteaDownloadRequest$
+public final class io.worxbend.gitea4s.http.GiteaDownloadRequest$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.http.GiteaDownloadRequest$ MODULE$;
+  public static {};
+  public io.worxbend.gitea4s.http.GiteaDownloadRequest apply(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.model.Uri, scala.collection.immutable.Map<java.lang.String, java.lang.String>, scala.concurrent.duration.FiniteDuration);
+  public io.worxbend.gitea4s.http.GiteaDownloadRequest unapply(io.worxbend.gitea4s.http.GiteaDownloadRequest);
+  public java.lang.String toString();
+  public io.worxbend.gitea4s.http.GiteaDownloadRequest fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.http.GiteaEndpoint
 public final class io.worxbend.gitea4s.http.GiteaEndpoint implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.http.GiteaEndpoint(java.lang.String, java.lang.String, java.lang.String, scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaParameter>, java.lang.String);
@@ -1339,6 +1381,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> addIssueSubscription(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.TrackedTime> addIssueTrackedTime(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.AddTimeOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.AnnotatedTag> annotatedTag(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
+  public static io.worxbend.gitea4s.http.GiteaDownloadRequest archiveDownload(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ArchiveParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> cancelScheduledAutoMerge(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> clearIssueLabels(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> createIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateIssue);
@@ -1379,6 +1422,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.TrackedTime>> issueTrackedTimes(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.IssueTrackedTimeListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.Issue>> issues(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.IssueListParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> lockIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.LockIssueOption);
+  public static io.worxbend.gitea4s.http.GiteaDownloadRequest mediaFileDownload(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ContentsParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> mergePullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.MergePullRequestOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> moveIssuePin(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.NotificationCount> notificationCount(io.worxbend.gitea4s.GiteaConfig);
@@ -1393,6 +1437,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.PullRequest>> pinnedPullRequests(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Reaction> postIssueCommentReaction(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditReactionOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Reaction> postIssueReaction(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditReactionOption);
+  public static io.worxbend.gitea4s.http.GiteaDownloadRequest rawFileDownload(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ContentsParams);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> removeIssueBlocking(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.IssueMeta);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> removeIssueDependency(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.IssueMeta);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> removeIssueLabel(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
@@ -1488,6 +1533,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static int repoTags$default$4();
   public static int repoTeams$default$4();
   public static int repoTopics$default$4();
+  public static io.worxbend.gitea4s.http.ArchiveParams archiveDownload$default$5();
   public static io.worxbend.gitea4s.http.GitTreeParams gitTree$default$5();
   public static int issueBlocks$default$5();
   public static io.worxbend.gitea4s.http.IssueCommentListParams issueComments$default$5();
@@ -1495,6 +1541,8 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static int issueReactions$default$5();
   public static int issueSubscriptions$default$5();
   public static io.worxbend.gitea4s.http.IssueTrackedTimeListParams issueTrackedTimes$default$5();
+  public static io.worxbend.gitea4s.http.ContentsParams mediaFileDownload$default$5();
+  public static io.worxbend.gitea4s.http.ContentsParams rawFileDownload$default$5();
   public static io.worxbend.gitea4s.http.CombinedStatusParams repoCombinedStatusByRef$default$5();
   public static io.worxbend.gitea4s.http.CommitNoteParams repoCommitNote$default$5();
   public static io.worxbend.gitea4s.http.ContentsParams repoContents$default$5();
@@ -1594,6 +1642,12 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.ContentsParams repoMediaFile$default$5();
   public io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<java.lang.Object>> repoGetArchive(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ArchiveParams);
   public io.worxbend.gitea4s.http.ArchiveParams repoGetArchive$default$5();
+  public io.worxbend.gitea4s.http.GiteaDownloadRequest rawFileDownload(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ContentsParams);
+  public io.worxbend.gitea4s.http.ContentsParams rawFileDownload$default$5();
+  public io.worxbend.gitea4s.http.GiteaDownloadRequest mediaFileDownload(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ContentsParams);
+  public io.worxbend.gitea4s.http.ContentsParams mediaFileDownload$default$5();
+  public io.worxbend.gitea4s.http.GiteaDownloadRequest archiveDownload(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ArchiveParams);
+  public io.worxbend.gitea4s.http.ArchiveParams archiveDownload$default$5();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.PullRequest>> repoPullRequests(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.PullRequestListParams);
   public io.worxbend.gitea4s.http.PullRequestListParams repoPullRequests$default$4();
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> createPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreatePullRequestOption);

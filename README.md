@@ -251,6 +251,30 @@ Use `backend-zio` by default (Java `HttpClient` via sttp's
 standardizes on OkHttp; it adapts sttp's async OkHttp backend to ZIO and keeps
 OkHttp off the core dependency path.
 
+## Streaming Downloads (backend-zio)
+
+`client.repos.rawFile`/`mediaFile`/`archive` buffer the whole body into a
+`Chunk[Byte]`. For large files and archives, `backend-zio` also exposes a
+`GiteaDownloads` service that streams the body lazily as
+`ZStream[Any, GiteaError, Byte]`, so it never has to fit in memory:
+
+```scala
+import io.worxbend.gitea4s.backend.zio.{GiteaDownloads, ZioGiteaBackend}
+import zio.ZIO
+import zio.stream.ZSink
+
+val layer = ZioGiteaBackend.downloadsConfigured(config)
+
+ZIO.serviceWithZIO[GiteaDownloads] { downloads =>
+  downloads.archive("my-org", "my-repo", "main.zip")
+    .run(ZSink.fromFileName("main.zip"))   // streamed straight to disk
+}.provideLayer(layer)
+```
+
+This requires a `ZioStreams` backend, so it is `backend-zio` only (the OkHttp
+bridge keeps the buffered methods). Streaming downloads are not retried, since a
+partially consumed body cannot be safely replayed.
+
 ## Examples
 
 ```bash

@@ -36,3 +36,18 @@ object ZioGiteaBackend:
 
   def usingClient(config: GiteaConfig, httpClient: HttpClient): ZLayer[Any, Nothing, GiteaClient] =
     ZLayer.succeed(config) >>> usingClient(httpClient)
+
+  /** A streaming-downloads service backed by a scoped ZioStreams backend. */
+  val downloads: ZLayer[GiteaConfig, Throwable, GiteaDownloads] =
+    ZLayer.scoped {
+      for
+        config <- zio.ZIO.service[GiteaConfig]
+        backend <- HttpClientZioBackend.scoped()
+      yield ZioGiteaDownloads(config, backend)
+    }
+
+  def downloadsConfigured(config: GiteaConfig): ZLayer[Any, Throwable, GiteaDownloads] =
+    ZLayer.succeed(config) >>> downloads
+
+  def downloadsUsingClient(config: GiteaConfig, httpClient: HttpClient): ZLayer[Any, Nothing, GiteaDownloads] =
+    ZLayer.succeed(ZioGiteaDownloads(config, HttpClientZioBackend.usingClient(httpClient)))

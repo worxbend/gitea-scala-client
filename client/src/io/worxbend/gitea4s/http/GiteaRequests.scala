@@ -683,6 +683,37 @@ object GiteaRequests:
       archiveQuery(params)
     )
 
+  // Streaming download descriptors. These mirror the buffered repoRawFile /
+  // repoMediaFile / repoGetArchive builders above (same path encoding, query,
+  // and octet-stream headers) but defer the response shape to the caller, so a
+  // ZioStreams-capable backend can stream the body instead of buffering it.
+  def rawFileDownload(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      filepath: String,
+      params: ContentsParams = ContentsParams.default
+  ): GiteaDownloadRequest =
+    download(config, GiteaEndpoints.repoGetRawFile, List("repos", owner, repo, "raw", filepath), contentsQuery(params))
+
+  def mediaFileDownload(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      filepath: String,
+      params: ContentsParams = ContentsParams.default
+  ): GiteaDownloadRequest =
+    download(config, GiteaEndpoints.repoGetRawFileOrLFS, List("repos", owner, repo, "media", filepath), contentsQuery(params))
+
+  def archiveDownload(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      archive: String,
+      params: ArchiveParams = ArchiveParams.default
+  ): GiteaDownloadRequest =
+    download(config, GiteaEndpoints.repoGetArchive, List("repos", owner, repo, "archive", archive), archiveQuery(params))
+
   def repoPullRequests(
       config: GiteaConfig,
       owner: String,
@@ -1686,6 +1717,19 @@ object GiteaRequests:
         .headers(commonHeaders(config, "application/octet-stream")),
       decode = GiteaResponseMapper.decodeBytes,
       retryable = GiteaRequest.isReadOnly(endpoint)
+    )
+
+  private def download(
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      query: List[(String, String)]
+  ): GiteaDownloadRequest =
+    GiteaDownloadRequest(
+      endpoint = endpoint,
+      uri = apiUri(config.baseUrl, path, query),
+      headers = commonHeaders(config, "application/octet-stream"),
+      timeout = config.timeout
     )
 
   private def post[A](

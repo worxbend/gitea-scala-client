@@ -50,6 +50,15 @@ surface is still being filled out.
 
 ### Added
 
+- Streaming binary downloads on `backend-zio` through a new `GiteaDownloads`
+  service (`rawFile`/`mediaFile`/`archive`), returning
+  `ZStream[Any, GiteaError, Byte]` so large files and archives are streamed
+  lazily instead of buffered into a `Chunk[Byte]`. Obtained via
+  `ZioGiteaBackend.downloads` / `downloadsConfigured` / `downloadsUsingClient`.
+  Requires a `ZioStreams` backend (backend-zio only; OkHttp keeps the buffered
+  `GiteaClient` methods). Streaming downloads are not retried. The shared request
+  shape is exposed in the client module as `GiteaDownloadRequest` plus
+  `GiteaRequests.rawFileDownload`/`mediaFileDownload`/`archiveDownload`.
 - Observability seam: a `GiteaObserver` hook (in
   `io.worxbend.gitea4s.observability`) invoked after every request with the
   endpoint, total duration (including retries), and success/failure outcome.
