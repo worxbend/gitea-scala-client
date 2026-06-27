@@ -84,9 +84,13 @@ built as a separate module on top of the library.
       `++` composition, and defect-safety. Threaded via `GiteaConfig.observer`.
       OpenTelemetry is a `GiteaObserver.fromFunction` user implementation.
 - [ ] Streaming byte downloads: `ZStream[Any, GiteaError, Byte]` variants for
-      archive/raw/media.
-- [ ] Pagination ergonomics: verify `hasNext` does not fetch a trailing empty
-      page.
+      archive/raw/media. *(Needs a design decision: streaming responses require a
+      `StreamBackend[Task, ZioStreams]`, but the client boundary is
+      `Backend[Task]` — either capability-type the backend or make streaming a
+      backend-zio-only addition. Surfaced for review before implementing.)*
+- [x] Pagination ergonomics: added an empty-page guard in `Pagination.paginated`
+      so a missing/misleading `rel="next"`/total-count header can never fetch a
+      trailing empty page or loop past the end. Covered by `PaginationSpec`.
 
 ### Phase D — CLI-critical write surface *(hand-written, same audit discipline)*
 - [ ] Prioritized writes: repo create/edit/delete/fork; branch create/delete;

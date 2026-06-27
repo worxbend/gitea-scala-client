@@ -11,7 +11,11 @@ object Pagination:
   ): ZStream[Any, GiteaError, A] =
     ZStream.paginateChunkZIO(1) { page =>
       fetchPage(page).map { result =>
-        val next = Option.when(result.hasNext)(page + 1)
+        // Only advance when the server signalled a next page *and* this page
+        // returned data. The empty-page guard means a missing or misleading
+        // `rel="next"`/total-count header can never make us fetch a trailing
+        // empty page (or loop forever) past the end of the collection.
+        val next = Option.when(result.hasNext && result.data.nonEmpty)(page + 1)
         (result.data, next)
       }
     }

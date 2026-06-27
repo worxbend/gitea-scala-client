@@ -42,6 +42,12 @@ surface is still being filled out.
 - Stray empty marker files and directories (`core/.hiden`, `http-client/`,
   `util/`).
 
+### Fixed
+
+- Pagination now stops after an empty page even if the response still advertises
+  a next page, so a missing or misleading `rel="next"`/total-count header can no
+  longer cause a trailing empty fetch or an unbounded loop.
+
 ### Added
 
 - Observability seam: a `GiteaObserver` hook (in
