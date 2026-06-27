@@ -20,12 +20,12 @@ object ListMyRepos extends ZIOAppDefault:
         val program =
           ZIO.serviceWithZIO[GiteaClient] { client =>
             for
-              user <- client.me
+              user <- client.users.me
               login <- ZIO
                 .fromOption(user.login)
                 .orElseFail(GiteaError.DecodeError("GET /user response did not include login", ""))
               repositories <- client
-                .list(login, RepoListParams(limit = Some(25)))
+                .repos.list(login, RepoListParams(limit = Some(25)))
                 .take(25)
                 .runCollect
             yield (login, repositories)

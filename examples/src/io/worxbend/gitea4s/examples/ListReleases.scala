@@ -26,7 +26,7 @@ object ListReleases extends ZIOAppDefault:
           case Some((owner, repo)) =>
             val program =
               ZIO.serviceWithZIO[GiteaClient] { client =>
-                client.releases(owner, repo).take(25).runCollect
+                client.releases.releases(owner, repo).take(25).runCollect
               }
 
             Console.printLine(ExampleSupport.referenceLine) *>

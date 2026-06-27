@@ -3,7 +3,13 @@
 # Verify with ./mill compatibility.check.
 
 ## io.worxbend.gitea4s.GiteaClient
-public interface io.worxbend.gitea4s.GiteaClient extends io.worxbend.gitea4s.api.ReposApi,io.worxbend.gitea4s.api.IssuesApi,io.worxbend.gitea4s.api.UsersApi,io.worxbend.gitea4s.api.ReleasesApi,io.worxbend.gitea4s.api.PullRequestsApi,io.worxbend.gitea4s.api.NotificationsApi {
+public interface io.worxbend.gitea4s.GiteaClient {
+  public abstract io.worxbend.gitea4s.api.ReposApi repos();
+  public abstract io.worxbend.gitea4s.api.IssuesApi issues();
+  public abstract io.worxbend.gitea4s.api.PullRequestsApi pulls();
+  public abstract io.worxbend.gitea4s.api.ReleasesApi releases();
+  public abstract io.worxbend.gitea4s.api.NotificationsApi notifications();
+  public abstract io.worxbend.gitea4s.api.UsersApi users();
   public abstract io.worxbend.gitea4s.api.OrgsApi orgs();
   public static io.worxbend.gitea4s.GiteaClient fromBackend(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Backend<zio.ZIO<java.lang.Object, java.lang.Throwable, java.lang.Object>>);
 }
@@ -578,6 +584,8 @@ public interface io.worxbend.gitea4s.api.ReposApi {
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Team> teams(java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Team> team(java.lang.String, java.lang.String, java.lang.String);
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> list(java.lang.String, io.worxbend.gitea4s.http.RepoListParams);
+  public static io.worxbend.gitea4s.http.RepoListParams list$default$2$(io.worxbend.gitea4s.api.ReposApi);
+  public default io.worxbend.gitea4s.http.RepoListParams list$default$2();
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.NewIssuePinsAllowed> newIssuePinsAllowed(java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<java.lang.String>> topics(java.lang.String, java.lang.String);
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Branch> branches(java.lang.String, java.lang.String);

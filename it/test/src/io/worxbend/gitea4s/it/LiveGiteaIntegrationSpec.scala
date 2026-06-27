@@ -11,7 +11,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
     suite("LiveGiteaIntegrationSpec")(
       test("calls GET /user when live credentials are configured") {
         withLiveClient { client =>
-          client.me.map { user =>
+          client.users.me.map { user =>
             assertTrue(user.login.exists(_.nonEmpty))
           }
         }
@@ -19,9 +19,9 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
       test("streams the authenticated user's repositories through the live backend") {
         withLiveClient { client =>
           for
-            user <- client.me
+            user <- client.users.me
             username <- ZIO.fromOption(user.login).orElseFail("GET /user response did not include login")
-            repos <- client.list(username, RepoListParams(limit = Some(1))).take(1).runCollect
+            repos <- client.repos.list(username, RepoListParams(limit = Some(1))).take(1).runCollect
           yield assertTrue(repos.length <= 1)
         }
       },
@@ -31,7 +31,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             ref <- liveEnv(Env.ref)
-            refs <- client.gitRefs(owner, repo, ref)
+            refs <- client.repos.gitRefs(owner, repo, ref)
           yield assertTrue(refs.exists(_.ref.exists(_.endsWith(ref))))
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -43,7 +43,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             sha <- liveEnv(Env.annotatedTagSha)
-            tag <- client.annotatedTag(owner, repo, sha)
+            tag <- client.repos.annotatedTag(owner, repo, sha)
           yield assertTrue(tag.sha.contains(sha))
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -59,7 +59,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             filepath <- liveEnv(Env.contentsFilepath)
-            contents <- client.contents(owner, repo, filepath, params)
+            contents <- client.repos.contents(owner, repo, filepath, params)
           yield assertTrue(contents != null)
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -75,7 +75,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             filepath <- liveEnv(Env.rawFilepath)
-            bytes <- client.rawFile(owner, repo, filepath, params)
+            bytes <- client.repos.rawFile(owner, repo, filepath, params)
           yield assertTrue(bytes.nonEmpty)
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -89,7 +89,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             archive <- liveEnv(Env.archive)
-            bytes <- client.archive(owner, repo, archive, params)
+            bytes <- client.repos.archive(owner, repo, archive, params)
           yield assertTrue(bytes.nonEmpty)
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -101,7 +101,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             releaseId <- liveEnvLong(Env.releaseId)
-            release <- client.release(owner, repo, releaseId)
+            release <- client.releases.release(owner, repo, releaseId)
           yield assertTrue(release.id.contains(releaseId))
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -113,7 +113,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             tag <- liveEnv(Env.releaseTag)
-            release <- client.releaseByTag(owner, repo, tag)
+            release <- client.releases.releaseByTag(owner, repo, tag)
           yield assertTrue(release.tagName.contains(tag))
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -125,7 +125,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             expectedTag <- liveEnv(Env.latestReleaseTag)
-            release <- client.latestRelease(owner, repo)
+            release <- client.releases.latestRelease(owner, repo)
           yield assertTrue(release.tagName.contains(expectedTag))
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -138,7 +138,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             repo <- liveEnv(Env.repo)
             releaseId <- liveEnvLong(Env.releaseId)
             expectedAssetId <- optionalLiveEnvLong(Env.releaseAssetId)
-            assets <- client.releaseAssets(owner, repo, releaseId)
+            assets <- client.releases.releaseAssets(owner, repo, releaseId)
           yield expectedAssetId match
             case Some(assetId) => assertTrue(assets.exists(_.id.contains(assetId)))
             case None          => assertTrue(assets.forall(_.id.forall(_ > 0L)))
@@ -153,7 +153,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             repo <- liveEnv(Env.repo)
             releaseId <- liveEnvLong(Env.releaseId)
             assetId <- liveEnvLong(Env.releaseAssetId)
-            asset <- client.releaseAsset(owner, repo, releaseId, assetId)
+            asset <- client.releases.releaseAsset(owner, repo, releaseId, assetId)
           yield assertTrue(asset.id.contains(assetId))
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@

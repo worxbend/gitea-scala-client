@@ -33,7 +33,7 @@ object ListPullRequests extends ZIOAppDefault:
 
             val program =
               ZIO.serviceWithZIO[GiteaClient] { client =>
-                client.pullRequests(owner, repo, params).take(25).runCollect
+                client.pulls.pullRequests(owner, repo, params).take(25).runCollect
               }
 
             Console.printLine(ExampleSupport.referenceLine) *>

@@ -127,7 +127,7 @@ trait ReposApi:
 
   def team(owner: String, repo: String, team: String): IO[GiteaError, Team]
 
-  def list(owner: String, params: RepoListParams): ZStream[Any, GiteaError, Repository]
+  def list(owner: String, params: RepoListParams = RepoListParams.default): ZStream[Any, GiteaError, Repository]
 
   def newIssuePinsAllowed(owner: String, repo: String): IO[GiteaError, NewIssuePinsAllowed]
 

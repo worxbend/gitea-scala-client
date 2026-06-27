@@ -63,9 +63,9 @@ object Main extends ZIOAppDefault:
   def run =
     ZIO.serviceWithZIO[GiteaClient] { client =>
       for
-        me    <- client.me
+        me    <- client.users.me
         login <- ZIO.fromOption(me.login).orElseFail(new RuntimeException("missing login"))
-        repos <- client.list(login, RepoListParams(limit = Some(25))).take(25).runCollect
+        repos <- client.repos.list(login, RepoListParams(limit = Some(25))).take(25).runCollect
         _     <- Console.printLine(s"Repositories for $login")
         _     <- ZIO.foreachDiscard(repos)(r =>
                    Console.printLine(s"- ${r.fullName.orElse(r.name).getOrElse("<unknown>")}"))
@@ -121,70 +121,84 @@ pages lazily and follows pagination headers. Endpoints that Gitea returns as
 plain (non-paginated) lists return `IO[GiteaError, Chunk[A]]` instead.
 
 ```scala
-client.list(owner, RepoListParams(limit = Some(50))).take(100).runCollect
-client.notificationThreads().take(100).runCollect
+client.repos.list(owner, RepoListParams(limit = Some(50))).take(100).runCollect
+client.notifications.notificationThreads().take(100).runCollect
 ```
+
+## Namespaces
+
+The client is organized into resource namespaces; every call goes through one:
+
+| Namespace | Covers |
+| --- | --- |
+| `client.repos` | repositories, Git data, contents, collaborators, statuses |
+| `client.issues` | issues, comments, labels, reactions, tracked time |
+| `client.pulls` | pull requests, reviews, merges, diffs |
+| `client.releases` | releases and release assets |
+| `client.notifications` | notification threads and counts |
+| `client.users` | the current user (`users.me`), lookup, search, followers |
+| `client.orgs` | organizations and their members/repositories |
 
 ## Usage Cookbook
 
-Representative calls by area. The published surface is broader — see
+Representative calls by namespace. The published surface is broader — see
 `CHANGELOG.md` for the full list.
 
 **Repositories & Git data**
 
 ```scala
-client.get(owner, repo)
-client.branches(owner, repo).runCollect
-client.tags(owner, repo).runCollect
-client.commit(owner, repo, sha)
-client.gitTree(owner, repo, sha)
-client.contents(owner, repo, filepath = "docs/readme.md", ContentsParams(ref = Some("main")))
-client.rawFile(owner, repo, filepath = "README.md", ContentsParams.default)   // Chunk[Byte]
-client.archive(owner, repo, archive = "main.zip")                              // Chunk[Byte]
-client.languages(owner, repo)
-client.collaborators(owner, repo).runCollect
+client.repos.get(owner, repo)
+client.repos.branches(owner, repo).runCollect
+client.repos.tags(owner, repo).runCollect
+client.repos.commit(owner, repo, sha)
+client.repos.gitTree(owner, repo, sha)
+client.repos.contents(owner, repo, filepath = "docs/readme.md", ContentsParams(ref = Some("main")))
+client.repos.rawFile(owner, repo, filepath = "README.md", ContentsParams.default) // Chunk[Byte]
+client.repos.archive(owner, repo, archive = "main.zip")                            // Chunk[Byte]
+client.repos.languages(owner, repo)
+client.repos.collaborators(owner, repo).runCollect
 ```
 
 **Issues**
 
 ```scala
-client.create(owner, repo, CreateIssue(title = "Bug report", body = Some("...")))
-client.edit(owner, repo, index = 12, EditIssue(title = Some("Updated")))
-client.close(owner, repo, index = 12)
-client.comment(owner, repo, index = 12, body = "Confirmed")
-client.addLabels(owner, repo, index = 12, labels = Chunk(1L, 2L))
-client.list(owner, repo, IssueListParams.default).runCollect
+client.issues.create(owner, repo, CreateIssue(title = "Bug report", body = Some("...")))
+client.issues.edit(owner, repo, index = 12, EditIssue(title = Some("Updated")))
+client.issues.close(owner, repo, index = 12)
+client.issues.comment(owner, repo, index = 12, body = "Confirmed")
+client.issues.addLabels(owner, repo, index = 12, labels = Chunk(1L, 2L))
+client.issues.list(owner, repo).runCollect
 ```
 
 **Pull requests**
 
 ```scala
-client.pullRequests(owner, repo).runCollect
-client.createPullRequest(owner, repo,
+client.pulls.pullRequests(owner, repo).runCollect
+client.pulls.createPullRequest(owner, repo,
   CreatePullRequestOption(base = Some("main"), head = Some("feature"), title = Some("...")))
-client.createPullRequestReview(owner, repo, index = 7,
+client.pulls.createPullRequestReview(owner, repo, index = 7,
   CreatePullReviewOptions(body = Some("LGTM"), event = Some(PullReviewState.Approved)))
-client.mergePullRequest(owner, repo, index = 7,
+client.pulls.mergePullRequest(owner, repo, index = 7,
   MergePullRequestOption(mergeMethod = MergePullRequestMethod.Squash))
-client.pullRequestDiffOrPatch(owner, repo, index = 7, PullRequestDiffType.Diff)
+client.pulls.pullRequestDiffOrPatch(owner, repo, index = 7, PullRequestDiffType.Diff)
 ```
 
 **Releases & commit statuses**
 
 ```scala
-client.releases(owner, repo).runCollect
-client.latestRelease(owner, repo)
-client.releaseByTag(owner, repo, tag = "v1.0.0")
-client.createStatus(owner, repo, sha,
+client.releases.releases(owner, repo).runCollect
+client.releases.latestRelease(owner, repo)
+client.releases.releaseByTag(owner, repo, tag = "v1.0.0")
+client.repos.createStatus(owner, repo, sha,
   CreateStatusOption(state = Some(CommitStatusState.Success), context = Some("ci/build")))
-client.combinedStatusByRef(owner, repo, ref = "main")
+client.repos.combinedStatusByRef(owner, repo, ref = "main")
 ```
 
 **Notifications**
 
 ```scala
-client.unreadNotificationCount
-client.notificationThreads().take(20).runCollect
+client.notifications.unreadNotificationCount
+client.notifications.notificationThreads().take(20).runCollect
 ```
 
 ## Error Handling
@@ -196,7 +210,7 @@ failures map to explicit cases (`MethodNotAllowed` 405, `PreconditionFailed`
 412, `Locked` 423, etc.).
 
 ```scala
-client.me.foldZIO(
+client.users.me.foldZIO(
   err  => Console.printLineError(s"Gitea call failed: $err"),
   user => Console.printLine(user.login.getOrElse("<unknown>"))
 )

@@ -15,7 +15,7 @@ object ShowApiReference extends ZIOAppDefault:
           ZIO.fail(error)
       case Right(Some(config)) =>
         Console.printLine(ExampleSupport.referenceLine) *>
-          ZIO.serviceWithZIO[io.worxbend.gitea4s.GiteaClient](_.me)
+          ZIO.serviceWithZIO[io.worxbend.gitea4s.GiteaClient](_.users.me)
             .provideLayer(ZioGiteaBackend.configured(config))
             .foldZIO(
               error => Console.printLineError(s"GET /user failed: ${ExampleSupport.describeFailure(error)}") *> ZIO.fail(error),

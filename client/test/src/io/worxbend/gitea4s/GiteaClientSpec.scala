@@ -112,7 +112,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           taskStub.whenAnyRequest.thenRespond(ResponseStub.adjust("""{"id":42,"login":"octo"}"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.me.map(user => user.id -> user.login))(
+        assertZIO(client.users.me.map(user => user.id -> user.login))(
           Assertion.equalTo(Some(42L) -> Some("octo"))
         )
       },
@@ -125,8 +125,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          user <- client.get("alice")
-          repo <- client.get("alice", "project")
+          user <- client.users.get("alice")
+          repo <- client.repos.get("alice", "project")
         yield assertTrue(
           user.login.contains("alice"),
           repo.name.contains("project")
@@ -140,7 +140,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""{"issues":true,"pull_requests":false}"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.newIssuePinsAllowed("owner", "repo").map(value => value.issues -> value.pullRequests))(
+        assertZIO(client.repos.newIssuePinsAllowed("owner", "repo").map(value => value.issues -> value.pullRequests))(
           Assertion.equalTo(Some(true) -> Some(false))
         )
       },
@@ -157,7 +157,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           )
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.commit("alice", "api", "abc123").map(commit => commit.sha -> commit.commit.flatMap(_.message)))(
+        assertZIO(client.repos.commit("alice", "api", "abc123").map(commit => commit.sha -> commit.commit.flatMap(_.message)))(
           Assertion.equalTo(Some("abc123") -> Some("Add single commit facade test"))
         )
       },
@@ -174,7 +174,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(
           client
-            .commit(
+            .repos.commit(
               "alice",
               "api",
               "abc123",
@@ -200,8 +200,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val validationClient = GiteaClient.fromBackend(config, validationBackend)
 
         for
-          notFound <- notFoundClient.commit("alice", "api", "missing-sha").either
-          validation <- validationClient.commit("alice", "api", "bad-sha").either
+          notFound <- notFoundClient.repos.commit("alice", "api", "missing-sha").either
+          validation <- validationClient.repos.commit("alice", "api", "bad-sha").either
         yield assertTrue(
           notFound == Left(GiteaError.NotFound("commit not found", notFoundBody)),
           validation == Left(GiteaError.UnprocessableEntity("validation failed", validationBody))
@@ -212,7 +212,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val backend = taskStub.whenAnyRequest.thenThrow(failure)
         val client = GiteaClient.fromBackend(config, backend)
 
-        client.commit("alice", "api", "abc123").either.map { result =>
+        client.repos.commit("alice", "api", "abc123").either.map { result =>
           assertTrue(
             result.left.exists {
               case GiteaError.TransportError(cause) => cause eq failure
@@ -233,7 +233,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.commit("alice", "api", "abc123").fork
+          fiber <- client.repos.commit("alice", "api", "abc123").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           commit <- fiber.join
         yield assertTrue(
@@ -266,7 +266,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust(patch))
         val client = GiteaClient.fromBackend(facadeConfig, backend)
 
-        assertZIO(client.commitDiffOrPatch("space owner", "repo/slash", "abc/def 123", CommitDiffType.patch))(
+        assertZIO(client.repos.commitDiffOrPatch("space owner", "repo/slash", "abc/def 123", CommitDiffType.patch))(
           Assertion.equalTo(patch)
         )
       },
@@ -279,7 +279,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           ).thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.commitDiffOrPatch("alice", "api", "missing-sha", CommitDiffType.diff).either)(
+        assertZIO(client.repos.commitDiffOrPatch("alice", "api", "missing-sha", CommitDiffType.diff).either)(
           Assertion.equalTo(Left(GiteaError.NotFound("commit diff not found", body)))
         )
       },
@@ -297,7 +297,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.commitDiffOrPatch("alice", "api", "abc123", CommitDiffType.diff).fork
+          fiber <- client.repos.commitDiffOrPatch("alice", "api", "abc123", CommitDiffType.diff).fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           diff <- fiber.join
           remaining <- responses.get
@@ -340,7 +340,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(
           client
-            .commitNote(
+            .repos.commitNote(
               "space owner",
               "repo/slash",
               "abc/def 123",
@@ -369,7 +369,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.commitNote("alice", "api", "abc123").fork
+          fiber <- client.repos.commitNote("alice", "api", "abc123").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           note <- fiber.join
           remaining <- responses.get
@@ -414,7 +414,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(
           client
-            .gitTree(
+            .repos.gitTree(
               "space owner",
               "repo/slash",
               "abc/def 123",
@@ -447,7 +447,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(
           client
-            .gitTree("alice", "api", "abc123")
+            .repos.gitTree("alice", "api", "abc123")
             .map(tree => tree.sha -> tree.tree.flatMap(_.headOption.flatMap(_.path)) -> tree.truncated)
         )(
           Assertion.equalTo(Some("abc123") -> Some("README.md") -> Some(false))
@@ -470,8 +470,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val notFoundClient = GiteaClient.fromBackend(config, notFoundBackend)
 
         for
-          bad <- badClient.gitTree("alice", "api", "bad-sha", GitTreeParams.default).either
-          notFound <- notFoundClient.gitTree("alice", "api", "missing-sha", GitTreeParams.default).either
+          bad <- badClient.repos.gitTree("alice", "api", "bad-sha", GitTreeParams.default).either
+          notFound <- notFoundClient.repos.gitTree("alice", "api", "missing-sha", GitTreeParams.default).either
         yield assertTrue(
           bad == Left(GiteaError.BadRequest("invalid tree sha", badBody)),
           notFound == Left(GiteaError.NotFound("tree not found", notFoundBody))
@@ -495,7 +495,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.gitTree("alice", "api", "abc123", GitTreeParams.default).fork
+          fiber <- client.repos.gitTree("alice", "api", "abc123", GitTreeParams.default).fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           tree <- fiber.join
           remaining <- responses.get
@@ -538,7 +538,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(
           client
-            .gitBlob("space owner", "repo/slash", "blob/abc 123")
+            .repos.gitBlob("space owner", "repo/slash", "blob/abc 123")
             .map(blob => blob.content -> blob.encoding -> blob.lfsOid -> blob.lfsSize -> blob.sha -> blob.size)
         )(
           Assertion.equalTo(
@@ -563,8 +563,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val notFoundClient = GiteaClient.fromBackend(config, notFoundBackend)
 
         for
-          bad <- badClient.gitBlob("alice", "api", "bad-sha").either
-          notFound <- notFoundClient.gitBlob("alice", "api", "missing-sha").either
+          bad <- badClient.repos.gitBlob("alice", "api", "bad-sha").either
+          notFound <- notFoundClient.repos.gitBlob("alice", "api", "missing-sha").either
         yield assertTrue(
           bad == Left(GiteaError.BadRequest("invalid blob sha", badBody)),
           notFound == Left(GiteaError.NotFound("blob not found", notFoundBody))
@@ -588,7 +588,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.gitBlob("alice", "api", "blob123").fork
+          fiber <- client.repos.gitBlob("alice", "api", "blob123").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           blob <- fiber.join
           remaining <- responses.get
@@ -631,7 +631,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(
           client
-            .annotatedTag("space owner", "repo/slash", "tag/abc 123")
+            .repos.annotatedTag("space owner", "repo/slash", "tag/abc 123")
             .map(tag =>
               tag.message ->
                 tag.gitObject.flatMap(_.sha) ->
@@ -670,8 +670,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val notFoundClient = GiteaClient.fromBackend(config, notFoundBackend)
 
         for
-          bad <- badClient.annotatedTag("alice", "api", "bad-sha").either
-          notFound <- notFoundClient.annotatedTag("alice", "api", "missing-sha").either
+          bad <- badClient.repos.annotatedTag("alice", "api", "bad-sha").either
+          notFound <- notFoundClient.repos.annotatedTag("alice", "api", "missing-sha").either
         yield assertTrue(
           bad == Left(GiteaError.BadRequest("invalid tag ref", badBody)),
           notFound == Left(GiteaError.NotFound("tag not found", notFoundBody))
@@ -695,7 +695,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.annotatedTag("alice", "api", "tag123").fork
+          fiber <- client.repos.annotatedTag("alice", "api", "tag123").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           tag <- fiber.join
           remaining <- responses.get
@@ -730,7 +730,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(
           client
-            .gitRefs("space owner", "repo/slash")
+            .repos.gitRefs("space owner", "repo/slash")
             .map(refs =>
               refs.map(ref => ref.ref -> ref.gitObject.flatMap(_.sha) -> ref.gitObject.flatMap(_.`type`))
             )
@@ -760,7 +760,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(
           client
-            .gitRefs("space owner", "repo/slash", "heads/main")
+            .repos.gitRefs("space owner", "repo/slash", "heads/main")
             .map(refs => refs.map(ref => ref.ref -> ref.gitObject.flatMap(_.sha)))
         )(
           Assertion.equalTo(Chunk(Some("refs/heads/main") -> Some("abc123")))
@@ -783,8 +783,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val filteredRefsClient = GiteaClient.fromBackend(config, filteredRefsBackend)
 
         for
-          allRefs <- allRefsClient.gitRefs("alice", "missing").either
-          filteredRefs <- filteredRefsClient.gitRefs("alice", "api", "heads/main").either
+          allRefs <- allRefsClient.repos.gitRefs("alice", "missing").either
+          filteredRefs <- filteredRefsClient.repos.gitRefs("alice", "api", "heads/main").either
         yield assertTrue(
           allRefs == Left(GiteaError.NotFound("repository not found", allRefsBody)),
           filteredRefs == Left(GiteaError.NotFound("reference not found", filteredRefsBody))
@@ -808,7 +808,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.gitRefs("alice", "api", "heads/main").fork
+          fiber <- client.repos.gitRefs("alice", "api", "heads/main").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           refs <- fiber.join
           remaining <- responses.get
@@ -842,7 +842,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(
           client
-            .contents("space owner", "repo/slash", ContentsParams.default)
+            .repos.contents("space owner", "repo/slash", ContentsParams.default)
             .map(contents => contents.map(item => item.name -> item.path -> item.content -> item.links.flatMap(_.self)))
         )(
           Assertion.equalTo(
@@ -875,7 +875,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         assertZIO(
           client
-            .contents("space owner", "repo/slash", "docs/readme.md", ContentsParams.default)
+            .repos.contents("space owner", "repo/slash", "docs/readme.md", ContentsParams.default)
             .map(content => content.name -> content.path -> content.downloadUrl -> content.links.flatMap(_.git))
         )(
           Assertion.equalTo(
@@ -903,8 +903,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val params = ContentsParams(ref = Some("release/1.0"))
 
         for
-          rootContents <- listClient.contents("alice", "api", params)
-          fileContent <- fileClient.contents("alice", "api", "docs/readme.md", params)
+          rootContents <- listClient.repos.contents("alice", "api", params)
+          fileContent <- fileClient.repos.contents("alice", "api", "docs/readme.md", params)
         yield assertTrue(
           rootContents.map(_.path) == Chunk(Some("docs")),
           fileContent.path.contains("docs/readme.md")
@@ -927,8 +927,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val fileClient = GiteaClient.fromBackend(config, fileBackend)
 
         for
-          rootContents <- rootClient.contents("alice", "missing", ContentsParams.default).either
-          fileContents <- fileClient.contents("alice", "api", "docs/readme.md", ContentsParams.default).either
+          rootContents <- rootClient.repos.contents("alice", "missing", ContentsParams.default).either
+          fileContents <- fileClient.repos.contents("alice", "api", "docs/readme.md", ContentsParams.default).either
         yield assertTrue(
           rootContents == Left(GiteaError.NotFound("repository contents not found", rootBody)),
           fileContents == Left(GiteaError.NotFound("file contents not found", fileBody))
@@ -952,7 +952,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.contents("alice", "api", "docs/readme.md", ContentsParams.default).fork
+          fiber <- client.repos.contents("alice", "api", "docs/readme.md", ContentsParams.default).fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           content <- fiber.join
           remaining <- responses.get
@@ -1001,8 +1001,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val params = ContentsParams(ref = Some("release/1.0"))
 
         for
-          raw <- rawClient.rawFile("space owner", "repo/slash", "docs/readme.md", params)
-          media <- mediaClient.mediaFile("space owner", "repo/slash", "docs/readme.md", params)
+          raw <- rawClient.repos.rawFile("space owner", "repo/slash", "docs/readme.md", params)
+          media <- mediaClient.repos.mediaFile("space owner", "repo/slash", "docs/readme.md", params)
         yield assertTrue(
           raw == Chunk.fromArray(rawBytes),
           media == Chunk.fromArray(mediaBytes)
@@ -1029,8 +1029,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val mediaClient = GiteaClient.fromBackend(config, mediaBackend)
 
         for
-          raw <- rawClient.rawFile("alice", "api", "docs/readme.md").either
-          media <- mediaClient.mediaFile("alice", "api", "docs/readme.md").either
+          raw <- rawClient.repos.rawFile("alice", "api", "docs/readme.md").either
+          media <- mediaClient.repos.mediaFile("alice", "api", "docs/readme.md").either
         yield assertTrue(
           raw == Left(GiteaError.NotFound("raw file not found", rawBody)),
           media == Left(GiteaError.NotFound("media file not found", mediaBody))
@@ -1062,10 +1062,10 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val mediaClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), mediaBackend)
 
         for
-          rawFiber <- rawClient.rawFile("alice", "api", "docs/readme.md").fork
+          rawFiber <- rawClient.repos.rawFile("alice", "api", "docs/readme.md").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           raw <- rawFiber.join
-          mediaFiber <- mediaClient.mediaFile("alice", "api", "docs/readme.md").fork
+          mediaFiber <- mediaClient.repos.mediaFile("alice", "api", "docs/readme.md").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           media <- mediaFiber.join
         yield assertTrue(
@@ -1106,9 +1106,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val pathClient = GiteaClient.fromBackend(config, pathBackend)
 
         for
-          zip <- zipClient.archive("alice", "myrepo", "main.zip")
-          tar <- tarClient.archive("alice", "myrepo", "v1.0.0.tar.gz")
-          path <- pathClient.archive(
+          zip <- zipClient.repos.archive("alice", "myrepo", "main.zip")
+          tar <- tarClient.repos.archive("alice", "myrepo", "v1.0.0.tar.gz")
+          path <- pathClient.repos.archive(
             "alice",
             "myrepo",
             "main.zip",
@@ -1131,7 +1131,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           )
         val client = GiteaClient.fromBackend(config, backend)
 
-        for result <- client.archive("alice", "api", "main.zip").either
+        for result <- client.repos.archive("alice", "api", "main.zip").either
         yield assertTrue(result == Left(GiteaError.NotFound("archive not found", body)))
       },
       test("retries archive download because it is a read-only GET request") {
@@ -1149,7 +1149,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.archive("alice", "api", "main.zip").fork
+          fiber <- client.repos.archive("alice", "api", "main.zip").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           result <- fiber.join
         yield assertTrue(result == Chunk.fromArray(bytes))
@@ -1165,7 +1165,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""{"sha":"abc123"}"""))
         val client = GiteaClient.fromBackend(hermeticConfig, backend)
 
-        assertZIO(client.commit("alice", "api", "abc123").map(_.sha))(
+        assertZIO(client.repos.commit("alice", "api", "abc123").map(_.sha))(
           Assertion.equalTo(Some("abc123"))
         )
       },
@@ -1175,7 +1175,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             .thenRespond(ResponseStub.adjust("""{"id":17,"number":7,"title":"tracked"}"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.get("owner", "repo", 7).map(issue => issue.id -> issue.number -> issue.title))(
+        assertZIO(client.issues.get("owner", "repo", 7).map(issue => issue.id -> issue.number -> issue.title))(
           Assertion.equalTo(Some(17L) -> Some(7L) -> Some("tracked"))
         )
       },
@@ -1187,7 +1187,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""[{"id":17,"number":7,"title":"pinned"}]"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.pinned("owner", "repo").map(_.headOption.flatMap(_.title)))(
+        assertZIO(client.issues.pinned("owner", "repo").map(_.headOption.flatMap(_.title)))(
           Assertion.equalTo(Some("pinned"))
         )
       },
@@ -1202,7 +1202,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""{"id":18,"number":8,"title":"Created"}""", StatusCode.Created))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.create("owner", "repo", CreateIssue(title = "Created")).map(_.number))(
+        assertZIO(client.issues.create("owner", "repo", CreateIssue(title = "Created")).map(_.number))(
           Assertion.equalTo(Some(8L))
         )
       },
@@ -1214,7 +1214,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.delete("owner", "repo", 8).either)(
+        assertZIO(client.issues.delete("owner", "repo", 8).either)(
           Assertion.equalTo(Right(()))
         )
       },
@@ -1239,9 +1239,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          pinned <- client.pin("owner", "repo", 8).either
-          moved <- client.movePin("owner", "repo", 8, 2).either
-          unpinned <- client.unpin("owner", "repo", 8).either
+          pinned <- client.issues.pin("owner", "repo", 8).either
+          moved <- client.issues.movePin("owner", "repo", 8, 2).either
+          unpinned <- client.issues.unpin("owner", "repo", 8).either
         yield assertTrue(
           pinned == Right(()),
           moved == Right(()),
@@ -1259,7 +1259,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""{"id":18,"number":8,"title":"Retitle"}""", StatusCode.Created))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.edit("owner", "repo", 8, EditIssue(title = Some("Retitle"))).map(_.title))(
+        assertZIO(client.issues.edit("owner", "repo", 8, EditIssue(title = Some("Retitle"))).map(_.title))(
           Assertion.equalTo(Some("Retitle"))
         )
       },
@@ -1274,7 +1274,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""{"id":18,"number":8,"state":"closed"}""", StatusCode.Created))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.close("owner", "repo", 8).map(_.state.map(_.jsonValue)))(
+        assertZIO(client.issues.close("owner", "repo", 8).map(_.state.map(_.jsonValue)))(
           Assertion.equalTo(Some("closed"))
         )
       },
@@ -1289,7 +1289,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""{"id":30,"body":"Looks good"}""", StatusCode.Created))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.comment("owner", "repo", 8, "Looks good").map(comment => comment.id -> comment.body))(
+        assertZIO(client.issues.comment("owner", "repo", 8, "Looks good").map(comment => comment.id -> comment.body))(
           Assertion.equalTo(Some(30L) -> Some("Looks good"))
         )
       },
@@ -1333,18 +1333,18 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          issueComments <- client.comments(
+          issueComments <- client.issues.comments(
             "owner",
             "repo",
             8,
             IssueCommentListParams(since = Some(Instant.parse("2026-06-01T00:00:00Z")))
           )
           repoComments <- client
-            .repositoryComments("owner", "repo", RepositoryCommentListParams(limit = Some(1)))
+            .issues.repositoryComments("owner", "repo", RepositoryCommentListParams(limit = Some(1)))
             .runCollect
-          loaded <- client.comment("owner", "repo", 30)
-          edited <- client.editComment("owner", "repo", 30, EditIssueComment("Updated"))
-          deleted <- client.deleteComment("owner", "repo", 30).either
+          loaded <- client.issues.comment("owner", "repo", 30)
+          edited <- client.issues.editComment("owner", "repo", 30, EditIssueComment("Updated"))
+          deleted <- client.issues.deleteComment("owner", "repo", 30).either
         yield assertTrue(
           issueComments.map(_.body) == Chunk(Some("First")),
           repoComments.map(_.id) == Chunk(Some(30L), Some(31L)),
@@ -1405,12 +1405,12 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          issueReactions <- client.reactions("owner", "repo", 8).runCollect
-          issueReaction <- client.react("owner", "repo", 8, EditReactionOption("+1"))
-          issueReactionDeleted <- client.deleteReaction("owner", "repo", 8, EditReactionOption("+1")).either
-          commentReactions <- client.commentReactions("owner", "repo", 30)
-          commentReaction <- client.reactToComment("owner", "repo", 30, EditReactionOption("eyes"))
-          commentReactionDeleted <- client.deleteCommentReaction(
+          issueReactions <- client.issues.reactions("owner", "repo", 8).runCollect
+          issueReaction <- client.issues.react("owner", "repo", 8, EditReactionOption("+1"))
+          issueReactionDeleted <- client.issues.deleteReaction("owner", "repo", 8, EditReactionOption("+1")).either
+          commentReactions <- client.issues.commentReactions("owner", "repo", 30)
+          commentReaction <- client.issues.reactToComment("owner", "repo", 30, EditReactionOption("eyes"))
+          commentReactionDeleted <- client.issues.deleteCommentReaction(
             "owner",
             "repo",
             30,
@@ -1455,10 +1455,10 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          subscribers <- client.subscribers("owner", "repo", 8).runCollect
-          watch <- client.subscription("owner", "repo", 8)
-          subscribed <- client.subscribe("owner", "repo", 8, "alice").either
-          unsubscribed <- client.unsubscribe("owner", "repo", 8, "alice").either
+          subscribers <- client.issues.subscribers("owner", "repo", 8).runCollect
+          watch <- client.issues.subscription("owner", "repo", 8)
+          subscribed <- client.issues.subscribe("owner", "repo", 8, "alice").either
+          unsubscribed <- client.issues.unsubscribe("owner", "repo", 8, "alice").either
         yield assertTrue(
           subscribers.map(_.login) == Chunk(Some("alice"), Some("bob")),
           watch.subscribed.contains(true),
@@ -1501,11 +1501,11 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         for
           times <- client
-            .trackedTimes("owner", "repo", 8, IssueTrackedTimeListParams(user = Some("octo")))
+            .issues.trackedTimes("owner", "repo", 8, IssueTrackedTimeListParams(user = Some("octo")))
             .runCollect
-          added <- client.addTrackedTime("owner", "repo", 8, AddTimeOption(time = 900L))
-          deleted <- client.deleteTrackedTime("owner", "repo", 8, 44).either
-          reset <- client.resetTrackedTime("owner", "repo", 8).either
+          added <- client.issues.addTrackedTime("owner", "repo", 8, AddTimeOption(time = 900L))
+          deleted <- client.issues.deleteTrackedTime("owner", "repo", 8, 44).either
+          reset <- client.issues.resetTrackedTime("owner", "repo", 8).either
         yield assertTrue(
           times.map(_.id) == Chunk(Some(44L), Some(45L)),
           times.map(_.time) == Chunk(Some(3600L), Some(1800L)),
@@ -1544,10 +1544,10 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          stopwatches <- client.stopwatches.runCollect
-          started <- client.startStopwatch("owner", "repo", 8).either
-          stopped <- client.stopStopwatch("owner", "repo", 8).either
-          deleted <- client.deleteStopwatch("owner", "repo", 8).either
+          stopwatches <- client.users.stopwatches.runCollect
+          started <- client.issues.startStopwatch("owner", "repo", 8).either
+          stopped <- client.issues.stopStopwatch("owner", "repo", 8).either
+          deleted <- client.issues.deleteStopwatch("owner", "repo", 8).either
         yield assertTrue(
           stopwatches.map(_.issueIndex) == Chunk(Some(8L), Some(9L)),
           stopwatches.map(_.seconds) == Chunk(Some(60L), Some(120L)),
@@ -1593,11 +1593,11 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          existing <- client.labels("owner", "repo", 8)
-          replaced <- client.replaceLabels("owner", "repo", 8, Chunk(1L, 2L))
-          added <- client.addLabels("owner", "repo", 8, Chunk(3L))
-          removed <- client.removeLabel("owner", "repo", 8, 3).either
-          cleared <- client.clearLabels("owner", "repo", 8).either
+          existing <- client.issues.labels("owner", "repo", 8)
+          replaced <- client.issues.replaceLabels("owner", "repo", 8, Chunk(1L, 2L))
+          added <- client.issues.addLabels("owner", "repo", 8, Chunk(3L))
+          removed <- client.issues.removeLabel("owner", "repo", 8, 3).either
+          cleared <- client.issues.clearLabels("owner", "repo", 8).either
         yield assertTrue(
           existing.map(_.name) == Chunk(Some("kind/api")),
           replaced.map(_.id) == Chunk(Some(1L), Some(2L)),
@@ -1625,8 +1625,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          locked <- client.lock("owner", "repo", 8, LockIssueOption(lockReason = Some("resolved"))).either
-          unlocked <- client.unlock("owner", "repo", 8).either
+          locked <- client.issues.lock("owner", "repo", 8, LockIssueOption(lockReason = Some("resolved"))).either
+          unlocked <- client.issues.unlock("owner", "repo", 8).either
         yield assertTrue(
           locked == Right(()),
           unlocked == Right(())
@@ -1645,7 +1645,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         assertZIO(
-          client.editDeadline("owner", "repo", 8, EditDeadlineOption(dueDate = Some(due))).map(_.dueDate)
+          client.issues.editDeadline("owner", "repo", 8, EditDeadlineOption(dueDate = Some(due))).map(_.dueDate)
         )(Assertion.equalTo(Some(due)))
       },
       test("manages issue blocking relationships through the IssuesApi methods") {
@@ -1679,9 +1679,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          blocked <- client.blocks("owner", "repo", 8).runCollect
-          afterBlock <- client.block("owner", "repo", 8, IssueMeta(index = 13L))
-          afterUnblock <- client.unblock("owner", "repo", 8, IssueMeta(index = 13L))
+          blocked <- client.issues.blocks("owner", "repo", 8).runCollect
+          afterBlock <- client.issues.block("owner", "repo", 8, IssueMeta(index = 13L))
+          afterUnblock <- client.issues.unblock("owner", "repo", 8, IssueMeta(index = 13L))
         yield assertTrue(
           blocked.map(_.number) == Chunk(Some(13L), Some(14L)),
           afterBlock.number.contains(8L),
@@ -1719,9 +1719,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          dependencies <- client.dependencies("owner", "repo", 8).runCollect
-          afterAdd <- client.addDependency("owner", "repo", 8, IssueMeta(index = 21L))
-          afterRemove <- client.removeDependency("owner", "repo", 8, IssueMeta(index = 21L))
+          dependencies <- client.issues.dependencies("owner", "repo", 8).runCollect
+          afterAdd <- client.issues.addDependency("owner", "repo", 8, IssueMeta(index = 21L))
+          afterRemove <- client.issues.removeDependency("owner", "repo", 8, IssueMeta(index = 21L))
         yield assertTrue(
           dependencies.map(_.number) == Chunk(Some(21L), Some(22L)),
           afterAdd.number.contains(8L),
@@ -1785,7 +1785,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           taskStub.whenAnyRequest.thenRespond(ResponseStub.adjust("""{"id":"not-a-number"}"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.me.either)(
+        assertZIO(client.users.me.either)(
           Assertion.isLeft(Assertion.isSubtype[GiteaError.DecodeError](Assertion.anything))
         )
       },
@@ -1794,7 +1794,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val backend = taskStub.whenAnyRequest.thenThrow(failure)
         val client = GiteaClient.fromBackend(config, backend)
 
-        client.me.either.map { result =>
+        client.users.me.either.map { result =>
           assertTrue(
             result.left.exists {
               case GiteaError.TransportError(cause) => cause eq failure
@@ -1814,7 +1814,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.me.fork
+          fiber <- client.users.me.fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           user <- fiber.join
           remaining <- responses.get
@@ -1837,7 +1837,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.me.fork
+          fiber <- client.users.me.fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           user <- fiber.join
           remaining <- responses.get
@@ -1865,7 +1865,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.me.fork
+          fiber <- client.users.me.fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           early <- fiber.poll
           _ <- TestClock.adjust(Duration.ofSeconds(1))
@@ -1907,7 +1907,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           )
         val client = GiteaClient.fromBackend(config, backend)
 
-        client.list("owner", "repo", IssueListParams.default).runCollect.map { issues =>
+        client.issues.list("owner", "repo", IssueListParams.default).runCollect.map { issues =>
           assertTrue(issues.map(_.number) == Chunk(Some(1L), Some(2L)))
         }
       },
@@ -1927,8 +1927,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          repos <- client.list("alice", RepoListParams.default).runCollect
-          topics <- client.topics("alice", "api")
+          repos <- client.repos.list("alice", RepoListParams.default).runCollect
+          topics <- client.repos.topics("alice", "api")
         yield assertTrue(
           repos.map(_.name) == Chunk(Some("api"), Some("client")),
           topics == Chunk("scala", "zio")
@@ -1950,8 +1950,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          branches <- client.branches("alice", "api").runCollect
-          tags <- client.tags("alice", "api").runCollect
+          branches <- client.repos.branches("alice", "api").runCollect
+          tags <- client.repos.tags("alice", "api").runCollect
         yield assertTrue(
           branches.map(_.name) == Chunk(Some("main"), Some("release")),
           tags.map(_.name) == Chunk(Some("v1.0.0"), Some("v1.1.0"))
@@ -1969,7 +1969,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""{"Scala":1234,"Java":55}"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.languages("alice", "api"))(
+        assertZIO(client.repos.languages("alice", "api"))(
           Assertion.equalTo(LanguageStatistics(Map("Scala" -> 1234L, "Java" -> 55L)))
         )
       },
@@ -1982,7 +1982,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.languages("alice", "missing").either)(
+        assertZIO(client.repos.languages("alice", "missing").either)(
           Assertion.equalTo(Left(GiteaError.NotFound("repository not found", body)))
         )
       },
@@ -1998,7 +1998,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.languages("alice", "api").fork
+          fiber <- client.repos.languages("alice", "api").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           languages <- fiber.join
         yield assertTrue(
@@ -2023,7 +2023,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust(armoredKey))
         val client = GiteaClient.fromBackend(facadeConfig, backend)
 
-        assertZIO(client.gpgSigningKey("alice", "api"))(
+        assertZIO(client.repos.gpgSigningKey("alice", "api"))(
           Assertion.equalTo(armoredKey)
         )
       },
@@ -2045,7 +2045,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("encoded-key"))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.gpgSigningKey("space owner", "repo/slash"))(
+        assertZIO(client.repos.gpgSigningKey("space owner", "repo/slash"))(
           Assertion.equalTo("encoded-key")
         )
       },
@@ -2059,7 +2059,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust(body, StatusCode.InternalServerError))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.gpgSigningKey("alice", "api").either)(
+        assertZIO(client.repos.gpgSigningKey("alice", "api").either)(
           Assertion.equalTo(Left(GiteaError.ServerError(500, body)))
         )
       },
@@ -2076,7 +2076,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.gpgSigningKey("alice", "api").fork
+          fiber <- client.repos.gpgSigningKey("alice", "api").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           signingKey <- fiber.join
         yield assertTrue(
@@ -2097,7 +2097,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""[{"id":1,"login":"alice"},{"id":2,"login":"octo"}]"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.assignees("alice", "api").map(_.map(_.login)))(
+        assertZIO(client.repos.assignees("alice", "api").map(_.map(_.login)))(
           Assertion.equalTo(Chunk(Some("alice"), Some("octo")))
         )
       },
@@ -2119,7 +2119,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""[{"id":7,"login":"reviewer"}]"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.assignees("space owner", "repo/slash").map(_.map(_.login)))(
+        assertZIO(client.repos.assignees("space owner", "repo/slash").map(_.map(_.login)))(
           Assertion.equalTo(Chunk(Some("reviewer")))
         )
       },
@@ -2133,7 +2133,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.assignees("alice", "missing").either)(
+        assertZIO(client.repos.assignees("alice", "missing").either)(
           Assertion.equalTo(Left(GiteaError.NotFound("repository not found", body)))
         )
       },
@@ -2150,7 +2150,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.assignees("alice", "api").fork
+          fiber <- client.repos.assignees("alice", "api").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           assignees <- fiber.join
         yield assertTrue(
@@ -2171,7 +2171,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""[{"id":1,"login":"reviewer-a"},{"id":2,"login":"reviewer-b"}]"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.reviewers("alice", "api").map(_.map(_.login)))(
+        assertZIO(client.repos.reviewers("alice", "api").map(_.map(_.login)))(
           Assertion.equalTo(Chunk(Some("reviewer-a"), Some("reviewer-b")))
         )
       },
@@ -2193,7 +2193,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""[{"id":7,"login":"encoded-reviewer"}]"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.reviewers("space owner", "repo/slash").map(_.map(_.login)))(
+        assertZIO(client.repos.reviewers("space owner", "repo/slash").map(_.map(_.login)))(
           Assertion.equalTo(Chunk(Some("encoded-reviewer")))
         )
       },
@@ -2231,7 +2231,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             override def monad: MonadError[Task] =
               taskMonad
           client = GiteaClient.fromBackend(config, backend)
-          stargazers <- client.stargazers("alice", "api").runCollect
+          stargazers <- client.repos.stargazers("alice", "api").runCollect
           queries <- seenQueries.get
         yield assertTrue(
           stargazers.map(_.login) == Chunk(Some("octo"), Some("mona")),
@@ -2273,7 +2273,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             override def monad: MonadError[Task] =
               taskMonad
           client = GiteaClient.fromBackend(config, backend)
-          watchers <- client.watchers("alice", "api").runCollect
+          watchers <- client.repos.watchers("alice", "api").runCollect
           queries <- seenQueries.get
         yield assertTrue(
           watchers.map(_.login) == Chunk(Some("watcher-a"), Some("watcher-b")),
@@ -2312,10 +2312,10 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val watchersClient = GiteaClient.fromBackend(config, watchersBackend)
 
         for
-          reviewersResult <- reviewersClient.reviewers("alice", "missing").either
-          stargazersForbidden <- stargazersForbiddenClient.stargazers("alice", "private").runCollect.either
-          stargazersNotFound <- stargazersNotFoundClient.stargazers("alice", "missing").runCollect.either
-          watchersResult <- watchersClient.watchers("alice", "missing").runCollect.either
+          reviewersResult <- reviewersClient.repos.reviewers("alice", "missing").either
+          stargazersForbidden <- stargazersForbiddenClient.repos.stargazers("alice", "private").runCollect.either
+          stargazersNotFound <- stargazersNotFoundClient.repos.stargazers("alice", "missing").runCollect.either
+          watchersResult <- watchersClient.repos.watchers("alice", "missing").runCollect.either
         yield assertTrue(
           reviewersResult == Left(GiteaError.NotFound("repository not found", reviewersBody)),
           stargazersForbidden == Left(GiteaError.Forbidden("forbidden", stargazersForbiddenBody)),
@@ -2344,8 +2344,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val watcherClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), watcherBackend)
 
         for
-          reviewerFiber <- reviewerClient.reviewers("alice", "api").fork
-          watcherFiber <- watcherClient.watchers("alice", "api").runCollect.fork
+          reviewerFiber <- reviewerClient.repos.reviewers("alice", "api").fork
+          watcherFiber <- watcherClient.repos.watchers("alice", "api").runCollect.fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           reviewers <- reviewerFiber.join
           watchers <- watcherFiber.join
@@ -2367,7 +2367,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           )
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.tag("alice", "api", "v1.0.0").map(tag => tag.id -> tag.name -> tag.message))(
+        assertZIO(client.repos.tag("alice", "api", "v1.0.0").map(tag => tag.id -> tag.name -> tag.message))(
           Assertion.equalTo(Some("abc123") -> Some("v1.0.0") -> Some("First stable"))
         )
       },
@@ -2391,7 +2391,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         assertZIO(
-          client.tag("space owner", "repo/slash", "release/candidate").map(_.name)
+          client.repos.tag("space owner", "repo/slash", "release/candidate").map(_.name)
         )(Assertion.equalTo(Some("release/candidate")))
       },
       test("propagates repository tag documented not-found errors through the facade") {
@@ -2403,7 +2403,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.tag("alice", "api", "missing").either)(
+        assertZIO(client.repos.tag("alice", "api", "missing").either)(
           Assertion.equalTo(Left(GiteaError.NotFound("tag not found", body)))
         )
       },
@@ -2419,7 +2419,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.tag("alice", "api", "v1.0.0").fork
+          fiber <- client.repos.tag("alice", "api", "v1.0.0").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           tag <- fiber.join
         yield assertTrue(
@@ -2443,7 +2443,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           )
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.tagProtections("alice", "api"))(
+        assertZIO(client.repos.tagProtections("alice", "api"))(
           Assertion.equalTo(
             Chunk(
               TagProtection(
@@ -2469,7 +2469,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           )
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.tagProtection("alice", "api", 7))(
+        assertZIO(client.repos.tagProtection("alice", "api", 7))(
           Assertion.equalTo(
             TagProtection(
               createdAt = Some(Instant.parse("2026-06-01T00:00:00Z")),
@@ -2489,7 +2489,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.tagProtection("alice", "api", 7).either)(
+        assertZIO(client.repos.tagProtection("alice", "api", 7).either)(
           Assertion.equalTo(Left(GiteaError.NotFound("tag protection not found", body)))
         )
       },
@@ -2516,10 +2516,10 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val detailClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), detailBackend)
 
         for
-          listFiber <- listClient.tagProtections("alice", "api").fork
+          listFiber <- listClient.repos.tagProtections("alice", "api").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           protections <- listFiber.join
-          detailFiber <- detailClient.tagProtection("alice", "api", 7).fork
+          detailFiber <- detailClient.repos.tagProtection("alice", "api", 7).fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           protection <- detailFiber.join
         yield assertTrue(
@@ -2547,7 +2547,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           )
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.branchProtections("alice", "api"))(
+        assertZIO(client.repos.branchProtections("alice", "api"))(
           Assertion.equalTo(
             Chunk(
               BranchProtection(
@@ -2583,7 +2583,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           )
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.branchProtection("space owner", "repo/slash", "release/2026"))(
+        assertZIO(client.repos.branchProtection("space owner", "repo/slash", "release/2026"))(
           Assertion.equalTo(
             BranchProtection(
               ruleName = Some("release/2026"),
@@ -2603,7 +2603,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.branchProtection("alice", "api", "release/2026").either)(
+        assertZIO(client.repos.branchProtection("alice", "api", "release/2026").either)(
           Assertion.equalTo(Left(GiteaError.NotFound("branch protection not found", body)))
         )
       },
@@ -2630,10 +2630,10 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val detailClient = GiteaClient.fromBackend(config.copy(maxRetries = 1), detailBackend)
 
         for
-          listFiber <- listClient.branchProtections("alice", "api").fork
+          listFiber <- listClient.repos.branchProtections("alice", "api").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           protections <- listFiber.join
-          detailFiber <- detailClient.branchProtection("alice", "api", "release/2026").fork
+          detailFiber <- detailClient.repos.branchProtection("alice", "api", "release/2026").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           protection <- detailFiber.join
         yield assertTrue(
@@ -2700,10 +2700,10 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          combined <- client.combinedStatusByRef("alice", "api", "main")
-          byRef <- client.statusesByRef("alice", "api", "main", listParams).runCollect
-          bySha <- client.statuses("alice", "api", "abc123", listParams).runCollect
-          created <- client.createStatus(
+          combined <- client.repos.combinedStatusByRef("alice", "api", "main")
+          byRef <- client.repos.statusesByRef("alice", "api", "main", listParams).runCollect
+          bySha <- client.repos.statuses("alice", "api", "abc123", listParams).runCollect
+          created <- client.repos.createStatus(
             "alice",
             "api",
             "abc123",
@@ -2739,7 +2739,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          combined <- client.combinedStatusByRef(
+          combined <- client.repos.combinedStatusByRef(
             "alice",
             "api",
             "main",
@@ -2760,8 +2760,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val transportClient = GiteaClient.fromBackend(config, transportBackend)
 
         for
-          decodeResult <- decodeClient.combinedStatusByRef("alice", "api", "main").either
-          transportResult <- transportClient.statusesByRef("alice", "api", "main").runCollect.either
+          decodeResult <- decodeClient.repos.combinedStatusByRef("alice", "api", "main").either
+          transportResult <- transportClient.repos.statusesByRef("alice", "api", "main").runCollect.either
         yield assertTrue(
           decodeResult.left.exists(_.isInstanceOf[GiteaError.DecodeError]),
           transportResult.left.exists {
@@ -2782,7 +2782,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 2), ScriptedBackend(responses))
           result <- client
-            .createStatus(
+            .repos.createStatus(
               "alice",
               "api",
               "abc123",
@@ -2811,8 +2811,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          releases <- client.releases("alice", "api").runCollect
-          release <- client.release("alice", "api", 2)
+          releases <- client.releases.releases("alice", "api").runCollect
+          release <- client.releases.release("alice", "api", 2)
         yield assertTrue(
           releases.map(_.tagName) == Chunk(Some("v1.0.0"), Some("v1.1.0")),
           release.id.contains(2L),
@@ -2855,7 +2855,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             override def monad: MonadError[Task] =
               taskMonad
           client = GiteaClient.fromBackend(config, backend)
-          releases <- client.releases("alice", "api", params).runCollect
+          releases <- client.releases.releases("alice", "api", params).runCollect
           queries <- seenQueries.get
         yield assertTrue(
           releases.map(_.tagName) == Chunk(Some("v2.0.0-rc1"), Some("v2.0.0-rc2")),
@@ -2881,7 +2881,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.releases("alice", "missing").runCollect.either)(
+        assertZIO(client.releases.releases("alice", "missing").runCollect.either)(
           Assertion.equalTo(Left(GiteaError.NotFound("repository not found", body)))
         )
       },
@@ -2897,7 +2897,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.releases("alice", "api").runCollect.fork
+          fiber <- client.releases.releases("alice", "api").runCollect.fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           releases <- fiber.join
         yield assertTrue(
@@ -2914,7 +2914,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""{"id":3,"tag_name":"v2.0.0","name":"Latest stable"}"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.latestRelease("alice", "api").map(release => release.id -> release.name))(
+        assertZIO(client.releases.latestRelease("alice", "api").map(release => release.id -> release.name))(
           Assertion.equalTo(Some(3L) -> Some("Latest stable"))
         )
       },
@@ -2927,7 +2927,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.latestRelease("alice", "api").either)(
+        assertZIO(client.releases.latestRelease("alice", "api").either)(
           Assertion.equalTo(Left(GiteaError.NotFound("latest release not found", body)))
         )
       },
@@ -2943,7 +2943,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.latestRelease("alice", "api").fork
+          fiber <- client.releases.latestRelease("alice", "api").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           release <- fiber.join
         yield assertTrue(
@@ -2960,7 +2960,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""{"id":2,"tag_name":"v1.0.0","name":"First stable"}"""))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.releaseByTag("alice", "api", "v1.0.0").map(release => release.id -> release.name))(
+        assertZIO(client.releases.releaseByTag("alice", "api", "v1.0.0").map(release => release.id -> release.name))(
           Assertion.equalTo(Some(2L) -> Some("First stable"))
         )
       },
@@ -2985,7 +2985,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         assertZIO(
-          client.releaseByTag("space owner", "repo/slash", "release/candidate").map(_.tagName)
+          client.releases.releaseByTag("space owner", "repo/slash", "release/candidate").map(_.tagName)
         )(Assertion.equalTo(Some("release/candidate")))
       },
       test("propagates release-by-tag documented not-found errors through the facade") {
@@ -2997,7 +2997,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust(body, StatusCode.NotFound))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.releaseByTag("alice", "api", "missing").either)(
+        assertZIO(client.releases.releaseByTag("alice", "api", "missing").either)(
           Assertion.equalTo(Left(GiteaError.NotFound("release not found", body)))
         )
       },
@@ -3013,7 +3013,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.releaseByTag("alice", "api", "v1.0.0").fork
+          fiber <- client.releases.releaseByTag("alice", "api", "v1.0.0").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           release <- fiber.join
         yield assertTrue(
@@ -3043,8 +3043,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          assets <- client.releaseAssets("alice", "api", releaseId = 2)
-          asset <- client.releaseAsset("alice", "api", releaseId = 2, assetId = 901)
+          assets <- client.releases.releaseAssets("alice", "api", releaseId = 2)
+          asset <- client.releases.releaseAsset("alice", "api", releaseId = 2, assetId = 901)
         yield assertTrue(
           assets.map(_.name) == Chunk(Some("gitea4s.jar"), Some("gitea4s-sources.jar")),
           assets.headOption.flatMap(_.downloadCount).contains(7L),
@@ -3069,8 +3069,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val assetClient = GiteaClient.fromBackend(config, assetBackend)
 
         for
-          listResult <- listClient.releaseAssets("alice", "api", releaseId = 404).either
-          assetResult <- assetClient.releaseAsset("alice", "api", releaseId = 2, assetId = 404).either
+          listResult <- listClient.releases.releaseAssets("alice", "api", releaseId = 404).either
+          assetResult <- assetClient.releases.releaseAsset("alice", "api", releaseId = 2, assetId = 404).either
         yield assertTrue(
           listResult == Left(GiteaError.NotFound("release not found", listBody)),
           assetResult == Left(GiteaError.NotFound("asset not found", assetBody))
@@ -3088,7 +3088,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.releaseAsset("alice", "api", releaseId = 2, assetId = 901).fork
+          fiber <- client.releases.releaseAsset("alice", "api", releaseId = 2, assetId = 901).fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           asset <- fiber.join
         yield assertTrue(
@@ -3130,7 +3130,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             override def monad: MonadError[Task] =
               taskMonad
           client = GiteaClient.fromBackend(config, backend)
-          collaborators <- client.collaborators("alice", "api").runCollect
+          collaborators <- client.repos.collaborators("alice", "api").runCollect
           queries <- seenQueries.get
         yield assertTrue(
           collaborators.map(_.login) == Chunk(Some("octo"), Some("mona")),
@@ -3184,9 +3184,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          isCollaborator <- client.isCollaborator("space owner", "repo/slash", "space user/slash")
-          missing <- client.isCollaborator("space owner", "repo/slash", "missing")
-          permission <- client.collaboratorPermission("space owner", "repo/slash", "space user/slash")
+          isCollaborator <- client.repos.isCollaborator("space owner", "repo/slash", "space user/slash")
+          missing <- client.repos.isCollaborator("space owner", "repo/slash", "missing")
+          permission <- client.repos.collaboratorPermission("space owner", "repo/slash", "space user/slash")
         yield assertTrue(
           isCollaborator,
           !missing,
@@ -3221,9 +3221,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val permissionClient = GiteaClient.fromBackend(config, permissionBackend)
 
         for
-          listResult <- listClient.collaborators("alice", "missing").runCollect.either
-          checkResult <- checkClient.isCollaborator("alice", "api", "bad-user").either
-          permissionResult <- permissionClient.collaboratorPermission("alice", "api", "octo").either
+          listResult <- listClient.repos.collaborators("alice", "missing").runCollect.either
+          checkResult <- checkClient.repos.isCollaborator("alice", "api", "bad-user").either
+          permissionResult <- permissionClient.repos.collaboratorPermission("alice", "api", "octo").either
         yield assertTrue(
           listResult == Left(GiteaError.NotFound("repository not found", notFoundBody)),
           checkResult == Left(GiteaError.UnprocessableEntity("invalid collaborator", validationBody)),
@@ -3242,7 +3242,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.collaboratorPermission("alice", "api", "octo").fork
+          fiber <- client.repos.collaboratorPermission("alice", "api", "octo").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           permission <- fiber.join
         yield assertTrue(
@@ -3285,7 +3285,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             override def monad: MonadError[Task] =
               taskMonad
           client = GiteaClient.fromBackend(config, backend)
-          teams <- client.teams("alice", "api").runCollect
+          teams <- client.repos.teams("alice", "api").runCollect
           queries <- seenQueries.get
         yield assertTrue(
           teams.map(_.name) == Chunk(Some("reviewers"), Some("maintainers")),
@@ -3319,7 +3319,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           )
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.team("space owner", "repo/slash", "space team/slash"))(
+        assertZIO(client.repos.team("space owner", "repo/slash", "space team/slash"))(
           Assertion.equalTo(
             Team(
               id = Some(12L),
@@ -3354,9 +3354,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val methodClient = GiteaClient.fromBackend(config, methodBackend)
 
         for
-          listResult <- listClient.teams("alice", "missing").runCollect.either
-          teamResult <- teamClient.team("alice", "api", "missing-team").either
-          methodResult <- methodClient.team("alice", "api", "blocked-team").either
+          listResult <- listClient.repos.teams("alice", "missing").runCollect.either
+          teamResult <- teamClient.repos.team("alice", "api", "missing-team").either
+          methodResult <- methodClient.repos.team("alice", "api", "blocked-team").either
         yield assertTrue(
           listResult == Left(GiteaError.NotFound("repository not found", listBody)),
           teamResult == Left(GiteaError.NotFound("team not found", teamBody)),
@@ -3375,7 +3375,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config.copy(maxRetries = 1), backend)
 
         for
-          fiber <- client.team("alice", "api", "maintainers").fork
+          fiber <- client.repos.team("alice", "api", "maintainers").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           team <- fiber.join
         yield assertTrue(
@@ -3579,22 +3579,22 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          pullRequests <- client.pullRequests("alice", "api", PullRequestListParams.default).runCollect
-          pullRequest <- client.pullRequest("alice", "api", 2)
-          createdPullRequest <- client.createPullRequest(
+          pullRequests <- client.pulls.pullRequests("alice", "api", PullRequestListParams.default).runCollect
+          pullRequest <- client.pulls.pullRequest("alice", "api", 2)
+          createdPullRequest <- client.pulls.createPullRequest(
             "alice",
             "api",
             CreatePullRequestOption(base = Some("main"), head = Some("feature"), title = Some("Created PR"))
           )
-          editedPullRequest <- client.editPullRequest(
+          editedPullRequest <- client.pulls.editPullRequest(
             "alice",
             "api",
             2,
             EditPullRequestOption(contentVersion = Some(7L), title = Some("Retitled PR"))
           )
-          merged <- client.pullRequestIsMerged("alice", "api", 2)
-          notMerged <- client.pullRequestIsMerged("alice", "api", 3)
-          mergePullRequest <- client.mergePullRequest(
+          merged <- client.pulls.pullRequestIsMerged("alice", "api", 2)
+          notMerged <- client.pulls.pullRequestIsMerged("alice", "api", 3)
+          mergePullRequest <- client.pulls.mergePullRequest(
             "alice",
             "api",
             2,
@@ -3603,53 +3603,53 @@ object GiteaClientSpec extends ZIOSpecDefault:
               mergeTitleField = Some("Merge typed facade")
             )
           ).either
-          canceledAutoMerge <- client.cancelScheduledAutoMerge("alice", "api", 2).either
-          updatedByMerge <- client.updatePullRequest("alice", "api", 2, PullRequestUpdateStyle.Merge).either
-          updatedByRebase <- client.updatePullRequest("alice", "api", 2, PullRequestUpdateStyle.Rebase).either
-          requestedReviews <- client.requestPullReviews(
+          canceledAutoMerge <- client.pulls.cancelScheduledAutoMerge("alice", "api", 2).either
+          updatedByMerge <- client.pulls.updatePullRequest("alice", "api", 2, PullRequestUpdateStyle.Merge).either
+          updatedByRebase <- client.pulls.updatePullRequest("alice", "api", 2, PullRequestUpdateStyle.Rebase).either
+          requestedReviews <- client.pulls.requestPullReviews(
             "alice",
             "api",
             2,
             PullReviewRequestOptions(reviewers = Some(List("reviewer")))
           )
-          canceledReviewRequests <- client.cancelPullReviewRequests(
+          canceledReviewRequests <- client.pulls.cancelPullReviewRequests(
             "alice",
             "api",
             2,
             PullReviewRequestOptions(reviewers = Some(List("reviewer")))
           ).either
-          reviews <- client.pullRequestReviews("alice", "api", 2).runCollect
-          createdReview <- client.createPullRequestReview(
+          reviews <- client.pulls.pullRequestReviews("alice", "api", 2).runCollect
+          createdReview <- client.pulls.createPullRequestReview(
             "alice",
             "api",
             2,
             CreatePullReviewOptions(body = Some("Pending notes"), event = Some(PullReviewState.Comment))
           )
-          review <- client.pullRequestReview("alice", "api", 2, 10)
-          submittedReview <- client.submitPullRequestReview(
+          review <- client.pulls.pullRequestReview("alice", "api", 2, 10)
+          submittedReview <- client.pulls.submitPullRequestReview(
             "alice",
             "api",
             2,
             10,
             SubmitPullReviewOptions(body = Some("Looks good"), event = Some(PullReviewState.Approved))
           )
-          dismissedReview <- client.dismissPullRequestReview(
+          dismissedReview <- client.pulls.dismissPullRequestReview(
             "alice",
             "api",
             2,
             10,
             DismissPullReviewOptions(message = Some("outdated"))
           )
-          undismissedReview <- client.undismissPullRequestReview("alice", "api", 2, 10)
-          reviewComments <- client.pullRequestReviewComments("alice", "api", 2, 10)
-          resolvedComment <- client.resolvePullRequestReviewComment("alice", "api", 12).either
-          unresolvedComment <- client.unresolvePullRequestReviewComment("alice", "api", 12).either
-          deleteReview <- client.deletePullRequestReview("alice", "api", 2, 10)
-          pullRequestPatch <- client.pullRequestDiffOrPatch("alice", "api", 2, PullRequestDiffType.Patch)
-          pinnedPullRequests <- client.pinnedPullRequests("alice", "api")
-          pullRequestByBaseHead <- client.pullRequestByBaseHead("alice", "api", "main", "feature")
-          changedFiles <- client.pullRequestFiles("alice", "api", 2, PullRequestFilesParams.default).runCollect
-          commits <- client.pullRequestCommits("alice", "api", 2, PullRequestCommitsParams.default).runCollect
+          undismissedReview <- client.pulls.undismissPullRequestReview("alice", "api", 2, 10)
+          reviewComments <- client.pulls.pullRequestReviewComments("alice", "api", 2, 10)
+          resolvedComment <- client.pulls.resolvePullRequestReviewComment("alice", "api", 12).either
+          unresolvedComment <- client.pulls.unresolvePullRequestReviewComment("alice", "api", 12).either
+          deleteReview <- client.pulls.deletePullRequestReview("alice", "api", 2, 10)
+          pullRequestPatch <- client.pulls.pullRequestDiffOrPatch("alice", "api", 2, PullRequestDiffType.Patch)
+          pinnedPullRequests <- client.pulls.pinnedPullRequests("alice", "api")
+          pullRequestByBaseHead <- client.pulls.pullRequestByBaseHead("alice", "api", "main", "feature")
+          changedFiles <- client.pulls.pullRequestFiles("alice", "api", 2, PullRequestFilesParams.default).runCollect
+          commits <- client.pulls.pullRequestCommits("alice", "api", 2, PullRequestCommitsParams.default).runCollect
         yield assertTrue(
           pullRequests.map(_.number) == Chunk(Some(1L), Some(2L)),
           pullRequest.id.contains(2L),
@@ -3708,7 +3708,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           }.thenRespond(ResponseStub.adjust("""{"id":7,"number":7,"title":"Commit PR","state":"open"}"""))
         val client = GiteaClient.fromBackend(facadeConfig, backend)
 
-        assertZIO(client.commitPullRequest("space owner", "repo/slash", "abc/def 123").map(pr => pr.id -> pr.title))(
+        assertZIO(client.pulls.commitPullRequest("space owner", "repo/slash", "abc/def 123").map(pr => pr.id -> pr.title))(
           Assertion.equalTo(Some(7L) -> Some("Commit PR"))
         )
       },
@@ -3720,7 +3720,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           ).thenRespond(ResponseStub.adjust("""{"message":"pull request not found"}""", StatusCode.NotFound))
         val client = GiteaClient.fromBackend(config, backend)
 
-        assertZIO(client.commitPullRequest("alice", "api", "missing-sha").either)(
+        assertZIO(client.pulls.commitPullRequest("alice", "api", "missing-sha").either)(
           Assertion.equalTo(Left(GiteaError.NotFound("pull request not found", """{"message":"pull request not found"}""")))
         )
       },
@@ -3738,7 +3738,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
           )
           client = GiteaClient.fromBackend(config.copy(maxRetries = 1), ScriptedBackend(responses))
-          fiber <- client.commitPullRequest("alice", "api", "abc123").fork
+          fiber <- client.pulls.commitPullRequest("alice", "api", "abc123").fork
           _ <- TestClock.adjust(Duration.ofSeconds(1))
           pullRequest <- fiber.join
           remaining <- responses.get
@@ -3809,16 +3809,16 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          createForbidden <- client.createPullRequest("alice", "api", createBody).either
-          createNotFound <- client.createPullRequest("alice", "missing", createBody).either
-          createConflict <- client.createPullRequest("alice", "conflict", createBody).either
-          createInvalid <- client.createPullRequest("alice", "invalid", createBody).either
-          createLocked <- client.createPullRequest("alice", "archived", createBody).either
-          editForbidden <- client.editPullRequest("alice", "api", 2, editBody).either
-          editNotFound <- client.editPullRequest("alice", "api", 3, editBody).either
-          editConflict <- client.editPullRequest("alice", "api", 4, editBody).either
-          editStale <- client.editPullRequest("alice", "api", 5, editBody).either
-          editInvalid <- client.editPullRequest("alice", "api", 6, editBody).either
+          createForbidden <- client.pulls.createPullRequest("alice", "api", createBody).either
+          createNotFound <- client.pulls.createPullRequest("alice", "missing", createBody).either
+          createConflict <- client.pulls.createPullRequest("alice", "conflict", createBody).either
+          createInvalid <- client.pulls.createPullRequest("alice", "invalid", createBody).either
+          createLocked <- client.pulls.createPullRequest("alice", "archived", createBody).either
+          editForbidden <- client.pulls.editPullRequest("alice", "api", 2, editBody).either
+          editNotFound <- client.pulls.editPullRequest("alice", "api", 3, editBody).either
+          editConflict <- client.pulls.editPullRequest("alice", "api", 4, editBody).either
+          editStale <- client.pulls.editPullRequest("alice", "api", 5, editBody).either
+          editInvalid <- client.pulls.editPullRequest("alice", "api", 6, editBody).either
         yield assertTrue(
           createForbidden.left.exists(_.isInstanceOf[GiteaError.Forbidden]),
           createNotFound.left.exists(_.isInstanceOf[GiteaError.NotFound]),
@@ -3866,14 +3866,14 @@ object GiteaClientSpec extends ZIOSpecDefault:
 
         for
           forbidden <- client
-            .mergePullRequest("alice", "api", 2, MergePullRequestOption(MergePullRequestMethod.Merge))
+            .pulls.mergePullRequest("alice", "api", 2, MergePullRequestOption(MergePullRequestMethod.Merge))
             .either
-          notFound <- client.cancelScheduledAutoMerge("alice", "api", 3).either
-          conflict <- client.updatePullRequest("alice", "api", 4, PullRequestUpdateStyle.Merge).either
+          notFound <- client.pulls.cancelScheduledAutoMerge("alice", "api", 3).either
+          conflict <- client.pulls.updatePullRequest("alice", "api", 4, PullRequestUpdateStyle.Merge).either
           methodNotAllowed <- client
-            .mergePullRequest("alice", "api", 5, MergePullRequestOption(MergePullRequestMethod.Rebase))
+            .pulls.mergePullRequest("alice", "api", 5, MergePullRequestOption(MergePullRequestMethod.Rebase))
             .either
-          locked <- client.updatePullRequest("alice", "api", 6, PullRequestUpdateStyle.Rebase).either
+          locked <- client.pulls.updatePullRequest("alice", "api", 6, PullRequestUpdateStyle.Rebase).either
         yield assertTrue(
           forbidden.left.exists(_.isInstanceOf[GiteaError.Forbidden]),
           notFound.left.exists(_.isInstanceOf[GiteaError.NotFound]),
@@ -3904,13 +3904,13 @@ object GiteaClientSpec extends ZIOSpecDefault:
           mergeSetup <- clientWithTwoResponses
           (mergeClient, mergeResponses) = mergeSetup
           mergeResult <- mergeClient
-            .mergePullRequest("alice", "api", 2, MergePullRequestOption(MergePullRequestMethod.Merge))
+            .pulls.mergePullRequest("alice", "api", 2, MergePullRequestOption(MergePullRequestMethod.Merge))
             .either
           mergeRemaining <- mergeResponses.get
           createSetup <- clientWithTwoResponses
           (createClient, createResponses) = createSetup
           createResult <- createClient
-            .createPullRequest(
+            .pulls.createPullRequest(
               "alice",
               "api",
               CreatePullRequestOption(base = Some("main"), head = Some("feature"), title = Some("Created PR"))
@@ -3920,7 +3920,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
           editSetup <- clientWithTwoResponses
           (editClient, editResponses) = editSetup
           editResult <- editClient
-            .editPullRequest(
+            .pulls.editPullRequest(
               "alice",
               "api",
               2,
@@ -3930,11 +3930,11 @@ object GiteaClientSpec extends ZIOSpecDefault:
           editRemaining <- editResponses.get
           cancelSetup <- clientWithTwoResponses
           (cancelClient, cancelResponses) = cancelSetup
-          cancelResult <- cancelClient.cancelScheduledAutoMerge("alice", "api", 2).either
+          cancelResult <- cancelClient.pulls.cancelScheduledAutoMerge("alice", "api", 2).either
           cancelRemaining <- cancelResponses.get
           updateSetup <- clientWithTwoResponses
           (updateClient, updateResponses) = updateSetup
-          updateResult <- updateClient.updatePullRequest("alice", "api", 2, PullRequestUpdateStyle.Rebase).either
+          updateResult <- updateClient.pulls.updatePullRequest("alice", "api", 2, PullRequestUpdateStyle.Rebase).either
           updateRemaining <- updateResponses.get
         yield assertTrue(
           mergeResult.left.exists {
@@ -3989,9 +3989,9 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          threads <- client.notificationThreads(NotificationListParams.default).runCollect
-          count <- client.unreadNotificationCount
-          thread <- client.notificationThread("2")
+          threads <- client.notifications.notificationThreads(NotificationListParams.default).runCollect
+          count <- client.notifications.unreadNotificationCount
+          thread <- client.notifications.notificationThread("2")
         yield assertTrue(
           threads.map(_.id) == Chunk(Some(1L), Some(2L)),
           count.unread.contains(5L),
@@ -4012,8 +4012,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
         val client = GiteaClient.fromBackend(config, backend)
 
         for
-          followers <- client.followers("alice").runCollect
-          following <- client.following("alice").runCollect
+          followers <- client.users.followers("alice").runCollect
+          following <- client.users.following("alice").runCollect
         yield assertTrue(
           followers.map(_.login) == Chunk(Some("bob"), Some("carol")),
           following.map(_.login) == Chunk(Some("dave"))
@@ -4029,7 +4029,7 @@ object GiteaClientSpec extends ZIOSpecDefault:
             )
         val client = GiteaClient.fromBackend(config, backend)
 
-        client.search(UserSearchParams(q = Some("ali"))).runCollect.map { users =>
+        client.users.search(UserSearchParams(q = Some("ali"))).runCollect.map { users =>
           assertTrue(users.map(_.login) == Chunk(Some("alice"), Some("alicia")))
         }
       }

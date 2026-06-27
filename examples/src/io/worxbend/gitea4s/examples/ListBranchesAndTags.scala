@@ -27,8 +27,8 @@ object ListBranchesAndTags extends ZIOAppDefault:
             val program =
               ZIO.serviceWithZIO[GiteaClient] { client =>
                 for
-                  branches <- client.branches(owner, repo).take(25).runCollect
-                  tags <- client.tags(owner, repo).take(25).runCollect
+                  branches <- client.repos.branches(owner, repo).take(25).runCollect
+                  tags <- client.repos.tags(owner, repo).take(25).runCollect
                 yield (branches, tags)
               }
 

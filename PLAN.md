@@ -58,13 +58,24 @@ built as a separate module on top of the library.
 - Note: `.github/unicorns` is a misnamed/dead Mergify config (the live one is
   `.mergify.yml`); left in place pending owner confirmation before deletion.
 
-### Phase B — Reshape to sub-clients *(breaking, must precede 1.0)*
-- [ ] Replace the flat `GiteaClient` god-trait with namespaces:
-      `client.repos`, `client.issues`, `client.pulls`, `client.users`,
-      `client.orgs`, `client.admin` (extend the existing `orgs` pattern).
-- [ ] Resolve the documented collisions (`list`/`get` clashes, missing default
-      args).
-- [ ] Regenerate `api-snapshot/` once, deliberately, as the new baseline.
+### Phase B — Reshape to sub-clients *(done 2026-06-27)*
+- [x] Replaced the flat `GiteaClient` god-trait with namespaces:
+      `client.repos`, `client.issues`, `client.pulls`, `client.releases`,
+      `client.notifications`, `client.users`, `client.orgs`. `me` lives at
+      `client.users.me`. (`client.admin` will arrive in Phase D.)
+- [x] Split the 779-line `SttpGiteaClient` into one `Sttp*Api` impl per
+      namespace under `internal/`, sharing a single `GiteaRequestExecutor`.
+- [x] Resolved the `get`/`list` collisions and restored `ReposApi.list`'s
+      default argument.
+- [x] Regenerated `api-snapshot/client.txt` as the new baseline; validated with
+      `./mill __.compile __.test compatibility.check`.
+- Follow-up (pre-1.0, optional): method names that echo their namespace read
+  awkwardly (`releases.releases`, `pulls.pullRequests`,
+  `notifications.notificationThreads`). Consider renaming the list methods to
+  `.list` within the same breaking window.
+- Note: `compatibility.check`/`writeSnapshot` need `jar`/`javap` on `PATH`
+  (CI provides them via setup-java; locally, add the JDK `bin` and use
+  `./mill --no-server`).
 
 ### Phase C — Production hardening
 - [ ] Middleware/interceptor seam around `GiteaRequestExecutor` for request

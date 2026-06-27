@@ -10,6 +10,17 @@ surface is still being filled out.
 
 ### Changed
 
+- **Breaking: reshaped `GiteaClient` into resource namespaces.** Operations are
+  now reached through `client.repos`, `client.issues`, `client.pulls`,
+  `client.releases`, `client.notifications`, `client.users`, and `client.orgs`
+  instead of being mixed flat onto `GiteaClient`. For example, `client.me`
+  becomes `client.users.me`, `client.list(owner, params)` becomes
+  `client.repos.list(owner, params)`, and `client.create(...)` becomes
+  `client.issues.create(...)`. This removes the cross-resource method-name
+  collisions (`get`/`list`) that previously blocked default arguments, and the
+  `SttpGiteaClient` god-object is now split into one `Sttp*Api` impl per
+  namespace sharing a single request executor. `ReposApi.list` regains its
+  `RepoListParams` default argument.
 - **Relicensed from GPL-2.0-only to Apache-2.0** (`LICENSE` and generated POM
   metadata) to make the library freely depended upon. No code changes.
 - Reworked documentation: `README.md` slimmed to a user guide, with build,

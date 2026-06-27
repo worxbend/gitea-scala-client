@@ -27,7 +27,7 @@ object SearchUsers extends ZIOAppDefault:
             val params = UserSearchParams(q = Some(query), limit = Some(25))
             val program =
               ZIO.serviceWithZIO[GiteaClient] { client =>
-                client.search(params).take(25).runCollect
+                client.users.search(params).take(25).runCollect
               }
 
             Console.printLine(ExampleSupport.referenceLine) *>
