@@ -122,7 +122,7 @@ plain (non-paginated) lists return `IO[GiteaError, Chunk[A]]` instead.
 
 ```scala
 client.repos.list(owner, RepoListParams(limit = Some(50))).take(100).runCollect
-client.notifications.notificationThreads().take(100).runCollect
+client.notifications.list().take(100).runCollect
 ```
 
 ## Namespaces
@@ -173,22 +173,22 @@ client.issues.list(owner, repo).runCollect
 **Pull requests**
 
 ```scala
-client.pulls.pullRequests(owner, repo).runCollect
-client.pulls.createPullRequest(owner, repo,
+client.pulls.list(owner, repo).runCollect
+client.pulls.create(owner, repo,
   CreatePullRequestOption(base = Some("main"), head = Some("feature"), title = Some("...")))
-client.pulls.createPullRequestReview(owner, repo, index = 7,
+client.pulls.createReview(owner, repo, index = 7,
   CreatePullReviewOptions(body = Some("LGTM"), event = Some(PullReviewState.Approved)))
-client.pulls.mergePullRequest(owner, repo, index = 7,
+client.pulls.merge(owner, repo, index = 7,
   MergePullRequestOption(mergeMethod = MergePullRequestMethod.Squash))
-client.pulls.pullRequestDiffOrPatch(owner, repo, index = 7, PullRequestDiffType.Diff)
+client.pulls.diffOrPatch(owner, repo, index = 7, PullRequestDiffType.Diff)
 ```
 
 **Releases & commit statuses**
 
 ```scala
-client.releases.releases(owner, repo).runCollect
-client.releases.latestRelease(owner, repo)
-client.releases.releaseByTag(owner, repo, tag = "v1.0.0")
+client.releases.list(owner, repo).runCollect
+client.releases.latest(owner, repo)
+client.releases.byTag(owner, repo, tag = "v1.0.0")
 client.repos.createStatus(owner, repo, sha,
   CreateStatusOption(state = Some(CommitStatusState.Success), context = Some("ci/build")))
 client.repos.combinedStatusByRef(owner, repo, ref = "main")
@@ -197,8 +197,8 @@ client.repos.combinedStatusByRef(owner, repo, ref = "main")
 **Notifications**
 
 ```scala
-client.notifications.unreadNotificationCount
-client.notifications.notificationThreads().take(20).runCollect
+client.notifications.unreadCount
+client.notifications.list().take(20).runCollect
 ```
 
 ## Error Handling

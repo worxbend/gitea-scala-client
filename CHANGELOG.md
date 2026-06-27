@@ -21,6 +21,16 @@ surface is still being filled out.
   `SttpGiteaClient` god-object is now split into one `Sttp*Api` impl per
   namespace sharing a single request executor. `ReposApi.list` regains its
   `RepoListParams` default argument.
+- **Breaking: dropped redundant method-name prefixes now that operations are
+  namespaced.** Within `client.pulls`, `client.releases`, and
+  `client.notifications` the methods no longer echo their resource. Examples:
+  `pulls.createPullRequest` → `pulls.create`, `pulls.mergePullRequest` →
+  `pulls.merge`, `pulls.pullRequestReviews` → `pulls.reviews`,
+  `pulls.pullRequests` → `pulls.list`, `releases.releases` → `releases.list`,
+  `releases.latestRelease` → `releases.latest`, `releases.releaseByTag` →
+  `releases.byTag`, `notifications.notificationThreads` → `notifications.list`,
+  and `notifications.unreadNotificationCount` → `notifications.unreadCount`.
+  Method signatures are unchanged.
 - **Relicensed from GPL-2.0-only to Apache-2.0** (`LICENSE` and generated POM
   metadata) to make the library freely depended upon. No code changes.
 - Reworked documentation: `README.md` slimmed to a user guide, with build,

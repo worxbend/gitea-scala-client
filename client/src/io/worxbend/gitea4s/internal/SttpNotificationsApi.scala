@@ -10,15 +10,15 @@ import zio.stream.ZStream
 
 private[gitea4s] final class SttpNotificationsApi(config: GiteaConfig, executor: GiteaRequestExecutor)
     extends NotificationsApi:
-  override def notificationThreads(
+  override def list(
       params: NotificationListParams = NotificationListParams.default
   ): ZStream[Any, GiteaError, NotificationThread] =
     Pagination.paginated { page =>
       executor.send(GiteaRequests.notifications(config, params.copy(page = Some(page))))
     }
 
-  override def unreadNotificationCount: IO[GiteaError, NotificationCount] =
+  override def unreadCount: IO[GiteaError, NotificationCount] =
     executor.send(GiteaRequests.notificationCount(config))
 
-  override def notificationThread(id: String): IO[GiteaError, NotificationThread] =
+  override def thread(id: String): IO[GiteaError, NotificationThread] =
     executor.send(GiteaRequests.notificationThread(config, id))

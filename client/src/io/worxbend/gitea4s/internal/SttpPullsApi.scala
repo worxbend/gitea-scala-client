@@ -29,7 +29,7 @@ import zio.{Chunk, IO}
 import zio.stream.ZStream
 
 private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends PullRequestsApi:
-  override def pullRequests(
+  override def list(
       owner: String,
       repo: String,
       params: PullRequestListParams = PullRequestListParams.default
@@ -38,10 +38,10 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
       executor.send(GiteaRequests.repoPullRequests(config, owner, repo, params.copy(page = Some(page))))
     }
 
-  override def pinnedPullRequests(owner: String, repo: String): IO[GiteaError, Chunk[PullRequest]] =
+  override def pinned(owner: String, repo: String): IO[GiteaError, Chunk[PullRequest]] =
     executor.send(GiteaRequests.pinnedPullRequests(config, owner, repo))
 
-  override def pullRequestByBaseHead(
+  override def byBaseHead(
       owner: String,
       repo: String,
       base: String,
@@ -49,20 +49,20 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.repoPullRequestByBaseHead(config, owner, repo, base, head))
 
-  override def commitPullRequest(owner: String, repo: String, sha: String): IO[GiteaError, PullRequest] =
+  override def forCommit(owner: String, repo: String, sha: String): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.repoCommitPullRequest(config, owner, repo, sha))
 
-  override def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest] =
+  override def get(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.repoPullRequest(config, owner, repo, index))
 
-  override def createPullRequest(
+  override def create(
       owner: String,
       repo: String,
       body: CreatePullRequestOption
   ): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.createPullRequest(config, owner, repo, body))
 
-  override def editPullRequest(
+  override def edit(
       owner: String,
       repo: String,
       index: Long,
@@ -70,10 +70,10 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, PullRequest] =
     executor.send(GiteaRequests.editPullRequest(config, owner, repo, index, body))
 
-  override def pullRequestIsMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean] =
+  override def isMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean] =
     executor.send(GiteaRequests.repoPullRequestIsMerged(config, owner, repo, index))
 
-  override def mergePullRequest(
+  override def merge(
       owner: String,
       repo: String,
       index: Long,
@@ -81,10 +81,10 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.mergePullRequest(config, owner, repo, index, body))
 
-  override def cancelScheduledAutoMerge(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
+  override def cancelAutoMerge(owner: String, repo: String, index: Long): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.cancelScheduledAutoMerge(config, owner, repo, index))
 
-  override def updatePullRequest(
+  override def update(
       owner: String,
       repo: String,
       index: Long,
@@ -92,7 +92,7 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.updatePullRequest(config, owner, repo, index, style))
 
-  override def requestPullReviews(
+  override def requestReviews(
       owner: String,
       repo: String,
       index: Long,
@@ -100,7 +100,7 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, Chunk[PullReview]] =
     executor.send(GiteaRequests.createPullReviewRequests(config, owner, repo, index, body))
 
-  override def cancelPullReviewRequests(
+  override def cancelReviewRequests(
       owner: String,
       repo: String,
       index: Long,
@@ -108,12 +108,12 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.deletePullReviewRequests(config, owner, repo, index, body))
 
-  override def pullRequestReviews(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, PullReview] =
+  override def reviews(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, PullReview] =
     Pagination.paginated { page =>
       executor.send(GiteaRequests.repoPullReviews(config, owner, repo, index, page))
     }
 
-  override def createPullRequestReview(
+  override def createReview(
       owner: String,
       repo: String,
       index: Long,
@@ -121,10 +121,10 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, PullReview] =
     executor.send(GiteaRequests.createPullReview(config, owner, repo, index, body))
 
-  override def pullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, PullReview] =
+  override def review(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, PullReview] =
     executor.send(GiteaRequests.repoPullReview(config, owner, repo, index, id))
 
-  override def submitPullRequestReview(
+  override def submitReview(
       owner: String,
       repo: String,
       index: Long,
@@ -133,10 +133,10 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, PullReview] =
     executor.send(GiteaRequests.submitPullReview(config, owner, repo, index, id, body))
 
-  override def deletePullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit] =
+  override def deleteReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.deletePullReview(config, owner, repo, index, id))
 
-  override def dismissPullRequestReview(
+  override def dismissReview(
       owner: String,
       repo: String,
       index: Long,
@@ -145,7 +145,7 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, PullReview] =
     executor.send(GiteaRequests.dismissPullReview(config, owner, repo, index, id, body))
 
-  override def undismissPullRequestReview(
+  override def undismissReview(
       owner: String,
       repo: String,
       index: Long,
@@ -153,7 +153,7 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, PullReview] =
     executor.send(GiteaRequests.undismissPullReview(config, owner, repo, index, id))
 
-  override def pullRequestReviewComments(
+  override def reviewComments(
       owner: String,
       repo: String,
       index: Long,
@@ -161,13 +161,13 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, Chunk[PullReviewComment]] =
     executor.send(GiteaRequests.repoPullReviewComments(config, owner, repo, index, id))
 
-  override def resolvePullRequestReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit] =
+  override def resolveReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.resolvePullReviewComment(config, owner, repo, id))
 
-  override def unresolvePullRequestReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit] =
+  override def unresolveReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.unresolvePullReviewComment(config, owner, repo, id))
 
-  override def pullRequestDiffOrPatch(
+  override def diffOrPatch(
       owner: String,
       repo: String,
       index: Long,
@@ -176,7 +176,7 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   ): IO[GiteaError, String] =
     executor.send(GiteaRequests.repoPullRequestDiffOrPatch(config, owner, repo, index, diffType, binary))
 
-  override def pullRequestFiles(
+  override def files(
       owner: String,
       repo: String,
       index: Long,
@@ -186,7 +186,7 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
       executor.send(GiteaRequests.repoPullRequestFiles(config, owner, repo, index, params.copy(page = Some(page))))
     }
 
-  override def pullRequestCommits(
+  override def commits(
       owner: String,
       repo: String,
       index: Long,

@@ -25,8 +25,8 @@ object WatchNotifications extends ZIOAppDefault:
         val program =
           ZIO.serviceWithZIO[GiteaClient] { client =>
             for
-              count <- client.notifications.unreadNotificationCount
-              threads <- client.notifications.notificationThreads(params).take(20).runCollect
+              count <- client.notifications.unreadCount
+              threads <- client.notifications.list(params).take(20).runCollect
             yield (count, threads)
           }
 

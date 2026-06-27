@@ -69,10 +69,11 @@ built as a separate module on top of the library.
       default argument.
 - [x] Regenerated `api-snapshot/client.txt` as the new baseline; validated with
       `./mill __.compile __.test compatibility.check`.
-- Follow-up (pre-1.0, optional): method names that echo their namespace read
-  awkwardly (`releases.releases`, `pulls.pullRequests`,
-  `notifications.notificationThreads`). Consider renaming the list methods to
-  `.list` within the same breaking window.
+- [x] Follow-up (done 2026-06-27): dropped namespace-echoing method prefixes in
+      `pulls`/`releases`/`notifications` (e.g. `pulls.createPullRequest` →
+      `pulls.create`, `releases.releases` → `releases.list`,
+      `notifications.unreadNotificationCount` → `notifications.unreadCount`).
+      Signatures unchanged; snapshot regenerated; gate green.
 - Note: `compatibility.check`/`writeSnapshot` need `jar`/`javap` on `PATH`
   (CI provides them via setup-java; locally, add the JDK `bin` and use
   `./mill --no-server`).

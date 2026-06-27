@@ -9,7 +9,7 @@ import zio.{Chunk, IO}
 import zio.stream.ZStream
 
 private[gitea4s] final class SttpReleasesApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends ReleasesApi:
-  override def releases(
+  override def list(
       owner: String,
       repo: String,
       params: ReleaseListParams = ReleaseListParams.default
@@ -18,19 +18,19 @@ private[gitea4s] final class SttpReleasesApi(config: GiteaConfig, executor: Gite
       executor.send(GiteaRequests.repoReleases(config, owner, repo, params.copy(page = Some(page))))
     }
 
-  override def release(owner: String, repo: String, id: Long): IO[GiteaError, Release] =
+  override def get(owner: String, repo: String, id: Long): IO[GiteaError, Release] =
     executor.send(GiteaRequests.repoRelease(config, owner, repo, id))
 
-  override def latestRelease(owner: String, repo: String): IO[GiteaError, Release] =
+  override def latest(owner: String, repo: String): IO[GiteaError, Release] =
     executor.send(GiteaRequests.repoLatestRelease(config, owner, repo))
 
-  override def releaseByTag(owner: String, repo: String, tag: String): IO[GiteaError, Release] =
+  override def byTag(owner: String, repo: String, tag: String): IO[GiteaError, Release] =
     executor.send(GiteaRequests.repoReleaseByTag(config, owner, repo, tag))
 
-  override def releaseAssets(owner: String, repo: String, releaseId: Long): IO[GiteaError, Chunk[ReleaseAsset]] =
+  override def assets(owner: String, repo: String, releaseId: Long): IO[GiteaError, Chunk[ReleaseAsset]] =
     executor.send(GiteaRequests.repoReleaseAssets(config, owner, repo, releaseId))
 
-  override def releaseAsset(
+  override def asset(
       owner: String,
       repo: String,
       releaseId: Long,

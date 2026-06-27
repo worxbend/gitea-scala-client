@@ -6,11 +6,12 @@ import io.worxbend.gitea4s.model.{NotificationCount, NotificationThread}
 import zio.IO
 import zio.stream.ZStream
 
+/** Notification operations, reached through `client.notifications`. */
 trait NotificationsApi:
-  def notificationThreads(
+  def list(
       params: NotificationListParams = NotificationListParams.default
   ): ZStream[Any, GiteaError, NotificationThread]
 
-  def unreadNotificationCount: IO[GiteaError, NotificationCount]
+  def unreadCount: IO[GiteaError, NotificationCount]
 
-  def notificationThread(id: String): IO[GiteaError, NotificationThread]
+  def thread(id: String): IO[GiteaError, NotificationThread]

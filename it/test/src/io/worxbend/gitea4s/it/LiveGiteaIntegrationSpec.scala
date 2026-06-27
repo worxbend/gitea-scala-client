@@ -101,7 +101,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             releaseId <- liveEnvLong(Env.releaseId)
-            release <- client.releases.release(owner, repo, releaseId)
+            release <- client.releases.get(owner, repo, releaseId)
           yield assertTrue(release.id.contains(releaseId))
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -113,7 +113,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             tag <- liveEnv(Env.releaseTag)
-            release <- client.releases.releaseByTag(owner, repo, tag)
+            release <- client.releases.byTag(owner, repo, tag)
           yield assertTrue(release.tagName.contains(tag))
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -125,7 +125,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             owner <- liveEnv(Env.owner)
             repo <- liveEnv(Env.repo)
             expectedTag <- liveEnv(Env.latestReleaseTag)
-            release <- client.releases.latestRelease(owner, repo)
+            release <- client.releases.latest(owner, repo)
           yield assertTrue(release.tagName.contains(expectedTag))
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@
@@ -138,7 +138,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             repo <- liveEnv(Env.repo)
             releaseId <- liveEnvLong(Env.releaseId)
             expectedAssetId <- optionalLiveEnvLong(Env.releaseAssetId)
-            assets <- client.releases.releaseAssets(owner, repo, releaseId)
+            assets <- client.releases.assets(owner, repo, releaseId)
           yield expectedAssetId match
             case Some(assetId) => assertTrue(assets.exists(_.id.contains(assetId)))
             case None          => assertTrue(assets.forall(_.id.forall(_ > 0L)))
@@ -153,7 +153,7 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
             repo <- liveEnv(Env.repo)
             releaseId <- liveEnvLong(Env.releaseId)
             assetId <- liveEnvLong(Env.releaseAssetId)
-            asset <- client.releases.releaseAsset(owner, repo, releaseId, assetId)
+            asset <- client.releases.asset(owner, repo, releaseId, assetId)
           yield assertTrue(asset.id.contains(assetId))
         }
       } @@ TestAspect.ifEnv(Env.owner)(nonEmptyValue) @@

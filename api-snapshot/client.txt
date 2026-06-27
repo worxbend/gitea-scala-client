@@ -479,11 +479,11 @@ public interface io.worxbend.gitea4s.api.IssuesApi {
 
 ## io.worxbend.gitea4s.api.NotificationsApi
 public interface io.worxbend.gitea4s.api.NotificationsApi {
-  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.NotificationThread> notificationThreads(io.worxbend.gitea4s.http.NotificationListParams);
-  public static io.worxbend.gitea4s.http.NotificationListParams notificationThreads$default$1$(io.worxbend.gitea4s.api.NotificationsApi);
-  public default io.worxbend.gitea4s.http.NotificationListParams notificationThreads$default$1();
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.NotificationCount> unreadNotificationCount();
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.NotificationThread> notificationThread(java.lang.String);
+  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.NotificationThread> list(io.worxbend.gitea4s.http.NotificationListParams);
+  public static io.worxbend.gitea4s.http.NotificationListParams list$default$1$(io.worxbend.gitea4s.api.NotificationsApi);
+  public default io.worxbend.gitea4s.http.NotificationListParams list$default$1();
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.NotificationCount> unreadCount();
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.NotificationThread> thread(java.lang.String);
 }
 
 ## io.worxbend.gitea4s.api.OrgsApi
@@ -498,52 +498,52 @@ public interface io.worxbend.gitea4s.api.OrgsApi {
 
 ## io.worxbend.gitea4s.api.PullRequestsApi
 public interface io.worxbend.gitea4s.api.PullRequestsApi {
-  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> pullRequests(java.lang.String, java.lang.String, io.worxbend.gitea4s.http.PullRequestListParams);
-  public static io.worxbend.gitea4s.http.PullRequestListParams pullRequests$default$3$(io.worxbend.gitea4s.api.PullRequestsApi);
-  public default io.worxbend.gitea4s.http.PullRequestListParams pullRequests$default$3();
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.PullRequest>> pinnedPullRequests(java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> pullRequestByBaseHead(java.lang.String, java.lang.String, java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> commitPullRequest(java.lang.String, java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> pullRequest(java.lang.String, java.lang.String, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> createPullRequest(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreatePullRequestOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> editPullRequest(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditPullRequestOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.Object> pullRequestIsMerged(java.lang.String, java.lang.String, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> mergePullRequest(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.MergePullRequestOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> cancelScheduledAutoMerge(java.lang.String, java.lang.String, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> updatePullRequest(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestUpdateStyle);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.PullReview>> requestPullReviews(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.PullReviewRequestOptions);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> cancelPullReviewRequests(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.PullReviewRequestOptions);
-  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> pullRequestReviews(java.lang.String, java.lang.String, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> createPullRequestReview(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.CreatePullReviewOptions);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> pullRequestReview(java.lang.String, java.lang.String, long, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> submitPullRequestReview(java.lang.String, java.lang.String, long, long, io.worxbend.gitea4s.model.SubmitPullReviewOptions);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deletePullRequestReview(java.lang.String, java.lang.String, long, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> dismissPullRequestReview(java.lang.String, java.lang.String, long, long, io.worxbend.gitea4s.model.DismissPullReviewOptions);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> undismissPullRequestReview(java.lang.String, java.lang.String, long, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.PullReviewComment>> pullRequestReviewComments(java.lang.String, java.lang.String, long, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> resolvePullRequestReviewComment(java.lang.String, java.lang.String, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> unresolvePullRequestReviewComment(java.lang.String, java.lang.String, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.String> pullRequestDiffOrPatch(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestDiffType, scala.Option<java.lang.Object>);
-  public static scala.Option pullRequestDiffOrPatch$default$5$(io.worxbend.gitea4s.api.PullRequestsApi);
-  public default scala.Option<java.lang.Object> pullRequestDiffOrPatch$default$5();
-  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.ChangedFile> pullRequestFiles(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestFilesParams);
-  public static io.worxbend.gitea4s.http.PullRequestFilesParams pullRequestFiles$default$4$(io.worxbend.gitea4s.api.PullRequestsApi);
-  public default io.worxbend.gitea4s.http.PullRequestFilesParams pullRequestFiles$default$4();
-  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Commit> pullRequestCommits(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestCommitsParams);
-  public static io.worxbend.gitea4s.http.PullRequestCommitsParams pullRequestCommits$default$4$(io.worxbend.gitea4s.api.PullRequestsApi);
-  public default io.worxbend.gitea4s.http.PullRequestCommitsParams pullRequestCommits$default$4();
+  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> list(java.lang.String, java.lang.String, io.worxbend.gitea4s.http.PullRequestListParams);
+  public static io.worxbend.gitea4s.http.PullRequestListParams list$default$3$(io.worxbend.gitea4s.api.PullRequestsApi);
+  public default io.worxbend.gitea4s.http.PullRequestListParams list$default$3();
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.PullRequest>> pinned(java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> byBaseHead(java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> forCommit(java.lang.String, java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> get(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> create(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreatePullRequestOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> edit(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditPullRequestOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.Object> isMerged(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> merge(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.MergePullRequestOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> cancelAutoMerge(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> update(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestUpdateStyle);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.PullReview>> requestReviews(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.PullReviewRequestOptions);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> cancelReviewRequests(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.PullReviewRequestOptions);
+  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> reviews(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> createReview(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.CreatePullReviewOptions);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> review(java.lang.String, java.lang.String, long, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> submitReview(java.lang.String, java.lang.String, long, long, io.worxbend.gitea4s.model.SubmitPullReviewOptions);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteReview(java.lang.String, java.lang.String, long, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> dismissReview(java.lang.String, java.lang.String, long, long, io.worxbend.gitea4s.model.DismissPullReviewOptions);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReview> undismissReview(java.lang.String, java.lang.String, long, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.PullReviewComment>> reviewComments(java.lang.String, java.lang.String, long, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> resolveReviewComment(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> unresolveReviewComment(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.String> diffOrPatch(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestDiffType, scala.Option<java.lang.Object>);
+  public static scala.Option diffOrPatch$default$5$(io.worxbend.gitea4s.api.PullRequestsApi);
+  public default scala.Option<java.lang.Object> diffOrPatch$default$5();
+  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.ChangedFile> files(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestFilesParams);
+  public static io.worxbend.gitea4s.http.PullRequestFilesParams files$default$4$(io.worxbend.gitea4s.api.PullRequestsApi);
+  public default io.worxbend.gitea4s.http.PullRequestFilesParams files$default$4();
+  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Commit> commits(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestCommitsParams);
+  public static io.worxbend.gitea4s.http.PullRequestCommitsParams commits$default$4$(io.worxbend.gitea4s.api.PullRequestsApi);
+  public default io.worxbend.gitea4s.http.PullRequestCommitsParams commits$default$4();
 }
 
 ## io.worxbend.gitea4s.api.ReleasesApi
 public interface io.worxbend.gitea4s.api.ReleasesApi {
-  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> releases(java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ReleaseListParams);
-  public static io.worxbend.gitea4s.http.ReleaseListParams releases$default$3$(io.worxbend.gitea4s.api.ReleasesApi);
-  public default io.worxbend.gitea4s.http.ReleaseListParams releases$default$3();
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> release(java.lang.String, java.lang.String, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> latestRelease(java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> releaseByTag(java.lang.String, java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.ReleaseAsset>> releaseAssets(java.lang.String, java.lang.String, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.ReleaseAsset> releaseAsset(java.lang.String, java.lang.String, long, long);
+  public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> list(java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ReleaseListParams);
+  public static io.worxbend.gitea4s.http.ReleaseListParams list$default$3$(io.worxbend.gitea4s.api.ReleasesApi);
+  public default io.worxbend.gitea4s.http.ReleaseListParams list$default$3();
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> get(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> latest(java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> byTag(java.lang.String, java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.ReleaseAsset>> assets(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.ReleaseAsset> asset(java.lang.String, java.lang.String, long, long);
 }
 
 ## io.worxbend.gitea4s.api.ReposApi

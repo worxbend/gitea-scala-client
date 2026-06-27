@@ -25,69 +25,60 @@ import io.worxbend.gitea4s.model.{
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
+/** Pull-request operations, reached through `client.pulls`. */
 trait PullRequestsApi:
-  def pullRequests(
+  def list(
       owner: String,
       repo: String,
       params: PullRequestListParams = PullRequestListParams.default
   ): ZStream[Any, GiteaError, PullRequest]
 
-  def pinnedPullRequests(owner: String, repo: String): IO[GiteaError, Chunk[PullRequest]]
+  def pinned(owner: String, repo: String): IO[GiteaError, Chunk[PullRequest]]
 
-  def pullRequestByBaseHead(owner: String, repo: String, base: String, head: String): IO[GiteaError, PullRequest]
+  def byBaseHead(owner: String, repo: String, base: String, head: String): IO[GiteaError, PullRequest]
 
-  def commitPullRequest(owner: String, repo: String, sha: String): IO[GiteaError, PullRequest]
+  def forCommit(owner: String, repo: String, sha: String): IO[GiteaError, PullRequest]
 
-  def pullRequest(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest]
+  def get(owner: String, repo: String, index: Long): IO[GiteaError, PullRequest]
 
-  def createPullRequest(owner: String, repo: String, body: CreatePullRequestOption): IO[GiteaError, PullRequest]
+  def create(owner: String, repo: String, body: CreatePullRequestOption): IO[GiteaError, PullRequest]
 
-  def editPullRequest(
-      owner: String,
-      repo: String,
-      index: Long,
-      body: EditPullRequestOption
-  ): IO[GiteaError, PullRequest]
+  def edit(owner: String, repo: String, index: Long, body: EditPullRequestOption): IO[GiteaError, PullRequest]
 
-  def pullRequestIsMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean]
+  def isMerged(owner: String, repo: String, index: Long): IO[GiteaError, Boolean]
 
-  def mergePullRequest(
-      owner: String,
-      repo: String,
-      index: Long,
-      body: MergePullRequestOption
-  ): IO[GiteaError, Unit]
+  def merge(owner: String, repo: String, index: Long, body: MergePullRequestOption): IO[GiteaError, Unit]
 
-  def cancelScheduledAutoMerge(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
+  def cancelAutoMerge(owner: String, repo: String, index: Long): IO[GiteaError, Unit]
 
-  def updatePullRequest(owner: String, repo: String, index: Long, style: PullRequestUpdateStyle): IO[GiteaError, Unit]
+  def update(owner: String, repo: String, index: Long, style: PullRequestUpdateStyle): IO[GiteaError, Unit]
 
-  def requestPullReviews(
+  def requestReviews(
       owner: String,
       repo: String,
       index: Long,
       body: PullReviewRequestOptions
   ): IO[GiteaError, Chunk[PullReview]]
 
-  def cancelPullReviewRequests(
+  def cancelReviewRequests(
       owner: String,
       repo: String,
       index: Long,
       body: PullReviewRequestOptions
   ): IO[GiteaError, Unit]
 
-  def pullRequestReviews(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, PullReview]
+  def reviews(owner: String, repo: String, index: Long): ZStream[Any, GiteaError, PullReview]
 
-  def createPullRequestReview(
+  def createReview(
       owner: String,
       repo: String,
       index: Long,
       body: CreatePullReviewOptions
   ): IO[GiteaError, PullReview]
 
-  def pullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, PullReview]
+  def review(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, PullReview]
 
-  def submitPullRequestReview(
+  def submitReview(
       owner: String,
       repo: String,
       index: Long,
@@ -95,9 +86,9 @@ trait PullRequestsApi:
       body: SubmitPullReviewOptions
   ): IO[GiteaError, PullReview]
 
-  def deletePullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit]
+  def deleteReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, Unit]
 
-  def dismissPullRequestReview(
+  def dismissReview(
       owner: String,
       repo: String,
       index: Long,
@@ -105,20 +96,20 @@ trait PullRequestsApi:
       body: DismissPullReviewOptions
   ): IO[GiteaError, PullReview]
 
-  def undismissPullRequestReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, PullReview]
+  def undismissReview(owner: String, repo: String, index: Long, id: Long): IO[GiteaError, PullReview]
 
-  def pullRequestReviewComments(
+  def reviewComments(
       owner: String,
       repo: String,
       index: Long,
       id: Long
   ): IO[GiteaError, Chunk[PullReviewComment]]
 
-  def resolvePullRequestReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit]
+  def resolveReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit]
 
-  def unresolvePullRequestReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit]
+  def unresolveReviewComment(owner: String, repo: String, id: Long): IO[GiteaError, Unit]
 
-  def pullRequestDiffOrPatch(
+  def diffOrPatch(
       owner: String,
       repo: String,
       index: Long,
@@ -126,14 +117,14 @@ trait PullRequestsApi:
       binary: Option[Boolean] = None
   ): IO[GiteaError, String]
 
-  def pullRequestFiles(
+  def files(
       owner: String,
       repo: String,
       index: Long,
       params: PullRequestFilesParams = PullRequestFilesParams.default
   ): ZStream[Any, GiteaError, ChangedFile]
 
-  def pullRequestCommits(
+  def commits(
       owner: String,
       repo: String,
       index: Long,
