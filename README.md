@@ -35,6 +35,52 @@ instead:
 ./mill __.publishM2Local
 ```
 
+### Distribution channels
+
+All four modules ship through several channels. Maven Central is canonical; the
+others are conveniences (pre-release commits, air-gapped mirrors, or grabbing a
+prebuilt jar without a build tool).
+
+| Channel | Resolver | Coordinates | Auth |
+| --- | --- | --- | --- |
+| Maven Central | default | `io.worxbend %% gitea4s-* % 1.0.0` | none |
+| GitHub Packages | `https://maven.pkg.github.com/worxbend/gitea-scala-client` | `io.worxbend %% gitea4s-* % 1.0.0` | GitHub token with `read:packages` |
+| JitPack | `https://jitpack.io` | `com.github.worxbend.gitea-scala-client %% gitea4s-* % v1.0.0` | none |
+| GitHub Releases | n/a | prebuilt `*.jar` attached to each `v*` release | none |
+
+The `Release` workflow (`.github/workflows/release.yml`) runs on every `v*` tag:
+it validates the build, publishes all four modules to GitHub Packages, and
+attaches their `jar`, `-sources.jar`, and `-javadoc.jar` files to the GitHub
+Release. JitPack builds on demand from `jitpack.yml`.
+
+**GitHub Packages.** Add the repository and authenticate with a token that has
+`read:packages` — GitHub Packages requires authentication even for public
+packages. With sbt:
+
+```scala
+resolvers += "gitea4s-github-packages" at
+  "https://maven.pkg.github.com/worxbend/gitea-scala-client"
+credentials += Credentials(
+  "GitHub Package Registry",
+  "maven.pkg.github.com",
+  sys.env("GITHUB_ACTOR"),
+  sys.env("GITHUB_TOKEN") // a PAT with read:packages
+)
+"io.worxbend" %% "gitea4s-backend-zio" % "1.0.0"
+```
+
+**JitPack.** No account needed: JitPack builds the tag on first request and
+serves each module under the `com.github.worxbend.gitea-scala-client` group (the
+`_3` Scala suffix is preserved, so `%%` still works). Inter-module dependencies
+keep their `io.worxbend` coordinates, so also keep Maven Central on the resolver
+list. Confirm the exact published coordinates at
+<https://jitpack.io/#worxbend/gitea-scala-client>:
+
+```scala
+resolvers += "jitpack" at "https://jitpack.io"
+"com.github.worxbend.gitea-scala-client" %% "gitea4s-backend-zio" % "v1.0.0"
+```
+
 Module dependency direction:
 
 ```text

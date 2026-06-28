@@ -1,0 +1,120 @@
+name: Release
+
+# Publishes the four library modules to GitHub Packages and attaches their jars
+# to the GitHub Release. Triggered by pushing a `v*` tag, or manually against an
+# existing tag. Maven Central remains a separate, gated workflow
+# (publish-central.yml); JitPack builds on demand from jitpack.yml.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing git tag to (re)publish, e.g. v1.0.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write # create the GitHub Release and upload jar assets
+  packages: write # publish Maven artifacts to GitHub Packages
+
+jobs:
+  release:
+    name: Publish jars to GitHub Packages and Releases
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Cache Scala dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/coursier
+            ~/.ivy2/cache
+            ~/.mill
+          key: ${{ runner.os }}-release-${{ hashFiles('build.mill', 'mill') }}
+          restore-keys: |
+            ${{ runner.os }}-release-
+
+      - name: Resolve release tag
+        id: meta
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Releasing $TAG"
+
+      - name: Verify release version
+        run: |
+          if grep -q 'val library = ".*-SNAPSHOT"' build.mill; then
+            echo "Refusing to publish a SNAPSHOT version." >&2
+            exit 1
+          fi
+
+      - name: Validate build
+        run: |
+          ./mill __.compile
+          ./mill __.test
+          ./mill it.test
+          ./mill examples.run
+          ./mill compatibility.check
+
+      - name: Build publishable artifacts
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/staging-m2"
+          ./mill __.publishM2Local --m-2-repo-path "$GITHUB_WORKSPACE/staging-m2"
+
+      - name: Publish to GitHub Packages
+        env:
+          GH_ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          staging="$GITHUB_WORKSPACE/staging-m2"
+          base="https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
+
+          # Snapshot the artifact list before adding checksums to it.
+          find "$staging" -type f ! -name '*.sha1' ! -name '*.md5' | sort > /tmp/artifacts.txt
+
+          # Maven clients expect a .sha1/.md5 next to every artifact.
+          while IFS= read -r f; do
+            sha1sum "$f" | awk '{print $1}' > "$f.sha1"
+            md5sum  "$f" | awk '{print $1}' > "$f.md5"
+          done < /tmp/artifacts.txt
+
+          # Upload every file, preserving its Maven layout path under the repo.
+          find "$staging" -type f | sort | while IFS= read -r f; do
+            rel="${f#"$staging"/}"
+            code=$(curl -sS -o /tmp/gh-pkg-resp -w '%{http_code}' \
+              -u "${GH_ACTOR}:${GH_TOKEN}" \
+              --upload-file "$f" "${base}/${rel}")
+            case "$code" in
+              2*)  echo "uploaded  $rel" ;;
+              409) echo "exists    $rel (skipped)" ;;
+              *)   echo "FAILED    $rel ($code)"; cat /tmp/gh-pkg-resp; echo; exit 1 ;;
+            esac
+          done
+
+      - name: Attach jars to the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.meta.outputs.tag }}"
+          mapfile -t jars < <(find "$GITHUB_WORKSPACE/staging-m2" -type f -name '*.jar' | sort)
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --title "$tag" --generate-notes --verify-tag
+          fi
+          gh release upload "$tag" "${jars[@]}" --clobber

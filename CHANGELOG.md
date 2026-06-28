@@ -10,6 +10,14 @@ guarded by the `api-snapshot/` binary-compatibility check.
 
 ## Unreleased
 
+### Added
+
+- **More distribution channels.** Besides Maven Central, the four modules are now
+  published to GitHub Packages and attached as jars to each GitHub Release by the
+  new `Release` workflow (`.github/workflows/release.yml`, triggered on `v*`
+  tags), and can be built on demand through JitPack via `jitpack.yml`. See the
+  "Distribution channels" table in `README.md`.
+
 ## 1.0.0 - 2026-06-27
 
 First stable release. The public API of `gitea4s-core`, `gitea4s-client`,

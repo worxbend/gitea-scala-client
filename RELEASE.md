@@ -100,6 +100,35 @@ Before the first Central release:
 6. Move `Versions.library` and README coordinates to the release version.
 7. Run the `Publish Central` workflow from the release tag or commit.
 
+## GitHub Packages, JitPack, and Release Jars
+
+Maven Central is the canonical channel. Three additional channels distribute the
+same artifacts for convenience and are documented for consumers in `README.md`.
+
+The `.github/workflows/release.yml` workflow runs on every `v*` tag push (and can
+be dispatched manually against an existing tag). It reuses the same validation as
+Maven Central, then:
+
+1. Builds all publishable modules with
+   `./mill __.publishM2Local --m-2-repo-path "$GITHUB_WORKSPACE/staging-m2"`.
+2. Generates `.sha1`/`.md5` checksums and uploads the full Maven layout to
+   **GitHub Packages** (`https://maven.pkg.github.com/<owner>/<repo>`) via HTTP
+   `PUT`. Re-runs are idempotent: an existing version returns `409` and is
+   skipped.
+3. Attaches every `*.jar` (main, sources, javadoc) to the **GitHub Release** for
+   the tag, creating the release with auto-generated notes if it does not exist.
+
+The workflow needs no extra secrets: it authenticates with the built-in
+`GITHUB_TOKEN` and the `contents: write` / `packages: write` permissions declared
+in the workflow. It refuses `-SNAPSHOT` versions like the Central workflow does.
+Note that GitHub Packages requires consumers to authenticate even for public
+packages.
+
+**JitPack** builds on demand from `jitpack.yml`, which installs Temurin 21 via
+SDKMAN (the default JitPack image is Java 8) and runs `./mill __.publishM2Local`.
+No workflow or secret is involved; the first request for a tag triggers the
+build. Bump the pinned Temurin version in `jitpack.yml` if SDKMAN delists it.
+
 ## Compatibility Policy
 
 From `1.0.0` the published modules follow [Semantic Versioning](https://semver.org):

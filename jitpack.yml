@@ -1,0 +1,17 @@
+# JitPack build configuration — https://jitpack.io/#worxbend/gitea-scala-client
+#
+# JitPack builds gitea4s on demand from a git tag or commit. The default JitPack
+# image ships Java 8, and the `jdk:` key does not offer Java 21, so we install
+# Temurin 21 through SDKMAN (the build targets `--release 21`) before publishing
+# every publishable module into the local Maven repository JitPack serves from.
+#
+# `./mill __.publishM2Local` writes to ~/.m2/repository by default, which is
+# exactly where JitPack looks for build output.
+jdk:
+  - openjdk21
+before_install:
+  # Bump this Temurin build if SDKMAN ever delists this exact patch release.
+  - sdk install java 21.0.5-tem
+  - sdk use java 21.0.5-tem
+install:
+  - ./mill __.publishM2Local
