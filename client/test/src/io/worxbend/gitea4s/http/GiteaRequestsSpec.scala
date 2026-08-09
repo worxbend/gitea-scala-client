@@ -326,6 +326,16 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           decodeWith(built, backend).map(_.hasNext) == Right(true)
         )
       },
+      test("sends the numeric user id the search endpoint declares") {
+        val withUid = GiteaRequests.userSearch(config, UserSearchParams(q = Some("ali"), uid = Some(42L))).request
+        val withoutUid = GiteaRequests.userSearch(config, UserSearchParams(q = Some("ali"))).request
+
+        assertTrue(
+          withUid.uri.paramsMap.get("uid").contains("42"),
+          withUid.uri.paramsMap.get("q").contains("ali"),
+          withoutUid.uri.paramsMap.get("uid").isEmpty
+        )
+      },
       test("stops following redirects when a one-time password is configured") {
         // sttp strips Authorization on every redirect, so the token is never
         // forwarded, but X-Gitea-OTP is not in its sensitive-header set and

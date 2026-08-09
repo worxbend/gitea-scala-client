@@ -1967,6 +1967,7 @@ object GiteaRequests:
   private def userSearchQuery(params: UserSearchParams, page: Int, pageSize: Int): List[(String, String)] =
     List(
       params.q.map("q" -> _),
+      params.uid.map(uid => "uid" -> uid.toString),
       Some("page" -> page.toString),
       Some("limit" -> pageSize.toString)
     ).flatten
