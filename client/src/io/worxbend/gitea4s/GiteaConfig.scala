@@ -138,7 +138,7 @@ object GiteaConfig:
   def fromTypesafeString(hocon: String, path: String = Typesafe.root): Either[GiteaConfigError, GiteaConfig] =
     Try(ConfigFactory.parseString(hocon).resolve()).toEither
       .left
-      .map(error => GiteaConfigError.ConfigUnavailable(safeMessage(error)))
+      .map(error => GiteaConfigError.ConfigUnavailable(parseFailureMessage(error)))
       .flatMap(fromTypesafeConfig(_, path))
 
   def fromEnvironment: ZIO[Any, GiteaConfigError, GiteaConfig] =
@@ -171,7 +171,7 @@ object GiteaConfig:
     ZLayer.fromZIO(
       ZIO
         .attempt(ConfigFactory.load().resolve())
-        .mapError(error => GiteaConfigError.ConfigUnavailable(safeMessage(error)))
+        .mapError(error => GiteaConfigError.ConfigUnavailable(parseFailureMessage(error)))
         .flatMap(config => ZIO.fromEither(fromTypesafeConfig(config)))
     )
 
@@ -331,9 +331,20 @@ object GiteaConfig:
       .map(_ => invalid)
       .flatMap { uri =>
         val validScheme = uri.scheme.exists(s => s.equalsIgnoreCase("http") || s.equalsIgnoreCase("https"))
-        if uri.isAbsolute && uri.host.exists(_.nonEmpty) && validScheme then Right(uri)
+        if uri.isAbsolute && uri.host.exists(_.nonEmpty) && validScheme then Right(stripUserInfo(uri))
         else Left(invalid)
       }
+
+  // A base URL of the form https://user:secret@gitea.example was accepted and
+  // kept whole. Nothing ever sends those credentials — neither the JDK client
+  // nor OkHttp transmits URI userinfo, and Gitea's REST API does not honour it
+  // — but the authority is rendered into every sttp exception message, so a
+  // connect failure would surface the password inside a TransportError.
+  // Stripping rather than rejecting keeps a URL that works today working.
+  private def stripUserInfo(uri: Uri): Uri =
+    uri.authority.flatMap(_.userInfo) match
+      case None => uri
+      case Some(_) => uri.copy(authority = uri.authority.map(_.userInfo(None)))
 
   private def qualified(rootPath: String, localPath: String): String =
     s"$rootPath.$localPath"
@@ -341,5 +352,26 @@ object GiteaConfig:
   private def safeMessage(error: Throwable): String =
     Option(error.getMessage).getOrElse(error.getClass.getName)
 
+  // A HOCON syntax error quotes the offending source text back at you, and the
+  // offending text is frequently adjacent to the token — a missing `=` after
+  // `token` yields "Key 'token ghp_SUPERSECRET' may not be followed by token".
+  // Report the position instead, which is what a person needs to fix the file.
+  // Only parse failures are narrowed: the type errors raised elsewhere in this
+  // object name a path and a type and never quote a value.
+  private def parseFailureMessage(error: Throwable): String =
+    error match
+      case parse: ConfigException.Parse =>
+        val origin = parse.origin
+        val line = if origin.lineNumber >= 0 then s":${origin.lineNumber}" else ""
+        s"could not parse HOCON at ${origin.description}$line"
+      case other => safeMessage(other)
+
+  // Trims before returning, not only before the emptiness test. Reading a
+  // secret out of a file leaves a trailing newline on it, and an untrimmed
+  // token produces an unrecoverable failure: the JDK rejects a header value
+  // containing LF with an IllegalArgumentException that quotes the credential,
+  // and basic auth is worse still, because the newline base64-encodes into a
+  // syntactically valid header and the server just answers 401 forever. Every
+  // other reader here already compensated individually with `raw.trim`.
   private def nonBlank(env: Map[String, String], name: String): Option[String] =
-    env.get(name).filter(_.trim.nonEmpty)
+    env.get(name).map(_.trim).filter(_.nonEmpty)
