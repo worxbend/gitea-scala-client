@@ -125,9 +125,17 @@ Note that GitHub Packages requires consumers to authenticate even for public
 packages.
 
 **JitPack** builds on demand from `jitpack.yml`, which installs Temurin 21 via
-SDKMAN (the default JitPack image is Java 8) and runs `./mill __.publishM2Local`.
-No workflow or secret is involved; the first request for a tag triggers the
-build. Bump the pinned Temurin version in `jitpack.yml` if SDKMAN delists it.
+SDKMAN (the default JitPack image is Java 8), then compiles, tests, and runs
+`./mill __.publishM2Local`. No workflow or secret is involved; the first request
+for a tag triggers the build. Bump the pinned Temurin version in `jitpack.yml`
+if SDKMAN delists it.
+
+The test step matters here more than it looks: JitPack exists to serve
+pre-release commits, so it is the channel most likely to be asked for a broken
+one, and whatever it builds is what a consumer resolves. `compatibility.check`
+is deliberately *not* run there — it would fail every commit whose
+`api-snapshot/` baseline has not been regenerated yet, which is exactly the
+traffic this channel is for.
 
 ## Compatibility Policy
 
