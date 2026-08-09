@@ -86,11 +86,43 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
       test("gives up once the retry budget is spent instead of retrying forever") {
         val backend = respondWith(rateLimited("retry-after" -> "0"))
 
-        GiteaRequestExecutor(backend, maxRetries = 2)
-          .send(GiteaRequests.currentUser(config))
-          .either
-          .map(result => assertTrue(result.isLeft))
+        // `result.isLeft` alone would hold with zero retries too — it passed
+        // when `sendWithRetries` was replaced by `sendOnce`. The attempt count
+        // is what actually says the budget was spent rather than skipped.
+        for
+          ref <- Ref.make(Chunk.empty[RequestEvent])
+          result <- GiteaRequestExecutor(backend, maxRetries = 2, recording(ref))
+            .send(GiteaRequests.currentUser(config))
+            .either
+          events <- ref.get
+        yield assertTrue(result.isLeft, events.head.attempts == 3)
       } @@ TestAspect.withLiveClock,
+      test("backs off further after each failed attempt") {
+        // Nothing else in this suite reaches `jitteredBackoff` with attempt > 1,
+        // so the doubling was unexercised: replacing the shift with a constant
+        // left the whole build green.
+        //
+        // The boundary is chosen to sit outside the 0.8-1.2 jitter band rather
+        // than comparing one wait against the next, which would be flaky.
+        // Doubling from 100ms gives waits of 100/200/400, so the fourth attempt
+        // cannot be sent before 80+160+320 = 560ms. A flat 100ms would have
+        // sent it by 360ms at the latest. At 500ms, exactly three attempts have
+        // been made if and only if the delay is growing.
+        for
+          sent <- Ref.make(0)
+          backend = BackendStub[Task](new RIOMonadAsyncError[Any]).whenAnyRequest.thenRespondF { _ =>
+            sent.update(_ + 1).as(ResponseStub.adjust("", StatusCode.ServiceUnavailable))
+          }
+          fiber <- GiteaRequestExecutor(backend, maxRetries = 3)
+            .send(GiteaRequests.currentUser(config))
+            .either
+            .fork
+          _ <- TestClock.adjust(Duration.fromMillis(500))
+          attempts <- sent.get
+          _ <- TestClock.adjust(Duration.fromSeconds(5))
+          _ <- fiber.join
+        yield assertTrue(attempts == 3)
+      },
       test("does not retry an error that cannot be retried") {
         val backend = respondWith(ResponseStub.adjust("""{"message":"nope"}""", StatusCode.NotFound))
 
@@ -180,6 +212,19 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
           _ <- GiteaRequestExecutor(backend, maxRetries = 2, recording(ref)).send(GiteaRequests.currentUser(config))
           events <- ref.get
         yield assertTrue(events.size == 1, events.head.attempts == 2, events.head.retried)
+      } @@ TestAspect.withLiveClock,
+      test("an observer that never finishes cannot withhold the result") {
+        // `catchAllCause` handles an observer that fails, not one that hangs.
+        // The recommended escape hatch in the scaladoc — offer to a `Queue` —
+        // is precisely what suspends forever once that queue is full, so this
+        // is the shape a well-intentioned observer actually fails in.
+        val stalling = new GiteaObserver:
+          def onComplete(event: RequestEvent): zio.UIO[Unit] = ZIO.never
+
+        GiteaRequestExecutor(respondWith(ok(user)), maxRetries = 0, stalling)
+          .send(GiteaRequests.currentUser(config))
+          .timeout(zio.Duration.fromSeconds(30))
+          .map(result => assertTrue(result.exists(_.login.contains("alice"))))
       } @@ TestAspect.withLiveClock,
       test("emits an event when the call dies with a defect") {
         // `Cause.failureOption` sees only typed failures, so a defect used to

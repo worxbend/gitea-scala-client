@@ -1,6 +1,6 @@
 package io.worxbend.gitea4s
 
-import com.typesafe.config.{Config, ConfigException, ConfigFactory}
+import com.typesafe.config.{Config, ConfigException, ConfigFactory, ConfigValueType}
 import io.worxbend.gitea4s.model.Auth
 import io.worxbend.gitea4s.observability.GiteaObserver
 import sttp.model.Uri
@@ -9,8 +9,23 @@ import zio.{ZIO, ZLayer}
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
 import scala.jdk.DurationConverters.*
 import scala.util.Try
+
+/** The content types this client negotiates.
+  *
+  * These three values were previously loose `String` constants matched against
+  * a `String` parameter, and the call sites had drifted into four spellings of
+  * them: `MediaType.ApplicationJson.toString`, `MediaType.TextPlain.toString`,
+  * two bare `"application/octet-stream"` literals, and the constants
+  * themselves. A closed type makes a mismatch a compile error rather than a
+  * request that quietly asks for the wrong thing.
+  */
+private[gitea4s] enum Accept(val headerValue: String):
+  case Json extends Accept("application/json")
+  case OctetStream extends Accept("application/octet-stream")
+  case TextPlain extends Accept("text/plain")
 
 final case class GiteaConfig(
     baseUrl: Uri,
@@ -55,21 +70,21 @@ final case class GiteaConfig(
     * `username:password` string and its backing byte array on the heap every
     * time, multiplying the copies a heap dump or a swap file could recover.
     *
-    * The three `Accept` values this library actually sends are memoised; any
-    * other value is still handled, just without the memoisation, so adding an
-    * endpoint that negotiates a new content type cannot silently be served the
-    * wrong `Accept` header.
+    * `Accept` is a closed type, so this match is total and every value the
+    * library can ask for is memoised. It used to take a `String` and fall
+    * through to an unmemoised build for anything unrecognised, which meant a
+    * new content type — or a typo in an existing one — silently lost the
+    * memoisation instead of failing to compile.
     */
-  private[gitea4s] def headersAccepting(accept: String): Map[String, String] =
+  private[gitea4s] def headersAccepting(accept: Accept): Map[String, String] =
     accept match
-      case GiteaConfig.applicationJson => jsonHeaders
-      case GiteaConfig.octetStream => octetStreamHeaders
-      case GiteaConfig.textPlain => textPlainHeaders
-      case other => buildHeaders(other)
+      case Accept.Json => jsonHeaders
+      case Accept.OctetStream => octetStreamHeaders
+      case Accept.TextPlain => textPlainHeaders
 
-  private[gitea4s] lazy val jsonHeaders: Map[String, String] = buildHeaders(GiteaConfig.applicationJson)
-  private[gitea4s] lazy val octetStreamHeaders: Map[String, String] = buildHeaders(GiteaConfig.octetStream)
-  private[gitea4s] lazy val textPlainHeaders: Map[String, String] = buildHeaders(GiteaConfig.textPlain)
+  private[gitea4s] lazy val jsonHeaders: Map[String, String] = buildHeaders(Accept.Json.headerValue)
+  private[gitea4s] lazy val octetStreamHeaders: Map[String, String] = buildHeaders(Accept.OctetStream.headerValue)
+  private[gitea4s] lazy val textPlainHeaders: Map[String, String] = buildHeaders(Accept.TextPlain.headerValue)
 
   private def buildHeaders(accept: String): Map[String, String] =
     List(
@@ -125,6 +140,17 @@ object GiteaConfig:
     val pageSize: String = "GITEA_PAGE_SIZE"
     val timeout: String = "GITEA_TIMEOUT"
     val maxRetries: String = "GITEA_MAX_RETRIES"
+    val userAgent: String = "GITEA_USER_AGENT"
+
+    /** The `X-Gitea-OTP` header value.
+      *
+      * Present for parity with the HOCON reader, which has always accepted it.
+      * Be aware of what it can and cannot do: `X-Gitea-OTP` carries a
+      * *time-based* one-time password, so a value fixed in the environment is
+      * stale within about thirty seconds. It suits a short-lived command, not a
+      * long-running process.
+      */
+    val otp: String = "GITEA_OTP"
 
   object Typesafe:
     val root: String = "gitea4s"
@@ -137,10 +163,6 @@ object GiteaConfig:
     val userAgent: String = "user-agent"
     val otp: String = "otp"
     val maxRetries: String = "max-retries"
-
-  private[gitea4s] val applicationJson: String = "application/json"
-  private[gitea4s] val octetStream: String = "application/octet-stream"
-  private[gitea4s] val textPlain: String = "text/plain"
 
   val defaultTimeout: FiniteDuration = 30.seconds
   val defaultPageSize: Int = 50
@@ -189,11 +211,21 @@ object GiteaConfig:
       pageSize <- positiveIntFromEnv(env, Env.pageSize, defaultPageSize)
       timeout <- finiteDurationFromEnv(env, Env.timeout, defaultTimeout)
       maxRetries <- nonNegativeIntFromEnv(env, Env.maxRetries, defaultMaxRetries)
-    yield default(baseUrl, auth).copy(
-      timeout = timeout,
-      pageSize = pageSize,
-      maxRetries = maxRetries
-    )
+      // Through the same guard as the credentials: both become header content,
+      // and reading them with a plain `nonBlank` would reopen the injection
+      // hole that guard exists to close.
+      userAgent <- headerSafe(nonBlank(env, Env.userAgent), GiteaConfigError.InvalidEnv(Env.userAgent, _))
+      otp <- headerSafe(nonBlank(env, Env.otp), GiteaConfigError.InvalidEnv(Env.otp, _))
+    yield
+      val baseConfig = default(baseUrl, auth)
+      baseConfig.copy(
+        timeout = timeout,
+        pageSize = pageSize,
+        maxRetries = maxRetries,
+        // Same fallback as the HOCON reader, so both sources default alike.
+        userAgent = userAgent.orElse(baseConfig.userAgent),
+        otp = otp
+      )
 
   def fromTypesafeConfig(config: Config, path: String = Typesafe.root): Either[GiteaConfigError, GiteaConfig] =
     for
@@ -336,9 +368,56 @@ object GiteaConfig:
 
   private def typesafeSection(config: Config, path: String): Either[GiteaConfigError, Config] =
     try
-      if config.hasPath(path) then Right(config.getConfig(path))
+      if config.hasPath(path) then
+        val section = config.getConfig(path)
+        misspelledKey(section, path).toLeft(section)
       else Left(GiteaConfigError.MissingRequiredConfig(path))
     catch case error: ConfigException => Left(GiteaConfigError.InvalidConfig(path, safeMessage(error)))
+
+  /** The nine settings this reader understands. */
+  private val knownTypesafeKeys: List[String] =
+    List(
+      Typesafe.url,
+      Typesafe.token,
+      Typesafe.username,
+      Typesafe.password,
+      Typesafe.pageSize,
+      Typesafe.timeout,
+      Typesafe.userAgent,
+      Typesafe.otp,
+      Typesafe.maxRetries
+    )
+
+  /** Catches a setting spelled the way the environment spells it.
+    *
+    * Typesafe Config does no normalisation, so `maxRetries` in a `gitea4s { }`
+    * block is simply a different key from `max-retries` and was read by nobody —
+    * the config loaded cleanly and the setting did nothing. The environment
+    * names actively invite that mistake: someone who knows `GITEA_MAX_RETRIES`
+    * writes `maxRetries` or `max_retries` far more readily than `max-retries`.
+    *
+    * Only *near misses* are rejected: a key that collapses onto a known setting
+    * once case and separators are ignored, but is not spelled like it.
+    * Genuinely unrelated keys are left alone, because applications legitimately
+    * keep their own settings beside these, and failing on those would turn a
+    * silent typo into a broken startup for configurations that work today.
+    */
+  private def misspelledKey(section: Config, path: String): Option[GiteaConfigError] =
+    def normalise(key: String): String = key.toLowerCase.filter(_.isLetterOrDigit)
+
+    val knownByNormalised = knownTypesafeKeys.map(key => normalise(key) -> key).toMap
+
+    section
+      .root()
+      .keySet()
+      .asScala
+      .toList
+      .sorted
+      .flatMap(key => knownByNormalised.get(normalise(key)).filterNot(_ == key).map(key -> _))
+      .headOption
+      .map { (written, known) =>
+        GiteaConfigError.InvalidConfig(qualified(path, written), s"is not a known setting; did you mean '$known'?")
+      }
 
   private def requiredBaseUrlFromConfig(config: Config, path: String): Either[GiteaConfigError, Uri] =
     optionalStringFromConfig(config, path, Typesafe.url).flatMap {
@@ -393,12 +472,41 @@ object GiteaConfig:
       defaultValue: FiniteDuration
   ): Either[GiteaConfigError, FiniteDuration] =
     if !config.hasPath(localPath) then Right(defaultValue)
+    else if isUnitlessDuration(config, localPath) then
+      Left(GiteaConfigError.InvalidConfig(path, durationRequirement))
     else
       try
         config.getDuration(localPath).toScala match
           case duration: FiniteDuration if duration > Duration.Zero => Right(duration)
-          case _ => Left(GiteaConfigError.InvalidConfig(path, "must be a positive finite duration such as 30s"))
-      catch case _: ConfigException => Left(GiteaConfigError.InvalidConfig(path, "must be a positive finite duration such as 30s"))
+          case _ => Left(GiteaConfigError.InvalidConfig(path, durationRequirement))
+      catch case _: ConfigException => Left(GiteaConfigError.InvalidConfig(path, durationRequirement))
+
+  /** Whether a HOCON duration was written without a unit.
+    *
+    * Typesafe Config reads a bare number in duration position as
+    * *milliseconds*. So `timeout = 30` parsed happily as 30ms, cleared the
+    * positive check, and gave every request a 30-millisecond budget — while the
+    * identical `GITEA_TIMEOUT=30` was rejected by the environment reader with a
+    * message telling the user to write `30s`. The same text meant two very
+    * different things depending on where it was written, and the wrong one was
+    * silent: every call then failed as a transport timeout, three retries deep,
+    * with nothing pointing at the config file.
+    *
+    * A quoted `"30"` is read the same way, so strings are checked too — a
+    * duration string always ends in a unit letter.
+    *
+    * Only the unitless case is rejected here. `getDuration` still handles
+    * everything else, because HOCON accepts spellings Scala's own `Duration`
+    * parser does not (`30 m`, `1 day`), and reading them with a shared grammar
+    * would break configuration files that already work.
+    */
+  private def isUnitlessDuration(config: Config, localPath: String): Boolean =
+    config.getValue(localPath).valueType match
+      case ConfigValueType.NUMBER => true
+      case ConfigValueType.STRING => !config.getString(localPath).trim.lastOption.exists(_.isLetter)
+      case _ => false
+
+  private val durationRequirement: String = "must be a positive finite duration such as 30s"
 
   private def optionalStringFromConfig(
       config: Config,

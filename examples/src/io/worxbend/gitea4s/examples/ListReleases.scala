@@ -1,54 +1,31 @@
 package io.worxbend.gitea4s.examples
 
-import io.worxbend.gitea4s.GiteaClient
-import io.worxbend.gitea4s.backend.zio.ZioGiteaBackend
-import zio.{Console, ZIO, ZIOAppDefault}
+import zio.ZIO
 
-object ListReleases extends ZIOAppDefault:
+object ListReleases extends ExampleApp:
   private val ownerEnv = "GITEA_OWNER"
   private val repoEnv = "GITEA_REPO"
 
   def run =
-    ExampleSupport.liveConfigFromEnv match
-      case Right(None) =>
-        Console.printLine(ExampleSupport.referenceLine) *>
-          Console.printLine(ExampleSupport.credentialsHint) *>
-          Console.printLine(repositoryHint)
-      case Left(error) =>
-        Console.printLine(ExampleSupport.referenceLine) *>
-          Console.printLineError(s"Cannot read live Gitea config: ${error.message}") *>
-          ZIO.fail(error)
-      case Right(Some(config)) =>
-        repositoryFromEnv match
-          case None =>
-            Console.printLine(ExampleSupport.referenceLine) *>
-              Console.printLine(repositoryHint)
-          case Some((owner, repo)) =>
-            val program =
-              ZIO.serviceWithZIO[GiteaClient] { client =>
-                client.releases.list(owner, repo).take(25).runCollect
-              }
-
-            Console.printLine(ExampleSupport.referenceLine) *>
-              program
-                .provideLayer(ZioGiteaBackend.configured(config))
-                .foldZIO(
-                  error => Console.printLineError(s"Listing releases failed: ${ExampleSupport.describeFailure(error)}") *> ZIO.fail(error),
-                  releases =>
-                    Console.printLine(s"Releases for $owner/$repo: ${releases.size}") *>
-                      ZIO.foreachDiscard(releases)(release =>
-                        Console.printLine(s"- ${ExampleSupport.releaseSummary(release)}")
-                      )
-                )
+    ExampleSupport.runExample("Listing releases", repositoryHint) { client =>
+      repositoryFromEnv match
+        case None => ZIO.succeed(Seq(repositoryHint))
+        case Some((owner, repo)) =>
+          client.releases
+            .list(owner, repo)
+            .take(25)
+            .runCollect
+            .map { releases =>
+              s"Releases for $owner/$repo: ${releases.size}" +:
+                releases.map(release => s"- ${ExampleSupport.releaseSummary(release)}")
+            }
+    }
 
   private def repositoryFromEnv: Option[(String, String)] =
     for
-      owner <- nonBlankEnv(ownerEnv)
-      repo <- nonBlankEnv(repoEnv)
+      owner <- ExampleSupport.optionalEnv(ownerEnv)
+      repo <- ExampleSupport.optionalEnv(repoEnv)
     yield (owner, repo)
-
-  private def nonBlankEnv(name: String): Option[String] =
-    sys.env.get(name).map(_.trim).filter(_.nonEmpty)
 
   private def repositoryHint: String =
     s"Set $ownerEnv and $repoEnv to list repository releases."

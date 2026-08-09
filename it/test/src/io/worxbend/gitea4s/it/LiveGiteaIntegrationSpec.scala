@@ -160,22 +160,50 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
         TestAspect.ifEnv(Env.repo)(nonEmptyValue) @@
         TestAspect.ifEnv(Env.releaseId)(nonEmptyValue) @@
         TestAspect.ifEnv(Env.releaseAssetId)(nonEmptyValue)
-    ) @@ TestAspect.ifEnv(GiteaConfig.Env.url)((value: String) => value.trim.nonEmpty) @@
-      TestAspect.ifEnv(GiteaConfig.Env.token)((value: String) => value.trim.nonEmpty)
+    ) @@ TestAspect.ifEnv(Env.optIn)(nonEmptyValue) @@
+      TestAspect.ifEnv(GiteaConfig.Env.url)(nonEmptyValue) @@
+      // Not `ifEnv(GITEA_TOKEN)`: that aspect reads one variable, and basic
+      // auth is an equal credential path here and in `GiteaConfig.fromEnv`.
+      // Gating on the token alone meant a username/password configuration
+      // reported twelve ignored tests and a green SUCCESS having made no
+      // network calls at all — the configuration was never actually exercised.
+      ifLiveCredentials
 
   private def withLiveClient(
       run: GiteaClient => ZIO[Any, Any, TestResult]
   ): ZIO[Any, Any, TestResult] =
     liveConfig match
-      case Right(None) => ZIO.succeed(assertTrue(true))
+      // Unreachable today: the suite carries `ifEnv` aspects on GITEA_URL and
+      // GITEA_TOKEN, so an unconfigured run reports every test as *ignored*
+      // rather than reaching this. Failing rather than succeeding keeps it that
+      // way — were those aspects ever dropped, a green "passed" that ran no
+      // live call is the one outcome this suite must never produce.
+      case Right(None) =>
+        ZIO.fail(
+          s"${Env.optIn}, ${GiteaConfig.Env.url} and credentials must be set to run a live test"
+        )
       case Left(error) => ZIO.fail(error.message)
       case Right(Some(config)) =>
         ZIO.serviceWithZIO[GiteaClient](run).provideLayer(ZioGiteaBackend.configured(config))
 
   private def liveConfig: Either[GiteaConfigError, Option[GiteaConfig]] =
     val env = sys.env.toMap
-    if nonBlank(env, GiteaConfig.Env.url).isEmpty || nonBlank(env, GiteaConfig.Env.token).isEmpty then Right(None)
+    if nonBlank(env, Env.optIn).isEmpty || nonBlank(env, GiteaConfig.Env.url).isEmpty then Right(None)
+    else if !credentialsConfigured(env) then Right(None)
     else GiteaConfig.fromEnv(env).map(Some(_))
+
+  /** Runs the suite only when some credential path is configured.
+    *
+    * Written by hand rather than with `TestAspect.ifEnv`, which reads a single
+    * variable and so cannot express "a token, or a username *and* a password".
+    */
+  private val ifLiveCredentials: TestAspectPoly =
+    if credentialsConfigured(sys.env.toMap) then TestAspect.identity else TestAspect.ignore
+
+  /** Either credential path `GiteaConfig.fromEnv` accepts. */
+  private def credentialsConfigured(env: Map[String, String]): Boolean =
+    nonBlank(env, GiteaConfig.Env.token).nonEmpty ||
+      (nonBlank(env, GiteaConfig.Env.username).nonEmpty && nonBlank(env, GiteaConfig.Env.password).nonEmpty)
 
   private def liveEnv(name: String): ZIO[Any, String, String] =
     ZIO.fromOption(nonBlank(sys.env.toMap, name)).orElseFail(s"$name must be configured for this live test")
@@ -206,6 +234,17 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
     value.trim.nonEmpty
 
   private object Env:
+    /** Explicit opt-in for the whole suite.
+      *
+      * `it.test` is part of the `__.test` aggregate that CONTRIBUTING calls
+      * "hermetic unit tests". Gating only on credentials meant that on any
+      * machine with GITEA_URL and GITEA_TOKEN exported — a maintainer's, in
+      * other words — the documented pre-PR command made authenticated calls
+      * against a real server. Requiring a variable nobody exports by accident
+      * makes the hermetic claim true.
+      */
+    val optIn = "GITEA_IT"
+
     val owner = "GITEA_OWNER"
     val repo = "GITEA_REPO"
     val ref = "GITEA_REF"

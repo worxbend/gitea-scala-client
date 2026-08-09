@@ -14,6 +14,11 @@ object Pagination:
 
   /** Streams every item from `start` onwards.
     *
+    * A page-offset scan of a live collection, not a snapshot: each page is a
+    * separate request, so an insert or delete between two of them shifts
+    * everything after it and an item can be emitted twice or skipped. Callers
+    * that need exactly-once handling should key on the item's id.
+    *
     * This exists because the two paging fields on the public `*Params` types
     * were not honoured symmetrically: `limit` reached the request, while `page`
     * was overwritten with 1 on every call and so was silently discarded. A

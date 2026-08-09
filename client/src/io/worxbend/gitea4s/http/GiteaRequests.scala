@@ -1,6 +1,6 @@
 package io.worxbend.gitea4s.http
 
-import io.worxbend.gitea4s.GiteaConfig
+import io.worxbend.gitea4s.{Accept, GiteaConfig}
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
@@ -124,29 +124,11 @@ object GiteaRequests:
 
   def organizationRepos(config: GiteaConfig, org: String, params: RepoListParams = RepoListParams.default)
       : GiteaRequest[Page[Repository]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
-      config,
-      GiteaEndpoints.orgListRepos,
-      List("orgs", org, "repos"),
-      pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[Repository](response, page, pageSize)
-    )
+    paginatedWindow[Repository](config, GiteaEndpoints.orgListRepos, List("orgs", org, "repos"), params.page, params.limit)
 
   def userRepos(config: GiteaConfig, username: String, params: RepoListParams = RepoListParams.default)
       : GiteaRequest[Page[Repository]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
-      config,
-      GiteaEndpoints.userListRepos,
-      List("users", username, "repos"),
-      pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[Repository](response, page, pageSize)
-    )
+    paginatedWindow[Repository](config, GiteaEndpoints.userListRepos, List("users", username, "repos"), params.page, params.limit)
 
   def repoTopics(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[String]] =
     val pageSize = config.pageSize
@@ -224,7 +206,7 @@ object GiteaRequests:
       List("repos", owner, repo, "signing-key.gpg"),
       Nil,
       GiteaResponseMapper.decodeString,
-      accept = MediaType.TextPlain.toString
+      accept = Accept.TextPlain
     )
 
   def repoTag(config: GiteaConfig, owner: String, repo: String, tag: String): GiteaRequest[Tag] =
@@ -279,15 +261,13 @@ object GiteaRequests:
       repo: String,
       params: ReleaseListParams = ReleaseListParams.default
   ): GiteaRequest[Page[Release]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
+    paginatedWindow[Release](
       config,
       GiteaEndpoints.repoListReleases,
       List("repos", owner, repo, "releases"),
-      releaseQuery(params, page, pageSize),
-      response => GiteaResponseMapper.decodePage[Release](response, page, pageSize)
+      params.page,
+      params.limit,
+      releaseQuery(params, _, _)
     )
 
   def repoReleases(config: GiteaConfig, owner: String, repo: String, page: Int): GiteaRequest[Page[Release]] =
@@ -422,15 +402,13 @@ object GiteaRequests:
       ref: String,
       params: CommitStatusListParams = CommitStatusListParams.default
   ): GiteaRequest[Page[CommitStatus]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
+    paginatedWindow[CommitStatus](
       config,
       GiteaEndpoints.repoListStatusesByRef,
       List("repos", owner, repo, "commits", ref, "statuses"),
-      commitStatusQuery(params, page, pageSize),
-      response => GiteaResponseMapper.decodePage[CommitStatus](response, page, pageSize)
+      params.page,
+      params.limit,
+      commitStatusQuery(params, _, _)
     )
 
   def repoStatuses(
@@ -440,15 +418,13 @@ object GiteaRequests:
       sha: String,
       params: CommitStatusListParams = CommitStatusListParams.default
   ): GiteaRequest[Page[CommitStatus]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
+    paginatedWindow[CommitStatus](
       config,
       GiteaEndpoints.repoListStatuses,
       List("repos", owner, repo, "statuses", sha),
-      commitStatusQuery(params, page, pageSize),
-      response => GiteaResponseMapper.decodePage[CommitStatus](response, page, pageSize)
+      params.page,
+      params.limit,
+      commitStatusQuery(params, _, _)
     )
 
   def createStatus(
@@ -503,7 +479,7 @@ object GiteaRequests:
       List("repos", owner, repo, "git", "commits", s"$sha.${diffType.pathValue}"),
       Nil,
       GiteaResponseMapper.decodeString,
-      accept = MediaType.TextPlain.toString
+      accept = Accept.TextPlain
     )
 
   def repoCommitNote(
@@ -554,7 +530,7 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[AnnotatedTag]
     )
 
-  def repoListAllGitRefs(config: GiteaConfig, owner: String, repo: String): GiteaRequest[zio.Chunk[Reference]] =
+  def repoListAllGitRefs(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Chunk[Reference]] =
     get(
       config,
       GiteaEndpoints.repoListAllGitRefs,
@@ -568,7 +544,7 @@ object GiteaRequests:
       owner: String,
       repo: String,
       ref: String
-  ): GiteaRequest[zio.Chunk[Reference]] =
+  ): GiteaRequest[Chunk[Reference]] =
     get(
       config,
       GiteaEndpoints.repoListGitRefs,
@@ -582,7 +558,7 @@ object GiteaRequests:
       owner: String,
       repo: String,
       params: ContentsParams = ContentsParams.default
-  ): GiteaRequest[zio.Chunk[ContentsResponse]] =
+  ): GiteaRequest[Chunk[ContentsResponse]] =
     get(
       config,
       GiteaEndpoints.repoGetContentsList,
@@ -613,12 +589,7 @@ object GiteaRequests:
       filepath: String,
       params: ContentsParams = ContentsParams.default
   ): GiteaRequest[Chunk[Byte]] =
-    getBytes(
-      config,
-      GiteaEndpoints.repoGetRawFile,
-      List("repos", owner, repo, "raw", filepath),
-      contentsQuery(params)
-    )
+    getBytes(config, rawFileTarget(owner, repo, filepath, params))
 
   def repoMediaFile(
       config: GiteaConfig,
@@ -627,12 +598,7 @@ object GiteaRequests:
       filepath: String,
       params: ContentsParams = ContentsParams.default
   ): GiteaRequest[Chunk[Byte]] =
-    getBytes(
-      config,
-      GiteaEndpoints.repoGetRawFileOrLFS,
-      List("repos", owner, repo, "media", filepath),
-      contentsQuery(params)
-    )
+    getBytes(config, mediaFileTarget(owner, repo, filepath, params))
 
   def repoGetArchive(
       config: GiteaConfig,
@@ -641,17 +607,12 @@ object GiteaRequests:
       archive: String,
       params: ArchiveParams = ArchiveParams.default
   ): GiteaRequest[Chunk[Byte]] =
-    getBytes(
-      config,
-      GiteaEndpoints.repoGetArchive,
-      List("repos", owner, repo, "archive", archive),
-      archiveQuery(params)
-    )
+    getBytes(config, archiveTarget(owner, repo, archive, params))
 
-  // Streaming download descriptors. These mirror the buffered repoRawFile /
-  // repoMediaFile / repoGetArchive builders above (same path encoding, query,
-  // and octet-stream headers) but defer the response shape to the caller, so a
-  // ZioStreams-capable backend can stream the body instead of buffering it.
+  // Streaming download descriptors. Each names the same target as its buffered
+  // counterpart above and differs only in deferring the response shape to the
+  // caller, so a ZioStreams-capable backend can stream the body instead of
+  // buffering it.
   def rawFileDownload(
       config: GiteaConfig,
       owner: String,
@@ -659,7 +620,7 @@ object GiteaRequests:
       filepath: String,
       params: ContentsParams = ContentsParams.default
   ): GiteaDownloadRequest =
-    download(config, GiteaEndpoints.repoGetRawFile, List("repos", owner, repo, "raw", filepath), contentsQuery(params))
+    download(config, rawFileTarget(owner, repo, filepath, params))
 
   def mediaFileDownload(
       config: GiteaConfig,
@@ -668,7 +629,7 @@ object GiteaRequests:
       filepath: String,
       params: ContentsParams = ContentsParams.default
   ): GiteaDownloadRequest =
-    download(config, GiteaEndpoints.repoGetRawFileOrLFS, List("repos", owner, repo, "media", filepath), contentsQuery(params))
+    download(config, mediaFileTarget(owner, repo, filepath, params))
 
   def archiveDownload(
       config: GiteaConfig,
@@ -677,7 +638,7 @@ object GiteaRequests:
       archive: String,
       params: ArchiveParams = ArchiveParams.default
   ): GiteaDownloadRequest =
-    download(config, GiteaEndpoints.repoGetArchive, List("repos", owner, repo, "archive", archive), archiveQuery(params))
+    download(config, archiveTarget(owner, repo, archive, params))
 
   def repoPullRequests(
       config: GiteaConfig,
@@ -685,15 +646,13 @@ object GiteaRequests:
       repo: String,
       params: PullRequestListParams = PullRequestListParams.default
   ): GiteaRequest[Page[PullRequest]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
+    paginatedWindow[PullRequest](
       config,
       GiteaEndpoints.repoListPullRequests,
       List("repos", owner, repo, "pulls"),
-      pullRequestQuery(params, page, pageSize),
-      response => GiteaResponseMapper.decodePage[PullRequest](response, page, pageSize)
+      params.page,
+      params.limit,
+      pullRequestQuery(params, _, _)
     )
 
   def createPullRequest(
@@ -710,7 +669,7 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[PullRequest]
     )
 
-  def pinnedPullRequests(config: GiteaConfig, owner: String, repo: String): GiteaRequest[zio.Chunk[PullRequest]] =
+  def pinnedPullRequests(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Chunk[PullRequest]] =
     get(
       config,
       GiteaEndpoints.repoListPinnedPullRequests,
@@ -827,7 +786,7 @@ object GiteaRequests:
       repo: String,
       index: Long,
       body: PullReviewRequestOptions
-  ): GiteaRequest[zio.Chunk[PullReview]] =
+  ): GiteaRequest[Chunk[PullReview]] =
     postJson(
       config,
       GiteaEndpoints.repoCreatePullReviewRequests,
@@ -956,7 +915,7 @@ object GiteaRequests:
       repo: String,
       index: Long,
       id: Long
-  ): GiteaRequest[zio.Chunk[PullReviewComment]] =
+  ): GiteaRequest[Chunk[PullReviewComment]] =
     get(
       config,
       GiteaEndpoints.repoGetPullReviewComments,
@@ -979,7 +938,7 @@ object GiteaRequests:
       List("repos", owner, repo, "pulls", s"$index.${diffType.pathValue}"),
       binary.map(value => List("binary" -> value.toString)).getOrElse(Nil),
       GiteaResponseMapper.decodeString,
-      accept = MediaType.TextPlain.toString
+      accept = Accept.TextPlain
     )
 
   def repoPullRequestFiles(
@@ -989,15 +948,13 @@ object GiteaRequests:
       index: Long,
       params: PullRequestFilesParams = PullRequestFilesParams.default
   ): GiteaRequest[Page[ChangedFile]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
+    paginatedWindow[ChangedFile](
       config,
       GiteaEndpoints.repoGetPullRequestFiles,
       List("repos", owner, repo, "pulls", index.toString, "files"),
-      pullRequestFilesQuery(params, page, pageSize),
-      response => GiteaResponseMapper.decodePage[ChangedFile](response, page, pageSize)
+      params.page,
+      params.limit,
+      pullRequestFilesQuery(params, _, _)
     )
 
   def repoPullRequestCommits(
@@ -1007,31 +964,27 @@ object GiteaRequests:
       index: Long,
       params: PullRequestCommitsParams = PullRequestCommitsParams.default
   ): GiteaRequest[Page[Commit]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
+    paginatedWindow[Commit](
       config,
       GiteaEndpoints.repoGetPullRequestCommits,
       List("repos", owner, repo, "pulls", index.toString, "commits"),
-      pullRequestCommitsQuery(params, page, pageSize),
-      response => GiteaResponseMapper.decodePage[Commit](response, page, pageSize)
+      params.page,
+      params.limit,
+      pullRequestCommitsQuery(params, _, _)
     )
 
   def issues(config: GiteaConfig, owner: String, repo: String, params: IssueListParams = IssueListParams.default)
       : GiteaRequest[Page[Issue]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
+    paginatedWindow[Issue](
       config,
       GiteaEndpoints.issueListIssues,
       List("repos", owner, repo, "issues"),
-      issueQuery(params, page, pageSize),
-      response => GiteaResponseMapper.decodePage[Issue](response, page, pageSize)
+      params.page,
+      params.limit,
+      issueQuery(params, _, _)
     )
 
-  def pinnedIssues(config: GiteaConfig, owner: String, repo: String): GiteaRequest[zio.Chunk[Issue]] =
+  def pinnedIssues(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Chunk[Issue]] =
     get(
       config,
       GiteaEndpoints.repoListPinnedIssues,
@@ -1132,7 +1085,7 @@ object GiteaRequests:
       repo: String,
       index: Long,
       params: IssueCommentListParams = IssueCommentListParams.default
-  ): GiteaRequest[zio.Chunk[Comment]] =
+  ): GiteaRequest[Chunk[Comment]] =
     get(
       config,
       GiteaEndpoints.issueGetComments,
@@ -1147,15 +1100,13 @@ object GiteaRequests:
       repo: String,
       params: RepositoryCommentListParams = RepositoryCommentListParams.default
   ): GiteaRequest[Page[Comment]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
+    paginatedWindow[Comment](
       config,
       GiteaEndpoints.issueGetRepoComments,
       List("repos", owner, repo, "issues", "comments"),
-      repositoryCommentQuery(params, page, pageSize),
-      response => GiteaResponseMapper.decodePage[Comment](response, page, pageSize)
+      params.page,
+      params.limit,
+      repositoryCommentQuery(params, _, _)
     )
 
   def issueComment(config: GiteaConfig, owner: String, repo: String, id: Long): GiteaRequest[Comment] =
@@ -1195,7 +1146,7 @@ object GiteaRequests:
       owner: String,
       repo: String,
       id: Long
-  ): GiteaRequest[zio.Chunk[Reaction]] =
+  ): GiteaRequest[Chunk[Reaction]] =
     get(
       config,
       GiteaEndpoints.issueGetCommentReactions,
@@ -1302,7 +1253,7 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Issue]
     )
 
-  def issueLabels(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[zio.Chunk[Label]] =
+  def issueLabels(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Chunk[Label]] =
     get(
       config,
       GiteaEndpoints.issueGetLabels,
@@ -1317,7 +1268,7 @@ object GiteaRequests:
       repo: String,
       index: Long,
       body: IssueLabelsOption
-  ): GiteaRequest[zio.Chunk[Label]] =
+  ): GiteaRequest[Chunk[Label]] =
     putJson(
       config,
       GiteaEndpoints.issueReplaceLabels,
@@ -1332,7 +1283,7 @@ object GiteaRequests:
       repo: String,
       index: Long,
       body: IssueLabelsOption
-  ): GiteaRequest[zio.Chunk[Label]] =
+  ): GiteaRequest[Chunk[Label]] =
     postJson(
       config,
       GiteaEndpoints.issueAddLabel,
@@ -1483,15 +1434,13 @@ object GiteaRequests:
       index: Long,
       params: IssueTrackedTimeListParams = IssueTrackedTimeListParams.default
   ): GiteaRequest[Page[TrackedTime]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
+    paginatedWindow[TrackedTime](
       config,
       GiteaEndpoints.issueTrackedTimes,
       List("repos", owner, repo, "issues", index.toString, "times"),
-      trackedTimeQuery(params, page, pageSize),
-      response => GiteaResponseMapper.decodePage[TrackedTime](response, page, pageSize)
+      params.page,
+      params.limit,
+      trackedTimeQuery(params, _, _)
     )
 
   def addIssueTrackedTime(
@@ -1557,15 +1506,13 @@ object GiteaRequests:
 
   def notifications(config: GiteaConfig, params: NotificationListParams = NotificationListParams.default)
       : GiteaRequest[Page[NotificationThread]] =
-    val page = params.page.getOrElse(1)
-    val pageSize = params.limit.getOrElse(config.pageSize)
-
-    get(
+    paginatedWindow[NotificationThread](
       config,
       GiteaEndpoints.notifyGetList,
       List("notifications"),
-      notificationQuery(params, page, pageSize),
-      response => GiteaResponseMapper.decodePage[NotificationThread](response, page, pageSize)
+      params.page,
+      params.limit,
+      notificationQuery(params, _, _)
     )
 
   def notificationCount(config: GiteaConfig): GiteaRequest[NotificationCount] =
@@ -1678,7 +1625,7 @@ object GiteaRequests:
       endpoint: GiteaEndpoint,
       request: Request[Either[String, String]],
       decode: Response[String] => Either[GiteaError, A],
-      accept: String = MediaType.ApplicationJson.toString
+      accept: Accept = Accept.Json
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
@@ -1703,9 +1650,41 @@ object GiteaRequests:
       path: List[String],
       query: List[(String, String)],
       decode: Response[String] => Either[GiteaError, A],
-      accept: String = MediaType.ApplicationJson.toString
+      accept: Accept = Accept.Json
   ): GiteaRequest[A] =
     jsonCall(config, endpoint, jsonRequest(config).get(apiUri(config.baseUrl, path, query)), decode, accept)
+
+  /** Where one binary endpoint lives, named once.
+    *
+    * The buffered and streaming builders for raw files, media files and
+    * archives are the same request differing only in response handling, so each
+    * pair restated the same endpoint, path segments and query. A comment above
+    * the streaming three asserted they mirrored the buffered three — an
+    * invariant nothing enforced, and one this repo's tests could not have
+    * caught either, since `GiteaDownloadRequestsSpec` asserted only the
+    * streaming URI. Naming the target makes the two provably the same rather
+    * than reportedly so.
+    */
+  private final case class BinaryTarget(
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      query: List[(String, String)]
+  )
+
+  private def rawFileTarget(owner: String, repo: String, filepath: String, params: ContentsParams): BinaryTarget =
+    BinaryTarget(GiteaEndpoints.repoGetRawFile, List("repos", owner, repo, "raw", filepath), contentsQuery(params))
+
+  private def mediaFileTarget(owner: String, repo: String, filepath: String, params: ContentsParams): BinaryTarget =
+    BinaryTarget(GiteaEndpoints.repoGetRawFileOrLFS, List("repos", owner, repo, "media", filepath), contentsQuery(params))
+
+  private def archiveTarget(owner: String, repo: String, archive: String, params: ArchiveParams): BinaryTarget =
+    BinaryTarget(GiteaEndpoints.repoGetArchive, List("repos", owner, repo, "archive", archive), archiveQuery(params))
+
+  private def getBytes(config: GiteaConfig, target: BinaryTarget): GiteaRequest[Chunk[Byte]] =
+    getBytes(config, target.endpoint, target.path, target.query)
+
+  private def download(config: GiteaConfig, target: BinaryTarget): GiteaDownloadRequest =
+    download(config, target.endpoint, target.path, target.query)
 
   private def getBytes(
       config: GiteaConfig,
@@ -1719,7 +1698,7 @@ object GiteaRequests:
         .get(apiUri(config.baseUrl, path, query))
         .response(byteArrayResponse)
         .readTimeout(config.timeout)
-        .headers(commonHeaders(config, "application/octet-stream")),
+        .headers(commonHeaders(config, Accept.OctetStream)),
       decode = GiteaResponseMapper.decodeBytes,
       retryable = GiteaRequest.isReadOnly(endpoint)
     )
@@ -1733,7 +1712,7 @@ object GiteaRequests:
     GiteaDownloadRequest(
       endpoint = endpoint,
       uri = apiUri(config.baseUrl, path, query),
-      headers = commonHeaders(config, "application/octet-stream"),
+      headers = commonHeaders(config, Accept.OctetStream),
       timeout = config.timeout
     )
 
@@ -1818,7 +1797,7 @@ object GiteaRequests:
     baseUrl.addPath(List("api", "v1") ++ path).addParams(query*)
 
   // Derived once per config rather than per request; see GiteaConfig.headersAccepting.
-  private def commonHeaders(config: GiteaConfig, accept: String = MediaType.ApplicationJson.toString): Map[String, String] =
+  private def commonHeaders(config: GiteaConfig, accept: Accept = Accept.Json): Map[String, String] =
     config.headersAccepting(accept)
 
   private def issueQuery(params: IssueListParams, page: Int, pageSize: Int): List[(String, String)] =
@@ -1948,7 +1927,7 @@ object GiteaRequests:
       params.before.map(value => "before" -> value.toString),
     ).flatten ++ pageQuery(page, pageSize)
 
-  private def nonEmptyCsv(name: String, values: zio.Chunk[String]): Option[(String, String)] =
+  private def nonEmptyCsv(name: String, values: Chunk[String]): Option[(String, String)] =
     Option.when(values.nonEmpty)(name -> values.mkString(","))
 
   /** A plain paged GET: one whose only query parameters are `page` and `limit`.
@@ -1966,13 +1945,35 @@ object GiteaRequests:
       path: List[String],
       page: Int
   ): GiteaRequest[Page[A]] =
-    val pageSize = config.pageSize
+    paginatedWindow[A](config, endpoint, path, Some(page), None)
+
+  /** A paged GET whose window comes from a caller's `*Params`.
+    *
+    * The two numbers have to reach two places — the query that is sent and the
+    * `Page` that is built from the reply — and `Page.page` is only meaningful
+    * if they agree. Fourteen builders resolved them by hand and then passed
+    * them to both, so a stale one produced a `Page` that misreported which page
+    * it was, with nothing to catch it: the types are the same and no test
+    * compares them.
+    *
+    * Resolving once, here, is what makes them impossible to disagree.
+    */
+  private def paginatedWindow[A: JsonDecoder](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      requestedPage: Option[Int],
+      requestedLimit: Option[Int],
+      query: (Int, Int) => List[(String, String)] = pageQuery
+  ): GiteaRequest[Page[A]] =
+    val page = requestedPage.getOrElse(1)
+    val pageSize = requestedLimit.getOrElse(config.pageSize)
 
     get(
       config,
       endpoint,
       path,
-      pageQuery(page, pageSize),
+      query(page, pageSize),
       response => GiteaResponseMapper.decodePage[A](response, page, pageSize)
     )
 

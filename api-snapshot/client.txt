@@ -152,6 +152,8 @@ public final class io.worxbend.gitea4s.GiteaConfig$Env$ implements java.io.Seria
   public java.lang.String pageSize();
   public java.lang.String timeout();
   public java.lang.String maxRetries();
+  public java.lang.String userAgent();
+  public java.lang.String otp();
 }
 
 ## io.worxbend.gitea4s.GiteaConfig$Typesafe$
@@ -1388,17 +1390,6 @@ public final class io.worxbend.gitea4s.http.GiteaRequest$Impl<A, B> implements i
   public scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A> decode(sttp.client4.Response<B>);
 }
 
-## io.worxbend.gitea4s.http.GiteaRequest$StringImpl
-public final class io.worxbend.gitea4s.http.GiteaRequest$StringImpl<A> implements io.worxbend.gitea4s.http.GiteaRequest<A> {
-  public io.worxbend.gitea4s.http.GiteaRequest$StringImpl(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.client4.Request<java.lang.String>, scala.Function1<sttp.client4.Response<java.lang.String>, scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A>>, boolean);
-  public io.worxbend.gitea4s.http.GiteaRequest<A> copy(boolean);
-  public boolean copy$default$1();
-  public io.worxbend.gitea4s.http.GiteaEndpoint endpoint();
-  public sttp.client4.Request<java.lang.String> request();
-  public boolean retryable();
-  public scala.util.Either<io.worxbend.gitea4s.error.GiteaError, A> decode(sttp.client4.Response<java.lang.String>);
-}
-
 ## io.worxbend.gitea4s.http.GiteaRequests
 public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.Label>> addIssueLabels(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.IssueLabelsOption);
@@ -1798,8 +1789,8 @@ public final class io.worxbend.gitea4s.http.GiteaResponseMapper$ implements java
   public scala.util.Either<io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> decodeUserSearchPage(sttp.client4.Response<java.lang.String>, int, int);
   public io.worxbend.gitea4s.error.GiteaError toError(sttp.client4.Response<java.lang.String>);
   public scala.Option<java.time.Instant> retryAt(sttp.client4.Response<java.lang.String>);
-  public static final java.lang.Object io$worxbend$gitea4s$http$GiteaResponseMapper$UserSearchResults$$$_$_$_$$anonfun$3();
-  public static final java.lang.Object io$worxbend$gitea4s$http$GiteaResponseMapper$UserSearchResults$$$_$_$_$$anonfun$4();
+  public static final java.lang.Object io$worxbend$gitea4s$http$GiteaResponseMapper$UserSearchResults$$$_$_$_$$anonfun$1();
+  public static final java.lang.Object io$worxbend$gitea4s$http$GiteaResponseMapper$UserSearchResults$$$_$_$_$$anonfun$2();
 }
 
 ## io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults

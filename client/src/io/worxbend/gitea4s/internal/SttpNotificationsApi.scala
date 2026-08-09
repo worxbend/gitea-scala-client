@@ -11,7 +11,7 @@ import zio.stream.ZStream
 private[gitea4s] final class SttpNotificationsApi(config: GiteaConfig, executor: GiteaRequestExecutor)
     extends NotificationsApi:
   override def list(
-      params: NotificationListParams = NotificationListParams.default
+      params: NotificationListParams
   ): ZStream[Any, GiteaError, NotificationThread] =
     Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.notifications(config, params.copy(page = Some(page))))
