@@ -17,6 +17,14 @@ import zio.stream.ZStream
   * OkHttp bridge cannot provide — hence it lives here rather than on
   * `GiteaClient`.
   *
+  * The returned stream is consume-once. Nothing happens until it is run; running
+  * it sends the request and hands the still-open HTTP response to the stream,
+  * which from that point owns the connection. The connection is released when the
+  * stream reaches its end, fails, or the scope it runs in closes — so an early
+  * exit such as `runHead`, `take(n)` or interruption cancels the download instead
+  * of reading the rest of the body. The value cannot be replayed: running it a
+  * second time sends a second request rather than re-reading the first response.
+  *
   * These streams are not retried: a partially consumed body cannot be safely
   * replayed. Use the buffered `GiteaClient` methods where retry matters.
   */
@@ -68,6 +76,11 @@ final class ZioGiteaDownloads(config: GiteaConfig, backend: StreamBackend[Task, 
     stream(GiteaRequests.archiveDownload(config, owner, repo, archive, params))
 
   private def stream(descriptor: GiteaDownloadRequest): ZStream[Any, GiteaError, Byte] =
+    // `asStreamUnsafe` is the only response description that lets the body escape as a
+    // stream: the safe variants close the body as soon as the function they are handed
+    // returns, which would defeat the point here. Ownership passes to the stream built
+    // below, which cancels the subscription when its scope closes. Error bodies are not
+    // affected — `asStreamUnsafe` reads a non-2xx body fully as a `String` first.
     val request =
       basicRequest
         .get(descriptor.uri)

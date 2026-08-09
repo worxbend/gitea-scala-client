@@ -1,6 +1,7 @@
 package io.worxbend.gitea4s
 
 import io.worxbend.gitea4s.model.Auth
+import sttp.model.Uri
 import zio.ZIO
 import zio.test.*
 
@@ -205,6 +206,115 @@ object GiteaConfigSpec extends ZIOSpecDefault:
           !message.contains("password-secret")
         )
       },
+      test("trims whitespace around a token read from the environment") {
+        // A secret read out of a file keeps its trailing newline. Untrimmed,
+        // the JDK rejects the resulting header value with an exception that
+        // quotes the credential, and that failure is classified retryable.
+        val result = GiteaConfig.fromEnv(baseEnv + (GiteaConfig.Env.token -> "  ghp_abc123\n"))
+
+        assertTrue(result.map(_.auth) == Right(Auth.Token("ghp_abc123")))
+      },
+      test("trims whitespace around basic credentials read from the environment") {
+        // The basic-auth variant is the quieter failure: a newline inside the
+        // credential base64-encodes into a syntactically valid header, so
+        // nothing throws and the server simply answers 401 forever.
+        val result =
+          GiteaConfig.fromEnv(
+            baseEnv ++ Map(
+              GiteaConfig.Env.username -> "alice\n",
+              GiteaConfig.Env.password -> " hunter2 "
+            )
+          )
+
+        assertTrue(result.map(_.auth) == Right(Auth.Basic("alice", "hunter2")))
+      },
+      test("strips userinfo credentials from the base URL") {
+        val result = GiteaConfig.fromEnv(Map(GiteaConfig.Env.url -> "https://alice:hunter2@gitea.example/root"))
+
+        result match
+          case Right(config) =>
+            val rendered = config.baseUrl.toString
+            assertTrue(
+              !rendered.contains("hunter2"),
+              !rendered.contains("alice"),
+              rendered == "https://gitea.example/root"
+            )
+          case Left(_) => assertTrue(false)
+      },
+      test("does not echo HOCON source text when parsing fails") {
+        // The offending text in a syntax error is frequently the credential
+        // itself: a missing `=` after `token` puts the token into the message.
+        val result =
+          GiteaConfig.fromTypesafeString(
+            """
+              |gitea4s {
+              |  url = "https://gitea.example/root"
+              |  token ghp_SUPERSECRET123
+              |}
+              |""".stripMargin
+          )
+
+        val message = result.left.map(_.message).left.getOrElse("")
+        assertTrue(result.isLeft, !message.contains("ghp_SUPERSECRET123"), message.contains("HOCON"))
+      },
+      test("retries idempotent requests by default") {
+        val result = GiteaConfig.fromEnv(baseEnv)
+
+        assertTrue(result.map(_.maxRetries) == Right(GiteaConfig.defaultMaxRetries), GiteaConfig.defaultMaxRetries > 0)
+      },
+      test("still honours an explicit request for no retries") {
+        val result = GiteaConfig.fromEnv(baseEnv + (GiteaConfig.Env.maxRetries -> "0"))
+
+        assertTrue(result.map(_.maxRetries) == Right(0))
+      },
+      test("redacts the one-time password from toString") {
+        val config = GiteaConfig.withToken(uri, "ghp_realSecretValue").withOtp(Some("123456"))
+        val rendered = config.toString
+
+        assertTrue(
+          !rendered.contains("ghp_realSecretValue"),
+          !rendered.contains("123456"),
+          rendered.contains("gitea.example")
+        )
+      },
+      test("redacts basic credentials from toString") {
+        val rendered = GiteaConfig.withBasic(uri, "alice", "hunter2").toString
+
+        assertTrue(!rendered.contains("hunter2"), rendered.contains("alice"))
+      },
+      test("builder methods produce the same config as copy") {
+        val config = GiteaConfig.withToken(uri, "t")
+
+        assertTrue(
+          config.withPageSize(17).pageSize == 17,
+          config.withMaxRetries(9).maxRetries == 9,
+          config.withTimeout(2.seconds).timeout == 2.seconds,
+          config.withUserAgent(None).userAgent.isEmpty,
+          config.withOtp(Some("999")).otp.contains("999"),
+          config.withAuth(Auth.Anonymous).auth == Auth.Anonymous
+        )
+      },
+      test("derives request headers once per config") {
+        val config = GiteaConfig.withBasic(uri, "alice", "hunter2")
+
+        assertTrue(
+          config.jsonHeaders eq config.jsonHeaders,
+          config.headersAccepting("application/json") eq config.jsonHeaders,
+          config.headersAccepting("application/octet-stream") eq config.octetStreamHeaders,
+          config.headersAccepting("text/plain") eq config.textPlainHeaders
+        )
+      },
+      test("sends the requested Accept value even for a content type it does not memoise") {
+        // A two-way switch here would have silently answered text/plain
+        // requests with the octet-stream header set.
+        val config = GiteaConfig.withToken(uri, "t")
+
+        assertTrue(
+          config.headersAccepting("text/plain").get("Accept").contains("text/plain"),
+          config.headersAccepting("application/vnd.custom").get("Accept").contains("application/vnd.custom"),
+          config.headersAccepting("application/vnd.custom").get("Authorization").contains("token t")
+        )
+      },
       test("rejects invalid Typesafe retry counts") {
         val result =
           GiteaConfig.fromTypesafeString(
@@ -219,3 +329,5 @@ object GiteaConfigSpec extends ZIOSpecDefault:
         assertTrue(result == Left(GiteaConfigError.InvalidConfig("gitea4s.max-retries", "must be zero or a positive integer")))
       }
     )
+
+  private lazy val uri: Uri = Uri.parse("https://gitea.example/root").toOption.get

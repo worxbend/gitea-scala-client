@@ -7,7 +7,6 @@ import io.worxbend.gitea4s.model.{
   AddTimeOption,
   Auth,
   BranchProtection,
-  ChangedFile,
   CommitDiffType,
   CreateIssue,
   CreateIssueComment,
@@ -43,8 +42,7 @@ import io.worxbend.gitea4s.model.{
   TagProtection,
   Team,
   TeamPermission,
-  User,
-  WatchInfo
+  User
 }
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -59,6 +57,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
   private val config =
     GiteaConfig.default(uri"https://gitea.example/root", Auth.Token("secret"))
       .copy(pageSize = 25, userAgent = Some("gitea4s-test"), otp = Some("123456"))
+
+
+  private val otpConfig =
+    GiteaConfig.default(uri"https://gitea.example/root", Auth.Token("secret")).copy(otp = Some("123456"))
+
+  private val noOtpConfig =
+    GiteaConfig.default(uri"https://gitea.example/root", Auth.Token("secret")).copy(otp = None)
 
   def spec =
     suite("Gitea request layer")(
@@ -321,6 +326,30 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           decodeWith(built, backend).map(_.hasNext) == Right(true)
         )
       },
+      test("sends the numeric user id the search endpoint declares") {
+        val withUid = GiteaRequests.userSearch(config, UserSearchParams(q = Some("ali"), uid = Some(42L))).request
+        val withoutUid = GiteaRequests.userSearch(config, UserSearchParams(q = Some("ali"))).request
+
+        assertTrue(
+          withUid.uri.paramsMap.get("uid").contains("42"),
+          withUid.uri.paramsMap.get("q").contains("ali"),
+          withoutUid.uri.paramsMap.get("uid").isEmpty
+        )
+      },
+      test("stops following redirects when a one-time password is configured") {
+        // sttp strips Authorization on every redirect, so the token is never
+        // forwarded, but X-Gitea-OTP is not in its sensitive-header set and
+        // would be sent to whatever host a Location named.
+        val withOtp = GiteaRequests.repository(otpConfig, "alice", "api").request
+        val withoutOtp = GiteaRequests.repository(noOtpConfig, "alice", "api").request
+
+        assertTrue(
+          !withOtp.options.followRedirects,
+          withoutOtp.options.followRedirects,
+          withOtp.header("X-Gitea-OTP").contains("123456"),
+          withOtp.options.maxResponseBodyLength.nonEmpty
+        )
+      },
       test("builds and decodes schema-traceable paginated repository subscribers request") {
         val built = GiteaRequests.repoSubscribers(config, "worx bend", "gitea/scala", page = 4)
         val endpoint = built.endpoint
@@ -354,7 +383,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           decodeWith(built, backend).map(_.totalCount) == Right(Some(90L)),
           decodeWith(built, backend).map(_.page) == Right(4),
           decodeWith(built, backend).map(_.pageSize) == Right(25),
-          decodeWith(built, backend).map(_.hasNext) == Right(false)
+          // 90 items are advertised and this response carried one, so the
+          // client cannot conclude the collection is exhausted. hasNext is
+          // deliberately optimistic: over-fetching one page that comes back
+          // empty is recoverable, silently truncating a collection is not.
+          decodeWith(built, backend).map(_.hasNext) == Right(true)
         )
       },
       test("maps documented repository social metadata failures") {

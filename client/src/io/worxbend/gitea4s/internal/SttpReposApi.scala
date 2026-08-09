@@ -170,7 +170,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       params: RepoListParams = RepoListParams.default
   ): ZStream[Any, GiteaError, Repository] =
-    Pagination.paginated { page =>
+    Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.userRepos(config, owner, params.copy(page = Some(page))))
     }
 
@@ -227,7 +227,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       ref: String,
       params: CommitStatusListParams = CommitStatusListParams.default
   ): ZStream[Any, GiteaError, CommitStatus] =
-    Pagination.paginated { page =>
+    Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.repoStatusesByRef(config, owner, repo, ref, params.copy(page = Some(page))))
     }
 
@@ -237,7 +237,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       sha: String,
       params: CommitStatusListParams = CommitStatusListParams.default
   ): ZStream[Any, GiteaError, CommitStatus] =
-    Pagination.paginated { page =>
+    Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.repoStatuses(config, owner, repo, sha, params.copy(page = Some(page))))
     }
 

@@ -7,6 +7,8 @@ public final class io.worxbend.gitea4s.backend.okhttp.OkHttpGiteaBackend {
   public static zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> anonymous(sttp.model.Uri);
   public static zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> configured(io.worxbend.gitea4s.GiteaConfig);
   public static zio.ZLayer<io.worxbend.gitea4s.GiteaConfig, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> live();
+  public static okhttp3.OkHttpClient ownedClient(io.worxbend.gitea4s.GiteaConfig);
+  public static zio.ZIO<zio.Scope, java.lang.Throwable, okhttp3.OkHttpClient> scopedOwnedClient(io.worxbend.gitea4s.GiteaConfig);
   public static zio.ZLayer<java.lang.Object, scala.runtime.Nothing$, io.worxbend.gitea4s.GiteaClient> usingClient(io.worxbend.gitea4s.GiteaConfig, okhttp3.OkHttpClient);
   public static zio.ZLayer<io.worxbend.gitea4s.GiteaConfig, scala.runtime.Nothing$, io.worxbend.gitea4s.GiteaClient> usingClient(okhttp3.OkHttpClient);
   public static zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> withBasic(sttp.model.Uri, java.lang.String, java.lang.String);
@@ -16,7 +18,7 @@ public final class io.worxbend.gitea4s.backend.okhttp.OkHttpGiteaBackend {
 ## io.worxbend.gitea4s.backend.okhttp.OkHttpGiteaBackend$
 public final class io.worxbend.gitea4s.backend.okhttp.OkHttpGiteaBackend$ implements java.io.Serializable {
   public static final io.worxbend.gitea4s.backend.okhttp.OkHttpGiteaBackend$ MODULE$;
-  public final scala.concurrent.ExecutionContext io$worxbend$gitea4s$backend$okhttp$OkHttpGiteaBackend$$$given_ExecutionContext();
+  public static {};
   public zio.ZLayer<io.worxbend.gitea4s.GiteaConfig, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> live();
   public zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> configured(io.worxbend.gitea4s.GiteaConfig);
   public zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> withToken(sttp.model.Uri, java.lang.String);
@@ -24,8 +26,8 @@ public final class io.worxbend.gitea4s.backend.okhttp.OkHttpGiteaBackend$ implem
   public zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> anonymous(sttp.model.Uri);
   public zio.ZLayer<io.worxbend.gitea4s.GiteaConfig, scala.runtime.Nothing$, io.worxbend.gitea4s.GiteaClient> usingClient(okhttp3.OkHttpClient);
   public zio.ZLayer<java.lang.Object, scala.runtime.Nothing$, io.worxbend.gitea4s.GiteaClient> usingClient(io.worxbend.gitea4s.GiteaConfig, okhttp3.OkHttpClient);
-  public static final zio.CancelableFuture io$worxbend$gitea4s$backend$okhttp$OkHttpGiteaBackend$FutureToZioBackend$$anon$1$$_$apply$$anonfun$1(scala.Function0, zio.Unsafe);
-  public static final scala.concurrent.Future io$worxbend$gitea4s$backend$okhttp$OkHttpGiteaBackend$FutureToZioBackend$$anon$2$$_$apply$$anonfun$2(scala.Function0, scala.concurrent.ExecutionContext);
+  public okhttp3.OkHttpClient ownedClient(io.worxbend.gitea4s.GiteaConfig);
+  public zio.ZIO<zio.Scope, java.lang.Throwable, okhttp3.OkHttpClient> scopedOwnedClient(io.worxbend.gitea4s.GiteaConfig);
 }
 
 ## io.worxbend.gitea4s.backend.okhttp.OkHttpGiteaBackend$FutureToZioBackend

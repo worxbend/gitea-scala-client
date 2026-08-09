@@ -23,6 +23,6 @@ private[gitea4s] final class SttpOrgsApi(config: GiteaConfig, executor: GiteaReq
     }
 
   override def repos(org: String, params: RepoListParams): ZStream[Any, GiteaError, Repository] =
-    Pagination.paginated { page =>
+    Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.organizationRepos(config, org, params.copy(page = Some(page))))
     }

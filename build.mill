@@ -29,7 +29,19 @@ trait Gitea4sModule extends ScalaModule:
     "-deprecation",
     "-feature",
     "-unchecked",
-    "-Wsafe-init"
+    "-Wsafe-init",
+    // Compile against exactly the Java 21 API the project advertises, so a
+    // newer local JDK cannot silently let a Java 22+ method into the jars.
+    "-release",
+    "21",
+    "-Wunused:all",
+    // The two checks that matter most for an effect library: a discarded ZIO
+    // value is an effect that silently never runs, and the compiler is the
+    // only thing that can see it.
+    "-Wvalue-discard",
+    "-Wnonunit-statement",
+    "-Xcheck-macros",
+    "-Werror"
   )
 
   def javacOptions = Seq("--release", "21")
@@ -89,7 +101,6 @@ object client extends PublishableGitea4sModule:
 
   def mvnDeps = Seq(
     mvn"com.softwaremill.sttp.client4::core:${Versions.sttp}",
-    mvn"com.softwaremill.sttp.client4::zio-json:${Versions.sttp}",
     mvn"dev.zio::zio-config:${Versions.zioConfig}",
     mvn"dev.zio::zio-config-typesafe:${Versions.zioConfig}"
   )
@@ -122,16 +133,24 @@ object it extends Gitea4sModule:
   def moduleDeps = Seq(`backend-zio`)
 
 object compatibility extends Module:
-  private def workspaceRoot: os.Path =
-    sys.env.get("PWD").map(os.Path(_)).getOrElse(os.Path(sys.props("user.dir")))
+  // Mill does set `PWD` to the workspace root, so the previous `sys.env("PWD")`
+  // lookup worked — but its `user.dir` fallback resolved to the throwaway
+  // `out/mill-daemon/sandbox` directory, which would have silently written the
+  // baseline somewhere nobody would ever read it. Ask Mill directly instead.
+  private def workspaceRoot: os.Path = mill.api.BuildCtx.workspaceRoot
+
+  // Every module that is actually published needs a baseline. Deriving the list
+  // from `publishedModules` rather than repeating the names keeps a new module
+  // from being added to the build without also being added to the guard.
+  private val publishedModules: Seq[(String, PublishableGitea4sModule)] = Seq(
+    "core" -> core,
+    "client" -> client,
+    "backend-zio" -> `backend-zio`,
+    "backend-okhttp" -> `backend-okhttp`
+  )
 
   private def publishedJars = Task.Anon {
-    Seq(
-      "core" -> core.jar().path,
-      "client" -> client.jar().path,
-      "backend-zio" -> `backend-zio`.jar().path,
-      "backend-okhttp" -> `backend-okhttp`.jar().path
-    )
+    Task.traverse(publishedModules.map(_._2))(_.jar)().map(_.path).zip(publishedModules.map(_._1)).map(_.swap)
   }
 
   private def publicClassNames(jar: os.Path): Seq[String] =
@@ -190,7 +209,18 @@ object compatibility extends Module:
   def check() = Task.Command {
     val baselineDir = workspaceRoot / "api-snapshot"
     val generatedDir = generated().path
-    val failures = os.list(generatedDir).flatMap { generatedFile =>
+
+    // The comparison below only walks the *generated* files. On its own that
+    // means a baseline whose module has been dropped from `publishedModules` is
+    // never compared and never reported: the check would pass while a still
+    // published artifact went unverified. Require the two sets to match.
+    val generatedNames = os.list(generatedDir).map(_.last).toSet
+    val baselineNames = if os.exists(baselineDir) then os.list(baselineDir).map(_.last).toSet else Set.empty[String]
+    val orphaned = (baselineNames -- generatedNames).toSeq.sorted.map { name =>
+      s"Orphaned API snapshot: api-snapshot/$name has no corresponding published module."
+    }
+
+    val failures = orphaned ++ os.list(generatedDir).flatMap { generatedFile =>
       val expectedFile = baselineDir / generatedFile.last
 
       if !os.exists(expectedFile) then

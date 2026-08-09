@@ -1,6 +1,5 @@
 package io.worxbend.gitea4s.internal
 
-import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.Page
 import zio.{Chunk, Ref, ZIO}
 import zio.test.*
@@ -34,5 +33,25 @@ object PaginationSpec extends ZIOSpecDefault:
           // page 1 (data) then page 2 (empty -> stop); page 3 is never requested
           fetched == Chunk(1, 2)
         )
+      },
+      test("starts at the requested page instead of always at page 1") {
+        for
+          calls <- Ref.make(Chunk.empty[Int])
+          stream = Pagination.paginatedFrom(7) { p =>
+            calls.update(_ :+ p) *> ZIO.succeed(page(Chunk(p), p, hasNext = p < 9))
+          }
+          items <- stream.runCollect
+          fetched <- calls.get
+        yield assertTrue(items == Chunk(7, 8, 9), fetched.headOption.contains(7))
+      },
+      test("treats a start page below one as the first page") {
+        for
+          calls <- Ref.make(Chunk.empty[Int])
+          stream = Pagination.paginatedFrom(0) { p =>
+            calls.update(_ :+ p) *> ZIO.succeed(page(Chunk(p), p, hasNext = false))
+          }
+          _ <- stream.runCollect
+          fetched <- calls.get
+        yield assertTrue(fetched == Chunk(1))
       }
     )

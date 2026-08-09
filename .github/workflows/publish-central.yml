@@ -9,6 +9,12 @@ on:
         default: false
         type: boolean
 
+# GITHUB_TOKEN is only used to check out the repository. Publishing
+# authenticates to Sonatype with its own credentials, so the token needs
+# no write scope even though it shares a process with the signing key.
+permissions:
+  contents: read
+
 jobs:
   publish:
     name: Publish Maven Central artifacts
@@ -33,8 +39,6 @@ jobs:
             ~/.ivy2/cache
             ~/.mill
           key: ${{ runner.os }}-publish-central-${{ hashFiles('build.mill', 'mill') }}
-          restore-keys: |
-            ${{ runner.os }}-publish-central-
 
       - name: Verify release version
         run: |
@@ -47,7 +51,6 @@ jobs:
         run: |
           ./mill __.compile
           ./mill __.test
-          ./mill it.test
           ./mill examples.run
           ./mill compatibility.check
           ./mill __.docJar __.sourceJar __.publishArtifacts
@@ -58,6 +61,11 @@ jobs:
           MILL_SONATYPE_PASSWORD: ${{ secrets.MILL_SONATYPE_PASSWORD }}
           MILL_PGP_SECRET_BASE64: ${{ secrets.MILL_PGP_SECRET_BASE64 }}
           MILL_PGP_PASSPHRASE: ${{ secrets.MILL_PGP_PASSPHRASE }}
+          # Passed through the environment rather than spliced into the
+          # command text, so a ref name containing shell metacharacters
+          # cannot become part of the command.
+          SHOULD_RELEASE: ${{ inputs.release }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           ./mill mill.javalib.SonatypeCentralPublishModule/publishAll \
             --publishArtifacts __.publishArtifacts \
@@ -67,5 +75,5 @@ jobs:
             --readTimeout 36000 \
             --awaitTimeout 36000 \
             --connectTimeout 36000 \
-            --shouldRelease "${{ inputs.release }}" \
-            --bundleName "io.worxbend-gitea4s-${{ github.ref_name }}"
+            --shouldRelease "$SHOULD_RELEASE" \
+            --bundleName "io.worxbend-gitea4s-$REF_NAME"

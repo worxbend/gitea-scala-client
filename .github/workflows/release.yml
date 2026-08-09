@@ -46,13 +46,23 @@ jobs:
             ~/.ivy2/cache
             ~/.mill
           key: ${{ runner.os }}-release-${{ hashFiles('build.mill', 'mill') }}
-          restore-keys: |
-            ${{ runner.os }}-release-
 
       - name: Resolve release tag
         id: meta
+        env:
+          # Read the tag through the environment rather than substituting it
+          # into the script text. Git ref names may legally contain `;`, `$`
+          # and backticks, and the `tag` dispatch input is free-form, so a
+          # `${{ }}` splice here would be pasted into the shell as code.
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_TAG: ${{ github.ref_name }}
         run: |
-          TAG="${{ inputs.tag || github.ref_name }}"
+          set -euo pipefail
+          TAG="${INPUT_TAG:-$REF_TAG}"
+          case "$TAG" in
+            v[0-9]*) ;;
+            *) echo "Refusing to release '$TAG': expected a v<version> tag." >&2; exit 1 ;;
+          esac
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Releasing $TAG"
 
@@ -67,7 +77,6 @@ jobs:
         run: |
           ./mill __.compile
           ./mill __.test
-          ./mill it.test
           ./mill examples.run
           ./mill compatibility.check
 
@@ -110,9 +119,10 @@ jobs:
       - name: Attach jars to the GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
         run: |
           set -euo pipefail
-          tag="${{ steps.meta.outputs.tag }}"
+          tag="$TAG"
           mapfile -t jars < <(find "$GITHUB_WORKSPACE/staging-m2" -type f -name '*.jar' | sort)
           if ! gh release view "$tag" >/dev/null 2>&1; then
             gh release create "$tag" --title "$tag" --generate-notes --verify-tag

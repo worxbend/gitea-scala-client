@@ -28,7 +28,6 @@ public final class io.worxbend.gitea4s.GiteaConfig implements scala.Product,java
   public scala.collection.Iterator<java.lang.String> productElementNames();
   public int hashCode();
   public boolean equals(java.lang.Object);
-  public java.lang.String toString();
   public boolean canEqual(java.lang.Object);
   public int productArity();
   public java.lang.String productPrefix();
@@ -42,6 +41,19 @@ public final class io.worxbend.gitea4s.GiteaConfig implements scala.Product,java
   public scala.Option<java.lang.String> otp();
   public int maxRetries();
   public io.worxbend.gitea4s.observability.GiteaObserver observer();
+  public io.worxbend.gitea4s.GiteaConfig withBaseUrl(sttp.model.Uri);
+  public io.worxbend.gitea4s.GiteaConfig withAuth(io.worxbend.gitea4s.model.Auth);
+  public io.worxbend.gitea4s.GiteaConfig withTimeout(scala.concurrent.duration.FiniteDuration);
+  public io.worxbend.gitea4s.GiteaConfig withPageSize(int);
+  public io.worxbend.gitea4s.GiteaConfig withUserAgent(scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.GiteaConfig withOtp(scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.GiteaConfig withMaxRetries(int);
+  public io.worxbend.gitea4s.GiteaConfig withObserver(io.worxbend.gitea4s.observability.GiteaObserver);
+  public scala.collection.immutable.Map<java.lang.String, java.lang.String> headersAccepting(java.lang.String);
+  public scala.collection.immutable.Map<java.lang.String, java.lang.String> jsonHeaders();
+  public scala.collection.immutable.Map<java.lang.String, java.lang.String> octetStreamHeaders();
+  public scala.collection.immutable.Map<java.lang.String, java.lang.String> textPlainHeaders();
+  public java.lang.String toString();
   public io.worxbend.gitea4s.GiteaConfig copy(sttp.model.Uri, io.worxbend.gitea4s.model.Auth, scala.concurrent.duration.FiniteDuration, int, scala.Option<java.lang.String>, scala.Option<java.lang.String>, int, io.worxbend.gitea4s.observability.GiteaObserver);
   public sttp.model.Uri copy$default$1();
   public io.worxbend.gitea4s.model.Auth copy$default$2();
@@ -60,8 +72,11 @@ public final class io.worxbend.gitea4s.GiteaConfig implements scala.Product,java
   public int _7();
   public io.worxbend.gitea4s.observability.GiteaObserver _8();
   public static io.worxbend.gitea4s.GiteaConfig anonymous(sttp.model.Uri);
+  public static java.lang.String applicationJson();
   public static io.worxbend.gitea4s.GiteaConfig apply(sttp.model.Uri, io.worxbend.gitea4s.model.Auth, scala.concurrent.duration.FiniteDuration, int, scala.Option<java.lang.String>, scala.Option<java.lang.String>, int, io.worxbend.gitea4s.observability.GiteaObserver);
+  public static scala.Option<scala.Tuple2<java.lang.String, java.lang.String>> authorizationHeader(io.worxbend.gitea4s.model.Auth);
   public static io.worxbend.gitea4s.GiteaConfig default(sttp.model.Uri, io.worxbend.gitea4s.model.Auth);
+  public static int defaultMaxRetries();
   public static int defaultPageSize();
   public static scala.concurrent.duration.FiniteDuration defaultTimeout();
   public static zio.ZLayer<java.lang.Object, io.worxbend.gitea4s.GiteaConfigError, io.worxbend.gitea4s.GiteaConfig> environmentLayer();
@@ -73,6 +88,8 @@ public final class io.worxbend.gitea4s.GiteaConfig implements scala.Product,java
   public static zio.ZLayer<java.lang.Object, io.worxbend.gitea4s.GiteaConfigError, io.worxbend.gitea4s.GiteaConfig> layerFromEnv(scala.collection.immutable.Map<java.lang.String, java.lang.String>);
   public static zio.ZLayer<java.lang.Object, io.worxbend.gitea4s.GiteaConfigError, io.worxbend.gitea4s.GiteaConfig> layerFromTypesafeConfig(com.typesafe.config.Config, java.lang.String);
   public static zio.ZLayer<java.lang.Object, io.worxbend.gitea4s.GiteaConfigError, io.worxbend.gitea4s.GiteaConfig> layerFromTypesafeString(java.lang.String, java.lang.String);
+  public static java.lang.String octetStream();
+  public static java.lang.String textPlain();
   public static zio.ZLayer<java.lang.Object, io.worxbend.gitea4s.GiteaConfigError, io.worxbend.gitea4s.GiteaConfig> typesafeLayer();
   public static io.worxbend.gitea4s.GiteaConfig unapply(io.worxbend.gitea4s.GiteaConfig);
   public static io.worxbend.gitea4s.GiteaConfig withBasic(sttp.model.Uri, java.lang.String, java.lang.String);
@@ -94,10 +111,15 @@ public final class io.worxbend.gitea4s.GiteaConfig$ implements scala.deriving.Mi
   public io.worxbend.gitea4s.GiteaConfig apply(sttp.model.Uri, io.worxbend.gitea4s.model.Auth, scala.concurrent.duration.FiniteDuration, int, scala.Option<java.lang.String>, scala.Option<java.lang.String>, int, io.worxbend.gitea4s.observability.GiteaObserver);
   public io.worxbend.gitea4s.GiteaConfig unapply(io.worxbend.gitea4s.GiteaConfig);
   public io.worxbend.gitea4s.observability.GiteaObserver $lessinit$greater$default$8();
+  public java.lang.String applicationJson();
+  public java.lang.String octetStream();
+  public java.lang.String textPlain();
   public scala.concurrent.duration.FiniteDuration defaultTimeout();
   public int defaultPageSize();
+  public int defaultMaxRetries();
   public io.worxbend.gitea4s.GiteaConfig default(sttp.model.Uri, io.worxbend.gitea4s.model.Auth);
   public io.worxbend.gitea4s.model.Auth default$default$2();
+  public scala.Option<scala.Tuple2<java.lang.String, java.lang.String>> authorizationHeader(io.worxbend.gitea4s.model.Auth);
   public io.worxbend.gitea4s.GiteaConfig withToken(sttp.model.Uri, java.lang.String);
   public io.worxbend.gitea4s.GiteaConfig withBasic(sttp.model.Uri, java.lang.String, java.lang.String);
   public io.worxbend.gitea4s.GiteaConfig anonymous(sttp.model.Uri);
@@ -940,7 +962,6 @@ public final class io.worxbend.gitea4s.http.GiteaDownloadRequest implements scal
   public scala.collection.Iterator<java.lang.String> productElementNames();
   public int hashCode();
   public boolean equals(java.lang.Object);
-  public java.lang.String toString();
   public boolean canEqual(java.lang.Object);
   public int productArity();
   public java.lang.String productPrefix();
@@ -950,6 +971,7 @@ public final class io.worxbend.gitea4s.http.GiteaDownloadRequest implements scal
   public sttp.model.Uri uri();
   public scala.collection.immutable.Map<java.lang.String, java.lang.String> headers();
   public scala.concurrent.duration.FiniteDuration timeout();
+  public java.lang.String toString();
   public io.worxbend.gitea4s.http.GiteaDownloadRequest copy(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.model.Uri, scala.collection.immutable.Map<java.lang.String, java.lang.String>, scala.concurrent.duration.FiniteDuration);
   public io.worxbend.gitea4s.http.GiteaEndpoint copy$default$1();
   public sttp.model.Uri copy$default$2();
@@ -966,11 +988,11 @@ public final class io.worxbend.gitea4s.http.GiteaDownloadRequest implements scal
 
 ## io.worxbend.gitea4s.http.GiteaDownloadRequest$
 public final class io.worxbend.gitea4s.http.GiteaDownloadRequest$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final scala.collection.immutable.Set<java.lang.String> io$worxbend$gitea4s$http$GiteaDownloadRequest$$$redactedHeaders;
   public static final io.worxbend.gitea4s.http.GiteaDownloadRequest$ MODULE$;
   public static {};
   public io.worxbend.gitea4s.http.GiteaDownloadRequest apply(io.worxbend.gitea4s.http.GiteaEndpoint, sttp.model.Uri, scala.collection.immutable.Map<java.lang.String, java.lang.String>, scala.concurrent.duration.FiniteDuration);
   public io.worxbend.gitea4s.http.GiteaDownloadRequest unapply(io.worxbend.gitea4s.http.GiteaDownloadRequest);
-  public java.lang.String toString();
   public io.worxbend.gitea4s.http.GiteaDownloadRequest fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
@@ -1022,6 +1044,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoint$ implements scala.deri
 
 ## io.worxbend.gitea4s.http.GiteaEndpoints
 public final class io.worxbend.gitea4s.http.GiteaEndpoints {
+  public static scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaEndpoint> all();
   public static io.worxbend.gitea4s.http.GiteaEndpoint getAnnotatedTag();
   public static io.worxbend.gitea4s.http.GiteaEndpoint getBlob();
   public static io.worxbend.gitea4s.http.GiteaEndpoint getTree();
@@ -1288,6 +1311,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint notifyGetThread();
   public io.worxbend.gitea4s.http.GiteaEndpoint userListFollowers();
   public io.worxbend.gitea4s.http.GiteaEndpoint userListFollowing();
+  public scala.collection.immutable.List<io.worxbend.gitea4s.http.GiteaEndpoint> all();
 }
 
 ## io.worxbend.gitea4s.http.GiteaParameter
@@ -1754,6 +1778,7 @@ public final class io.worxbend.gitea4s.http.GiteaResponseMapper {
   public static scala.util.Either<io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Page<java.lang.String>> decodeTopicNamesPage(sttp.client4.Response<java.lang.String>, int, int);
   public static scala.util.Either<io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> decodeUnit(sttp.client4.Response<java.lang.String>);
   public static scala.util.Either<io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> decodeUserSearchPage(sttp.client4.Response<java.lang.String>, int, int);
+  public static scala.Option<java.time.Instant> retryAt(sttp.client4.Response<java.lang.String>);
   public static io.worxbend.gitea4s.error.GiteaError toError(sttp.client4.Response<java.lang.String>);
 }
 
@@ -1772,13 +1797,14 @@ public final class io.worxbend.gitea4s.http.GiteaResponseMapper$ implements java
   public scala.util.Either<io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Page<java.lang.String>> decodeTopicNamesPage(sttp.client4.Response<java.lang.String>, int, int);
   public scala.util.Either<io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> decodeUserSearchPage(sttp.client4.Response<java.lang.String>, int, int);
   public io.worxbend.gitea4s.error.GiteaError toError(sttp.client4.Response<java.lang.String>);
-  public static final java.lang.Object io$worxbend$gitea4s$http$GiteaResponseMapper$UserSearchResults$$$_$_$_$$anonfun$1();
-  public static final java.lang.Object io$worxbend$gitea4s$http$GiteaResponseMapper$UserSearchResults$$$_$_$_$$anonfun$2();
+  public scala.Option<java.time.Instant> retryAt(sttp.client4.Response<java.lang.String>);
+  public static final java.lang.Object io$worxbend$gitea4s$http$GiteaResponseMapper$UserSearchResults$$$_$_$_$$anonfun$3();
+  public static final java.lang.Object io$worxbend$gitea4s$http$GiteaResponseMapper$UserSearchResults$$$_$_$_$$anonfun$4();
 }
 
 ## io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults
 public final class io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults implements scala.Product,java.io.Serializable {
-  public io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults(scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.User>>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults(scala.Option<zio.Chunk<io.worxbend.gitea4s.model.User>>, scala.Option<java.lang.Object>);
   public scala.collection.Iterator<java.lang.Object> productIterator();
   public scala.collection.Iterator<java.lang.String> productElementNames();
   public int hashCode();
@@ -1789,18 +1815,18 @@ public final class io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResult
   public java.lang.String productPrefix();
   public java.lang.Object productElement(int);
   public java.lang.String productElementName(int);
-  public scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.User>> data();
+  public scala.Option<zio.Chunk<io.worxbend.gitea4s.model.User>> data();
   public scala.Option<java.lang.Object> ok();
-  public io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults copy(scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.User>>, scala.Option<java.lang.Object>);
-  public scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.User>> copy$default$1();
+  public io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults copy(scala.Option<zio.Chunk<io.worxbend.gitea4s.model.User>>, scala.Option<java.lang.Object>);
+  public scala.Option<zio.Chunk<io.worxbend.gitea4s.model.User>> copy$default$1();
   public scala.Option<java.lang.Object> copy$default$2();
-  public scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.User>> _1();
+  public scala.Option<zio.Chunk<io.worxbend.gitea4s.model.User>> _1();
   public scala.Option<java.lang.Object> _2();
-  public static io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults apply(scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.User>>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults apply(scala.Option<zio.Chunk<io.worxbend.gitea4s.model.User>>, scala.Option<java.lang.Object>);
   public static io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults fromProduct(scala.Product);
   public static zio.json.JsonDecoder<io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults> given_JsonDecoder_UserSearchResults();
   public static io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults unapply(io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults);
-  public static scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.User>> $lessinit$greater$default$1();
+  public static scala.Option<zio.Chunk<io.worxbend.gitea4s.model.User>> $lessinit$greater$default$1();
   public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
 }
 
@@ -1808,9 +1834,9 @@ public final class io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResult
 public final class io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults$ implements scala.deriving.Mirror$Product,java.io.Serializable {
   public static final io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults$ MODULE$;
   public io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults$();
-  public io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults apply(scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.User>>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults apply(scala.Option<zio.Chunk<io.worxbend.gitea4s.model.User>>, scala.Option<java.lang.Object>);
   public io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults unapply(io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults);
-  public scala.Option<scala.collection.immutable.List<io.worxbend.gitea4s.model.User>> $lessinit$greater$default$1();
+  public scala.Option<zio.Chunk<io.worxbend.gitea4s.model.User>> $lessinit$greater$default$1();
   public scala.Option<java.lang.Object> $lessinit$greater$default$2();
   public final zio.json.JsonDecoder<io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults> given_JsonDecoder_UserSearchResults();
   public io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults fromProduct(scala.Product);
@@ -2626,7 +2652,7 @@ public final class io.worxbend.gitea4s.http.SingleCommitParams$ implements scala
 
 ## io.worxbend.gitea4s.http.UserSearchParams
 public final class io.worxbend.gitea4s.http.UserSearchParams implements scala.Product,java.io.Serializable {
-  public io.worxbend.gitea4s.http.UserSearchParams(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.http.UserSearchParams(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
   public scala.collection.Iterator<java.lang.Object> productIterator();
   public scala.collection.Iterator<java.lang.String> productElementNames();
   public int hashCode();
@@ -2640,31 +2666,36 @@ public final class io.worxbend.gitea4s.http.UserSearchParams implements scala.Pr
   public scala.Option<java.lang.String> q();
   public scala.Option<java.lang.Object> page();
   public scala.Option<java.lang.Object> limit();
-  public io.worxbend.gitea4s.http.UserSearchParams copy(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.lang.Object> uid();
+  public io.worxbend.gitea4s.http.UserSearchParams copy(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
   public scala.Option<java.lang.String> copy$default$1();
   public scala.Option<java.lang.Object> copy$default$2();
   public scala.Option<java.lang.Object> copy$default$3();
+  public scala.Option<java.lang.Object> copy$default$4();
   public scala.Option<java.lang.String> _1();
   public scala.Option<java.lang.Object> _2();
   public scala.Option<java.lang.Object> _3();
-  public static io.worxbend.gitea4s.http.UserSearchParams apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.lang.Object> _4();
+  public static io.worxbend.gitea4s.http.UserSearchParams apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
   public static io.worxbend.gitea4s.http.UserSearchParams default();
   public static io.worxbend.gitea4s.http.UserSearchParams fromProduct(scala.Product);
   public static io.worxbend.gitea4s.http.UserSearchParams unapply(io.worxbend.gitea4s.http.UserSearchParams);
   public static scala.Option<java.lang.String> $lessinit$greater$default$1();
   public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
   public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$4();
 }
 
 ## io.worxbend.gitea4s.http.UserSearchParams$
 public final class io.worxbend.gitea4s.http.UserSearchParams$ implements scala.deriving.Mirror$Product,java.io.Serializable {
   public static final io.worxbend.gitea4s.http.UserSearchParams$ MODULE$;
   public static {};
-  public io.worxbend.gitea4s.http.UserSearchParams apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.http.UserSearchParams apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
   public io.worxbend.gitea4s.http.UserSearchParams unapply(io.worxbend.gitea4s.http.UserSearchParams);
   public scala.Option<java.lang.String> $lessinit$greater$default$1();
   public scala.Option<java.lang.Object> $lessinit$greater$default$2();
   public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$4();
   public io.worxbend.gitea4s.http.UserSearchParams default();
   public io.worxbend.gitea4s.http.UserSearchParams fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
@@ -2689,15 +2720,16 @@ public final class io.worxbend.gitea4s.observability.GiteaObserver$ implements j
   public io.worxbend.gitea4s.observability.GiteaObserver logging();
   public io.worxbend.gitea4s.observability.GiteaObserver metrics();
   public io.worxbend.gitea4s.observability.GiteaObserver fromFunction(scala.Function1<io.worxbend.gitea4s.observability.RequestEvent, zio.ZIO<java.lang.Object, scala.runtime.Nothing$, scala.runtime.BoxedUnit>>);
-  public static final java.lang.String io$worxbend$gitea4s$observability$GiteaObserver$$anon$4$$_$onComplete$$anonfun$2(io.worxbend.gitea4s.http.GiteaEndpoint, long);
-  public static final java.lang.String io$worxbend$gitea4s$observability$GiteaObserver$$anon$4$$_$onComplete$$anonfun$3(io.worxbend.gitea4s.http.GiteaEndpoint, long, io.worxbend.gitea4s.error.GiteaError);
+  public static final java.lang.String io$worxbend$gitea4s$observability$GiteaObserver$$anon$4$$_$onComplete$$anonfun$2(io.worxbend.gitea4s.http.GiteaEndpoint, long, java.lang.String);
+  public static final java.lang.String io$worxbend$gitea4s$observability$GiteaObserver$$anon$4$$_$onComplete$$anonfun$3(io.worxbend.gitea4s.http.GiteaEndpoint, long, java.lang.String, io.worxbend.gitea4s.error.GiteaError);
   public static final long io$worxbend$gitea4s$observability$GiteaObserver$$anon$5$$_$onComplete$$anonfun$4();
   public static final zio.ZIO io$worxbend$gitea4s$observability$GiteaObserver$$anon$5$$_$onComplete$$anonfun$5(scala.collection.immutable.Set, io.worxbend.gitea4s.observability.RequestEvent);
+  public static final zio.ZIO io$worxbend$gitea4s$observability$GiteaObserver$$anon$5$$_$onComplete$$anonfun$6(scala.collection.immutable.Set, io.worxbend.gitea4s.observability.RequestEvent);
 }
 
 ## io.worxbend.gitea4s.observability.RequestEvent
 public final class io.worxbend.gitea4s.observability.RequestEvent implements scala.Product,java.io.Serializable {
-  public io.worxbend.gitea4s.observability.RequestEvent(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome);
+  public io.worxbend.gitea4s.observability.RequestEvent(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome, scala.Option<java.lang.Object>, int);
   public scala.collection.Iterator<java.lang.Object> productIterator();
   public scala.collection.Iterator<java.lang.String> productElementNames();
   public int hashCode();
@@ -2711,26 +2743,37 @@ public final class io.worxbend.gitea4s.observability.RequestEvent implements sca
   public io.worxbend.gitea4s.http.GiteaEndpoint endpoint();
   public java.time.Duration duration();
   public io.worxbend.gitea4s.observability.RequestOutcome outcome();
+  public scala.Option<java.lang.Object> status();
+  public int attempts();
   public boolean succeeded();
-  public io.worxbend.gitea4s.observability.RequestEvent copy(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome);
+  public boolean retried();
+  public io.worxbend.gitea4s.observability.RequestEvent copy(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome, scala.Option<java.lang.Object>, int);
   public io.worxbend.gitea4s.http.GiteaEndpoint copy$default$1();
   public java.time.Duration copy$default$2();
   public io.worxbend.gitea4s.observability.RequestOutcome copy$default$3();
+  public scala.Option<java.lang.Object> copy$default$4();
+  public int copy$default$5();
   public io.worxbend.gitea4s.http.GiteaEndpoint _1();
   public java.time.Duration _2();
   public io.worxbend.gitea4s.observability.RequestOutcome _3();
-  public static io.worxbend.gitea4s.observability.RequestEvent apply(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome);
+  public scala.Option<java.lang.Object> _4();
+  public int _5();
+  public static io.worxbend.gitea4s.observability.RequestEvent apply(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome, scala.Option<java.lang.Object>, int);
   public static io.worxbend.gitea4s.observability.RequestEvent fromProduct(scala.Product);
   public static io.worxbend.gitea4s.observability.RequestEvent unapply(io.worxbend.gitea4s.observability.RequestEvent);
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public static int $lessinit$greater$default$5();
 }
 
 ## io.worxbend.gitea4s.observability.RequestEvent$
 public final class io.worxbend.gitea4s.observability.RequestEvent$ implements scala.deriving.Mirror$Product,java.io.Serializable {
   public static final io.worxbend.gitea4s.observability.RequestEvent$ MODULE$;
   public static {};
-  public io.worxbend.gitea4s.observability.RequestEvent apply(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome);
+  public io.worxbend.gitea4s.observability.RequestEvent apply(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome, scala.Option<java.lang.Object>, int);
   public io.worxbend.gitea4s.observability.RequestEvent unapply(io.worxbend.gitea4s.observability.RequestEvent);
   public java.lang.String toString();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public int $lessinit$greater$default$5();
   public io.worxbend.gitea4s.observability.RequestEvent fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
