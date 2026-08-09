@@ -8,7 +8,8 @@ import zio.Chunk
 import zio.json.*
 
 import java.nio.charset.StandardCharsets
-import java.time.Instant
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, ZonedDateTime}
 import scala.util.Try
 
 object GiteaResponseMapper:
@@ -121,7 +122,7 @@ object GiteaResponseMapper:
       case 412 => GiteaError.PreconditionFailed(message, body)
       case 422 => GiteaError.UnprocessableEntity(message, body)
       case 423 => GiteaError.Locked(message, body)
-      case 429 => GiteaError.RateLimited(rateLimitReset(response), body)
+      case 429 => GiteaError.RateLimited(retryAt(response), body)
       // Every status without a dedicated case above lands here, not only 5xx.
       // The previous `case status if status >= 500` arm was followed by an
       // identical unguarded arm, so it never changed the outcome.
@@ -177,6 +178,40 @@ object GiteaResponseMapper:
   ): Boolean =
     response.header("link").exists(_.contains("""rel="next"""")) ||
       (received > 0 && totalCount.exists(total => page.toLong * received.toLong < total))
+
+  /** When the server says it will accept another request, if it says at all.
+    *
+    * `Retry-After` is checked first: it is the standard header for 429 and 503,
+    * and the one nginx, HAProxy and Cloudflare actually send. Gitea has no
+    * built-in API rate limiter, so in practice a 429 comes from exactly those
+    * front-ends rather than from Gitea itself. `x-ratelimit-reset` is the
+    * fallback.
+    *
+    * The value is reported exactly as the server gave it, including one that is
+    * implausibly far ahead — a proxy reporting the reset in milliseconds sends
+    * something that is a valid epoch *second* thousands of years out. Deciding
+    * how long to actually wait is the executor's job, and it caps the wait; a
+    * decoder has no clock to reason about "how far ahead" with.
+    */
+  private[gitea4s] def retryAt(response: Response[String]): Option[Instant] =
+    retryAfter(response).orElse(rateLimitReset(response))
+
+  private def retryAfter(response: Response[String]): Option[Instant] =
+    response.header("retry-after").flatMap { raw =>
+      val value = raw.trim
+      // RFC 9110 allows either a delay in seconds or an HTTP-date. The delay
+      // form has to be anchored to some "now" to become the absolute instant
+      // `GiteaError.RateLimited` carries, and a decoder has no effectful clock,
+      // so it uses the wall clock. In production that is the same clock ZIO
+      // reads, so the resulting wait is right; under a test clock the two
+      // differ, which is why the executor's own cap — not this value — is what
+      // actually bounds the sleep.
+      value.toLongOption
+        .flatMap(seconds => Try(Instant.now().plusSeconds(seconds)).toOption)
+        .orElse(
+          Try(ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant).toOption
+        )
+    }
 
   private def rateLimitReset(response: Response[String]): Option[Instant] =
     longHeader(response, "x-ratelimit-reset")

@@ -179,6 +179,55 @@ object GiteaResponseMapperSpec extends ZIOSpecDefault:
           assertTrue(page.map(_.pageSize) == Right(100))
         }
       ),
+      suite("retry timing signals")(
+        test("honours Retry-After given as a delay in seconds") {
+          val before = java.time.Instant.now()
+          val error = GiteaResponseMapper.toError(withHeaders("", StatusCode.TooManyRequests, "retry-after" -> "60"))
+
+          error match
+            case GiteaError.RateLimited(Some(at), _) =>
+              val delay = java.time.Duration.between(before, at).toSeconds
+              assertTrue(delay >= 55L, delay <= 65L)
+            case _ => assertTrue(false)
+        },
+        test("honours Retry-After given as an HTTP date") {
+          val when = java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).plusMinutes(2)
+          val header = java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.format(when)
+          val error = GiteaResponseMapper.toError(withHeaders("", StatusCode.TooManyRequests, "retry-after" -> header))
+
+          error match
+            case GiteaError.RateLimited(Some(_), _) => assertTrue(true)
+            case _ => assertTrue(false)
+        },
+        test("prefers Retry-After over x-ratelimit-reset") {
+          val reset = java.time.Instant.now().plusSeconds(3600).getEpochSecond
+          val error =
+            GiteaResponseMapper.toError(
+              withHeaders("", StatusCode.TooManyRequests, "retry-after" -> "30", "x-ratelimit-reset" -> reset.toString)
+            )
+
+          error match
+            case GiteaError.RateLimited(Some(at), _) =>
+              assertTrue(java.time.Duration.between(java.time.Instant.now(), at).toSeconds <= 60L)
+            case _ => assertTrue(false)
+        },
+        test("reports an implausibly distant reset instant rather than second-guessing it") {
+          // The decoder has no clock; GiteaRequestExecutorSpec covers the cap
+          // that stops this becoming an unbounded sleep.
+          val error =
+            GiteaResponseMapper.toError(withHeaders("", StatusCode.TooManyRequests, "x-ratelimit-reset" -> "99999999999"))
+
+          error match
+            case GiteaError.RateLimited(Some(at), _) => assertTrue(at.getEpochSecond == 99999999999L)
+            case _ => assertTrue(false)
+        },
+        test("ignores an unparseable reset header") {
+          val error =
+            GiteaResponseMapper.toError(withHeaders("", StatusCode.TooManyRequests, "x-ratelimit-reset" -> "soon"))
+
+          assertTrue(error == GiteaError.RateLimited(None, ""))
+        }
+      ),
       suite("membership answers")(
         test("204 means yes and 404 means no") {
           assertTrue(
@@ -221,6 +270,9 @@ object GiteaResponseMapperSpec extends ZIOSpecDefault:
         }
       )
     )
+
+  private def withHeaders(body: String, statusCode: StatusCode, headers: (String, String)*): Response[String] =
+    ResponseStub(body, statusCode, headers.map(sttp.model.Header(_, _)))
 
   private def decodeIntPage(
       body: String,

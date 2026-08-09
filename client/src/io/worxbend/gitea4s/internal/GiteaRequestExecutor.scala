@@ -64,7 +64,7 @@ final class GiteaRequestExecutor(
       case GiteaError.TransportError(_) =>
         jitteredBackoff(attempt).map(Some(_))
       case GiteaError.RateLimited(Some(resetAt), _) =>
-        Clock.instant.map(now => Some(nonNegativeDelay(now, resetAt)))
+        Clock.instant.map(now => Some(boundedDelay(now, resetAt)))
       case GiteaError.RateLimited(None, _) =>
         jitteredBackoff(attempt).map(Some(_))
       case GiteaError.ServerError(status, _) if retryableServerStatuses.contains(status) =>
@@ -73,16 +73,28 @@ final class GiteaRequestExecutor(
         ZIO.succeed(None)
 
   private def jitteredBackoff(attempt: Int): UIO[Duration] =
-    val multiplier = 1L << math.min(attempt - 1, 10)
+    val multiplier = 1L << math.min(math.max(attempt - 1, 0), 10)
     val baseMillis = math.min(baseBackoff.toMillis * multiplier, maxBackoff.toMillis)
 
     Random.nextDoubleBetween(0.8, 1.2).map { jitter =>
       Duration.ofMillis(math.max(1L, math.round(baseMillis.toDouble * jitter)))
     }
 
-  private def nonNegativeDelay(now: Instant, retryAt: Instant): Duration =
+  /** How long to wait before retrying a rate-limited request.
+    *
+    * Clamped at both ends. The lower clamp keeps an already-elapsed reset time
+    * from producing a negative sleep; the upper one keeps a remote header from
+    * silently overriding the caller's own timeout. A proxy that reports the
+    * reset in milliseconds sends a value that is a valid epoch second thousands
+    * of years out, and waiting for it is indistinguishable from a hang — but
+    * even a well-formed hour-long reset window would otherwise block a client
+    * configured with a 30-second timeout for an hour.
+    */
+  private def boundedDelay(now: Instant, retryAt: Instant): Duration =
     val delay = Duration.between(now, retryAt)
-    if delay.isNegative then Duration.ZERO else delay
+    if delay.isNegative then Duration.ZERO
+    else if delay.compareTo(maxRateLimitWait) > 0 then maxRateLimitWait
+    else delay
 
   private val retryableServerStatuses: Set[Int] =
     Set(500, 502, 503, 504)
@@ -92,3 +104,6 @@ final class GiteaRequestExecutor(
 
   private val maxBackoff: Duration =
     Duration.ofSeconds(5)
+
+  private val maxRateLimitWait: Duration =
+    Duration.ofSeconds(60)
