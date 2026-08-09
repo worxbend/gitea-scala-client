@@ -132,6 +132,47 @@ object GiteaResponseMapperSpec extends ZIOSpecDefault:
               GiteaError.Locked("Locked", body)
           )
         }
+      ),
+      suite("membership answers")(
+        test("204 means yes and 404 means no") {
+          assertTrue(
+            GiteaResponseMapper.decodeNoContentOrNotFoundBoolean(raw("", StatusCode.NoContent)) == Right(true),
+            GiteaResponseMapper.decodeNoContentOrNotFoundBoolean(raw("", StatusCode.NotFound)) == Right(false)
+          )
+        },
+        test("an unexpected 200 is an error, not an affirmative answer") {
+          // An identity-aware proxy whose session lapsed answers 200 with an
+          // HTML login page. That must not read as "yes, they are a
+          // collaborator" to a caller using this as a permission gate.
+          val result = GiteaResponseMapper.decodeNoContentOrNotFoundBoolean(raw("<html>login</html>", StatusCode.Ok))
+
+          assertTrue(result.isLeft)
+        }
+      ),
+      suite("retained error bodies")(
+        test("truncates an oversized error body") {
+          val body = "x" * (100 * 1024)
+          val error = GiteaResponseMapper.toError(raw(body, StatusCode.InternalServerError))
+
+          assertTrue(error == GiteaError.ServerError(500, "x" * 8192))
+        },
+        test("leaves a normal error body intact") {
+          val body = """{"message":"nope"}"""
+
+          assertTrue(GiteaResponseMapper.toError(raw(body, StatusCode.NotFound)) == GiteaError.NotFound("nope", body))
+        },
+        test("truncates an oversized binary error body without decoding all of it") {
+          val body = Array.fill[Byte](100 * 1024)('x'.toByte)
+          val result = GiteaResponseMapper.decodeBytes(rawBytes(body, StatusCode.InternalServerError))
+
+          assertTrue(result == Left(GiteaError.ServerError(500, "x" * 8192)))
+        },
+        test("truncates the body kept on a decode failure") {
+          val body = "[" + ("\"not-an-int\"," * 5000).dropRight(1) + "]"
+          val result = GiteaResponseMapper.decodeChunk[Int](ResponseStub(body, StatusCode.Ok))
+
+          assertTrue(result.left.map(_.asInstanceOf[GiteaError.DecodeError].body.length) == Left(8192))
+        }
       )
     )
 
