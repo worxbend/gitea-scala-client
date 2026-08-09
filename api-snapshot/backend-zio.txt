@@ -47,6 +47,7 @@ public final class io.worxbend.gitea4s.backend.zio.ZioGiteaBackend$ implements j
 
 ## io.worxbend.gitea4s.backend.zio.ZioGiteaDownloads
 public final class io.worxbend.gitea4s.backend.zio.ZioGiteaDownloads implements io.worxbend.gitea4s.backend.zio.GiteaDownloads {
+  public io.worxbend.gitea4s.backend.zio.ZioGiteaDownloads(io.worxbend.gitea4s.GiteaConfig, sttp.client4.StreamBackend<zio.ZIO<java.lang.Object, java.lang.Throwable, java.lang.Object>, sttp.capabilities.zio.ZioStreams>, java.time.Duration);
   public io.worxbend.gitea4s.backend.zio.ZioGiteaDownloads(io.worxbend.gitea4s.GiteaConfig, sttp.client4.StreamBackend<zio.ZIO<java.lang.Object, java.lang.Throwable, java.lang.Object>, sttp.capabilities.zio.ZioStreams>);
   public zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.Object> rawFile(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ContentsParams);
   public io.worxbend.gitea4s.http.ContentsParams rawFile$default$4();
@@ -54,4 +55,14 @@ public final class io.worxbend.gitea4s.backend.zio.ZioGiteaDownloads implements 
   public io.worxbend.gitea4s.http.ContentsParams mediaFile$default$4();
   public zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.Object> archive(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ArchiveParams);
   public io.worxbend.gitea4s.http.ArchiveParams archive$default$4();
+  public static io.worxbend.gitea4s.backend.zio.ZioGiteaDownloads withStallTimeout(io.worxbend.gitea4s.GiteaConfig, sttp.client4.StreamBackend<zio.ZIO<java.lang.Object, java.lang.Throwable, java.lang.Object>, sttp.capabilities.zio.ZioStreams>, java.time.Duration);
+}
+
+## io.worxbend.gitea4s.backend.zio.ZioGiteaDownloads$
+public final class io.worxbend.gitea4s.backend.zio.ZioGiteaDownloads$ implements java.io.Serializable {
+  public static final io.worxbend.gitea4s.backend.zio.ZioGiteaDownloads$ MODULE$;
+  public static {};
+  public java.time.Duration stallTimeout();
+  public io.worxbend.gitea4s.backend.zio.ZioGiteaDownloads withStallTimeout(io.worxbend.gitea4s.GiteaConfig, sttp.client4.StreamBackend<zio.ZIO<java.lang.Object, java.lang.Throwable, java.lang.Object>, sttp.capabilities.zio.ZioStreams>, java.time.Duration);
+  public io.worxbend.gitea4s.error.GiteaError io$worxbend$gitea4s$backend$zio$ZioGiteaDownloads$$$stalled(java.time.Duration);
 }

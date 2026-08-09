@@ -8,7 +8,7 @@ import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
 import sttp.client4.testing.{ResponseStub, StreamBackendStub}
 import sttp.model.StatusCode
-import zio.{Chunk, Ref, Task}
+import zio.{Chunk, Ref, Task, ZIO, durationInt}
 import zio.stream.ZStream
 import zio.test.*
 
@@ -43,6 +43,31 @@ object GiteaDownloadsSpec extends ZIOSpecDefault:
           drained <- reachedEnd.get
         yield assertTrue(head.contains(1.toByte), releaseCount == 1, !drained)
       },
+      test("fails a download that stops producing instead of hanging") {
+        // This path sends straight at the backend, so it never had the
+        // executor's attempt budget, and `readTimeout` reaches the JDK as
+        // `HttpRequest.timeout` — which stops applying once headers arrive.
+        // A server that answered 200 and then went quiet held the consumer
+        // open forever, on precisely the path meant for the largest bodies.
+        val body: ZStream[Any, Throwable, Byte] = ZStream.fromChunk(Chunk[Byte](1, 2, 3)) ++ ZStream.fromZIO(ZIO.never)
+
+        // A real clock and a short budget, rather than forking and nudging a
+        // `TestClock`: that races the forked fiber, so it passes when the
+        // fiber happens to reach the sleep first and hangs when it does not.
+        ZioGiteaDownloads
+          .withStallTimeout(config, stubBackend(body), 200.millis)
+          .archive("alice", "api", "main.zip")
+          .runCollect
+          .either
+          .map { result =>
+            assertTrue(
+              result.left.exists {
+                case GiteaError.TransportError(cause) => cause.isInstanceOf[java.util.concurrent.TimeoutException]
+                case _ => false
+              }
+            )
+          }
+      } @@ TestAspect.withLiveClock,
       test("maps a non-2xx download response to a typed GiteaError") {
         val errorBody = """{"message":"repository does not exist"}"""
         val backend =
