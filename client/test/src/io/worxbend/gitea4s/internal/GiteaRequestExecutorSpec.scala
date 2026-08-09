@@ -1,8 +1,9 @@
 package io.worxbend.gitea4s.internal
 
 import io.worxbend.gitea4s.GiteaConfig
-import io.worxbend.gitea4s.http.GiteaRequests
-import io.worxbend.gitea4s.observability.{GiteaObserver, RequestEvent}
+import io.worxbend.gitea4s.error.GiteaError
+import io.worxbend.gitea4s.http.{GiteaEndpoints, GiteaRequest, GiteaRequests}
+import io.worxbend.gitea4s.observability.{GiteaObserver, RequestEvent, RequestOutcome}
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
 import sttp.client4.testing.{BackendStub, ResponseStub, StubBody}
@@ -99,7 +100,7 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
             .send(GiteaRequests.currentUser(config))
             .either
           events <- ref.get
-        yield assertTrue(events.size == 1)
+        yield assertTrue(events.size == 1, events.head.attempts == 1)
       },
       test("never retries a write, even when the failure would otherwise qualify") {
         // Retryability is decided from the HTTP method, so a POST that comes
@@ -112,7 +113,81 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
           ref <- Ref.make(Chunk.empty[RequestEvent])
           _ <- GiteaRequestExecutor(backend, maxRetries = 3, recording(ref)).send(request).either
           events <- ref.get
-        yield assertTrue(!request.retryable, events.size == 1)
+        yield assertTrue(!request.retryable, events.head.attempts == 1)
+      }
+    ),
+    suite("total time budget")(
+      test("a response that never arrives fails instead of hanging") {
+        // `GiteaConfig.timeout` reaches the JDK as HttpRequest.timeout, which
+        // stops applying once response headers arrive, so it cannot bound a
+        // body that never ends. This budget can.
+        val backend = BackendStub[Task](new RIOMonadAsyncError[Any]).whenAnyRequest.thenRespondF(_ => ZIO.never)
+
+        GiteaRequestExecutor(backend, maxRetries = 0, totalTimeout = Duration.fromMillis(200))
+          .send(GiteaRequests.currentUser(config))
+          .either
+          .map {
+            case Left(GiteaError.TransportError(cause)) =>
+              assertTrue(cause.isInstanceOf[java.util.concurrent.TimeoutException])
+            case _ => assertTrue(false)
+          }
+      } @@ TestAspect.withLiveClock
+    ),
+    suite("telemetry")(
+      test("reports the HTTP status of the response that arrived") {
+        val backend = respondWith(ok(user))
+
+        for
+          ref <- Ref.make(Chunk.empty[RequestEvent])
+          _ <- GiteaRequestExecutor(backend, maxRetries = 0, recording(ref)).send(GiteaRequests.currentUser(config))
+          events <- ref.get
+        yield assertTrue(events.head.status.contains(200), !events.head.retried)
+      },
+      test("counts every attempt a retried call made") {
+        val backend = respondWith(rateLimited("retry-after" -> "0"), ok(user))
+
+        for
+          ref <- Ref.make(Chunk.empty[RequestEvent])
+          _ <- GiteaRequestExecutor(backend, maxRetries = 2, recording(ref)).send(GiteaRequests.currentUser(config))
+          events <- ref.get
+        yield assertTrue(events.size == 1, events.head.attempts == 2, events.head.retried)
+      } @@ TestAspect.withLiveClock,
+      test("emits an event when the call dies with a defect") {
+        // `Cause.failureOption` sees only typed failures, so a defect used to
+        // produce no event at all and the success and failure counts stopped
+        // summing to the real request count.
+        val backend = respondWith(ok(user))
+        val exploding = GiteaRequest(
+          endpoint = GiteaEndpoints.userGetCurrent,
+          request = basicRequest.get(uri"https://gitea.example/api/v1/user").response(asStringAlways),
+          decode = _ => throw new RuntimeException("decode blew up"),
+          retryable = false
+        )
+
+        for
+          ref <- Ref.make(Chunk.empty[RequestEvent])
+          exit <- GiteaRequestExecutor(backend, maxRetries = 0, recording(ref)).send(exploding).exit
+          events <- ref.get
+        yield assertTrue(
+          exit.isFailure,
+          events.size == 1,
+          events.head.outcome match
+            case RequestOutcome.Failure(GiteaError.TransportError(_)) => true
+            case _ => false
+        )
+      },
+      test("reports no status when no response ever arrived") {
+        val backend = BackendStub[Task](new RIOMonadAsyncError[Any])
+          .whenAnyRequest
+          .thenRespondF(_ => ZIO.fail(new RuntimeException("connection refused")))
+
+        for
+          ref <- Ref.make(Chunk.empty[RequestEvent])
+          _ <- GiteaRequestExecutor(backend, maxRetries = 0, recording(ref))
+            .send(GiteaRequests.currentUser(config))
+            .either
+          events <- ref.get
+        yield assertTrue(events.head.status.isEmpty, events.head.attempts == 1)
       }
     )
   )
