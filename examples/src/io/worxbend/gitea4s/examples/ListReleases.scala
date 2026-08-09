@@ -1,8 +1,8 @@
 package io.worxbend.gitea4s.examples
 
-import zio.{ZIO, ZIOAppDefault}
+import zio.ZIO
 
-object ListReleases extends ZIOAppDefault:
+object ListReleases extends ExampleApp:
   private val ownerEnv = "GITEA_OWNER"
   private val repoEnv = "GITEA_REPO"
 

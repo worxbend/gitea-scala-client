@@ -1,8 +1,8 @@
 package io.worxbend.gitea4s.examples
 
-import zio.{ZIO, ZIOAppDefault}
+import zio.ZIO
 
-object OrgMembers extends ZIOAppDefault:
+object OrgMembers extends ExampleApp:
   private val orgEnv = "GITEA_ORG"
 
   def run =

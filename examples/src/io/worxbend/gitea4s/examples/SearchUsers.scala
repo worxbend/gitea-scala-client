@@ -1,9 +1,9 @@
 package io.worxbend.gitea4s.examples
 
 import io.worxbend.gitea4s.http.UserSearchParams
-import zio.{ZIO, ZIOAppDefault}
+import zio.ZIO
 
-object SearchUsers extends ZIOAppDefault:
+object SearchUsers extends ExampleApp:
   private val queryEnv = "GITEA_USER_QUERY"
 
   def run =

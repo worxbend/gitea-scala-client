@@ -1,9 +1,7 @@
 package io.worxbend.gitea4s.examples
 
-import zio.ZIOAppDefault
-
-object ShowApiReference extends ZIOAppDefault:
+object ShowApiReference extends ExampleApp:
   def run =
-    ExampleSupport.runExample("GET /user") { client =>
-      client.users.me.map(user => Seq(s"Authenticated as ${user.login.getOrElse("<unknown>")}"))
+    ExampleSupport.runExample("Reading the current user") { client =>
+      client.users.me.map(user => Seq(s"Authenticated as ${ExampleSupport.userName(user)}"))
     }

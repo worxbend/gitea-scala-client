@@ -2,9 +2,9 @@ package io.worxbend.gitea4s.examples
 
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.RepoListParams
-import zio.{ZIO, ZIOAppDefault}
+import zio.ZIO
 
-object ListMyRepos extends ZIOAppDefault:
+object ListMyRepos extends ExampleApp:
   def run =
     ExampleSupport.runExample("Listing repositories") { client =>
       for
