@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide — gitea4s</title>
+<meta name="description" content="Configuration, pagination, retries, error handling, observability, streaming downloads and backends in gitea4s.">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="index.html">gitea<span>4s</span></a>
+    <nav class="site">
+      <a href="index.html">Overview</a>
+      <a href="guide.html" aria-current="page">Guide</a>
+      <a href="cookbook.html">Cookbook</a>
+      <a href="https://github.com/worxbend/gitea-scala-client">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+
+  <h2>Authentication</h2>
+
+<pre><code>GiteaConfig.withToken(baseUrl, token)
+GiteaConfig.withBasic(baseUrl, username, password)
+GiteaConfig.anonymous(baseUrl)</code></pre>
+
+  <p>Or load from the environment. <code>GITEA_TOKEN</code> takes precedence; basic auth needs both
+  <code>GITEA_USERNAME</code> and <code>GITEA_PASSWORD</code>.</p>
+
+<pre><code>GITEA_URL  GITEA_TOKEN  GITEA_USERNAME  GITEA_PASSWORD
+GITEA_PAGE_SIZE  GITEA_TIMEOUT  GITEA_MAX_RETRIES
+GITEA_USER_AGENT  GITEA_OTP</code></pre>
+
+  <p>HOCON under the <code>gitea4s</code> path is also supported, and accepts the same settings:</p>
+
+<pre><code>gitea4s {
+  url         = "https://gitea.example"
+  token       = "..."
+  page-size   = 50
+  timeout     = 30s
+  user-agent  = "my-app"
+  max-retries = 3
+}</code></pre>
+
+  <div class="note">
+    <p><strong>Durations must carry a unit.</strong> Typesafe Config reads a bare number in duration
+    position as <em>milliseconds</em>, so <code>timeout = 30</code> would mean 30ms rather than the
+    30 seconds almost anyone writing it intends. It is rejected with the same message the
+    environment reader gives. <code>30s</code> and <code>2 minutes</code> both work.</p>
+    <p>Settings spelled the environment's way are rejected rather than ignored —
+    <code>maxRetries</code> in a <code>gitea4s { }</code> block is a different key from
+    <code>max-retries</code>, and used to be read by nobody. Keys unrelated to gitea4s are left
+    alone, so an application can keep its own settings alongside these.</p>
+  </div>
+
+  <h3>What the library will not leak</h3>
+
+  <ul>
+    <li>Config errors name the invalid setting without echoing credential values.</li>
+    <li><code>toString</code> on a <code>GiteaConfig</code> or an <code>Auth</code> redacts the
+    token, password and one-time password. Read the fields directly when you need the real value.</li>
+    <li>Credentials embedded in the URL (<code>https://user:pass@gitea.example</code>) are stripped
+    rather than rejected — nothing ever transmitted them.</li>
+    <li>Values that become header content — <code>token</code>, <code>username</code>,
+    <code>password</code>, <code>user-agent</code>, <code>otp</code> — are rejected at parse time if
+    they contain a control character. This covers <code>fromEnv</code> and the HOCON readers;
+    <code>GiteaConfig.withToken</code> and <code>Auth.Token(...)</code> build a config directly and
+    are not validated.</li>
+  </ul>
+
+  <p>A plain <code>http://</code> base URL is accepted, so a token would travel in cleartext. That
+  is your choice to make and the library does not second-guess it.</p>
+
+  <h2>ZLayer usage</h2>
+
+<pre><code>val layer = ZioGiteaBackend.configured(config)                     // explicit config
+val layer = GiteaConfig.environmentLayer &gt;&gt;&gt; ZioGiteaBackend.live   // from env
+val layer = ZioGiteaBackend.usingClient(config, javaHttpClient)     // caller-owned client</code></pre>
+
+  <p><code>OkHttpGiteaBackend</code> has the same shape when you need the OkHttp bridge.</p>
+
+  <h2>Pagination</h2>
+
+  <p>Paginated list APIs return <code>ZStream[Any, GiteaError, A]</code>; the client fetches pages
+  lazily and follows pagination headers. Endpoints Gitea returns as plain non-paginated lists return
+  <code>IO[GiteaError, Chunk[A]]</code> instead.</p>
+
+<pre><code>client.repos.list(owner, RepoListParams(limit = Some(50))).take(100).runCollect
+client.notifications.list().take(100).runCollect</code></pre>
+
+  <p>Both paging fields on a <code>*Params</code> are honoured: <code>limit</code> sets the page size
+  and <code>page</code> sets where the stream starts, so an interrupted crawl can be resumed without
+  replaying what it already emitted.</p>
+
+<pre><code>client.issues.list(owner, repo, IssueListParams(page = Some(7), limit = Some(50)))</code></pre>
+
+  <p>Gitea clamps <code>limit</code> to its own <code>MAX_RESPONSE_ITEMS</code> setting (50 by
+  default), so asking for more per page than the server allows is not an error — you get the
+  server's maximum and the stream keeps paging until the collection is exhausted.</p>
+
+  <div class="note">
+    <p><strong>These streams are scans, not snapshots.</strong> Each page is a separate request, so
+    if items are inserted or deleted while a crawl is running, an item can be emitted twice or
+    missed entirely — everything after the insertion point shifts by one. Resuming with
+    <code>page = Some(n)</code> inherits the same hazard. If you need exactly-once handling, key on
+    the item's <code>id</code>.</p>
+  </div>
+
+  <h2>Error handling</h2>
+
+  <p>Calls fail with the <code>GiteaError</code> ADT. HTTP failures preserve response bodies; decode
+  failures include the raw body; transport failures preserve the cause; rate-limit errors carry the
+  reset time when Gitea sends one. Resource-state failures map to explicit cases
+  (<code>MethodNotAllowed</code> 405, <code>PreconditionFailed</code> 412, <code>Locked</code> 423,
+  and so on).</p>
+
+<pre><code>client.users.me.foldZIO(
+  err  =&gt; Console.printLineError(s"Gitea call failed: ${err.message}"),
+  user =&gt; Console.printLine(user.login.getOrElse("&lt;unknown&gt;"))
+)</code></pre>
+
+  <p>Every case answers <code>message</code>, including the four that carry no message field —
+  <code>ServerError</code> renders as <code>HTTP 500</code>, <code>RateLimited</code> as
+  <code>Rate limited until …</code>, and <code>TransportError</code> as its cause's message. Both
+  <code>message</code> and the retained <code>body</code> are capped at 8&nbsp;KiB, so one failed
+  request cannot put a multi-megabyte payload into a log line.</p>
+
+  <h3>Unknown enum values</h3>
+
+  <p>Gitea adds enum members between minor versions. An optional enum field carrying a value this
+  client does not recognise decodes as <code>None</code> rather than failing — otherwise a single
+  unfamiliar string would fail the whole page it arrived in, and the stream above it. Required enum
+  fields stay strict, because there is no <code>None</code> to fall back to.</p>
+
+  <h2>Retries and rate limits</h2>
+
+  <p>Read-only requests honour <code>GiteaConfig.maxRetries</code>, which <strong>defaults to
+  3</strong>, with jittered exponential backoff. Retries cover transport failures, <code>429</code>,
+  and <code>500</code>/<code>502</code>/<code>503</code>/<code>504</code>. Only GET and HEAD are ever
+  retried, so a retry can never duplicate a write.</p>
+
+  <p>On a <code>429</code> the client honours <code>Retry-After</code> — both the delay-seconds and
+  HTTP-date forms — and falls back to <code>x-ratelimit-reset</code>. The resulting <em>wait</em> is
+  capped at 60 seconds, so a bad or hostile header cannot silently override your timeout.</p>
+
+  <div class="note">
+    <p><strong>The reset instant reaches you unfiltered.</strong>
+    <code>GiteaError.RateLimited.resetAt</code> is whatever the server said, including a value
+    implausibly far in the future — a proxy reporting the reset in milliseconds sends a number that
+    is a valid epoch <em>second</em> thousands of years out. Treat it as untrusted input if you
+    display or act on it; only the client's own sleep is bounded.</p>
+  </div>
+
+  <p>Each attempt is also capped end to end at five minutes. <code>GiteaConfig.timeout</code> alone
+  cannot do this: it reaches the JDK as <code>HttpRequest.timeout</code>, which stops applying once
+  response <em>headers</em> arrive, so a server that answers immediately and then sends the body one
+  byte at a time would otherwise hang the call indefinitely. An exhausted budget is surfaced, not
+  retried — a stalled connection is the condition least likely to have cleared a moment later. That
+  budget bounds one <em>attempt</em>; if you need a single deadline covering retries and backoff
+  sleeps too, wrap the call in ZIO's own <code>.timeout</code>.</p>
+
+  <div class="note">
+    <p><strong>Upgrading from 1.0.0:</strong> <code>maxRetries</code> used to default to
+    <code>0</code>. If your tests stub a <code>5xx</code> or <code>429</code> and run under
+    zio-test's <code>TestClock</code>, they will now block on a clock the test never advances. Set
+    <code>maxRetries = 0</code> on the config your tests use, or advance the clock.</p>
+  </div>
+
+  <h2>Observability</h2>
+
+  <p>Set a <code>GiteaObserver</code> to hook logging, metrics or tracing into every
+  <code>GiteaClient</code> request. It runs after each call completes — with the endpoint, total
+  duration and outcome — cannot change the result, and a faulty observer can never break a request.
+  The default is a no-op with zero overhead.</p>
+
+<pre><code>config.withObserver(GiteaObserver.logging ++ GiteaObserver.metrics)</code></pre>
+
+  <p>An observer must not block or perform unbounded I/O: it runs inline on the request's fiber, so
+  a slow one delays a result that has already been computed. Hand work off instead. A callback that
+  has not finished within one second is abandoned and its event dropped, so an observer can no
+  longer withhold a completed result indefinitely.</p>
+
+  <p><code>backend-zio</code>'s streaming downloads are the exception: they send directly against the
+  backend rather than through the executor that owns the observer, so they emit no events.</p>
+
+  <h2>Backends</h2>
+
+  <p>Use <code>backend-zio</code> by default (Java <code>HttpClient</code> via sttp's
+  <code>HttpClientZioBackend</code>). Use <code>backend-okhttp</code> only when your application
+  already standardizes on OkHttp; it adapts sttp's async OkHttp backend to ZIO and keeps OkHttp off
+  the core dependency path.</p>
+
+  <p>One caveat specific to the OkHttp bridge: interrupting a fiber that is waiting on a request
+  hands control back immediately, but the underlying OkHttp call keeps running — sttp's
+  <code>Future</code> machinery drops the cancellation signal. The orphaned call is bounded by
+  OkHttp's call timeout, which this module sets. Where cancellation latency matters, prefer
+  <code>backend-zio</code>, which cancels the request when the fiber is interrupted.</p>
+
+  <h2>Streaming downloads</h2>
+
+  <p><code>client.repos.rawFile</code>/<code>mediaFile</code>/<code>archive</code> buffer the whole
+  body into a <code>Chunk[Byte]</code>. For large files and archives, <code>backend-zio</code> also
+  exposes a <code>GiteaDownloads</code> service that streams the body lazily as
+  <code>ZStream[Any, GiteaError, Byte]</code>, so it never has to fit in memory:</p>
+
+<pre><code>import io.worxbend.gitea4s.backend.zio.{GiteaDownloads, ZioGiteaBackend}
+import zio.ZIO
+import zio.stream.ZSink
+
+val layer = ZioGiteaBackend.downloadsConfigured(config)
+
+ZIO.serviceWithZIO[GiteaDownloads] { downloads =&gt;
+  downloads.archive("my-org", "my-repo", "main.zip")
+    .run(ZSink.fromFileName("main.zip"))   // streamed straight to disk
+}.provideLayer(layer)</code></pre>
+
+  <p>Streaming downloads are not retried, since a partially consumed body cannot be safely replayed.
+  A download that stops producing fails rather than hanging: the stream fails if five minutes pass
+  with no data at all. That budget measures the <em>gap between chunks</em>, not total download time,
+  so a genuinely large archive is never cut off as long as it keeps arriving.</p>
+
+</div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p>gitea4s is licensed under Apache-2.0. Targets the Gitea API <code>1.26.2</code>.</p>
+    <p><a href="https://github.com/worxbend/gitea-scala-client">Source and issue tracker on GitHub</a></p>
+  </div>
+</footer>
+
+</body>
+</html>

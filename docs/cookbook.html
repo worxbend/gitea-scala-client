@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cookbook — gitea4s</title>
+<meta name="description" content="Representative gitea4s calls by namespace: repositories, issues, pull requests, releases, commit statuses and notifications.">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="index.html">gitea<span>4s</span></a>
+    <nav class="site">
+      <a href="index.html">Overview</a>
+      <a href="guide.html">Guide</a>
+      <a href="cookbook.html" aria-current="page">Cookbook</a>
+      <a href="https://github.com/worxbend/gitea-scala-client">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+
+  <h2>Usage cookbook</h2>
+
+  <p>Representative calls by namespace. The published surface is broader — see the
+  <a href="https://github.com/worxbend/gitea-scala-client/blob/master/CHANGELOG.md">changelog</a>
+  for the full list.</p>
+
+  <h3>Repositories and Git data</h3>
+
+<pre><code>client.repos.get(owner, repo)
+client.repos.branches(owner, repo).runCollect
+client.repos.tags(owner, repo).runCollect
+client.repos.commit(owner, repo, sha)
+client.repos.gitTree(owner, repo, sha)
+client.repos.contents(owner, repo, filepath = "docs/readme.md", ContentsParams(ref = Some("main")))
+client.repos.rawFile(owner, repo, filepath = "README.md", ContentsParams.default) // Chunk[Byte]
+client.repos.archive(owner, repo, archive = "main.zip")                            // Chunk[Byte]
+client.repos.languages(owner, repo)
+client.repos.collaborators(owner, repo).runCollect</code></pre>
+
+  <h3>Issues</h3>
+
+<pre><code>client.issues.create(owner, repo, CreateIssue(title = "Bug report", body = Some("...")))
+client.issues.edit(owner, repo, index = 12, EditIssue(title = Some("Updated")))
+client.issues.close(owner, repo, index = 12)
+client.issues.comment(owner, repo, index = 12, body = "Confirmed")
+client.issues.addLabels(owner, repo, index = 12, labels = Chunk(1L, 2L))
+client.issues.list(owner, repo).runCollect</code></pre>
+
+  <h3>Pull requests</h3>
+
+<pre><code>client.pulls.list(owner, repo).runCollect
+client.pulls.create(owner, repo,
+  CreatePullRequestOption(base = Some("main"), head = Some("feature"), title = Some("...")))
+client.pulls.createReview(owner, repo, index = 7,
+  CreatePullReviewOptions(body = Some("LGTM"), event = Some(PullReviewState.Approved)))
+client.pulls.merge(owner, repo, index = 7,
+  MergePullRequestOption(mergeMethod = MergePullRequestMethod.Squash))
+client.pulls.diffOrPatch(owner, repo, index = 7, PullRequestDiffType.Diff)</code></pre>
+
+  <h3>Releases and commit statuses</h3>
+
+<pre><code>client.releases.list(owner, repo).runCollect
+client.releases.latest(owner, repo)
+client.releases.byTag(owner, repo, tag = "v1.0.0")
+client.repos.createStatus(owner, repo, sha,
+  CreateStatusOption(state = Some(CommitStatusState.Success), context = Some("ci/build")))
+client.repos.combinedStatusByRef(owner, repo, ref = "main")</code></pre>
+
+  <h3>Notifications</h3>
+
+<pre><code>client.notifications.unreadCount
+client.notifications.list().take(20).runCollect</code></pre>
+
+  <h2>Runnable examples</h2>
+
+  <p>The repository ships eight runnable examples. Without credentials they print the target API
+  version and make no network calls, which is how CI runs them.</p>
+
+<pre><code>./mill examples.run    # hermetic when no credentials are present
+
+GITEA_URL=https://gitea.example GITEA_TOKEN=... \
+  ./mill examples.runMain io.worxbend.gitea4s.examples.ListMyRepos</code></pre>
+
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Example</th><th>Shows</th><th>Extra environment</th></tr></thead>
+    <tbody>
+      <tr><td><code>ShowApiReference</code></td><td>the current user</td><td>—</td></tr>
+      <tr><td><code>ListMyRepos</code></td><td>streaming a user's repositories</td><td>—</td></tr>
+      <tr><td><code>ListNotifications</code></td><td>unread count and threads</td><td>—</td></tr>
+      <tr><td><code>ListReleases</code></td><td>repository releases</td><td><code>GITEA_OWNER</code>, <code>GITEA_REPO</code></td></tr>
+      <tr><td><code>ListPullRequests</code></td><td>pull requests with params</td><td><code>GITEA_OWNER</code>, <code>GITEA_REPO</code></td></tr>
+      <tr><td><code>ListBranchesAndTags</code></td><td>two streams in one program</td><td><code>GITEA_OWNER</code>, <code>GITEA_REPO</code></td></tr>
+      <tr><td><code>OrgMembers</code></td><td>organization members</td><td><code>GITEA_ORG</code></td></tr>
+      <tr><td><code>SearchUsers</code></td><td>user search</td><td><code>GITEA_USER_QUERY</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Building from source</h2>
+
+<pre><code>./mill __.compile            # compile all modules
+./mill __.test               # hermetic unit tests
+./mill examples.run          # hermetic by default
+./mill compatibility.check   # public-API binary-compat guard</code></pre>
+
+  <p>Live integration tests are opt-in and require <code>GITEA_IT</code> to be set in addition to a
+  server and credentials — without it every live test is reported as ignored and no network call is
+  made. See
+  <a href="https://github.com/worxbend/gitea-scala-client/blob/master/CONTRIBUTING.md">CONTRIBUTING</a>
+  for the full probe matrix and the API design conventions the client follows.</p>
+
+</div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p>gitea4s is licensed under Apache-2.0. Targets the Gitea API <code>1.26.2</code>.</p>
+    <p><a href="https://github.com/worxbend/gitea-scala-client">Source and issue tracker on GitHub</a></p>
+  </div>
+</footer>
+
+</body>
+</html>

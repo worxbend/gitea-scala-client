@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gitea4s — a Scala 3 client for the Gitea API</title>
+<meta name="description" content="gitea4s is a Scala 3 client library for the Gitea API, built on ZIO 2, sttp client4 and zio-json, with every endpoint audited against the Gitea 1.26.2 OpenAPI contract.">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="index.html">gitea<span>4s</span></a>
+    <nav class="site">
+      <a href="index.html" aria-current="page">Overview</a>
+      <a href="guide.html">Guide</a>
+      <a href="cookbook.html">Cookbook</a>
+      <a href="https://github.com/worxbend/gitea-scala-client">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>A Scala 3 client for the Gitea API</h1>
+    <p class="lead">
+      Typed endpoints for <a href="https://gitea.io">Gitea</a>, built on ZIO 2, sttp client4 and
+      zio-json. Every endpoint carries metadata that is audited against the vendored Gitea OpenAPI
+      contract, so the client and the server description cannot drift apart unnoticed.
+    </p>
+    <div class="badges">
+      <span class="badge">Scala 3</span>
+      <span class="badge">Java 21 baseline</span>
+      <span class="badge">ZIO 2</span>
+      <span class="badge">sttp client4</span>
+      <span class="badge">Gitea API 1.26.2</span>
+      <span class="badge">Apache-2.0</span>
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="guide.html">Read the guide</a>
+      <a class="btn" href="cookbook.html">Usage cookbook</a>
+      <a class="btn" href="https://github.com/worxbend/gitea-scala-client">Source</a>
+    </div>
+  </div>
+</section>
+
+<main>
+<div class="wrap">
+
+  <h2>Install</h2>
+
+  <p>Most applications only need <code>gitea4s-backend-zio</code> — it pulls in
+  <code>client</code> and <code>core</code>.</p>
+
+<pre><code>"io.worxbend" %% "gitea4s-core"           % "1.0.0"
+"io.worxbend" %% "gitea4s-client"         % "1.0.0"
+"io.worxbend" %% "gitea4s-backend-zio"    % "1.0.0"
+"io.worxbend" %% "gitea4s-backend-okhttp" % "1.0.0"</code></pre>
+
+  <p>Maven Central is the canonical channel. GitHub Packages, JitPack and prebuilt jars attached to
+  each release are also available — see
+  <a href="https://github.com/worxbend/gitea-scala-client#distribution-channels">distribution
+  channels</a> for resolvers and authentication.</p>
+
+  <h2>Quickstart</h2>
+
+<pre><code>import io.worxbend.gitea4s.GiteaClient
+import io.worxbend.gitea4s.backend.zio.ZioGiteaBackend
+import io.worxbend.gitea4s.http.RepoListParams
+import sttp.client4.*
+import zio.{Console, ZIO, ZIOAppDefault}
+
+object Main extends ZIOAppDefault:
+  private val layer =
+    ZioGiteaBackend.withToken(uri"https://gitea.example", sys.env("GITEA_TOKEN"))
+
+  def run =
+    ZIO.serviceWithZIO[GiteaClient] { client =&gt;
+      for
+        me    &lt;- client.users.me
+        login &lt;- ZIO.fromOption(me.login).orElseFail(new RuntimeException("missing login"))
+        repos &lt;- client.repos.list(login, RepoListParams(limit = Some(25))).take(25).runCollect
+        _     &lt;- Console.printLine(s"Repositories for $login")
+        _     &lt;- ZIO.foreachDiscard(repos)(r =&gt;
+                   Console.printLine(s"- ${r.fullName.orElse(r.name).getOrElse("&lt;unknown&gt;")}"))
+      yield ()
+    }.provideLayer(layer)</code></pre>
+
+  <div class="note">
+    <p><strong>Note.</strong> <code>GITEA_URL</code> is the <em>server root</em>, not the API root:
+    use <code>https://gitea.example</code>, not <code>https://gitea.example/api/v1</code>. The
+    <code>/api/v1</code> prefix is added for you, so including it yields
+    <code>/api/v1/api/v1/…</code> and a <code>NotFound</code> on every call.</p>
+  </div>
+
+  <h2>Namespaces</h2>
+
+  <p>The client is organized into resource namespaces; every call goes through one.</p>
+
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Namespace</th><th>Covers</th></tr></thead>
+    <tbody>
+      <tr><td><code>client.repos</code></td><td>repositories, Git data, contents, collaborators, statuses</td></tr>
+      <tr><td><code>client.issues</code></td><td>issues, comments, labels, reactions, tracked time</td></tr>
+      <tr><td><code>client.pulls</code></td><td>pull requests, reviews, merges, diffs</td></tr>
+      <tr><td><code>client.releases</code></td><td>releases and release assets</td></tr>
+      <tr><td><code>client.notifications</code></td><td>notification threads and counts</td></tr>
+      <tr><td><code>client.users</code></td><td>the current user (<code>users.me</code>), lookup, search, followers</td></tr>
+      <tr><td><code>client.orgs</code></td><td>organizations and their members/repositories</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>What the design buys you</h2>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Audited against the contract</h3>
+      <p>Every endpoint's method, path, parameters and response labels are checked against the
+      vendored <code>plugin-redoc-2.yaml</code>, and the URI a builder produces is checked against
+      the path template it declares.</p>
+    </div>
+    <div class="card">
+      <h3>Bounded failure</h3>
+      <p>Retries cover only GET and HEAD, so they cannot duplicate a write. Attempts, rate-limit
+      waits, response bodies and stalled downloads all have explicit ceilings.</p>
+    </div>
+    <div class="card">
+      <h3>Survives server drift</h3>
+      <p>An enum value a newer Gitea introduces decodes as <code>None</code> rather than failing the
+      page it arrived in — one unreadable field instead of a lost collection.</p>
+    </div>
+    <div class="card">
+      <h3>Credentials stay put</h3>
+      <p><code>toString</code> redacts tokens, passwords and one-time passwords; config errors name
+      the setting and never the value; URL userinfo is stripped.</p>
+    </div>
+  </div>
+
+  <h2>Modules</h2>
+
+<pre><code>core
+client          -&gt; core
+backend-zio     -&gt; client
+backend-okhttp  -&gt; client</code></pre>
+
+  <p>OkHttp is confined to <code>backend-okhttp</code>; <code>core</code>, <code>client</code> and
+  <code>backend-zio</code> do not depend on it. <code>backend-zio</code> is the default and the only
+  one that can stream binary downloads, because that needs a <code>ZioStreams</code>-capable
+  backend.</p>
+
+  <p>The public API of all four published modules is pinned by a snapshot in
+  <code>api-snapshot/</code> and guarded by <code>./mill compatibility.check</code>, so a change to
+  a published signature cannot land unnoticed.</p>
+
+</div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p>gitea4s is licensed under Apache-2.0. Targets the Gitea API <code>1.26.2</code>.</p>
+    <p><a href="https://github.com/worxbend/gitea-scala-client">Source and issue tracker on GitHub</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
