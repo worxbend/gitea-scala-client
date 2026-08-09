@@ -589,12 +589,7 @@ object GiteaRequests:
       filepath: String,
       params: ContentsParams = ContentsParams.default
   ): GiteaRequest[Chunk[Byte]] =
-    getBytes(
-      config,
-      GiteaEndpoints.repoGetRawFile,
-      List("repos", owner, repo, "raw", filepath),
-      contentsQuery(params)
-    )
+    getBytes(config, rawFileTarget(owner, repo, filepath, params))
 
   def repoMediaFile(
       config: GiteaConfig,
@@ -603,12 +598,7 @@ object GiteaRequests:
       filepath: String,
       params: ContentsParams = ContentsParams.default
   ): GiteaRequest[Chunk[Byte]] =
-    getBytes(
-      config,
-      GiteaEndpoints.repoGetRawFileOrLFS,
-      List("repos", owner, repo, "media", filepath),
-      contentsQuery(params)
-    )
+    getBytes(config, mediaFileTarget(owner, repo, filepath, params))
 
   def repoGetArchive(
       config: GiteaConfig,
@@ -617,17 +607,12 @@ object GiteaRequests:
       archive: String,
       params: ArchiveParams = ArchiveParams.default
   ): GiteaRequest[Chunk[Byte]] =
-    getBytes(
-      config,
-      GiteaEndpoints.repoGetArchive,
-      List("repos", owner, repo, "archive", archive),
-      archiveQuery(params)
-    )
+    getBytes(config, archiveTarget(owner, repo, archive, params))
 
-  // Streaming download descriptors. These mirror the buffered repoRawFile /
-  // repoMediaFile / repoGetArchive builders above (same path encoding, query,
-  // and octet-stream headers) but defer the response shape to the caller, so a
-  // ZioStreams-capable backend can stream the body instead of buffering it.
+  // Streaming download descriptors. Each names the same target as its buffered
+  // counterpart above and differs only in deferring the response shape to the
+  // caller, so a ZioStreams-capable backend can stream the body instead of
+  // buffering it.
   def rawFileDownload(
       config: GiteaConfig,
       owner: String,
@@ -635,7 +620,7 @@ object GiteaRequests:
       filepath: String,
       params: ContentsParams = ContentsParams.default
   ): GiteaDownloadRequest =
-    download(config, GiteaEndpoints.repoGetRawFile, List("repos", owner, repo, "raw", filepath), contentsQuery(params))
+    download(config, rawFileTarget(owner, repo, filepath, params))
 
   def mediaFileDownload(
       config: GiteaConfig,
@@ -644,7 +629,7 @@ object GiteaRequests:
       filepath: String,
       params: ContentsParams = ContentsParams.default
   ): GiteaDownloadRequest =
-    download(config, GiteaEndpoints.repoGetRawFileOrLFS, List("repos", owner, repo, "media", filepath), contentsQuery(params))
+    download(config, mediaFileTarget(owner, repo, filepath, params))
 
   def archiveDownload(
       config: GiteaConfig,
@@ -653,7 +638,7 @@ object GiteaRequests:
       archive: String,
       params: ArchiveParams = ArchiveParams.default
   ): GiteaDownloadRequest =
-    download(config, GiteaEndpoints.repoGetArchive, List("repos", owner, repo, "archive", archive), archiveQuery(params))
+    download(config, archiveTarget(owner, repo, archive, params))
 
   def repoPullRequests(
       config: GiteaConfig,
@@ -1668,6 +1653,38 @@ object GiteaRequests:
       accept: Accept = Accept.Json
   ): GiteaRequest[A] =
     jsonCall(config, endpoint, jsonRequest(config).get(apiUri(config.baseUrl, path, query)), decode, accept)
+
+  /** Where one binary endpoint lives, named once.
+    *
+    * The buffered and streaming builders for raw files, media files and
+    * archives are the same request differing only in response handling, so each
+    * pair restated the same endpoint, path segments and query. A comment above
+    * the streaming three asserted they mirrored the buffered three — an
+    * invariant nothing enforced, and one this repo's tests could not have
+    * caught either, since `GiteaDownloadRequestsSpec` asserted only the
+    * streaming URI. Naming the target makes the two provably the same rather
+    * than reportedly so.
+    */
+  private final case class BinaryTarget(
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      query: List[(String, String)]
+  )
+
+  private def rawFileTarget(owner: String, repo: String, filepath: String, params: ContentsParams): BinaryTarget =
+    BinaryTarget(GiteaEndpoints.repoGetRawFile, List("repos", owner, repo, "raw", filepath), contentsQuery(params))
+
+  private def mediaFileTarget(owner: String, repo: String, filepath: String, params: ContentsParams): BinaryTarget =
+    BinaryTarget(GiteaEndpoints.repoGetRawFileOrLFS, List("repos", owner, repo, "media", filepath), contentsQuery(params))
+
+  private def archiveTarget(owner: String, repo: String, archive: String, params: ArchiveParams): BinaryTarget =
+    BinaryTarget(GiteaEndpoints.repoGetArchive, List("repos", owner, repo, "archive", archive), archiveQuery(params))
+
+  private def getBytes(config: GiteaConfig, target: BinaryTarget): GiteaRequest[Chunk[Byte]] =
+    getBytes(config, target.endpoint, target.path, target.query)
+
+  private def download(config: GiteaConfig, target: BinaryTarget): GiteaDownloadRequest =
+    download(config, target.endpoint, target.path, target.query)
 
   private def getBytes(
       config: GiteaConfig,
