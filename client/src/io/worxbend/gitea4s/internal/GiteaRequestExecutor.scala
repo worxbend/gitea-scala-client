@@ -65,7 +65,19 @@ final class GiteaRequestExecutor(
               attempts = telemetry.attempts
             )
           )
+          // `catchAllCause` covers an observer that *fails*; it does nothing
+          // about one that never finishes. The scaladoc asks observers not to
+          // block, and then recommends offering to a `Queue` — which is exactly
+          // what suspends forever once that queue is full. Until this bound
+          // existed, such an observer withheld a result the client had already
+          // computed, indefinitely.
+          //
+          // `disconnect` puts the callback on its own fiber so the timeout can
+          // actually interrupt it rather than waiting for the next yield.
+          .disconnect
+          .timeout(GiteaRequestExecutor.observerBudget)
           .catchAllCause(_ => ZIO.unit)
+          .unit
       }
       value <- exit
     yield value
@@ -183,6 +195,20 @@ object GiteaRequestExecutor:
     * sttp's own timeouts, which stay retryable — keep behaving as before.
     */
   private final class AttemptBudgetExhausted(message: String) extends TimeoutException(message)
+
+  /** How long a `GiteaObserver` callback may take before it is abandoned.
+    *
+    * Generous for anything an observer should be doing — recording a metric or
+    * emitting a log line is microseconds — and short enough that a misbehaving
+    * one cannot hold a finished request. When it expires the event is dropped
+    * rather than retried: it is telemetry, and the request's result matters
+    * more.
+    *
+    * The honest limit: this frees the *caller*. An observer that blocks its
+    * carrier thread inside `ZIO.succeed` still ties up that thread, because
+    * nothing can interrupt code that never yields.
+    */
+  private val observerBudget: Duration = Duration.ofSeconds(1)
 
   private def attemptBudgetExhausted(after: Duration): GiteaError =
     GiteaError.TransportError(new AttemptBudgetExhausted(s"Gitea request attempt exceeded its time budget of $after"))
