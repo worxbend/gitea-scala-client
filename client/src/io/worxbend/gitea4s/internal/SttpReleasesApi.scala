@@ -12,7 +12,7 @@ private[gitea4s] final class SttpReleasesApi(config: GiteaConfig, executor: Gite
   override def list(
       owner: String,
       repo: String,
-      params: ReleaseListParams = ReleaseListParams.default
+      params: ReleaseListParams
   ): ZStream[Any, GiteaError, Release] =
     Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.repoReleases(config, owner, repo, params.copy(page = Some(page))))

@@ -48,7 +48,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       repo: String,
       sha: String,
-      params: SingleCommitParams = SingleCommitParams.default
+      params: SingleCommitParams
   ): IO[GiteaError, Commit] =
     executor.send(GiteaRequests.repoSingleCommit(config, owner, repo, sha, params))
 
@@ -64,7 +64,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       repo: String,
       sha: String,
-      params: CommitNoteParams = CommitNoteParams.default
+      params: CommitNoteParams
   ): IO[GiteaError, Note] =
     executor.send(GiteaRequests.repoCommitNote(config, owner, repo, sha, params))
 
@@ -72,7 +72,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       repo: String,
       sha: String,
-      params: GitTreeParams = GitTreeParams.default
+      params: GitTreeParams
   ): IO[GiteaError, GitTreeResponse] =
     executor.send(GiteaRequests.gitTree(config, owner, repo, sha, params))
 
@@ -107,7 +107,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       repo: String,
       filepath: String,
-      params: ContentsParams = ContentsParams.default
+      params: ContentsParams
   ): IO[GiteaError, Chunk[Byte]] =
     executor.send(GiteaRequests.repoRawFile(config, owner, repo, filepath, params))
 
@@ -115,7 +115,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       repo: String,
       filepath: String,
-      params: ContentsParams = ContentsParams.default
+      params: ContentsParams
   ): IO[GiteaError, Chunk[Byte]] =
     executor.send(GiteaRequests.repoMediaFile(config, owner, repo, filepath, params))
 
@@ -123,7 +123,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       repo: String,
       archive: String,
-      params: ArchiveParams = ArchiveParams.default
+      params: ArchiveParams
   ): IO[GiteaError, Chunk[Byte]] =
     executor.send(GiteaRequests.repoGetArchive(config, owner, repo, archive, params))
 
@@ -168,7 +168,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
 
   override def list(
       owner: String,
-      params: RepoListParams = RepoListParams.default
+      params: RepoListParams
   ): ZStream[Any, GiteaError, Repository] =
     Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.userRepos(config, owner, params.copy(page = Some(page))))
@@ -217,7 +217,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       repo: String,
       ref: String,
-      params: CombinedStatusParams = CombinedStatusParams.default
+      params: CombinedStatusParams
   ): IO[GiteaError, CombinedStatus] =
     executor.send(GiteaRequests.repoCombinedStatusByRef(config, owner, repo, ref, params))
 
@@ -225,7 +225,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       repo: String,
       ref: String,
-      params: CommitStatusListParams = CommitStatusListParams.default
+      params: CommitStatusListParams
   ): ZStream[Any, GiteaError, CommitStatus] =
     Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.repoStatusesByRef(config, owner, repo, ref, params.copy(page = Some(page))))
@@ -235,7 +235,7 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       repo: String,
       sha: String,
-      params: CommitStatusListParams = CommitStatusListParams.default
+      params: CommitStatusListParams
   ): ZStream[Any, GiteaError, CommitStatus] =
     Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.repoStatuses(config, owner, repo, sha, params.copy(page = Some(page))))

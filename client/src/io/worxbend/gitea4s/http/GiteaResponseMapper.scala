@@ -72,16 +72,7 @@ object GiteaResponseMapper:
       page: Int,
       pageSize: Int
   ): Either[GiteaError, Page[A]] =
-    decodeJson[Chunk[A]](response).map { values =>
-      val totalCount = longHeader(response, "x-total-count")
-      Page(
-        data = values,
-        totalCount = totalCount,
-        page = page,
-        pageSize = pageSize,
-        hasNext = hasNextPage(response, page, values.size, totalCount)
-      )
-    }
+    decodeJson[Chunk[A]](response).map(toPage(response, page, pageSize, _))
 
   def decodeTopicNamesPage(
       response: Response[String],
@@ -89,15 +80,7 @@ object GiteaResponseMapper:
       pageSize: Int
   ): Either[GiteaError, Page[String]] =
     decodeJson[TopicNames](response).map { value =>
-      val topics = value.topics.getOrElse(Nil)
-      val totalCount = longHeader(response, "x-total-count")
-      Page(
-        data = Chunk.fromIterable(topics),
-        totalCount = totalCount,
-        page = page,
-        pageSize = pageSize,
-        hasNext = hasNextPage(response, page, topics.size, totalCount)
-      )
+      toPage(response, page, pageSize, Chunk.fromIterable(value.topics.getOrElse(Nil)))
     }
 
   def decodeUserSearchPage(
@@ -106,16 +89,33 @@ object GiteaResponseMapper:
       pageSize: Int
   ): Either[GiteaError, Page[User]] =
     decodeJson[UserSearchResults](response).map { value =>
-      val users = value.data.getOrElse(Chunk.empty)
-      val totalCount = longHeader(response, "x-total-count")
-      Page(
-        data = users,
-        totalCount = totalCount,
-        page = page,
-        pageSize = pageSize,
-        hasNext = hasNextPage(response, page, users.size, totalCount)
-      )
+      toPage(response, page, pageSize, value.data.getOrElse(Chunk.empty))
     }
+
+  /** Assembles the `Page` around whatever the decoder extracted.
+    *
+    * The three page decoders differ only in how they get from the body to a
+    * `Chunk`; each then read `x-total-count` and hand-built the same five
+    * fields. Taking the values here rather than a count is the point: the
+    * received size is derived once, next to the header it is compared against,
+    * so no call site can pass `pageSize` where the number of items received is
+    * required — which is exactly the bug `hasNextPage` documents at length
+    * below.
+    */
+  private def toPage[A](
+      response: Response[String],
+      page: Int,
+      pageSize: Int,
+      values: Chunk[A]
+  ): Page[A] =
+    val totalCount = longHeader(response, "x-total-count")
+    Page(
+      data = values,
+      totalCount = totalCount,
+      page = page,
+      pageSize = pageSize,
+      hasNext = hasNextPage(response, page, values.size, totalCount)
+    )
 
   def toError(response: Response[String]): GiteaError =
     val body = truncate(response.body)

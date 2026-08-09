@@ -554,7 +554,7 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[AnnotatedTag]
     )
 
-  def repoListAllGitRefs(config: GiteaConfig, owner: String, repo: String): GiteaRequest[zio.Chunk[Reference]] =
+  def repoListAllGitRefs(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Chunk[Reference]] =
     get(
       config,
       GiteaEndpoints.repoListAllGitRefs,
@@ -568,7 +568,7 @@ object GiteaRequests:
       owner: String,
       repo: String,
       ref: String
-  ): GiteaRequest[zio.Chunk[Reference]] =
+  ): GiteaRequest[Chunk[Reference]] =
     get(
       config,
       GiteaEndpoints.repoListGitRefs,
@@ -582,7 +582,7 @@ object GiteaRequests:
       owner: String,
       repo: String,
       params: ContentsParams = ContentsParams.default
-  ): GiteaRequest[zio.Chunk[ContentsResponse]] =
+  ): GiteaRequest[Chunk[ContentsResponse]] =
     get(
       config,
       GiteaEndpoints.repoGetContentsList,
@@ -710,7 +710,7 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[PullRequest]
     )
 
-  def pinnedPullRequests(config: GiteaConfig, owner: String, repo: String): GiteaRequest[zio.Chunk[PullRequest]] =
+  def pinnedPullRequests(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Chunk[PullRequest]] =
     get(
       config,
       GiteaEndpoints.repoListPinnedPullRequests,
@@ -827,7 +827,7 @@ object GiteaRequests:
       repo: String,
       index: Long,
       body: PullReviewRequestOptions
-  ): GiteaRequest[zio.Chunk[PullReview]] =
+  ): GiteaRequest[Chunk[PullReview]] =
     postJson(
       config,
       GiteaEndpoints.repoCreatePullReviewRequests,
@@ -956,7 +956,7 @@ object GiteaRequests:
       repo: String,
       index: Long,
       id: Long
-  ): GiteaRequest[zio.Chunk[PullReviewComment]] =
+  ): GiteaRequest[Chunk[PullReviewComment]] =
     get(
       config,
       GiteaEndpoints.repoGetPullReviewComments,
@@ -1031,7 +1031,7 @@ object GiteaRequests:
       response => GiteaResponseMapper.decodePage[Issue](response, page, pageSize)
     )
 
-  def pinnedIssues(config: GiteaConfig, owner: String, repo: String): GiteaRequest[zio.Chunk[Issue]] =
+  def pinnedIssues(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Chunk[Issue]] =
     get(
       config,
       GiteaEndpoints.repoListPinnedIssues,
@@ -1132,7 +1132,7 @@ object GiteaRequests:
       repo: String,
       index: Long,
       params: IssueCommentListParams = IssueCommentListParams.default
-  ): GiteaRequest[zio.Chunk[Comment]] =
+  ): GiteaRequest[Chunk[Comment]] =
     get(
       config,
       GiteaEndpoints.issueGetComments,
@@ -1195,7 +1195,7 @@ object GiteaRequests:
       owner: String,
       repo: String,
       id: Long
-  ): GiteaRequest[zio.Chunk[Reaction]] =
+  ): GiteaRequest[Chunk[Reaction]] =
     get(
       config,
       GiteaEndpoints.issueGetCommentReactions,
@@ -1302,7 +1302,7 @@ object GiteaRequests:
       GiteaResponseMapper.decodeJson[Issue]
     )
 
-  def issueLabels(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[zio.Chunk[Label]] =
+  def issueLabels(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[Chunk[Label]] =
     get(
       config,
       GiteaEndpoints.issueGetLabels,
@@ -1317,7 +1317,7 @@ object GiteaRequests:
       repo: String,
       index: Long,
       body: IssueLabelsOption
-  ): GiteaRequest[zio.Chunk[Label]] =
+  ): GiteaRequest[Chunk[Label]] =
     putJson(
       config,
       GiteaEndpoints.issueReplaceLabels,
@@ -1332,7 +1332,7 @@ object GiteaRequests:
       repo: String,
       index: Long,
       body: IssueLabelsOption
-  ): GiteaRequest[zio.Chunk[Label]] =
+  ): GiteaRequest[Chunk[Label]] =
     postJson(
       config,
       GiteaEndpoints.issueAddLabel,
@@ -1948,7 +1948,7 @@ object GiteaRequests:
       params.before.map(value => "before" -> value.toString),
     ).flatten ++ pageQuery(page, pageSize)
 
-  private def nonEmptyCsv(name: String, values: zio.Chunk[String]): Option[(String, String)] =
+  private def nonEmptyCsv(name: String, values: Chunk[String]): Option[(String, String)] =
     Option.when(values.nonEmpty)(name -> values.mkString(","))
 
   /** A plain paged GET: one whose only query parameters are `page` and `limit`.

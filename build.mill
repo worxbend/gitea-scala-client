@@ -15,8 +15,11 @@ object Versions:
   val zio = "2.1.26"
   // renovate: datasource=maven depName=dev.zio:zio-json_3 versioning=maven
   val zioJson = "0.9.2"
-  // renovate: datasource=maven depName=dev.zio:zio-config_3 versioning=maven
-  val zioConfig = "4.0.7"
+  // The HOCON reader `GiteaConfig.fromTypesafeConfig` uses, and the type its
+  // public signature names. Declared directly rather than inherited from
+  // zio-config: a library whose API mentions a type must depend on it.
+  // renovate: datasource=maven depName=com.typesafe:config versioning=maven
+  val typesafeConfig = "1.4.6"
   // renovate: datasource=maven depName=com.softwaremill.sttp.client4:core_3 versioning=maven
   val sttp = "4.0.25"
 
@@ -101,8 +104,7 @@ object client extends PublishableGitea4sModule:
 
   def mvnDeps = Seq(
     mvn"com.softwaremill.sttp.client4::core:${Versions.sttp}",
-    mvn"dev.zio::zio-config:${Versions.zioConfig}",
-    mvn"dev.zio::zio-config-typesafe:${Versions.zioConfig}"
+    mvn"com.typesafe:config:${Versions.typesafeConfig}"
   )
 
 object `backend-zio` extends PublishableGitea4sModule:

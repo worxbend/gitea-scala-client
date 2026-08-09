@@ -23,7 +23,7 @@ object GiteaRequest:
       decode: Response[String] => Either[GiteaError, A],
       retryable: Boolean
   ): GiteaRequest[A] { type Body = String } =
-    new StringImpl(endpoint, request, decode, retryable)
+    new Impl[A, String](endpoint, request, decode, retryable)
 
   def withBody[A, B](
       endpoint: GiteaEndpoint,
@@ -45,15 +45,4 @@ object GiteaRequest:
     type Body = B
 
     def decode(response: Response[B]): Either[GiteaError, A] =
-      decodeResponse(response)
-
-  private final class StringImpl[A](
-      val endpoint: GiteaEndpoint,
-      val request: Request[String],
-      decodeResponse: Response[String] => Either[GiteaError, A],
-      val retryable: Boolean
-  ) extends GiteaRequest[A]:
-    type Body = String
-
-    def decode(response: Response[String]): Either[GiteaError, A] =
       decodeResponse(response)
