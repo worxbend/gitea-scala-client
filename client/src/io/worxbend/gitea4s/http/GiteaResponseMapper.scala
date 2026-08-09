@@ -56,17 +56,22 @@ object GiteaResponseMapper:
       case _ => Left(toError(response))
 
   def decodeChunk[A: JsonDecoder](response: Response[String]): Either[GiteaError, Chunk[A]] =
-    decodeJson[List[A]](response).map(Chunk.fromIterable)
+    // Decoding straight into a Chunk rather than via List: zio-json builds a
+    // List through a ListBuffer, and Chunk.fromIterable then walks all n cons
+    // cells a second time into a builder, because List has no known size. The
+    // Chunk decoder drives a ChunkBuilder directly and reports identical error
+    // spans, both going through the same JsonDecoder.builder helper.
+    decodeJson[Chunk[A]](response)
 
   def decodePage[A: JsonDecoder](
       response: Response[String],
       page: Int,
       pageSize: Int
   ): Either[GiteaError, Page[A]] =
-    decodeJson[List[A]](response).map { values =>
+    decodeJson[Chunk[A]](response).map { values =>
       val totalCount = longHeader(response, "x-total-count")
       Page(
-        data = Chunk.fromIterable(values),
+        data = values,
         totalCount = totalCount,
         page = page,
         pageSize = pageSize,
@@ -97,10 +102,10 @@ object GiteaResponseMapper:
       pageSize: Int
   ): Either[GiteaError, Page[User]] =
     decodeJson[UserSearchResults](response).map { value =>
-      val users = value.data.getOrElse(Nil)
+      val users = value.data.getOrElse(Chunk.empty)
       val totalCount = longHeader(response, "x-total-count")
       Page(
-        data = Chunk.fromIterable(users),
+        data = users,
         totalCount = totalCount,
         page = page,
         pageSize = pageSize,
@@ -128,6 +133,39 @@ object GiteaResponseMapper:
       // identical unguarded arm, so it never changed the outcome.
       case status => GiteaError.ServerError(status, body)
 
+  /** When the server says it will accept another request, if it says at all.
+    *
+    * `Retry-After` is checked first: it is the standard header for 429 and 503,
+    * and the one nginx, HAProxy and Cloudflare actually send. Gitea itself has
+    * no built-in API rate limiter, so in practice a 429 comes from exactly
+    * those front-ends. `x-ratelimit-reset` is the fallback.
+    *
+    * The value is reported exactly as the server gave it, including one that is
+    * implausibly far ahead — a proxy reporting the reset in milliseconds sends
+    * something that is a valid epoch *second* thousands of years out. Deciding
+    * how long to actually wait is the executor's job, and it caps the wait; a
+    * decoder has no clock to reason about "how far ahead" with.
+    */
+  private[gitea4s] def retryAt(response: Response[String]): Option[Instant] =
+    retryAfter(response).orElse(rateLimitReset(response))
+
+  private def retryAfter(response: Response[String]): Option[Instant] =
+    response.header("retry-after").flatMap { raw =>
+      val value = raw.trim
+      // RFC 9110 allows either a delay in seconds or an HTTP-date. The
+      // delay form has to be anchored to some "now" to become the absolute
+      // instant `GiteaError.RateLimited` carries, and a decoder has no
+      // effectful clock, so it uses the wall clock. In production that is the
+      // same clock ZIO reads, so the resulting wait is right; under a test
+      // clock the two differ, which is why the executor's own cap — not this
+      // value — is what actually bounds the sleep.
+      value.toLongOption
+        .flatMap(seconds => Try(Instant.now().plusSeconds(seconds)).toOption)
+        .orElse(
+          Try(ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant).toOption
+        )
+    }
+
   private def errorMessage(response: Response[String]): String =
     response.body.fromJson[GiteaErrorPayload].toOption.flatMap(_.message)
       .orElse(response.header("message"))
@@ -151,8 +189,8 @@ object GiteaResponseMapper:
     * (default 50), so asking for 100 and comparing `page * 100` against a total
     * of 200 concluded "no more pages" after two pages of 50 — silently dropping
     * half the collection with no error. Endpoints that send a `Link` header
-    * were covered by the first disjunct; the ones that send only a total count,
-    * such as issue comments and repository topics, were not.
+    * were protected by the first disjunct; the ones that do not, such as issue
+    * comments and repository topics, were not.
     *
     * `page * received` is a deliberate under-estimate of how much has been
     * seen: it assumes every earlier page was as small as this one. On a final
@@ -179,40 +217,6 @@ object GiteaResponseMapper:
     response.header("link").exists(_.contains("""rel="next"""")) ||
       (received > 0 && totalCount.exists(total => page.toLong * received.toLong < total))
 
-  /** When the server says it will accept another request, if it says at all.
-    *
-    * `Retry-After` is checked first: it is the standard header for 429 and 503,
-    * and the one nginx, HAProxy and Cloudflare actually send. Gitea has no
-    * built-in API rate limiter, so in practice a 429 comes from exactly those
-    * front-ends rather than from Gitea itself. `x-ratelimit-reset` is the
-    * fallback.
-    *
-    * The value is reported exactly as the server gave it, including one that is
-    * implausibly far ahead — a proxy reporting the reset in milliseconds sends
-    * something that is a valid epoch *second* thousands of years out. Deciding
-    * how long to actually wait is the executor's job, and it caps the wait; a
-    * decoder has no clock to reason about "how far ahead" with.
-    */
-  private[gitea4s] def retryAt(response: Response[String]): Option[Instant] =
-    retryAfter(response).orElse(rateLimitReset(response))
-
-  private def retryAfter(response: Response[String]): Option[Instant] =
-    response.header("retry-after").flatMap { raw =>
-      val value = raw.trim
-      // RFC 9110 allows either a delay in seconds or an HTTP-date. The delay
-      // form has to be anchored to some "now" to become the absolute instant
-      // `GiteaError.RateLimited` carries, and a decoder has no effectful clock,
-      // so it uses the wall clock. In production that is the same clock ZIO
-      // reads, so the resulting wait is right; under a test clock the two
-      // differ, which is why the executor's own cap — not this value — is what
-      // actually bounds the sleep.
-      value.toLongOption
-        .flatMap(seconds => Try(Instant.now().plusSeconds(seconds)).toOption)
-        .orElse(
-          Try(ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant).toOption
-        )
-    }
-
   private def rateLimitReset(response: Response[String]): Option[Instant] =
     longHeader(response, "x-ratelimit-reset")
       .orElse(longHeader(response, "x-rate-limit-reset"))
@@ -222,7 +226,7 @@ object GiteaResponseMapper:
     response.header(name).flatMap(value => Try(value.toLong).toOption)
 
   private final case class UserSearchResults(
-      data: Option[List[User]] = None,
+      data: Option[Chunk[User]] = None,
       ok: Option[Boolean] = None
   )
 

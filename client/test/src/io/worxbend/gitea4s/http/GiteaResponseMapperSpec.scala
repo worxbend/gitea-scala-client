@@ -228,6 +228,16 @@ object GiteaResponseMapperSpec extends ZIOSpecDefault:
           assertTrue(error == GiteaError.RateLimited(None, ""))
         }
       ),
+      suite("list decoding")(
+        test("decodes an absent user-search data field as an empty page") {
+          val page = GiteaResponseMapper.decodeUserSearchPage(ResponseStub("""{"ok":true}""", StatusCode.Ok), 1, 50)
+
+          assertTrue(page.map(_.data) == Right(Chunk.empty))
+        },
+        test("decodes a list response into a Chunk") {
+          assertTrue(GiteaResponseMapper.decodeChunk[Int](ResponseStub("[1,2,3]", StatusCode.Ok)) == Right(Chunk(1, 2, 3)))
+        }
+      ),
       suite("membership answers")(
         test("204 means yes and 404 means no") {
           assertTrue(
