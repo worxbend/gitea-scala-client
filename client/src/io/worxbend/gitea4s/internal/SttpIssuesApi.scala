@@ -41,7 +41,7 @@ private[gitea4s] final class SttpIssuesApi(config: GiteaConfig, executor: GiteaR
   override def list(
       owner: String,
       repo: String,
-      params: IssueListParams = IssueListParams.default
+      params: IssueListParams
   ): ZStream[Any, GiteaError, Issue] =
     Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.issues(config, owner, repo, params.copy(page = Some(page))))
@@ -117,14 +117,14 @@ private[gitea4s] final class SttpIssuesApi(config: GiteaConfig, executor: GiteaR
       owner: String,
       repo: String,
       index: Long,
-      params: IssueCommentListParams = IssueCommentListParams.default
+      params: IssueCommentListParams
   ): IO[GiteaError, Chunk[Comment]] =
     executor.send(GiteaRequests.issueComments(config, owner, repo, index, params))
 
   override def repositoryComments(
       owner: String,
       repo: String,
-      params: RepositoryCommentListParams = RepositoryCommentListParams.default
+      params: RepositoryCommentListParams
   ): ZStream[Any, GiteaError, Comment] =
     Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.repoIssueComments(config, owner, repo, params.copy(page = Some(page))))
@@ -229,7 +229,7 @@ private[gitea4s] final class SttpIssuesApi(config: GiteaConfig, executor: GiteaR
       owner: String,
       repo: String,
       index: Long,
-      params: IssueTrackedTimeListParams = IssueTrackedTimeListParams.default
+      params: IssueTrackedTimeListParams
   ): ZStream[Any, GiteaError, TrackedTime] =
     Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.issueTrackedTimes(config, owner, repo, index, params.copy(page = Some(page))))

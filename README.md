@@ -133,7 +133,15 @@ both `GITEA_USERNAME` and `GITEA_PASSWORD`):
 ```text
 GITEA_URL  GITEA_TOKEN  GITEA_USERNAME  GITEA_PASSWORD
 GITEA_PAGE_SIZE  GITEA_TIMEOUT  GITEA_MAX_RETRIES
+GITEA_USER_AGENT  GITEA_OTP
 ```
+
+The environment and HOCON readers accept the same settings. `GITEA_OTP` is
+included for that symmetry rather than as a way to do two-factor auth:
+`X-Gitea-OTP` carries a *time-based* one-time password, so a value fixed in the
+environment (or in a config file, which has always been possible) goes stale
+within about thirty seconds. It suits a short-lived command, not a long-running
+process.
 
 `GITEA_URL` is the **server root**, not the API root: use
 `https://gitea.example`, not `https://gitea.example/api/v1`. The `/api/v1`
@@ -152,6 +160,17 @@ gitea4s {
   max-retries = 3
 }
 ```
+
+Durations must carry a unit. Typesafe Config reads a bare number in duration
+position as *milliseconds*, so `timeout = 30` would mean 30ms rather than the 30
+seconds almost anyone writing it intends; it is rejected with the same message
+the environment reader gives. `timeout = 30s` and `timeout = 2 minutes` both
+work.
+
+Settings spelled the way the environment spells them are also rejected rather
+than ignored — `maxRetries` in a `gitea4s { }` block is a different key from
+`max-retries`, and used to be read by nobody. Keys unrelated to gitea4s are left
+alone, so an application can keep its own settings alongside these.
 
 Every setting can also be changed on an existing config:
 
@@ -211,6 +230,13 @@ Note that Gitea clamps `limit` to its own `MAX_RESPONSE_ITEMS` setting (50 by
 default), so asking for more per page than the server allows is not an error —
 you simply get the server's maximum, and the stream keeps paging until the
 collection is exhausted.
+
+These streams are page-offset scans of a live collection, not snapshots. Each
+page is a separate request, so if items are inserted or deleted while a crawl
+is running, an item can be emitted twice or missed entirely — everything after
+the insertion point shifts by one. Resuming with `page = Some(n)` inherits the
+same hazard. If you need exactly-once handling, key on the item's `id` rather
+than assuming the stream delivers each item once.
 
 ## Namespaces
 
@@ -305,10 +331,15 @@ client.users.me.foldZIO(
 
 ## Observability
 
-Set a `GiteaObserver` to hook logging, metrics, or tracing into every request.
-It runs after each call completes (with the endpoint, total duration, and
-outcome), cannot change the result, and a faulty observer can never break a
-request. The default is a no-op with zero overhead.
+Set a `GiteaObserver` to hook logging, metrics, or tracing into every
+`GiteaClient` request. It runs after each call completes (with the endpoint,
+total duration, and outcome), cannot change the result, and a faulty observer
+can never break a request. The default is a no-op with zero overhead.
+
+`backend-zio`'s streaming downloads are the exception: `GiteaDownloads` sends
+directly against the backend rather than through the executor, so it emits no
+observer events. Those streams are bounded by their own stall budget rather
+than the executor's attempt budget, and are never retried.
 
 ```scala
 import io.worxbend.gitea4s.observability.GiteaObserver
@@ -336,9 +367,14 @@ never duplicate a write.
 
 On a `429` the client honours `Retry-After` — both the delay-seconds and
 HTTP-date forms — and falls back to `x-ratelimit-reset`. Those values are
-server-controlled, so they are bounded: an instant more than 24 hours out is
-ignored entirely, and the wait is capped at 60 seconds, so a bad or hostile
-header cannot silently override your timeout.
+server-controlled, so the **wait** they produce is capped at 60 seconds: a bad
+or hostile header cannot silently override your timeout.
+
+The instant itself is reported to you unfiltered. `GiteaError.RateLimited.resetAt`
+is whatever the server said, including a value implausibly far in the future —
+a proxy that reports the reset in milliseconds sends a number that is a valid
+epoch *second* thousands of years out. Treat it as untrusted input if you
+display it or act on it; only the client's own sleep is bounded.
 
 Each attempt is also capped end to end (five minutes). `GiteaConfig.timeout`
 alone cannot do this: it reaches the JDK as `HttpRequest.timeout`, which stops

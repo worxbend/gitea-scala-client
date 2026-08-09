@@ -13,13 +13,14 @@ enum CommitStatusState(val jsonValue: String):
   case Skipped extends CommitStatusState("skipped")
 
 object CommitStatusState:
-  private val byJsonValue = CommitStatusState.values.map(state => state.jsonValue -> state).toMap
+  private val json = JsonValueLookup(CommitStatusState.values, "commit status state", _.jsonValue)
 
-  def fromString(value: String): Either[String, CommitStatusState] =
-    byJsonValue.get(value).toRight(s"Unknown commit status state: $value")
+  def fromString(value: String): Either[String, CommitStatusState] = json.fromString(value)
 
-  given JsonCodec[CommitStatusState] =
-    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+  given JsonCodec[CommitStatusState] = json.codec
+
+  /** Unknown values read as `None`; see [[JsonValueLookup.lenientOptionDecoder]]. */
+  given JsonDecoder[Option[CommitStatusState]] = json.lenientOptionDecoder
 
 final case class CommitStatus(
     context: Option[String] = None,

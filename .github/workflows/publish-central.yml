@@ -15,6 +15,12 @@ on:
 permissions:
   contents: read
 
+# Maven Central publication is immutable, so a cancelled mid-upload run is worse
+# than a queued one.
+concurrency:
+  group: publish-central
+  cancel-in-progress: false
+
 jobs:
   publish:
     name: Publish Maven Central artifacts
@@ -24,6 +30,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # Tags are needed by the version check below, and the default shallow
+          # checkout fetches none.
+          fetch-depth: 0
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -36,16 +47,40 @@ jobs:
         with:
           path: |
             ~/.cache/coursier
-            ~/.ivy2/cache
-            ~/.mill
+            ~/.cache/mill
           key: ${{ runner.os }}-publish-central-${{ hashFiles('build.mill', 'mill') }}
 
       - name: Verify release version
         run: |
+          set -euo pipefail
+
           if grep -q 'val library = ".*-SNAPSHOT"' build.mill; then
             echo "Refusing to publish a SNAPSHOT version to Maven Central." >&2
             exit 1
           fi
+
+          # This workflow is dispatched by hand against whatever ref the
+          # operator picked, and a Maven Central release can never be taken
+          # back. The only check was the SNAPSHOT one above, so a mistyped ref
+          # could permanently publish an arbitrary commit under whatever
+          # version build.mill happened to carry.
+          #
+          # Require the commit to be the one that was actually released: it has
+          # to carry the matching v<version> tag.
+          library="$(sed -n 's/^[[:space:]]*val library = "\(.*\)"$/\1/p' build.mill)"
+
+          if [ -z "$library" ]; then
+            echo "Could not read 'val library' from build.mill." >&2
+            exit 1
+          fi
+
+          if ! git tag --points-at HEAD | grep -qx "v$library"; then
+            echo "Refusing to publish: HEAD is not tagged 'v$library'." >&2
+            echo "Tags on HEAD: $(git tag --points-at HEAD | tr '\n' ' ')" >&2
+            exit 1
+          fi
+
+          echo "Publishing $library from tag v$library"
 
       - name: Validate build
         run: |
@@ -67,11 +102,16 @@ jobs:
           SHOULD_RELEASE: ${{ inputs.release }}
           REF_NAME: ${{ github.ref_name }}
         run: |
+          # Credentials and signing arguments are deliberately NOT passed as
+          # flags. Process arguments are readable through /proc/<pid>/cmdline
+          # and show up in `ps`, so `--password` and a `--gpgArgs` string
+          # carrying `--passphrase=` put both secrets in the process table for
+          # the lifetime of the publish. Mill already reads all four from the
+          # MILL_SONATYPE_* and MILL_PGP_* variables in the `env:` block above,
+          # and the gpg arguments removed here were character-for-character
+          # Mill's own default. Do not reinstate them.
           ./mill mill.javalib.SonatypeCentralPublishModule/publishAll \
             --publishArtifacts __.publishArtifacts \
-            --username "$MILL_SONATYPE_USERNAME" \
-            --password "$MILL_SONATYPE_PASSWORD" \
-            --gpgArgs "--passphrase=$MILL_PGP_PASSPHRASE,--no-tty,--pinentry-mode,loopback,--batch,--yes,--armor,--detach-sign" \
             --readTimeout 36000 \
             --awaitTimeout 36000 \
             --connectTimeout 36000 \

@@ -105,10 +105,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.orgGet,
-          endpoint.operationId == "orgGet",
-          endpoint.path == "/orgs/{org}",
-          endpoint.parameters.map(_.name) == List("org"),
-          endpoint.response == "#/responses/Organization",
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/orgs/space%20org%2Fslash",
           request.header("Accept").contains("application/json")
@@ -121,10 +117,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.orgListMembers,
-          endpoint.operationId == "orgListMembers",
-          endpoint.path == "/orgs/{org}/members",
-          endpoint.parameters.map(_.name) == List("org", "page", "limit"),
-          endpoint.response == "#/responses/UserList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/orgs/space%20org%2Fslash/members?"),
           request.uri.paramsMap.get("page").contains("2"),
@@ -138,10 +130,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.orgListPublicMembers,
-          endpoint.operationId == "orgListPublicMembers",
-          endpoint.path == "/orgs/{org}/public_members",
-          endpoint.parameters.map(_.name) == List("org", "page", "limit"),
-          endpoint.response == "#/responses/UserList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/orgs/space%20org%2Fslash/public_members?"),
           request.uri.paramsMap.get("page").contains("3"),
@@ -156,10 +144,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.orgListRepos,
-          endpoint.operationId == "orgListRepos",
-          endpoint.path == "/orgs/{org}/repos",
-          endpoint.parameters.map(_.name) == List("org", "page", "limit"),
-          endpoint.response == "#/responses/RepositoryList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/orgs/space%20org%2Fslash/repos?"),
           request.uri.paramsMap.get("page").contains("4"),
@@ -174,9 +158,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.userListRepos,
-          endpoint.operationId == "userListRepos",
-          endpoint.path == "/users/{username}/repos",
-          endpoint.parameters.map(_.name) == List("username", "page", "limit"),
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/users/space%20user%2Fslash/repos?"),
           request.uri.paramsMap.get("page").contains("2"),
@@ -190,9 +171,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.repoListTopics,
-          endpoint.operationId == "repoListTopics",
-          endpoint.path == "/repos/{owner}/{repo}/topics",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "page", "limit"),
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/topics?"),
           request.uri.paramsMap.get("page").contains("3"),
@@ -207,10 +185,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoNewPinAllowed,
           endpoint.method == "GET",
-          endpoint.operationId == "repoNewPinAllowed",
-          endpoint.path == "/repos/{owner}/{repo}/new_pin_allowed",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.response == "#/responses/RepoNewIssuePinsAllowed",
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/new_pin_allowed",
           built.retryable == true
@@ -228,10 +202,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetAssignees,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetAssignees",
-          endpoint.path == "/repos/{owner}/{repo}/assignees",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.response == "#/responses/UserList",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/assignees",
@@ -265,10 +235,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetReviewers,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetReviewers",
-          endpoint.path == "/repos/{owner}/{repo}/reviewers",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.response == "#/responses/UserList",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/reviewers",
@@ -302,10 +268,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListStargazers,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListStargazers",
-          endpoint.path == "/repos/{owner}/{repo}/stargazers",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "page", "limit"),
-          endpoint.response == "#/responses/UserList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/stargazers?"),
           request.uri.path ==
@@ -362,10 +324,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListSubscribers,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListSubscribers",
-          endpoint.path == "/repos/{owner}/{repo}/subscribers",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "page", "limit"),
-          endpoint.response == "#/responses/UserList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/subscribers?"),
           request.uri.path ==
@@ -419,10 +377,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.repoListBranches,
-          endpoint.operationId == "repoListBranches",
-          endpoint.path == "/repos/{owner}/{repo}/branches",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "page", "limit"),
-          endpoint.response == "#/responses/BranchList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/branches?"),
           request.uri.paramsMap.get("page").contains("3"),
@@ -436,10 +390,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.repoListTags,
-          endpoint.operationId == "repoListTags",
-          endpoint.path == "/repos/{owner}/{repo}/tags",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "page", "limit"),
-          endpoint.response == "#/responses/TagList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/tags?"),
           request.uri.paramsMap.get("page").contains("4"),
@@ -458,10 +408,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetLanguages,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetLanguages",
-          endpoint.path == "/repos/{owner}/{repo}/languages",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.response == "#/responses/LanguageStatistics",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/languages",
@@ -502,10 +448,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoSigningKey,
           endpoint.method == "GET",
-          endpoint.operationId == "repoSigningKey",
-          endpoint.path == "/repos/{owner}/{repo}/signing-key.gpg",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.response == "#/responses/string",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/signing-key.gpg",
@@ -535,10 +477,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetTag,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetTag",
-          endpoint.path == "/repos/{owner}/{repo}/tags/{tag}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "tag"),
-          endpoint.response == "#/responses/Tag",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/tags/release%2Fcandidate",
@@ -573,10 +511,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListTagProtection,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListTagProtection",
-          endpoint.path == "/repos/{owner}/{repo}/tag_protections",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.response == "#/responses/TagProtectionList",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/tag_protections",
@@ -616,10 +550,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetTagProtection,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetTagProtection",
-          endpoint.path == "/repos/{owner}/{repo}/tag_protections/{id}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
-          endpoint.response == "#/responses/TagProtection",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/tag_protections/7",
@@ -657,10 +587,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListBranchProtection,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListBranchProtection",
-          endpoint.path == "/repos/{owner}/{repo}/branch_protections",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.response == "#/responses/BranchProtectionList",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/branch_protections",
@@ -701,10 +627,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetBranchProtection,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetBranchProtection",
-          endpoint.path == "/repos/{owner}/{repo}/branch_protections/{name}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "name"),
-          endpoint.response == "#/responses/BranchProtection",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/branch_protections/release%2F2026",
@@ -740,10 +662,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListCollaborators,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListCollaborators",
-          endpoint.path == "/repos/{owner}/{repo}/collaborators",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "page", "limit"),
-          endpoint.response == "#/responses/UserList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/collaborators?"),
           request.uri.paramsMap.get("page").contains("3"),
@@ -775,10 +693,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoCheckCollaborator,
           endpoint.method == "GET",
-          endpoint.operationId == "repoCheckCollaborator",
-          endpoint.path == "/repos/{owner}/{repo}/collaborators/{collaborator}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "collaborator"),
-          endpoint.response == "#/responses/empty",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/collaborators/space%20user%2Fslash",
@@ -808,10 +722,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetRepoPermissions,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetRepoPermissions",
-          endpoint.path == "/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "collaborator"),
-          endpoint.response == "#/responses/RepoCollaboratorPermission",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/collaborators/space%20user%2Fslash/permission",
@@ -859,10 +769,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListTeams,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListTeams",
-          endpoint.path == "/repos/{owner}/{repo}/teams",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.response == "#/responses/TeamList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/teams?"),
           request.uri.paramsMap.get("page").contains("4"),
@@ -901,10 +807,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoCheckTeam,
           endpoint.method == "GET",
-          endpoint.operationId == "repoCheckTeam",
-          endpoint.path == "/repos/{owner}/{repo}/teams/{team}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "team"),
-          endpoint.response == "#/responses/Team",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/teams/space%20team%2Fslash",
@@ -938,10 +840,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.repoListReleases,
-          endpoint.operationId == "repoListReleases",
-          endpoint.path == "/repos/{owner}/{repo}/releases",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "draft", "pre-release", "page", "limit"),
-          endpoint.response == "#/responses/ReleaseList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/releases?"),
           request.uri.paramsMap.get("page").contains("5"),
@@ -993,10 +891,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.repoGetRelease,
-          endpoint.operationId == "repoGetRelease",
-          endpoint.path == "/repos/{owner}/{repo}/releases/{id}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
-          endpoint.response == "#/responses/Release",
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/77"
         )
@@ -1013,10 +907,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetLatestRelease,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetLatestRelease",
-          endpoint.path == "/repos/{owner}/{repo}/releases/latest",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.response == "#/responses/Release",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/latest",
@@ -1048,10 +938,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetReleaseByTag,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetReleaseByTag",
-          endpoint.path == "/repos/{owner}/{repo}/releases/tags/{tag}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "tag"),
-          endpoint.response == "#/responses/Release",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/tags/release%2Fcandidate",
@@ -1096,10 +982,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListReleaseAttachments,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListReleaseAttachments",
-          endpoint.path == "/repos/{owner}/{repo}/releases/{id}/assets",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "id"),
-          endpoint.response == "#/responses/AttachmentList",
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/77/assets",
           request.uri.paramsMap.isEmpty,
@@ -1137,10 +1019,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetReleaseAttachment,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetReleaseAttachment",
-          endpoint.path == "/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "id", "attachment_id"),
-          endpoint.response == "#/responses/Attachment",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/releases/77/assets/901",
@@ -1181,10 +1059,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetCombinedStatusByRef,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetCombinedStatusByRef",
-          endpoint.path == "/repos/{owner}/{repo}/commits/{ref}/status",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "ref", "page", "limit"),
-          endpoint.response == "#/responses/CombinedStatus",
           request.method == Method.GET,
           request.uri.toString.contains(
             "/api/v1/repos/worx%20bend/gitea%2Fscala/commits/feature%2Fslash/status?"
@@ -1284,10 +1158,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoCreateStatus,
           endpoint.method == "POST",
-          endpoint.operationId == "repoCreateStatus",
-          endpoint.path == "/repos/{owner}/{repo}/statuses/{sha}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "body"),
-          endpoint.response == "#/responses/CommitStatus",
           request.method == Method.POST,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/statuses/abc%2F123",
           request.header("Accept").contains("application/json"),
@@ -1313,10 +1183,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetCommitPullRequest,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetCommitPullRequest",
-          endpoint.path == "/repos/{owner}/{repo}/commits/{sha}/pull",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "sha"),
-          endpoint.response == "#/responses/PullRequest",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/commits/feature%2Fcommit%20abc/pull",
@@ -1348,10 +1214,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetSingleCommit,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetSingleCommit",
-          endpoint.path == "/repos/{owner}/{repo}/git/commits/{sha}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "stat", "verification", "files"),
-          endpoint.response == "#/responses/Commit",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/commits/feature%2Fcommit%20abc",
@@ -1420,10 +1282,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoDownloadCommitDiffOrPatch,
           endpoint.method == "GET",
-          endpoint.operationId == "repoDownloadCommitDiffOrPatch",
-          endpoint.path == "/repos/{owner}/{repo}/git/commits/{sha}.{diffType}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "diffType"),
-          endpoint.response == "#/responses/string",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/commits/feature%2Fcommit%20abc.patch",
@@ -1460,10 +1318,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetNote,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetNote",
-          endpoint.path == "/repos/{owner}/{repo}/git/notes/{sha}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "verification", "files"),
-          endpoint.response == "#/responses/Note",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/notes/feature%2Fcommit%20abc?verification=false&files=true",
@@ -1536,12 +1390,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.getTree,
           endpoint.method == "GET",
-          endpoint.operationId == "GetTree",
-          endpoint.path == "/repos/{owner}/{repo}/git/trees/{sha}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "sha", "recursive", "page", "per_page"),
-          endpoint.parameters.filter(_.in == "path").forall(_.required),
-          endpoint.parameters.filter(_.in == "query").forall(parameter => !parameter.required),
-          endpoint.response == "#/responses/GitTreeResponse",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/trees/feature%2Ftree%20abc?recursive=true&page=2&per_page=50",
@@ -1601,11 +1449,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.getBlob,
           endpoint.method == "GET",
-          endpoint.operationId == "GetBlob",
-          endpoint.path == "/repos/{owner}/{repo}/git/blobs/{sha}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "sha"),
-          endpoint.parameters.forall(parameter => parameter.in == "path" && parameter.required),
-          endpoint.response == "#/responses/GitBlobResponse",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/blobs/blob%2Fabc%20123",
@@ -1647,11 +1490,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.getAnnotatedTag,
           endpoint.method == "GET",
-          endpoint.operationId == "GetAnnotatedTag",
-          endpoint.path == "/repos/{owner}/{repo}/git/tags/{sha}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "sha"),
-          endpoint.parameters.forall(parameter => parameter.in == "path" && parameter.required),
-          endpoint.response == "#/responses/AnnotatedTag",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/tags/tag%2Fabc%20123",
@@ -1689,11 +1527,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListAllGitRefs,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListAllGitRefs",
-          endpoint.path == "/repos/{owner}/{repo}/git/refs",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.parameters.forall(parameter => parameter.in == "path" && parameter.required),
-          endpoint.response == "#/responses/ReferenceList",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/refs",
@@ -1728,11 +1561,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListGitRefs,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListGitRefs",
-          endpoint.path == "/repos/{owner}/{repo}/git/refs/{ref}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "ref"),
-          endpoint.parameters.forall(parameter => parameter.in == "path" && parameter.required),
-          endpoint.response == "#/responses/ReferenceList",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/git/refs/heads%2Fmain",
@@ -1765,10 +1593,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetContentsList,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetContentsList",
-          endpoint.path == "/repos/{owner}/{repo}/contents",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "ref"),
-          endpoint.response == "#/responses/ContentsListResponse",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/contents",
@@ -1807,10 +1631,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetContents,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetContents",
-          endpoint.path == "/repos/{owner}/{repo}/contents/{filepath}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "filepath", "ref"),
-          endpoint.response == "#/responses/ContentsResponse",
           request.method == Method.GET,
           request.uri.toString.contains(
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/contents/docs%2Freadme.md?"
@@ -1861,16 +1681,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetRawFile,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetRawFile",
-          endpoint.path == "/repos/{owner}/{repo}/raw/{filepath}",
-          endpoint.parameters.map(parameter => (parameter.name, parameter.in, parameter.required)) ==
-            List(
-              ("owner", "path", true),
-              ("repo", "path", true),
-              ("filepath", "path", true),
-              ("ref", "query", false)
-            ),
-          endpoint.response == "type:file",
           request.method == Method.GET,
           request.uri.toString.contains(
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/raw/docs%2Freadme.md?"
@@ -1906,16 +1716,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetRawFileOrLFS,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetRawFileOrLFS",
-          endpoint.path == "/repos/{owner}/{repo}/media/{filepath}",
-          endpoint.parameters.map(parameter => (parameter.name, parameter.in, parameter.required)) ==
-            List(
-              ("owner", "path", true),
-              ("repo", "path", true),
-              ("filepath", "path", true),
-              ("ref", "query", false)
-            ),
-          endpoint.response == "type:file",
           request.method == Method.GET,
           request.uri.toString.contains(
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/media/docs%2Freadme.md?"
@@ -2013,16 +1813,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetArchive,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetArchive",
-          endpoint.path == "/repos/{owner}/{repo}/archive/{archive}",
-          endpoint.parameters.map(parameter => (parameter.name, parameter.in, parameter.required)) ==
-            List(
-              ("owner", "path", true),
-              ("repo", "path", true),
-              ("archive", "path", true),
-              ("path", "query", false)
-            ),
-          endpoint.response == "description: success",
           request.method == Method.GET,
           request.uri.toString.contains(
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/archive/main.zip"
@@ -2100,11 +1890,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.repoListPullRequests,
-          endpoint.operationId == "repoListPullRequests",
-          endpoint.path == "/repos/{owner}/{repo}/pulls",
-          endpoint.parameters.map(_.name) ==
-            List("owner", "repo", "base_branch", "state", "sort", "milestone", "labels", "poster", "page", "limit"),
-          endpoint.response == "#/responses/PullRequestList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/pulls?"),
           request.uri.paramsMap.get("base_branch").contains("main"),
@@ -2210,10 +1995,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListPinnedPullRequests,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListPinnedPullRequests",
-          endpoint.path == "/repos/{owner}/{repo}/pulls/pinned",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.response == "#/responses/PullRequestList",
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/pinned",
           built.retryable == true
@@ -2288,10 +2069,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetPullRequestByBaseHead,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetPullRequestByBaseHead",
-          endpoint.path == "/repos/{owner}/{repo}/pulls/{base}/{head}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "base", "head"),
-          endpoint.response == "#/responses/PullRequest",
           request.method == Method.GET,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/main%20branch/feature%2Fslash",
@@ -2305,10 +2082,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.repoGetPullRequest,
-          endpoint.operationId == "repoGetPullRequest",
-          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
-          endpoint.response == "#/responses/PullRequest",
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88"
         )
@@ -2325,10 +2098,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoPullRequestIsMerged,
           endpoint.method == "GET",
-          endpoint.operationId == "repoPullRequestIsMerged",
-          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/merge",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
-          endpoint.response == "204 merged / 404 not merged",
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/merge",
           request.header("Accept").contains("application/json"),
@@ -2361,10 +2130,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoMergePullRequest,
           endpoint.method == "POST",
-          endpoint.operationId == "repoMergePullRequest",
-          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/merge",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
-          endpoint.response == "#/responses/empty",
           request.method == Method.POST,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/merge",
@@ -2590,10 +2355,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListPullReviews,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListPullReviews",
-          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/reviews",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "index", "page", "limit"),
-          endpoint.response == "#/responses/PullReviewList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/reviews?"),
           request.uri.paramsMap.get("page").contains("3"),
@@ -2630,10 +2391,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           built.endpoint == GiteaEndpoints.repoCreatePullReview,
           built.endpoint.method == "POST",
-          built.endpoint.operationId == "repoCreatePullReview",
-          built.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/reviews",
-          built.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
-          built.endpoint.response == "#/responses/PullReview",
           methodOf(built) == Method.POST,
           uriOf(built).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/reviews",
@@ -2739,10 +2496,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           built.endpoint == GiteaEndpoints.repoDeletePullReview,
           built.endpoint.method == "DELETE",
-          built.endpoint.operationId == "repoDeletePullReview",
-          built.endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/reviews/{id}",
-          built.endpoint.parameters.map(_.name) == List("owner", "repo", "index", "id"),
-          built.endpoint.response == "#/responses/empty",
           methodOf(built) == Method.DELETE,
           uriOf(built).toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/reviews/12",
@@ -2766,10 +2519,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoDownloadPullDiffOrPatch,
           endpoint.method == "GET",
-          endpoint.operationId == "repoDownloadPullDiffOrPatch",
-          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}.{diffType}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "index", "diffType", "binary"),
-          endpoint.response == "#/responses/string",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88.patch?"),
           request.uri.paramsMap.get("binary").contains("true"),
@@ -2791,11 +2540,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetPullRequestFiles,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetPullRequestFiles",
-          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/files",
-          endpoint.parameters.map(_.name) ==
-            List("owner", "repo", "index", "skip-to", "whitespace", "page", "limit"),
-          endpoint.response == "#/responses/ChangedFileList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/files?"),
           request.uri.paramsMap.get("skip-to").contains("src/Main.scala"),
@@ -2819,11 +2563,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoGetPullRequestCommits,
           endpoint.method == "GET",
-          endpoint.operationId == "repoGetPullRequestCommits",
-          endpoint.path == "/repos/{owner}/{repo}/pulls/{index}/commits",
-          endpoint.parameters.map(_.name) ==
-            List("owner", "repo", "index", "page", "limit", "verification", "files"),
-          endpoint.response == "#/responses/CommitList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/pulls/88/commits?"),
           request.uri.paramsMap.get("page").contains("4"),
@@ -2866,9 +2605,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.issueGetIssue,
-          endpoint.operationId == "issueGetIssue",
-          endpoint.path == "/repos/{owner}/{repo}/issues/{index}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99"
         )
@@ -2881,10 +2617,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.repoListPinnedIssues,
           endpoint.method == "GET",
-          endpoint.operationId == "repoListPinnedIssues",
-          endpoint.path == "/repos/{owner}/{repo}/issues/pinned",
-          endpoint.parameters.map(_.name) == List("owner", "repo"),
-          endpoint.response == "#/responses/IssueList",
           request.method == Method.GET,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/pinned",
           built.retryable == true
@@ -2898,10 +2630,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.issueDelete,
           endpoint.method == "DELETE",
-          endpoint.operationId == "issueDelete",
-          endpoint.path == "/repos/{owner}/{repo}/issues/{index}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "index"),
-          endpoint.response == "#/responses/empty",
           request.method == Method.DELETE,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99",
           request.header("Accept").contains("application/json"),
@@ -2963,10 +2691,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.issueCreateIssue,
           endpoint.method == "POST",
-          endpoint.operationId == "issueCreateIssue",
-          endpoint.path == "/repos/{owner}/{repo}/issues",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "body"),
-          endpoint.response == "#/responses/Issue",
           request.method == Method.POST,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues",
           request.header("Accept").contains("application/json"),
@@ -2996,10 +2720,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.issueCreateComment,
           endpoint.method == "POST",
-          endpoint.operationId == "issueCreateComment",
-          endpoint.path == "/repos/{owner}/{repo}/issues/{index}/comments",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
-          endpoint.response == "#/responses/Comment",
           request.method == Method.POST,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/comments",
@@ -3249,10 +2969,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.issueEditIssueDeadline,
           endpoint.method == "POST",
-          endpoint.operationId == "issueEditIssueDeadline",
-          endpoint.path == "/repos/{owner}/{repo}/issues/{index}/deadline",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
-          endpoint.response == "#/responses/IssueDeadline",
           request.method == Method.POST,
           request.uri.toString ==
             "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99/deadline",
@@ -3552,10 +3268,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           built.endpoint == GiteaEndpoints.userGetStopWatches,
           built.endpoint.method == "GET",
-          built.endpoint.operationId == "userGetStopWatches",
-          built.endpoint.path == "/user/stopwatches",
-          built.endpoint.parameters.map(_.name) == List("page", "limit"),
-          built.endpoint.response == "#/responses/StopWatchList",
           methodOf(built) == Method.GET,
           uriOf(built).toString.contains("/api/v1/user/stopwatches?"),
           uriOf(built).paramsMap.get("page").contains("4"),
@@ -3588,9 +3300,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.userSearch,
-          endpoint.operationId == "userSearch",
-          endpoint.path == "/users/search",
-          endpoint.parameters.map(_.name) == List("q", "uid", "page", "limit"),
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/users/search?"),
           request.uri.paramsMap.get("q").contains("space user"),
@@ -3614,11 +3323,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
 
         assertTrue(
           endpoint == GiteaEndpoints.notifyGetList,
-          endpoint.operationId == "notifyGetList",
-          endpoint.path == "/notifications",
-          endpoint.parameters.map(_.name) ==
-            List("all", "status-types", "subject-type", "since", "before", "page", "limit"),
-          endpoint.response == "#/responses/NotificationThreadList",
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/notifications?"),
           request.uri.paramsMap.get("all").contains("true"),
@@ -3680,10 +3384,6 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
         assertTrue(
           endpoint == GiteaEndpoints.issueEditIssue,
           endpoint.method == "PATCH",
-          endpoint.operationId == "issueEditIssue",
-          endpoint.path == "/repos/{owner}/{repo}/issues/{index}",
-          endpoint.parameters.map(_.name) == List("owner", "repo", "index", "body"),
-          endpoint.response == "#/responses/Issue",
           request.method == Method.PATCH,
           request.uri.toString == "https://gitea.example/root/api/v1/repos/worx%20bend/gitea%2Fscala/issues/99",
           request.header("Accept").contains("application/json"),

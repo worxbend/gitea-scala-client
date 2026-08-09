@@ -20,6 +20,12 @@ permissions:
   contents: write # create the GitHub Release and upload jar assets
   packages: write # publish Maven artifacts to GitHub Packages
 
+# A release must never be cancelled part-way through uploading artifacts: half
+# the jars published is worse than none. Queue instead.
+concurrency:
+  group: release-${{ inputs.tag || github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     name: Publish jars to GitHub Packages and Releases
@@ -31,6 +37,13 @@ jobs:
         with:
           ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
+          # This job's GITHUB_TOKEN carries contents:write and packages:write.
+          # Checkout otherwise leaves it in .git/config as an http.extraheader
+          # for the whole job — including while `./mill __.test` and
+          # `./mill examples.run` execute code from the ref being released.
+          # Nothing here needs the git credential: uploads authenticate
+          # explicitly through `curl -u` and `gh` with GH_TOKEN from `env:`.
+          persist-credentials: false
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -43,8 +56,7 @@ jobs:
         with:
           path: |
             ~/.cache/coursier
-            ~/.ivy2/cache
-            ~/.mill
+            ~/.cache/mill
           key: ${{ runner.os }}-release-${{ hashFiles('build.mill', 'mill') }}
 
       - name: Resolve release tag
@@ -67,11 +79,34 @@ jobs:
           echo "Releasing $TAG"
 
       - name: Verify release version
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
         run: |
+          set -euo pipefail
+
           if grep -q 'val library = ".*-SNAPSHOT"' build.mill; then
             echo "Refusing to publish a SNAPSHOT version." >&2
             exit 1
           fi
+
+          # The tag names the release; `Versions.library` names the artifacts.
+          # Nothing compared them, so tagging v2.0.0 while build.mill still said
+          # 1.0.0 published 1.0.0 jars, attached them to a Release called
+          # v2.0.0, and reported success. Anyone resolving 2.0.0 afterwards got
+          # a version that was never published.
+          library="$(sed -n 's/^[[:space:]]*val library = "\(.*\)"$/\1/p' build.mill)"
+
+          if [ -z "$library" ]; then
+            echo "Could not read 'val library' from build.mill." >&2
+            exit 1
+          fi
+
+          if [ "$TAG" != "v$library" ]; then
+            echo "Tag '$TAG' does not match build.mill version '$library' (expected 'v$library')." >&2
+            exit 1
+          fi
+
+          echo "Publishing $library as $TAG"
 
       - name: Validate build
         run: |

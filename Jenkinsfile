@@ -33,7 +33,11 @@ pipeline {
 
     stage('Integration Tests') {
       steps {
-        sh './mill it.test'
+        // GITEA_IT is the suite's explicit opt-in; without it every live test
+        // is ignored, which is what keeps `./mill __.test` hermetic elsewhere.
+        withEnv(['GITEA_IT=1']) {
+          sh './mill it.test'
+        }
       }
     }
 

@@ -135,6 +135,14 @@ trait ReposApi:
 
   def newIssuePinsAllowed(owner: String, repo: String): IO[GiteaError, NewIssuePinsAllowed]
 
+  /** Every topic on the repository.
+    *
+    * The endpoint is paginated and this crawls it to exhaustion rather than
+    * returning a stream, because Gitea caps a repository at 25 topics — below
+    * the default page size, so in practice this is a single request. The other
+    * paginated reads on this trait return a `ZStream` precisely because their
+    * collections have no such bound.
+    */
   def topics(owner: String, repo: String): IO[GiteaError, Chunk[String]]
 
   def branches(owner: String, repo: String): ZStream[Any, GiteaError, Branch]

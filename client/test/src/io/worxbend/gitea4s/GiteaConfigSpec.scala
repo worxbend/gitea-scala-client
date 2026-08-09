@@ -206,6 +206,114 @@ object GiteaConfigSpec extends ZIOSpecDefault:
           !message.contains("password-secret")
         )
       },
+      test("reads the same settings from the environment as from HOCON") {
+        // `fromEnv` bound five settings while the HOCON reader bound seven, so
+        // an env-configured deployment could not change its User-Agent at all
+        // and could not send X-Gitea-OTP.
+        val env = GiteaConfig.fromEnv(
+          baseEnv ++ Map(
+            GiteaConfig.Env.token -> "t",
+            GiteaConfig.Env.userAgent -> "my-app/2.0",
+            GiteaConfig.Env.otp -> "123456"
+          )
+        )
+        val hocon = GiteaConfig.fromTypesafeString(
+          """gitea4s {
+            |  url = "https://gitea.example/root"
+            |  token = "t"
+            |  user-agent = "my-app/2.0"
+            |  otp = "123456"
+            |}""".stripMargin
+        )
+
+        assertTrue(
+          env.map(_.userAgent) == Right(Some("my-app/2.0")),
+          env.map(_.otp) == Right(Some("123456")),
+          // The whole config, not just the two new fields.
+          env == hocon
+        )
+      },
+      test("defaults the User-Agent identically from either source") {
+        val env = GiteaConfig.fromEnv(baseEnv + (GiteaConfig.Env.token -> "t"))
+        val hocon = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example/root", token = "t" }"""
+        )
+
+        assertTrue(env.map(_.userAgent) == Right(Some("gitea4s")), env.map(_.userAgent) == hocon.map(_.userAgent))
+      },
+      test("rejects control characters in the new environment variables too") {
+        val agent = GiteaConfig.fromEnv(baseEnv ++ Map(GiteaConfig.Env.userAgent -> "bad\ragent"))
+        val otp = GiteaConfig.fromEnv(baseEnv ++ Map(GiteaConfig.Env.otp -> "12\n34"))
+
+        assertTrue(
+          agent.isLeft,
+          otp.isLeft,
+          !otp.left.toOption.map(_.toString).getOrElse("").contains("1234")
+        )
+      },
+      test("builds the basic-auth header the way HTTP specifies") {
+        // `Auth.Basic` header construction had no hermetic assertion at all —
+        // only the live integration suite would have caught a wrong encoding,
+        // and only as a 401.
+        val expected =
+          "Basic " + java.util.Base64.getEncoder.encodeToString("alice:hunter2".getBytes("UTF-8"))
+        val config = GiteaConfig.withBasic(Uri.unsafeParse("https://gitea.example"), "alice", "hunter2")
+
+        assertTrue(config.jsonHeaders.get("Authorization").contains(expected))
+      },
+      test("rejects a HOCON duration written without a unit") {
+        // Typesafe Config reads a bare number in duration position as
+        // milliseconds, so `timeout = 30` used to parse as 30ms and give every
+        // request a 30-millisecond budget. The identical GITEA_TIMEOUT=30 was
+        // rejected, so the same text meant two different things and the wrong
+        // one was silent.
+        val bare = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", timeout = 30 }"""
+        )
+        val quoted = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", timeout = "30" }"""
+        )
+
+        assertTrue(
+          bare.isLeft,
+          quoted.isLeft,
+          bare.left.toOption.map(_.toString).getOrElse("").contains("30s")
+        )
+      },
+      test("accepts the HOCON duration spellings Typesafe config allows") {
+        // The check rejects only the unitless form. HOCON's own spellings must
+        // keep working, including ones Scala's Duration parser would reject.
+        val seconds = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", timeout = 30s }"""
+        )
+        val spaced = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", timeout = 2 minutes }"""
+        )
+
+        assertTrue(
+          seconds.map(_.timeout) == Right(30.seconds),
+          spaced.map(_.timeout) == Right(2.minutes)
+        )
+      },
+      test("rejects a setting spelled the way the environment spells it") {
+        // `maxRetries` is simply a different key from `max-retries`, so it used
+        // to be read by nobody: the config loaded and the setting did nothing.
+        val result = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", maxRetries = 9 }"""
+        )
+        val message = result.left.toOption.map(_.toString).getOrElse("")
+
+        assertTrue(result.isLeft, message.contains("maxRetries"), message.contains("max-retries"))
+      },
+      test("leaves a genuinely unrelated key alone") {
+        // Applications legitimately keep their own settings beside these, so
+        // only near misses are rejected.
+        val result = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", my-own-setting = 7 }"""
+        )
+
+        assertTrue(result.map(_.maxRetries) == Right(GiteaConfig.defaultMaxRetries))
+      },
       test("rejects a token with a control character in the middle") {
         // Trimming only strips the ends. An embedded CR/LF used to survive
         // into `Authorization: token ...` and fail later — as an untyped JDK
@@ -356,20 +464,23 @@ object GiteaConfigSpec extends ZIOSpecDefault:
 
         assertTrue(
           config.jsonHeaders eq config.jsonHeaders,
-          config.headersAccepting("application/json") eq config.jsonHeaders,
-          config.headersAccepting("application/octet-stream") eq config.octetStreamHeaders,
-          config.headersAccepting("text/plain") eq config.textPlainHeaders
+          config.headersAccepting(Accept.Json) eq config.jsonHeaders,
+          config.headersAccepting(Accept.OctetStream) eq config.octetStreamHeaders,
+          config.headersAccepting(Accept.TextPlain) eq config.textPlainHeaders
         )
       },
-      test("sends the requested Accept value even for a content type it does not memoise") {
+      test("sends the Accept value asked for, alongside the credentials") {
         // A two-way switch here would have silently answered text/plain
-        // requests with the octet-stream header set.
+        // requests with the octet-stream header set. The arbitrary-media-type
+        // case this replaces is now unrepresentable: `Accept` is a closed type,
+        // so an unlisted content type does not compile.
         val config = GiteaConfig.withToken(uri, "t")
 
         assertTrue(
-          config.headersAccepting("text/plain").get("Accept").contains("text/plain"),
-          config.headersAccepting("application/vnd.custom").get("Accept").contains("application/vnd.custom"),
-          config.headersAccepting("application/vnd.custom").get("Authorization").contains("token t")
+          Accept.values.forall(accept =>
+            config.headersAccepting(accept).get("Accept").contains(accept.headerValue)
+          ),
+          config.headersAccepting(Accept.TextPlain).get("Authorization").contains("token t")
         )
       },
       test("rejects invalid Typesafe retry counts") {

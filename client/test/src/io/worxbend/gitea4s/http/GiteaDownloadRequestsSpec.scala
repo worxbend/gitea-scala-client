@@ -44,4 +44,32 @@ object GiteaDownloadRequestsSpec extends ZIOSpecDefault:
           req.uri.params.getMulti("path").contains(Seq("src", "docs/readme.md"))
         )
       }
+      ,
+      test("each streaming download targets exactly what its buffered twin does") {
+        // The two builders for each binary endpoint used to restate the same
+        // endpoint, path and query, under a comment claiming they mirrored one
+        // another. Nothing checked it, and this spec could not have: it asserts
+        // only the streaming URI, so the buffered side could drift freely.
+        val pairs = List(
+          (
+            GiteaRequests.repoRawFile(config, "alice", "api", "docs/read me.md"),
+            GiteaRequests.rawFileDownload(config, "alice", "api", "docs/read me.md")
+          ),
+          (
+            GiteaRequests.repoMediaFile(config, "alice", "api", "docs/read me.md"),
+            GiteaRequests.mediaFileDownload(config, "alice", "api", "docs/read me.md")
+          ),
+          (
+            GiteaRequests.repoGetArchive(config, "alice", "api", "main.zip"),
+            GiteaRequests.archiveDownload(config, "alice", "api", "main.zip")
+          )
+        )
+
+        assertTrue(
+          pairs.forall((buffered, streamed) => buffered.endpoint == streamed.endpoint),
+          pairs.forall((buffered, streamed) => buffered.request.uri == streamed.uri),
+          // Same octet-stream envelope, so the server cannot answer them differently.
+          pairs.forall((buffered, streamed) => buffered.request.header("Accept") == streamed.headers.get("Accept"))
+        )
+      }
     )
