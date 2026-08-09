@@ -464,20 +464,23 @@ object GiteaConfigSpec extends ZIOSpecDefault:
 
         assertTrue(
           config.jsonHeaders eq config.jsonHeaders,
-          config.headersAccepting("application/json") eq config.jsonHeaders,
-          config.headersAccepting("application/octet-stream") eq config.octetStreamHeaders,
-          config.headersAccepting("text/plain") eq config.textPlainHeaders
+          config.headersAccepting(Accept.Json) eq config.jsonHeaders,
+          config.headersAccepting(Accept.OctetStream) eq config.octetStreamHeaders,
+          config.headersAccepting(Accept.TextPlain) eq config.textPlainHeaders
         )
       },
-      test("sends the requested Accept value even for a content type it does not memoise") {
+      test("sends the Accept value asked for, alongside the credentials") {
         // A two-way switch here would have silently answered text/plain
-        // requests with the octet-stream header set.
+        // requests with the octet-stream header set. The arbitrary-media-type
+        // case this replaces is now unrepresentable: `Accept` is a closed type,
+        // so an unlisted content type does not compile.
         val config = GiteaConfig.withToken(uri, "t")
 
         assertTrue(
-          config.headersAccepting("text/plain").get("Accept").contains("text/plain"),
-          config.headersAccepting("application/vnd.custom").get("Accept").contains("application/vnd.custom"),
-          config.headersAccepting("application/vnd.custom").get("Authorization").contains("token t")
+          Accept.values.forall(accept =>
+            config.headersAccepting(accept).get("Accept").contains(accept.headerValue)
+          ),
+          config.headersAccepting(Accept.TextPlain).get("Authorization").contains("token t")
         )
       },
       test("rejects invalid Typesafe retry counts") {

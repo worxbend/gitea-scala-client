@@ -13,6 +13,20 @@ import scala.jdk.CollectionConverters.*
 import scala.jdk.DurationConverters.*
 import scala.util.Try
 
+/** The content types this client negotiates.
+  *
+  * These three values were previously loose `String` constants matched against
+  * a `String` parameter, and the call sites had drifted into four spellings of
+  * them: `MediaType.ApplicationJson.toString`, `MediaType.TextPlain.toString`,
+  * two bare `"application/octet-stream"` literals, and the constants
+  * themselves. A closed type makes a mismatch a compile error rather than a
+  * request that quietly asks for the wrong thing.
+  */
+private[gitea4s] enum Accept(val headerValue: String):
+  case Json extends Accept("application/json")
+  case OctetStream extends Accept("application/octet-stream")
+  case TextPlain extends Accept("text/plain")
+
 final case class GiteaConfig(
     baseUrl: Uri,
     auth: Auth,
@@ -56,21 +70,21 @@ final case class GiteaConfig(
     * `username:password` string and its backing byte array on the heap every
     * time, multiplying the copies a heap dump or a swap file could recover.
     *
-    * The three `Accept` values this library actually sends are memoised; any
-    * other value is still handled, just without the memoisation, so adding an
-    * endpoint that negotiates a new content type cannot silently be served the
-    * wrong `Accept` header.
+    * `Accept` is a closed type, so this match is total and every value the
+    * library can ask for is memoised. It used to take a `String` and fall
+    * through to an unmemoised build for anything unrecognised, which meant a
+    * new content type — or a typo in an existing one — silently lost the
+    * memoisation instead of failing to compile.
     */
-  private[gitea4s] def headersAccepting(accept: String): Map[String, String] =
+  private[gitea4s] def headersAccepting(accept: Accept): Map[String, String] =
     accept match
-      case GiteaConfig.applicationJson => jsonHeaders
-      case GiteaConfig.octetStream => octetStreamHeaders
-      case GiteaConfig.textPlain => textPlainHeaders
-      case other => buildHeaders(other)
+      case Accept.Json => jsonHeaders
+      case Accept.OctetStream => octetStreamHeaders
+      case Accept.TextPlain => textPlainHeaders
 
-  private[gitea4s] lazy val jsonHeaders: Map[String, String] = buildHeaders(GiteaConfig.applicationJson)
-  private[gitea4s] lazy val octetStreamHeaders: Map[String, String] = buildHeaders(GiteaConfig.octetStream)
-  private[gitea4s] lazy val textPlainHeaders: Map[String, String] = buildHeaders(GiteaConfig.textPlain)
+  private[gitea4s] lazy val jsonHeaders: Map[String, String] = buildHeaders(Accept.Json.headerValue)
+  private[gitea4s] lazy val octetStreamHeaders: Map[String, String] = buildHeaders(Accept.OctetStream.headerValue)
+  private[gitea4s] lazy val textPlainHeaders: Map[String, String] = buildHeaders(Accept.TextPlain.headerValue)
 
   private def buildHeaders(accept: String): Map[String, String] =
     List(
@@ -149,10 +163,6 @@ object GiteaConfig:
     val userAgent: String = "user-agent"
     val otp: String = "otp"
     val maxRetries: String = "max-retries"
-
-  private[gitea4s] val applicationJson: String = "application/json"
-  private[gitea4s] val octetStream: String = "application/octet-stream"
-  private[gitea4s] val textPlain: String = "text/plain"
 
   val defaultTimeout: FiniteDuration = 30.seconds
   val defaultPageSize: Int = 50
