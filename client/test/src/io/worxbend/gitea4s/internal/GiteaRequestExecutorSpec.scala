@@ -102,12 +102,19 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
         // so the doubling was unexercised: replacing the shift with a constant
         // left the whole build green.
         //
-        // The boundary is chosen to sit outside the 0.8-1.2 jitter band rather
-        // than comparing one wait against the next, which would be flaky.
-        // Doubling from 100ms gives waits of 100/200/400, so the fourth attempt
-        // cannot be sent before 80+160+320 = 560ms. A flat 100ms would have
-        // sent it by 360ms at the latest. At 500ms, exactly three attempts have
-        // been made if and only if the delay is growing.
+        // The clock is stepped rather than jumped, waiting for each attempt to
+        // actually land before advancing again. Forking and immediately calling
+        // `TestClock.adjust` races the forked fiber: if it has not reached its
+        // sleep yet, the adjust passes time it never observes and the attempt
+        // count comes up short. That is a real flake, not a hypothetical — it
+        // failed once on a cold build before this was rewritten.
+        //
+        // Waits double from 100ms, and jitter spans 0.8-1.2, so attempt N is
+        // unblocked by at most 120/240/480ms while a flat policy would need at
+        // most 120ms every time. Advancing the maximum for each growing wait
+        // and then a further 150ms proves growth: a flat delay would have sent
+        // the fourth attempt within that 150ms, and a doubling one cannot,
+        // because it still needs at least 320ms.
         for
           sent <- Ref.make(0)
           backend = BackendStub[Task](new RIOMonadAsyncError[Any]).whenAnyRequest.thenRespondF { _ =>
@@ -117,12 +124,18 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
             .send(GiteaRequests.currentUser(config))
             .either
             .fork
-          _ <- TestClock.adjust(Duration.fromMillis(500))
+          // The first attempt needs no clock movement.
+          _ <- sent.get.repeatUntil(_ >= 1)
+          _ <- TestClock.adjust(Duration.fromMillis(120))
+          _ <- sent.get.repeatUntil(_ >= 2)
+          _ <- TestClock.adjust(Duration.fromMillis(240))
+          _ <- sent.get.repeatUntil(_ >= 3)
+          _ <- TestClock.adjust(Duration.fromMillis(150))
           attempts <- sent.get
           _ <- TestClock.adjust(Duration.fromSeconds(5))
           _ <- fiber.join
         yield assertTrue(attempts == 3)
-      },
+      } @@ TestAspect.timeout(zio.Duration.fromSeconds(60)),
       test("does not retry an error that cannot be retried") {
         val backend = respondWith(ResponseStub.adjust("""{"message":"nope"}""", StatusCode.NotFound))
 
