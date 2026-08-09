@@ -5,8 +5,10 @@ import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{ArchiveParams, ContentsParams, GiteaDownloadRequest, GiteaRequests, GiteaResponseMapper}
 import sttp.capabilities.zio.ZioStreams
 import sttp.client4.*
-import zio.Task
+import zio.{Duration, Task, durationInt}
 import zio.stream.ZStream
+
+import java.util.concurrent.TimeoutException
 
 /** Streaming binary downloads, exposed only on `backend-zio`.
   *
@@ -27,6 +29,11 @@ import zio.stream.ZStream
   *
   * These streams are not retried: a partially consumed body cannot be safely
   * replayed. Use the buffered `GiteaClient` methods where retry matters.
+  *
+  * A stalled download fails rather than hanging. The budget measures the gap
+  * between chunks, not the total download time, so an archive that takes an
+  * hour to arrive is never penalised as long as it keeps arriving — see
+  * [[ZioGiteaDownloads.stallTimeout]].
   */
 trait GiteaDownloads:
   def rawFile(
@@ -50,7 +57,18 @@ trait GiteaDownloads:
       params: ArchiveParams = ArchiveParams.default
   ): ZStream[Any, GiteaError, Byte]
 
-final class ZioGiteaDownloads(config: GiteaConfig, backend: StreamBackend[Task, ZioStreams]) extends GiteaDownloads:
+final class ZioGiteaDownloads private (
+    config: GiteaConfig,
+    backend: StreamBackend[Task, ZioStreams],
+    stallTimeout: Duration
+) extends GiteaDownloads:
+  /** The published constructor. Unchanged: the stall budget is not a knob
+    * callers have asked for, and adding a parameter to this signature would
+    * break binary compatibility for 1.0.0.
+    */
+  def this(config: GiteaConfig, backend: StreamBackend[Task, ZioStreams]) =
+    this(config, backend, ZioGiteaDownloads.stallTimeout)
+
   override def rawFile(
       owner: String,
       repo: String,
@@ -94,7 +112,44 @@ final class ZioGiteaDownloads(config: GiteaConfig, backend: StreamBackend[Task, 
         .mapError(GiteaError.TransportError.apply)
         .map { response =>
           response.body match
-            case Right(bytes) => bytes.mapError(GiteaError.TransportError.apply)
+            case Right(bytes) =>
+              bytes
+                .mapError(GiteaError.TransportError.apply)
+                // The only limit on this path was `readTimeout`, which reaches
+                // the JDK as `HttpRequest.timeout` and stops applying the
+                // moment response headers arrive. So the path deliberately
+                // used for the *largest* bodies was the one with no backstop
+                // at all: a server that answered `200 OK` and then stopped
+                // sending held the consumer open indefinitely.
+                //
+                // `ZStream#timeoutFail` bounds each pull rather than the whole
+                // stream, which is what makes it safe here — a legitimately
+                // slow multi-gigabyte archive is never cut off, only a server
+                // that has stopped producing.
+                .timeoutFail(ZioGiteaDownloads.stalled(stallTimeout))(stallTimeout)
             case Left(errorBody) => ZStream.fail(GiteaResponseMapper.toError(response.copy(body = errorBody)))
         }
     }
+
+object ZioGiteaDownloads:
+  /** How long a running download may go without producing a single byte.
+    *
+    * Deliberately generous: this is a backstop against a connection that has
+    * stopped producing, not a latency target.
+    */
+  val stallTimeout: Duration = 5.minutes
+
+  /** Builds a downloader with a shorter budget, so the stall path can be
+    * exercised against a real clock instead of racing a `TestClock`.
+    */
+  private[zio] def withStallTimeout(
+      config: GiteaConfig,
+      backend: StreamBackend[Task, ZioStreams],
+      stallTimeout: Duration
+  ): ZioGiteaDownloads =
+    new ZioGiteaDownloads(config, backend, stallTimeout)
+
+  private def stalled(after: Duration): GiteaError =
+    GiteaError.TransportError(
+      new TimeoutException(s"Gitea download produced no data for $after")
+    )

@@ -6,6 +6,8 @@ import zio.json.*
 import zio.json.ast.Json
 import zio.test.*
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path, Paths}
 import java.time.Instant
 
 object CoreModelsSpec extends ZIOSpecDefault:
@@ -20,92 +22,62 @@ object CoreModelsSpec extends ZIOSpecDefault:
       sampleKeys: Set[String]
   )
 
-  private val schemaChecklistSwaggerFields = Map(
-    "Attachment" -> Set("browser_download_url", "created_at", "download_count", "id", "name", "size", "uuid"),
-    "RepoCollaboratorPermission" -> Set("permission", "role_name", "user"),
-    "Team" -> Set(
-      "can_create_org_repo",
-      "description",
-      "id",
-      "includes_all_repositories",
-      "name",
-      "organization",
-      "permission",
-      "units",
-      "units_map"
-    ),
-    "TagProtection" -> Set(
-      "created_at",
-      "id",
-      "name_pattern",
-      "updated_at",
-      "whitelist_teams",
-      "whitelist_usernames"
-    ),
-    "BranchProtection" -> Set(
-      "approvals_whitelist_teams",
-      "approvals_whitelist_username",
-      "block_admin_merge_override",
-      "block_on_official_review_requests",
-      "block_on_outdated_branch",
-      "block_on_rejected_reviews",
-      "branch_name",
-      "created_at",
-      "dismiss_stale_approvals",
-      "enable_approvals_whitelist",
-      "enable_force_push",
-      "enable_force_push_allowlist",
-      "enable_merge_whitelist",
-      "enable_push",
-      "enable_push_whitelist",
-      "enable_status_check",
-      "force_push_allowlist_deploy_keys",
-      "force_push_allowlist_teams",
-      "force_push_allowlist_usernames",
-      "ignore_stale_approvals",
-      "merge_whitelist_teams",
-      "merge_whitelist_usernames",
-      "priority",
-      "protected_file_patterns",
-      "push_whitelist_deploy_keys",
-      "push_whitelist_teams",
-      "push_whitelist_usernames",
-      "require_signed_commits",
-      "required_approvals",
-      "rule_name",
-      "status_check_contexts",
-      "unprotected_file_patterns",
-      "updated_at"
-    ),
-    "Reference" -> Set("object", "ref", "url"),
-    "GitObject" -> Set("sha", "type", "url"),
-    "AnnotatedTag" -> Set("message", "object", "sha", "tag", "tagger", "url", "verification"),
-    "AnnotatedTagObject" -> Set("sha", "type", "url"),
-    "GitBlobResponse" -> Set("content", "encoding", "lfs_oid", "lfs_size", "sha", "size", "url"),
-    "ContentsResponse" -> Set(
-      "_links",
-      "content",
-      "download_url",
-      "encoding",
-      "git_url",
-      "html_url",
-      "last_author_date",
-      "last_commit_message",
-      "last_commit_sha",
-      "last_committer_date",
-      "lfs_oid",
-      "lfs_size",
-      "name",
-      "path",
-      "sha",
-      "size",
-      "submodule_git_url",
-      "target",
-      "type",
-      "url"
-    ),
-    "FileLinksResponse" -> Set("git", "html", "self")
-  )
+  /** The field names each schema declares in `plugin-redoc-2.yaml`.
+    *
+    * Wire field names used to live in three places: the vendored spec, the
+    * `@jsonField` annotations on the models, and a hand-typed copy of the spec
+    * in this file. The test compared the second copy against the third and
+    * never against the first, so two copies that were wrong in the same way —
+    * or a Gitea release that moved on — passed green.
+    *
+    * Reading the spec removes the third copy. Scoped to the `definitions:`
+    * block on purpose: `Attachment` is declared both there and again under
+    * `responses:`, and an unscoped search finds the wrong one.
+    */
+  private lazy val swaggerDefinitionFields: Map[String, Set[String]] =
+    val lines = Files.readString(swaggerPath(), StandardCharsets.UTF_8).linesIterator.toVector
+    val start = lines.indexWhere(_ == "definitions:")
+    val end =
+      lines.indexWhere(line => line.nonEmpty && !line.head.isWhitespace, start + 1) match
+        case -1 => lines.length
+        case index => index
+
+    definitionsIn(lines.slice(start + 1, end))
+
+  private def definitionsIn(block: Vector[String]): Map[String, Set[String]] =
+    // Indentation is the whole grammar here: a definition name sits at two
+    // spaces, `properties:` at four, and each field name at six.
+    val definitionStarts =
+      block.indices.filter(index => indentation(block(index)) == 2 && block(index).trim.endsWith(":"))
+
+    definitionStarts.map { index =>
+      val name = block(index).trim.dropRight(1)
+      val body = block.drop(index + 1).takeWhile(line => line.isBlank || indentation(line) >= 4)
+      name -> fieldNamesIn(body)
+    }.toMap
+
+  private def fieldNamesIn(definitionBody: Vector[String]): Set[String] =
+    definitionBody
+      .dropWhile(line => indentation(line) != 4 || line.trim != "properties:")
+      .drop(1)
+      .takeWhile(line => line.isBlank || indentation(line) >= 6)
+      .filter(line => indentation(line) == 6 && line.trim.endsWith(":"))
+      .map(_.trim.dropRight(1))
+      .toSet
+
+  private def indentation(line: String): Int =
+    line.takeWhile(_ == ' ').length
+
+  /** Finds the vendored spec by walking up from the working directory, the
+    * same way `GiteaEndpointAuditSpec` does, so the suite runs from any module.
+    */
+  private def swaggerPath(): Path =
+    Iterator
+      .iterate(Paths.get("").toAbsolutePath)(_.getParent)
+      .takeWhile(_ != null)
+      .map(_.resolve("plugin-redoc-2.yaml"))
+      .find(Files.isRegularFile(_))
+      .getOrElse(Paths.get("plugin-redoc-2.yaml").toAbsolutePath)
 
   private val schemaFieldChecklist = List(
     SchemaFieldChecklist(
@@ -415,20 +387,25 @@ object CoreModelsSpec extends ZIOSpecDefault:
   def spec =
     suite("Core models")(
       test("records Swagger field checklist for schema-traced response models") {
-        val checklistByDefinition =
-          schemaFieldChecklist.map(entry => entry.swaggerDefinition -> entry).toMap
+        // Every definition the checklist claims to trace must exist in the
+        // vendored spec, and the checklist must account for every field that
+        // definition declares. Read from the spec rather than from a copy of
+        // it, so a Gitea release that adds a field fails here instead of
+        // passing unnoticed.
         val missingDefinitions =
-          schemaChecklistSwaggerFields.keySet
-            .diff(checklistByDefinition.keySet)
-            .toList
+          schemaFieldChecklist
+            .map(_.swaggerDefinition)
+            .filterNot(swaggerDefinitionFields.contains)
             .sorted
-            .map(definition => s"$definition checklist entry is missing")
+            .map(definition => s"$definition is not declared in plugin-redoc-2.yaml")
         val missingChecklistFields =
-          schemaChecklistSwaggerFields.toList.flatMap { case (definition, expectedFields) =>
-            checklistByDefinition.get(definition).toList.flatMap { checklist =>
-              val missing = expectedFields.diff(checklist.jsonFields)
+          schemaFieldChecklist.flatMap { checklist =>
+            swaggerDefinitionFields.get(checklist.swaggerDefinition).toList.flatMap { declaredFields =>
+              val missing = declaredFields.diff(checklist.jsonFields)
 
-              Option.when(missing.nonEmpty)(s"$definition checklist missing ${missing.toList.sorted.mkString(", ")}")
+              Option.when(missing.nonEmpty)(
+                s"${checklist.swaggerDefinition} checklist missing ${missing.toList.sorted.mkString(", ")}"
+              )
             }
           }
         val missingEncodedFields =

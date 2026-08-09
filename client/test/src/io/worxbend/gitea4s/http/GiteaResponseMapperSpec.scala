@@ -272,6 +272,22 @@ object GiteaResponseMapperSpec extends ZIOSpecDefault:
 
           assertTrue(result == Left(GiteaError.ServerError(500, "x" * 8192)))
         },
+        test("truncates an oversized message carried inside the error body") {
+          // The body cap alone was defeated by moving the payload into the
+          // JSON: `body` was clipped while `message`, lifted out of the same
+          // untrusted response, kept the whole thing.
+          val message = "y" * (100 * 1024)
+          val error = GiteaResponseMapper.toError(raw(s"""{"message":"$message"}""", StatusCode.UnprocessableEntity))
+
+          assertTrue(error.asInstanceOf[GiteaError.UnprocessableEntity].message == "y" * 8192)
+        },
+        test("truncates an oversized message sent in the header fallback") {
+          val error = GiteaResponseMapper.toError(
+            withHeaders("not json", StatusCode.BadRequest, "message" -> "z" * (100 * 1024))
+          )
+
+          assertTrue(error.asInstanceOf[GiteaError.BadRequest].message == "z" * 8192)
+        },
         test("truncates the body kept on a decode failure") {
           val body = "[" + ("\"not-an-int\"," * 5000).dropRight(1) + "]"
           val result = GiteaResponseMapper.decodeChunk[Int](ResponseStub(body, StatusCode.Ok))

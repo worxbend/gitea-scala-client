@@ -1,6 +1,7 @@
 package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.GiteaConfig
+import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
   AnnotatedTag,
@@ -60,7 +61,7 @@ import io.worxbend.gitea4s.model.{
   WatchInfo
 }
 import sttp.client4.*
-import sttp.model.{MediaType, Method, Uri}
+import sttp.model.{MediaType, Uri}
 import zio.Chunk
 import zio.json.*
 
@@ -85,15 +86,7 @@ object GiteaRequests:
     )
 
   def userStopwatches(config: GiteaConfig, page: Int = 1): GiteaRequest[Page[StopWatch]] =
-    val pageSize = config.pageSize
-
-    get(
-      config,
-      GiteaEndpoints.userGetStopWatches,
-      List("user", "stopwatches"),
-      pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[StopWatch](response, page, pageSize)
-    )
+    paginated[StopWatch](config, GiteaEndpoints.userGetStopWatches, List("user", "stopwatches"), page)
 
   def repository(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Repository] =
     get(
@@ -114,7 +107,7 @@ object GiteaRequests:
     )
 
   def organizationMembers(config: GiteaConfig, org: String, page: Int = 1): GiteaRequest[Page[User]] =
-    paginatedUsers(
+    paginated[User](
       config = config,
       endpoint = GiteaEndpoints.orgListMembers,
       path = List("orgs", org, "members"),
@@ -122,7 +115,7 @@ object GiteaRequests:
     )
 
   def organizationPublicMembers(config: GiteaConfig, org: String, page: Int = 1): GiteaRequest[Page[User]] =
-    paginatedUsers(
+    paginated[User](
       config = config,
       endpoint = GiteaEndpoints.orgListPublicMembers,
       path = List("orgs", org, "public_members"),
@@ -194,7 +187,7 @@ object GiteaRequests:
     )
 
   def repoStargazers(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[User]] =
-    paginatedUsers(
+    paginated[User](
       config = config,
       endpoint = GiteaEndpoints.repoListStargazers,
       path = List("repos", owner, repo, "stargazers"),
@@ -202,7 +195,7 @@ object GiteaRequests:
     )
 
   def repoSubscribers(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[User]] =
-    paginatedUsers(
+    paginated[User](
       config = config,
       endpoint = GiteaEndpoints.repoListSubscribers,
       path = List("repos", owner, repo, "subscribers"),
@@ -210,26 +203,10 @@ object GiteaRequests:
     )
 
   def repoBranches(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Branch]] =
-    val pageSize = config.pageSize
-
-    get(
-      config,
-      GiteaEndpoints.repoListBranches,
-      List("repos", owner, repo, "branches"),
-      pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[Branch](response, page, pageSize)
-    )
+    paginated[Branch](config, GiteaEndpoints.repoListBranches, List("repos", owner, repo, "branches"), page)
 
   def repoTags(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Tag]] =
-    val pageSize = config.pageSize
-
-    get(
-      config,
-      GiteaEndpoints.repoListTags,
-      List("repos", owner, repo, "tags"),
-      pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[Tag](response, page, pageSize)
-    )
+    paginated[Tag](config, GiteaEndpoints.repoListTags, List("repos", owner, repo, "tags"), page)
 
   def repoLanguages(config: GiteaConfig, owner: String, repo: String): GiteaRequest[LanguageStatistics] =
     get(
@@ -373,7 +350,7 @@ object GiteaRequests:
     )
 
   def repoCollaborators(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[User]] =
-    paginatedUsers(
+    paginated[User](
       config = config,
       endpoint = GiteaEndpoints.repoListCollaborators,
       path = List("repos", owner, repo, "collaborators"),
@@ -409,15 +386,7 @@ object GiteaRequests:
     )
 
   def repoTeams(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Team]] =
-    val pageSize = config.pageSize
-
-    get(
-      config,
-      GiteaEndpoints.repoListTeams,
-      List("repos", owner, repo, "teams"),
-      pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[Team](response, page, pageSize)
-    )
+    paginated[Team](config, GiteaEndpoints.repoListTeams, List("repos", owner, repo, "teams"), page)
 
   def repoTeam(config: GiteaConfig, owner: String, repo: String, team: String): GiteaRequest[Team] =
     get(
@@ -889,15 +858,7 @@ object GiteaRequests:
       index: Long,
       page: Int = 1
   ): GiteaRequest[Page[PullReview]] =
-    val pageSize = config.pageSize
-
-    get(
-      config,
-      GiteaEndpoints.repoListPullReviews,
-      List("repos", owner, repo, "pulls", index.toString, "reviews"),
-      pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[PullReview](response, page, pageSize)
-    )
+    paginated[PullReview](config, GiteaEndpoints.repoListPullReviews, List("repos", owner, repo, "pulls", index.toString, "reviews"), page)
 
   def createPullReview(
       config: GiteaConfig,
@@ -1275,15 +1236,7 @@ object GiteaRequests:
 
   def issueBlocks(config: GiteaConfig, owner: String, repo: String, index: Long, page: Int = 1)
       : GiteaRequest[Page[Issue]] =
-    val pageSize = config.pageSize
-
-    get(
-      config,
-      GiteaEndpoints.issueListBlocks,
-      List("repos", owner, repo, "issues", index.toString, "blocks"),
-      pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[Issue](response, page, pageSize)
-    )
+    paginated[Issue](config, GiteaEndpoints.issueListBlocks, List("repos", owner, repo, "issues", index.toString, "blocks"), page)
 
   def createIssueBlocking(
       config: GiteaConfig,
@@ -1317,15 +1270,7 @@ object GiteaRequests:
 
   def issueDependencies(config: GiteaConfig, owner: String, repo: String, index: Long, page: Int = 1)
       : GiteaRequest[Page[Issue]] =
-    val pageSize = config.pageSize
-
-    get(
-      config,
-      GiteaEndpoints.issueListIssueDependencies,
-      List("repos", owner, repo, "issues", index.toString, "dependencies"),
-      pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[Issue](response, page, pageSize)
-    )
+    paginated[Issue](config, GiteaEndpoints.issueListIssueDependencies, List("repos", owner, repo, "issues", index.toString, "dependencies"), page)
 
   def createIssueDependency(
       config: GiteaConfig,
@@ -1458,15 +1403,7 @@ object GiteaRequests:
 
   def issueReactions(config: GiteaConfig, owner: String, repo: String, index: Long, page: Int = 1)
       : GiteaRequest[Page[Reaction]] =
-    val pageSize = config.pageSize
-
-    get(
-      config,
-      GiteaEndpoints.issueGetIssueReactions,
-      List("repos", owner, repo, "issues", index.toString, "reactions"),
-      pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[Reaction](response, page, pageSize)
-    )
+    paginated[Reaction](config, GiteaEndpoints.issueGetIssueReactions, List("repos", owner, repo, "issues", index.toString, "reactions"), page)
 
   def postIssueReaction(
       config: GiteaConfig,
@@ -1500,15 +1437,7 @@ object GiteaRequests:
 
   def issueSubscriptions(config: GiteaConfig, owner: String, repo: String, index: Long, page: Int = 1)
       : GiteaRequest[Page[User]] =
-    val pageSize = config.pageSize
-
-    get(
-      config,
-      GiteaEndpoints.issueSubscriptions,
-      List("repos", owner, repo, "issues", index.toString, "subscriptions"),
-      pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[User](response, page, pageSize)
-    )
+    paginated[User](config, GiteaEndpoints.issueSubscriptions, List("repos", owner, repo, "issues", index.toString, "subscriptions"), page)
 
   def issueSubscription(config: GiteaConfig, owner: String, repo: String, index: Long): GiteaRequest[WatchInfo] =
     get(
@@ -1658,7 +1587,7 @@ object GiteaRequests:
     )
 
   def userFollowers(config: GiteaConfig, username: String, page: Int = 1): GiteaRequest[Page[User]] =
-    paginatedUsers(
+    paginated[User](
       config = config,
       endpoint = GiteaEndpoints.userListFollowers,
       path = List("users", username, "followers"),
@@ -1666,7 +1595,7 @@ object GiteaRequests:
     )
 
   def userFollowing(config: GiteaConfig, username: String, page: Int = 1): GiteaRequest[Page[User]] =
-    paginatedUsers(
+    paginated[User](
       config = config,
       endpoint = GiteaEndpoints.userListFollowing,
       path = List("users", username, "following"),
@@ -1735,24 +1664,48 @@ object GiteaRequests:
   ): PartialRequest[Either[String, String]] =
     if config.otp.isDefined then request.followRedirects(false) else request
 
-  private def get[A](
+  /** Finishes a JSON request with the four things every endpoint shares: the
+    * string response, the read timeout, the common headers, and the retry
+    * policy implied by the verb.
+    *
+    * These four lines were repeated verbatim in all nine verb helpers below,
+    * which meant a change to any of them had to be made nine times to take
+    * effect everywhere. The read timeout was the exposed one — nothing asserts
+    * it, so an omission would not have shown up as a failing test.
+    */
+  private def jsonCall[A](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
-      path: List[String],
-      query: List[(String, String)],
-      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A],
+      request: Request[Either[String, String]],
+      decode: Response[String] => Either[GiteaError, A],
       accept: String = MediaType.ApplicationJson.toString
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
-      request = jsonRequest(config)
-        .get(apiUri(config.baseUrl, path, query))
+      request = request
         .response(stringResponse)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config, accept)),
       decode = decode,
       retryable = GiteaRequest.isReadOnly(endpoint)
     )
+
+  /** The JSON body every write helper attaches, spelled once. */
+  private def withJson(
+      request: Request[Either[String, String]],
+      json: String
+  ): Request[Either[String, String]] =
+    request.body(json).contentType(MediaType.ApplicationJson)
+
+  private def get[A](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      query: List[(String, String)],
+      decode: Response[String] => Either[GiteaError, A],
+      accept: String = MediaType.ApplicationJson.toString
+  ): GiteaRequest[A] =
+    jsonCall(config, endpoint, jsonRequest(config).get(apiUri(config.baseUrl, path, query)), decode, accept)
 
   private def getBytes(
       config: GiteaConfig,
@@ -1789,24 +1742,15 @@ object GiteaRequests:
       endpoint: GiteaEndpoint,
       path: List[String],
       query: List[(String, String)],
-      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+      decode: Response[String] => Either[GiteaError, A]
   ): GiteaRequest[A] =
-    GiteaRequest(
-      endpoint = endpoint,
-      request = jsonRequest(config)
-        .post(apiUri(config.baseUrl, path, query))
-        .response(stringResponse)
-        .readTimeout(config.timeout)
-        .headers(commonHeaders(config)),
-      decode = decode,
-      retryable = GiteaRequest.isReadOnly(endpoint)
-    )
+    jsonCall(config, endpoint, jsonRequest(config).post(apiUri(config.baseUrl, path, query)), decode)
 
   private def post[A](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
       path: List[String],
-      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+      decode: Response[String] => Either[GiteaError, A]
   ): GiteaRequest[A] =
     post(config, endpoint, path, Nil, decode)
 
@@ -1815,131 +1759,60 @@ object GiteaRequests:
       endpoint: GiteaEndpoint,
       path: List[String],
       json: String,
-      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+      decode: Response[String] => Either[GiteaError, A]
   ): GiteaRequest[A] =
-    GiteaRequest(
-      endpoint = endpoint,
-      request = jsonRequest(config)
-        .post(apiUri(config.baseUrl, path, Nil))
-        .body(json)
-        .contentType(MediaType.ApplicationJson)
-        .response(stringResponse)
-        .readTimeout(config.timeout)
-        .headers(commonHeaders(config)),
-      decode = decode,
-      retryable = GiteaRequest.isReadOnly(endpoint)
-    )
+    jsonCall(config, endpoint, withJson(jsonRequest(config).post(apiUri(config.baseUrl, path, Nil)), json), decode)
 
   private def putJson[A](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
       path: List[String],
       json: String,
-      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+      decode: Response[String] => Either[GiteaError, A]
   ): GiteaRequest[A] =
-    GiteaRequest(
-      endpoint = endpoint,
-      request = jsonRequest(config)
-        .put(apiUri(config.baseUrl, path, Nil))
-        .body(json)
-        .contentType(MediaType.ApplicationJson)
-        .response(stringResponse)
-        .readTimeout(config.timeout)
-        .headers(commonHeaders(config)),
-      decode = decode,
-      retryable = GiteaRequest.isReadOnly(endpoint)
-    )
+    jsonCall(config, endpoint, withJson(jsonRequest(config).put(apiUri(config.baseUrl, path, Nil)), json), decode)
 
   private def put[A](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
       path: List[String],
-      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+      decode: Response[String] => Either[GiteaError, A]
   ): GiteaRequest[A] =
-    GiteaRequest(
-      endpoint = endpoint,
-      request = jsonRequest(config)
-        .put(apiUri(config.baseUrl, path, Nil))
-        .response(stringResponse)
-        .readTimeout(config.timeout)
-        .headers(commonHeaders(config)),
-      decode = decode,
-      retryable = GiteaRequest.isReadOnly(endpoint)
-    )
+    jsonCall(config, endpoint, jsonRequest(config).put(apiUri(config.baseUrl, path, Nil)), decode)
 
   private def patchJson[A](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
       path: List[String],
       json: String,
-      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+      decode: Response[String] => Either[GiteaError, A]
   ): GiteaRequest[A] =
-    GiteaRequest(
-      endpoint = endpoint,
-      request = jsonRequest(config)
-        .patch(apiUri(config.baseUrl, path, Nil))
-        .body(json)
-        .contentType(MediaType.ApplicationJson)
-        .response(stringResponse)
-        .readTimeout(config.timeout)
-        .headers(commonHeaders(config)),
-      decode = decode,
-      retryable = GiteaRequest.isReadOnly(endpoint)
-    )
+    jsonCall(config, endpoint, withJson(jsonRequest(config).patch(apiUri(config.baseUrl, path, Nil)), json), decode)
 
   private def patch[A](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
       path: List[String],
-      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+      decode: Response[String] => Either[GiteaError, A]
   ): GiteaRequest[A] =
-    GiteaRequest(
-      endpoint = endpoint,
-      request = jsonRequest(config)
-        .patch(apiUri(config.baseUrl, path, Nil))
-        .response(stringResponse)
-        .readTimeout(config.timeout)
-        .headers(commonHeaders(config)),
-      decode = decode,
-      retryable = GiteaRequest.isReadOnly(endpoint)
-    )
+    jsonCall(config, endpoint, jsonRequest(config).patch(apiUri(config.baseUrl, path, Nil)), decode)
 
   private def delete[A](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
       path: List[String],
-      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+      decode: Response[String] => Either[GiteaError, A]
   ): GiteaRequest[A] =
-    GiteaRequest(
-      endpoint = endpoint,
-      request = jsonRequest(config)
-        .delete(apiUri(config.baseUrl, path, Nil))
-        .response(stringResponse)
-        .readTimeout(config.timeout)
-        .headers(commonHeaders(config)),
-      decode = decode,
-      retryable = GiteaRequest.isReadOnly(endpoint)
-    )
+    jsonCall(config, endpoint, jsonRequest(config).delete(apiUri(config.baseUrl, path, Nil)), decode)
 
   private def deleteJson[A](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
       path: List[String],
       json: String,
-      decode: Response[String] => Either[io.worxbend.gitea4s.error.GiteaError, A]
+      decode: Response[String] => Either[GiteaError, A]
   ): GiteaRequest[A] =
-    GiteaRequest(
-      endpoint = endpoint,
-      request = jsonRequest(config)
-        .method(Method.DELETE, apiUri(config.baseUrl, path, Nil))
-        .body(json)
-        .contentType(MediaType.ApplicationJson)
-        .response(stringResponse)
-        .readTimeout(config.timeout)
-        .headers(commonHeaders(config)),
-      decode = decode,
-      retryable = GiteaRequest.isReadOnly(endpoint)
-    )
+    jsonCall(config, endpoint, withJson(jsonRequest(config).delete(apiUri(config.baseUrl, path, Nil)), json), decode)
 
   private def apiUri(baseUrl: Uri, path: List[String], query: List[(String, String)]): Uri =
     baseUrl.addPath(List("api", "v1") ++ path).addParams(query*)
@@ -1960,17 +1833,13 @@ object GiteaRequests:
       params.createdBy.map("created_by" -> _),
       params.assignedBy.map("assigned_by" -> _),
       params.mentionedBy.map("mentioned_by" -> _),
-      Some("page" -> page.toString),
-      Some("limit" -> pageSize.toString)
-    ).flatten
+    ).flatten ++ pageQuery(page, pageSize)
 
   private def userSearchQuery(params: UserSearchParams, page: Int, pageSize: Int): List[(String, String)] =
     List(
       params.q.map("q" -> _),
       params.uid.map(uid => "uid" -> uid.toString),
-      Some("page" -> page.toString),
-      Some("limit" -> pageSize.toString)
-    ).flatten
+    ).flatten ++ pageQuery(page, pageSize)
 
   private def pullRequestQuery(params: PullRequestListParams, page: Int, pageSize: Int): List[(String, String)] =
     List(
@@ -1979,17 +1848,13 @@ object GiteaRequests:
       params.sort.map(sort => "sort" -> sort.queryValue),
       params.milestone.map(value => "milestone" -> value.toString),
       params.poster.map("poster" -> _),
-      Some("page" -> page.toString),
-      Some("limit" -> pageSize.toString)
-    ).flatten ++ params.labels.map(label => "labels" -> label.toString)
+    ).flatten ++ pageQuery(page, pageSize) ++ params.labels.map(label => "labels" -> label.toString)
 
   private def releaseQuery(params: ReleaseListParams, page: Int, pageSize: Int): List[(String, String)] =
     List(
       params.draft.map(value => "draft" -> value.toString),
       params.preRelease.map(value => "pre-release" -> value.toString),
-      Some("page" -> page.toString),
-      Some("limit" -> pageSize.toString)
-    ).flatten
+    ).flatten ++ pageQuery(page, pageSize)
 
   private def pullRequestFilesQuery(
       params: PullRequestFilesParams,
@@ -1999,18 +1864,14 @@ object GiteaRequests:
     List(
       params.skipTo.map("skip-to" -> _),
       params.whitespace.map(value => "whitespace" -> value.queryValue),
-      Some("page" -> page.toString),
-      Some("limit" -> pageSize.toString)
-    ).flatten
+    ).flatten ++ pageQuery(page, pageSize)
 
   private def pullRequestCommitsQuery(
       params: PullRequestCommitsParams,
       page: Int,
       pageSize: Int
   ): List[(String, String)] =
-    List(
-      Some("page" -> page.toString),
-      Some("limit" -> pageSize.toString),
+    pageQuery(page, pageSize) ++ List(
       params.verification.map(value => "verification" -> value.toString),
       params.files.map(value => "files" -> value.toString)
     ).flatten
@@ -2023,9 +1884,7 @@ object GiteaRequests:
     List(
       params.sort.map(sort => "sort" -> sort.queryValue),
       params.state.map(state => "state" -> state.queryValue),
-      Some("page" -> page.toString),
-      Some("limit" -> pageSize.toString)
-    ).flatten
+    ).flatten ++ pageQuery(page, pageSize)
 
   private def singleCommitQuery(params: SingleCommitParams): List[(String, String)] =
     List(
@@ -2058,9 +1917,7 @@ object GiteaRequests:
       params.all.map(value => "all" -> value.toString),
       params.since.map(value => "since" -> value.toString),
       params.before.map(value => "before" -> value.toString),
-      Some("page" -> page.toString),
-      Some("limit" -> pageSize.toString)
-    ).flatten ++
+    ).flatten ++ pageQuery(page, pageSize) ++
       params.statusTypes.map(statusType => "status-types" -> statusType.queryValue) ++
       params.subjectTypes.map(subjectType => "subject-type" -> subjectType.queryValue)
 
@@ -2078,9 +1935,7 @@ object GiteaRequests:
     List(
       params.since.map(value => "since" -> value.toString),
       params.before.map(value => "before" -> value.toString),
-      Some("page" -> page.toString),
-      Some("limit" -> pageSize.toString)
-    ).flatten
+    ).flatten ++ pageQuery(page, pageSize)
 
   private def trackedTimeQuery(
       params: IssueTrackedTimeListParams,
@@ -2091,19 +1946,26 @@ object GiteaRequests:
       params.user.map("user" -> _),
       params.since.map(value => "since" -> value.toString),
       params.before.map(value => "before" -> value.toString),
-      Some("page" -> page.toString),
-      Some("limit" -> pageSize.toString)
-    ).flatten
+    ).flatten ++ pageQuery(page, pageSize)
 
   private def nonEmptyCsv(name: String, values: zio.Chunk[String]): Option[(String, String)] =
     Option.when(values.nonEmpty)(name -> values.mkString(","))
 
-  private def paginatedUsers(
+  /** A plain paged GET: one whose only query parameters are `page` and `limit`.
+    *
+    * This was `paginatedUsers`, fixed to `Page[User]` even though nothing in
+    * its body depended on the element type — `GiteaResponseMapper.decodePage`
+    * is already generic. Every other paged endpoint therefore repeated the
+    * same six lines, differing only in the type argument, and each copy
+    * restated the `page`/`pageSize` correspondence that has to hold between
+    * the query sent and the `Page` returned.
+    */
+  private def paginated[A: JsonDecoder](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
       path: List[String],
       page: Int
-  ): GiteaRequest[Page[User]] =
+  ): GiteaRequest[Page[A]] =
     val pageSize = config.pageSize
 
     get(
@@ -2111,7 +1973,7 @@ object GiteaRequests:
       endpoint,
       path,
       pageQuery(page, pageSize),
-      response => GiteaResponseMapper.decodePage[User](response, page, pageSize)
+      response => GiteaResponseMapper.decodePage[A](response, page, pageSize)
     )
 
   private def pageQuery(page: Int, pageSize: Int): List[(String, String)] =

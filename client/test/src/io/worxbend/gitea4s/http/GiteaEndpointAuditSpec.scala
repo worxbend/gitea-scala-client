@@ -17,6 +17,7 @@ import io.worxbend.gitea4s.model.{
   SubmitPullReviewOptions
 }
 import sttp.client4.*
+import sttp.model.Uri
 import zio.Chunk
 import zio.test.*
 
@@ -924,8 +925,53 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
         val failures = pathEnumAudits.flatMap(auditPathEnum(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      // The suites above audit whichever endpoints somebody remembered to
+      // register. These last two audit the catalog itself, so an endpoint
+      // cannot be added without being checked against the contract at all.
+      test("every endpoint in GiteaEndpoints.all resolves in plugin-redoc-2.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = GiteaEndpoints.all.flatMap(auditEndpointIdentity(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("GiteaEndpoints.all lists every endpoint constant") {
+        val declared = GiteaEndpoints.all.map(_.operationId).sorted
+        val defined = definedEndpointConstants.map(_.operationId).sorted
+
+        assertTrue(declared == defined) ??
+          s"missing from all: ${defined.diff(declared)}; not defined as constants: ${declared.diff(defined)}"
       }
     )
+
+  /** The subset of [[auditEndpoint]] that needs no per-operation registration.
+    *
+    * [[auditEndpoint]] demands an entry in `expectedNonSuccessResponseLabels`
+    * and so can only run for endpoints somebody has enrolled. This checks the
+    * three facts that identify an operation — its id, verb and path — for
+    * every endpoint in the catalog, which is what catches a constant that has
+    * drifted from the spec or was never in it.
+    */
+  private def auditEndpointIdentity(swagger: SwaggerAudit, endpoint: GiteaEndpoint): List[String] =
+    swagger.operation(endpoint.path, endpoint.method) match
+      case Left(message) => List(s"${endpoint.operationId}: $message")
+      case Right(operation) =>
+        List(
+          compare("operationId", endpoint.operationId, operation.operationId),
+          compare("method", endpoint.method.toUpperCase, operation.method),
+          compare("path", endpoint.path, operation.path)
+        ).flatten.map(message => s"${endpoint.operationId}: $message")
+
+  /** Every `GiteaEndpoint` constant on the companion, found by reflection.
+    *
+    * A `val` in a Scala 3 `object` compiles to a no-argument getter, so asking
+    * the class for its zero-argument methods returning `GiteaEndpoint` finds
+    * the constants without anyone maintaining a second list of their names.
+    */
+  private def definedEndpointConstants: List[GiteaEndpoint] =
+    GiteaEndpoints.getClass.getMethods.toList
+      .filter(method => method.getReturnType == classOf[GiteaEndpoint] && method.getParameterCount == 0)
+      .map(_.invoke(GiteaEndpoints).asInstanceOf[GiteaEndpoint])
 
   private def auditEndpoint(swagger: SwaggerAudit, endpoint: GiteaEndpoint): List[String] =
     val expectedNonSuccessResponses = expectedNonSuccessResponseLabels.get(endpoint.operationId)
@@ -988,6 +1034,8 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           compare("endpoint body presence", endpointHasBody, operation.hasRequestBody),
           compare("request body presence", requestHasBody, operation.hasRequestBody),
           compare("retryable", audited.request.retryable, expectedRetryable),
+          compare("request method", audited.request.request.method.method, endpoint.method.toUpperCase),
+          pathShapeFailure(endpoint, audited.request.request.uri),
           Option.when(audited.noBodyLifecyclePost && requestHasBody)("no-body lifecycle POST emitted a request body"),
           Option.when(audited.noBodyLifecyclePost && audited.request.request.header("Content-Type").nonEmpty)(
             "no-body lifecycle POST emitted Content-Type"
@@ -1109,6 +1157,38 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   private def compare[A](label: String, actual: A, expected: A): Option[String] =
     Option.when(actual != expected)(s"$label actual=$actual expected=$expected")
+
+  /** Checks the URI a builder actually produced against the path template its
+    * endpoint declares.
+    *
+    * Without this the two are never compared to each other. `GiteaEndpoint`
+    * mirrors `plugin-redoc-2.yaml`, and every assertion above checks that
+    * mirror against the spec — but `GiteaRequests` builds the real URI from a
+    * separate list of segments, so a typo there (`"relases"` for `"releases"`)
+    * changes what goes on the wire while leaving all of the metadata audits
+    * green.
+    *
+    * Only the literal segments are compared. A segment containing `{` is a
+    * template the caller fills in, and its value is arbitrary — which is also
+    * what lets the two compound segments in the spec, `{sha}.{diffType}` and
+    * `{index}.{diffType}`, pass unexamined.
+    */
+  private def pathShapeFailure(endpoint: GiteaEndpoint, uri: Uri): Option[String] =
+    val expected = endpoint.path.split("/").toList.filter(_.nonEmpty)
+    val actual = uri.path.drop(config.baseUrl.path.size + apiPrefix.size)
+
+    if actual.size != expected.size then
+      Some(s"request path segment count actual=$actual expected=$expected")
+    else
+      expected
+        .zip(actual)
+        .collectFirst {
+          case (template, segment) if !template.contains("{") && template != segment =>
+            s"request path segment actual=$segment expected=$template (in $actual against ${endpoint.path})"
+        }
+
+  /** The two segments `GiteaRequests.apiUri` prepends to every path. */
+  private val apiPrefix: List[String] = List("api", "v1")
 
   private def compareSwagger[A](label: String, actual: A, expected: Either[String, A]): List[String] =
     expected.fold(

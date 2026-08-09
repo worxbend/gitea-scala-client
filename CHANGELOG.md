@@ -23,7 +23,30 @@ with `NoSuchMethodError` at runtime. Recompiling is enough; no source edit is
 needed. Nothing was removed: `Auth`'s per-case `toString` moved onto the `Auth`
 parent class, which callers still reach through normal virtual dispatch.
 
+The API snapshot gained entries in `backend-zio` and `backend-okhttp` only;
+`core` and `client` are byte-identical. Every entry is an addition — the
+existing `ZioGiteaDownloads(config, backend)` constructor is unchanged, so code
+compiled against it keeps working.
+
 ### Security
+
+- **Control characters in credentials are rejected at parse time.** `fromEnv`
+  and the HOCON readers trimmed surrounding whitespace but accepted a CR or LF
+  *inside* `token`, `username`, `password`, `user-agent` or `otp`. Such a value
+  parsed cleanly and then failed on the first request — as an untyped
+  `IllegalArgumentException` from the JDK that quoted the credential back, after
+  the request had already been retried — and on a backend that does not
+  validate header values it is header injection. These five settings now fail
+  with a typed `GiteaConfigError` naming the setting (never the value).
+  `GiteaConfig.withToken` and `Auth.Token(...)` build a config directly and are
+  not covered.
+
+- **`GiteaError.message` is bounded like the body it comes from.**
+  `GiteaResponseMapper` capped the response body it kept on an error at 8 KiB so
+  a failed request could not put a multi-megabyte payload into a log line, but
+  lifted `message` out of that same untrusted body with no cap at all. A
+  response of `{"message": "<4 MB>"}` defeated the ceiling entirely. Both fields
+  are now capped.
 
 - **Credentials no longer appear in `toString`.** `Auth`, `GiteaConfig` and
   `GiteaDownloadRequest` used the `toString` the compiler generates for a case
@@ -75,6 +98,30 @@ parent class, which callers still reach through normal virtual dispatch.
   follow redirects; configs without one are unaffected.
 
 ### Fixed
+
+- **A stalled request is no longer retried into a much longer stall.** The
+  five-minute end-to-end cap is applied per attempt, and an exhausted cap was
+  classified as a retryable transport failure — so against the default
+  `maxRetries = 3` a server that answered `200 OK` and then stopped sending held
+  the caller for twenty minutes rather than five, across four attempts that
+  could not have succeeded. An exhausted budget is now surfaced immediately.
+  sttp's own timeouts stay retryable.
+
+- **Streaming downloads had no stall backstop at all.** `GiteaDownloads` sends
+  straight at the backend, bypassing the executor, with `readTimeout` as its
+  only limit — and that value reaches the JDK as `HttpRequest.timeout`, which
+  stops applying the moment response headers arrive. The path meant for the
+  *largest* bodies was therefore the one that could hang forever. The stream now
+  fails if five minutes pass with no data. The budget measures the gap between
+  chunks, so a genuinely large archive is never cut off.
+
+- **The OkHttp backend had no call timeout.** `ownedClient` set `connectTimeout`
+  and `readTimeout` but left `callTimeout` at OkHttp's default of `0`, meaning
+  no limit. `readTimeout` bounds one socket read, so a server emitting a byte
+  every 29 seconds kept a call alive indefinitely — and because this backend
+  cannot cancel an orphaned call, and OkHttp's dispatcher runs five requests per
+  host and queues the rest unbounded, a handful of stuck calls stalled every
+  request behind them. A borrowed client keeps a call timeout it already set.
 
 - **Pagination silently dropped data when the server clamped the page size.**
   `hasNext` compared the page number against the page size that was *requested*

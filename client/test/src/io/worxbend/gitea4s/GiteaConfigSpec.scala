@@ -206,6 +206,63 @@ object GiteaConfigSpec extends ZIOSpecDefault:
           !message.contains("password-secret")
         )
       },
+      test("rejects a token with a control character in the middle") {
+        // Trimming only strips the ends. An embedded CR/LF used to survive
+        // into `Authorization: token ...` and fail later — as an untyped JDK
+        // exception quoting the credential, after being retried three times.
+        val result = GiteaConfig.fromEnv(baseEnv + (GiteaConfig.Env.token -> "ghp_abc\r\ndef"))
+        val message = result.left.toOption.map(_.toString).getOrElse("")
+
+        assertTrue(
+          result.isLeft,
+          message.contains(GiteaConfig.Env.token),
+          // The error names the setting, never the secret.
+          !message.contains("ghp_abc")
+        )
+      },
+      test("rejects basic credentials with a control character in the middle") {
+        val result =
+          GiteaConfig.fromEnv(
+            baseEnv ++ Map(
+              GiteaConfig.Env.username -> "alice",
+              GiteaConfig.Env.password -> "hun\u0000ter"
+            )
+          )
+        val message = result.left.toOption.map(_.toString).getOrElse("")
+
+        assertTrue(result.isLeft, message.contains(GiteaConfig.Env.password), !message.contains("hun"))
+      },
+      test("accepts a password containing spaces") {
+        // The guard rejects control characters, not everything unusual. A space
+        // is legal in a header value and ordinary in a passphrase, so this pins
+        // the boundary that the rejection tests would otherwise let drift.
+        val passphrase = "correct horse battery staple"
+        val result =
+          GiteaConfig.fromEnv(
+            baseEnv ++ Map(
+              GiteaConfig.Env.username -> "alice",
+              GiteaConfig.Env.password -> passphrase
+            )
+          )
+
+        assertTrue(result.map(_.auth) == Right(Auth.Basic("alice", passphrase)))
+      },
+      test("rejects a HOCON user-agent with a control character") {
+        val result = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", user-agent = "bad\nagent" }"""
+        )
+        val message = result.left.toOption.map(_.toString).getOrElse("")
+
+        assertTrue(result.isLeft, message.contains("user-agent"))
+      },
+      test("rejects a HOCON otp with a control character") {
+        val result = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", otp = "12\r\n34" }"""
+        )
+        val message = result.left.toOption.map(_.toString).getOrElse("")
+
+        assertTrue(result.isLeft, message.contains("otp"), !message.contains("1234"))
+      },
       test("trims whitespace around a token read from the environment") {
         // A secret read out of a file keeps its trailing newline. Untrimmed,
         // the JDK rejects the resulting header value with an exception that

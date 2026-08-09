@@ -208,8 +208,8 @@ object GiteaConfig:
         Typesafe.maxRetries,
         defaultMaxRetries
       )
-      userAgent <- optionalStringFromConfig(section, qualified(path, Typesafe.userAgent), Typesafe.userAgent)
-      otp <- optionalStringFromConfig(section, qualified(path, Typesafe.otp), Typesafe.otp)
+      userAgent <- optionalHeaderFromConfig(section, qualified(path, Typesafe.userAgent), Typesafe.userAgent)
+      otp <- optionalHeaderFromConfig(section, qualified(path, Typesafe.otp), Typesafe.otp)
     yield
       val baseConfig = default(baseUrl, auth)
       baseConfig.copy(
@@ -267,16 +267,34 @@ object GiteaConfig:
         parseBaseUrl(raw, GiteaConfigError.InvalidEnv(Env.url, "must be an absolute HTTP(S) URL"))
 
   private def authFromEnv(env: Map[String, String]): Either[GiteaConfigError, Auth] =
-    nonBlank(env, Env.token) match
-      case Some(token) => Right(Auth.Token(token))
+    def header(name: String): Either[GiteaConfigError, Option[String]] =
+      headerSafe(nonBlank(env, name), GiteaConfigError.InvalidEnv(name, _))
+
+    for
+      token <- header(Env.token)
+      username <- header(Env.username)
+      password <- header(Env.password)
+      auth <- credentials(token, username, password, Env.username, Env.password, Env.token)
+    yield auth
+
+  private def credentials(
+      token: Option[String],
+      username: Option[String],
+      password: Option[String],
+      usernameLabel: String,
+      passwordLabel: String,
+      tokenLabel: String
+  ): Either[GiteaConfigError, Auth] =
+    token match
+      case Some(value) => Right(Auth.Token(value))
       case None =>
-        (nonBlank(env, Env.username), nonBlank(env, Env.password)) match
-          case (Some(username), Some(password)) => Right(Auth.Basic(username, password))
+        (username, password) match
+          case (Some(user), Some(secret)) => Right(Auth.Basic(user, secret))
           case (None, None) => Right(Auth.Anonymous)
           case _ =>
             Left(
               GiteaConfigError.InvalidCredentialEnv(
-                s"${Env.username} and ${Env.password} must be set together when ${Env.token} is absent"
+                s"$usernameLabel and $passwordLabel must be set together when $tokenLabel is absent"
               )
             )
 
@@ -333,24 +351,16 @@ object GiteaConfig:
     val usernamePath = qualified(rootPath, Typesafe.username)
     val passwordPath = qualified(rootPath, Typesafe.password)
 
-    optionalStringFromConfig(config, tokenPath, Typesafe.token).flatMap {
-      case Some(token) => Right(Auth.Token(token))
-      case None =>
-        (
-          optionalStringFromConfig(config, usernamePath, Typesafe.username),
-          optionalStringFromConfig(config, passwordPath, Typesafe.password)
-        ) match
-          case (Right(Some(username)), Right(Some(password))) => Right(Auth.Basic(username, password))
-          case (Right(None), Right(None)) => Right(Auth.Anonymous)
-          case (Right(_), Right(_)) =>
-            Left(
-              GiteaConfigError.InvalidCredentialEnv(
-                s"$usernamePath and $passwordPath must be set together when $tokenPath is absent"
-              )
-            )
-          case (Left(error), _) => Left(error)
-          case (_, Left(error)) => Left(error)
-    }
+    def header(path: String, key: String): Either[GiteaConfigError, Option[String]] =
+      optionalStringFromConfig(config, path, key)
+        .flatMap(value => headerSafe(value, GiteaConfigError.InvalidConfig(path, _)))
+
+    for
+      token <- header(tokenPath, Typesafe.token)
+      username <- header(usernamePath, Typesafe.username)
+      password <- header(passwordPath, Typesafe.password)
+      auth <- credentials(token, username, password, usernamePath, passwordPath, tokenPath)
+    yield auth
 
   private def positiveIntFromConfig(
       config: Config,
@@ -460,3 +470,41 @@ object GiteaConfig:
   // other reader here already compensated individually with `raw.trim`.
   private def nonBlank(env: Map[String, String], name: String): Option[String] =
     env.get(name).map(_.trim).filter(_.nonEmpty)
+
+  /** Rejects a value that cannot legally become an HTTP header.
+    *
+    * Trimming, above, only strips the ends. A CR or LF in the *middle* of a
+    * token survived into `s"token $value"` and failed later — as an untyped
+    * `IllegalArgumentException` from the JDK that quotes the credential back,
+    * after the request had already been retried. On a backend that does not
+    * validate, an embedded newline is header injection rather than a crash.
+    *
+    * Checking at parse time turns all of that into one typed error, raised
+    * where the setting is named. It covers the values that become header
+    * content: the credentials, the user agent, and the one-time password.
+    *
+    * Scope limit: `GiteaConfig.withToken` and `Auth.Token(...)` are public and
+    * construct a config without going through here, so this hardens the two
+    * parsing entry points, not every way to build a `GiteaConfig`.
+    */
+  private def headerSafe(
+      value: Option[String],
+      invalid: String => GiteaConfigError
+  ): Either[GiteaConfigError, Option[String]] =
+    value match
+      case Some(raw) if raw.exists(isControlCharacter) =>
+        // Names the setting, never the value: this runs on secrets.
+        Left(invalid("must not contain control characters"))
+      case other => Right(other)
+
+  private def isControlCharacter(character: Char): Boolean =
+    character.isControl
+
+  /** Reads a HOCON string that will be sent as a header value. */
+  private def optionalHeaderFromConfig(
+      config: Config,
+      path: String,
+      key: String
+  ): Either[GiteaConfigError, Option[String]] =
+    optionalStringFromConfig(config, path, key)
+      .flatMap(value => headerSafe(value, GiteaConfigError.InvalidConfig(path, _)))
