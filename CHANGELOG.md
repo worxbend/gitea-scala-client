@@ -30,6 +30,19 @@ compiled against it keeps working.
 
 ### Security
 
+- **Publishing workflows verify the version they are shipping.** `release.yml`
+  validated only the *shape* of a `v*` tag, so tagging `v2.0.0` while
+  `build.mill` still said `1.0.0` published 1.0.0 jars under a v2.0.0 release
+  and reported success. `publish-central.yml` — whose output is immutable —
+  could be dispatched against any ref and would publish it. Both now require the
+  tag and `Versions.library` to agree, and Central additionally requires the
+  commit to carry that tag.
+
+- **Secrets no longer travel in process arguments.** The Central publish passed
+  `--password` and a `--gpgArgs` string containing `--passphrase=`, both
+  readable via `/proc/<pid>/cmdline` and `ps`. Mill already reads all four
+  credentials from the environment; the flags were redundant as well as leaky.
+
 - **Control characters in credentials are rejected at parse time.** `fromEnv`
   and the HOCON readers trimmed surrounding whitespace but accepted a CR or LF
   *inside* `token`, `username`, `password`, `user-agent` or `otp`. Such a value
@@ -100,6 +113,27 @@ compiled against it keeps working.
   follow redirects; configs without one are unaffected.
 
 ### Fixed
+
+- **An unknown enum value no longer discards a whole page.** Every enum decoder
+  rejected any string it did not list, and a page decodes as one `Chunk`, so a
+  single unrecognised value failed the entire page and then the stream above it.
+  Since Gitea adds enum members between minor versions, a server upgrade could
+  start emptying a client's collections. Read positions now decode an unknown
+  value as `None`; write positions stay strict.
+
+- **HOCON `timeout = 30` meant 30 milliseconds.** Typesafe Config reads a
+  unitless number in duration position as milliseconds, so that parsed cleanly
+  and gave every request a 30ms budget, while the identical `GITEA_TIMEOUT=30`
+  was rejected with a helpful message. The unitless form is now rejected in both
+  readers. Settings spelled the environment's way (`maxRetries` for
+  `max-retries`) were silently read by nobody, and are now rejected with the
+  intended spelling; unrelated keys are still accepted.
+
+- **A hanging observer could withhold a completed result.** `catchAllCause`
+  covered an observer that fails, not one that never finishes — and the
+  documented escape hatch, offering to a `Queue`, is exactly what suspends on a
+  full queue. Callbacks are now abandoned after one second and their event
+  dropped.
 
 - **A stalled request is no longer retried into a much longer stall.** The
   five-minute end-to-end cap is applied per attempt, and an exhausted cap was
@@ -193,6 +227,17 @@ compiled against it keeps working.
   yourself if you were relying on it arriving transitively.
 
 ### Added
+
+- **`GiteaError.message`** on the sealed trait, so an error can be logged or
+  displayed without a thirteen-case match. The four cases that carried no
+  message field derive one. Additive: no constructor, `apply`, `copy` or
+  `unapply` changes.
+
+- **`GITEA_USER_AGENT` and `GITEA_OTP`**, so the environment reader accepts the
+  same settings as the HOCON reader. Both go through the same
+  control-character guard as the credentials. Note that `X-Gitea-OTP` is
+  time-based, so a fixed value suits a short-lived command rather than a
+  long-running process.
 
 - **`GiteaConfig` builder methods.** `withBaseUrl`, `withAuth`, `withTimeout`,
   `withPageSize`, `withUserAgent`, `withOtp`, `withMaxRetries` and
