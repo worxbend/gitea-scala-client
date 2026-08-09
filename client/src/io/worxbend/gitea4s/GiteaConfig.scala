@@ -1,6 +1,6 @@
 package io.worxbend.gitea4s
 
-import com.typesafe.config.{Config, ConfigException, ConfigFactory}
+import com.typesafe.config.{Config, ConfigException, ConfigFactory, ConfigValueType}
 import io.worxbend.gitea4s.model.Auth
 import io.worxbend.gitea4s.observability.GiteaObserver
 import sttp.model.Uri
@@ -9,6 +9,7 @@ import zio.{ZIO, ZLayer}
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
 import scala.jdk.DurationConverters.*
 import scala.util.Try
 
@@ -336,9 +337,56 @@ object GiteaConfig:
 
   private def typesafeSection(config: Config, path: String): Either[GiteaConfigError, Config] =
     try
-      if config.hasPath(path) then Right(config.getConfig(path))
+      if config.hasPath(path) then
+        val section = config.getConfig(path)
+        misspelledKey(section, path).toLeft(section)
       else Left(GiteaConfigError.MissingRequiredConfig(path))
     catch case error: ConfigException => Left(GiteaConfigError.InvalidConfig(path, safeMessage(error)))
+
+  /** The nine settings this reader understands. */
+  private val knownTypesafeKeys: List[String] =
+    List(
+      Typesafe.url,
+      Typesafe.token,
+      Typesafe.username,
+      Typesafe.password,
+      Typesafe.pageSize,
+      Typesafe.timeout,
+      Typesafe.userAgent,
+      Typesafe.otp,
+      Typesafe.maxRetries
+    )
+
+  /** Catches a setting spelled the way the environment spells it.
+    *
+    * Typesafe Config does no normalisation, so `maxRetries` in a `gitea4s { }`
+    * block is simply a different key from `max-retries` and was read by nobody —
+    * the config loaded cleanly and the setting did nothing. The environment
+    * names actively invite that mistake: someone who knows `GITEA_MAX_RETRIES`
+    * writes `maxRetries` or `max_retries` far more readily than `max-retries`.
+    *
+    * Only *near misses* are rejected: a key that collapses onto a known setting
+    * once case and separators are ignored, but is not spelled like it.
+    * Genuinely unrelated keys are left alone, because applications legitimately
+    * keep their own settings beside these, and failing on those would turn a
+    * silent typo into a broken startup for configurations that work today.
+    */
+  private def misspelledKey(section: Config, path: String): Option[GiteaConfigError] =
+    def normalise(key: String): String = key.toLowerCase.filter(_.isLetterOrDigit)
+
+    val knownByNormalised = knownTypesafeKeys.map(key => normalise(key) -> key).toMap
+
+    section
+      .root()
+      .keySet()
+      .asScala
+      .toList
+      .sorted
+      .flatMap(key => knownByNormalised.get(normalise(key)).filterNot(_ == key).map(key -> _))
+      .headOption
+      .map { (written, known) =>
+        GiteaConfigError.InvalidConfig(qualified(path, written), s"is not a known setting; did you mean '$known'?")
+      }
 
   private def requiredBaseUrlFromConfig(config: Config, path: String): Either[GiteaConfigError, Uri] =
     optionalStringFromConfig(config, path, Typesafe.url).flatMap {
@@ -393,12 +441,41 @@ object GiteaConfig:
       defaultValue: FiniteDuration
   ): Either[GiteaConfigError, FiniteDuration] =
     if !config.hasPath(localPath) then Right(defaultValue)
+    else if isUnitlessDuration(config, localPath) then
+      Left(GiteaConfigError.InvalidConfig(path, durationRequirement))
     else
       try
         config.getDuration(localPath).toScala match
           case duration: FiniteDuration if duration > Duration.Zero => Right(duration)
-          case _ => Left(GiteaConfigError.InvalidConfig(path, "must be a positive finite duration such as 30s"))
-      catch case _: ConfigException => Left(GiteaConfigError.InvalidConfig(path, "must be a positive finite duration such as 30s"))
+          case _ => Left(GiteaConfigError.InvalidConfig(path, durationRequirement))
+      catch case _: ConfigException => Left(GiteaConfigError.InvalidConfig(path, durationRequirement))
+
+  /** Whether a HOCON duration was written without a unit.
+    *
+    * Typesafe Config reads a bare number in duration position as
+    * *milliseconds*. So `timeout = 30` parsed happily as 30ms, cleared the
+    * positive check, and gave every request a 30-millisecond budget — while the
+    * identical `GITEA_TIMEOUT=30` was rejected by the environment reader with a
+    * message telling the user to write `30s`. The same text meant two very
+    * different things depending on where it was written, and the wrong one was
+    * silent: every call then failed as a transport timeout, three retries deep,
+    * with nothing pointing at the config file.
+    *
+    * A quoted `"30"` is read the same way, so strings are checked too — a
+    * duration string always ends in a unit letter.
+    *
+    * Only the unitless case is rejected here. `getDuration` still handles
+    * everything else, because HOCON accepts spellings Scala's own `Duration`
+    * parser does not (`30 m`, `1 day`), and reading them with a shared grammar
+    * would break configuration files that already work.
+    */
+  private def isUnitlessDuration(config: Config, localPath: String): Boolean =
+    config.getValue(localPath).valueType match
+      case ConfigValueType.NUMBER => true
+      case ConfigValueType.STRING => !config.getString(localPath).trim.lastOption.exists(_.isLetter)
+      case _ => false
+
+  private val durationRequirement: String = "must be a positive finite duration such as 30s"
 
   private def optionalStringFromConfig(
       config: Config,
