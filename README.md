@@ -163,6 +163,15 @@ Config errors name the invalid setting without echoing credential values, and
 `toString` on a `GiteaConfig` or an `Auth` redacts the token, password and
 one-time password. Read the fields directly when you need the real value.
 
+Values that become HTTP header content — `token`, `username`, `password`,
+`user-agent` and `otp` — are rejected at parse time if they contain a control
+character. Surrounding whitespace is still trimmed, as before; what is new is
+that a CR or LF *inside* the value is an error. Previously such a value parsed
+cleanly and then failed on the first request, as an untyped
+`IllegalArgumentException` from the JDK that quoted the credential back. This
+applies to `fromEnv` and the HOCON readers; `GiteaConfig.withToken` and
+`Auth.Token(...)` construct a config directly and are not validated.
+
 Credentials embedded in the URL (`https://user:pass@gitea.example`) are stripped
 rather than rejected: nothing ever transmitted them, and keeping them only
 risked leaking the password through an exception message. Note also that a
@@ -337,6 +346,14 @@ applying once response *headers* arrive, so a server that answers immediately
 and then sends the body one byte at a time would otherwise hang the call
 indefinitely.
 
+An exhausted attempt budget is surfaced, not retried. A stalled connection is
+the most expensive failure the client has and the one least likely to have
+cleared a moment later, so spending the budget `maxRetries + 1` times bought
+nothing — it only turned a five-minute stall into a twenty-minute one. Note
+that this budget bounds one *attempt*: it is not a deadline for the whole call,
+which also includes backoff sleeps. If you need a single deadline covering
+everything, wrap the call in ZIO's own `.timeout`.
+
 > **Upgrading from 1.0.0:** `maxRetries` used to default to `0`. If your tests
 > stub a `5xx` or `429` and run under zio-test's `TestClock`, they will now
 > block on a clock the test never advances. Set `maxRetries = 0` on the config
@@ -372,6 +389,11 @@ ZIO.serviceWithZIO[GiteaDownloads] { downloads =>
 This requires a `ZioStreams` backend, so it is `backend-zio` only (the OkHttp
 bridge keeps the buffered methods). Streaming downloads are not retried, since a
 partially consumed body cannot be safely replayed.
+
+A download that stops producing fails rather than hanging: the stream fails if
+five minutes pass with no data at all. The budget measures the *gap between
+chunks*, not total download time, so a genuinely large archive is never cut off
+as long as it keeps arriving.
 
 ## Examples
 
