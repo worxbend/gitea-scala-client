@@ -67,11 +67,34 @@ jobs:
           echo "Releasing $TAG"
 
       - name: Verify release version
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
         run: |
+          set -euo pipefail
+
           if grep -q 'val library = ".*-SNAPSHOT"' build.mill; then
             echo "Refusing to publish a SNAPSHOT version." >&2
             exit 1
           fi
+
+          # The tag names the release; `Versions.library` names the artifacts.
+          # Nothing compared them, so tagging v2.0.0 while build.mill still said
+          # 1.0.0 published 1.0.0 jars, attached them to a Release called
+          # v2.0.0, and reported success. Anyone resolving 2.0.0 afterwards got
+          # a version that was never published.
+          library="$(sed -n 's/^[[:space:]]*val library = "\(.*\)"$/\1/p' build.mill)"
+
+          if [ -z "$library" ]; then
+            echo "Could not read 'val library' from build.mill." >&2
+            exit 1
+          fi
+
+          if [ "$TAG" != "v$library" ]; then
+            echo "Tag '$TAG' does not match build.mill version '$library' (expected 'v$library')." >&2
+            exit 1
+          fi
+
+          echo "Publishing $library as $TAG"
 
       - name: Validate build
         run: |
