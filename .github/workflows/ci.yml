@@ -2,8 +2,15 @@ name: CI
 
 on:
   push:
+    branches: [master]
   pull_request:
   workflow_dispatch:
+
+# Without this, a push to a branch that has an open PR runs the whole matrix
+# twice, and superseded runs keep burning runners after a follow-up push.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 # This workflow only compiles and tests; it never writes to the repository.
 permissions:
@@ -35,8 +42,7 @@ jobs:
         with:
           path: |
             ~/.cache/coursier
-            ~/.ivy2/cache
-            ~/.mill
+            ~/.cache/mill
           key: ${{ runner.os }}-java-${{ matrix.java }}-scala-${{ matrix.scala }}-${{ hashFiles('build.mill', 'mill') }}
 
       - name: Verify build configuration
