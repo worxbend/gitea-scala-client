@@ -583,6 +583,19 @@ object CoreModelsSpec extends ZIOSpecDefault:
           payload.toJson == "{}"
         )
       },
+      test("reuses one Page codec per element codec instead of re-deriving it") {
+        // The given takes a type parameter, so the compiler cannot cache it in
+        // a lazy val the way it does for every other model codec here; without
+        // memoisation each summon rebuilt the whole derivation.
+        val first = summon[JsonCodec[Page[Int]]]
+        val second = summon[JsonCodec[Page[Int]]]
+        val page = Page(Chunk(1, 2), totalCount = Some(2L), page = 1, pageSize = 50, hasNext = false)
+
+        assertTrue(
+          first eq second,
+          page.toJson.fromJson[Page[Int]] == Right(page)
+        )
+      },
       test("rejects non-numeric language byte counts") {
         val stringValue = """{"Scala":"1234"}"""
         val booleanValue = """{"Scala":true}"""
