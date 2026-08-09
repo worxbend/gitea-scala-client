@@ -30,9 +30,12 @@ re-typed and no signature moved, so code compiled against `1.0.0` keeps
 compiling — the recompile note above is about the widened case classes, not
 these.
 
-One entry was removed: `GiteaRequest$StringImpl`, a `private final class` that
-no Scala code outside its own file could ever name. It appeared in the snapshot
-only because that tool reads bytecode, where Scala's `private` is not enforced.
+A few entries were removed, all of them `private`/`private[gitea4s]` members
+that no Scala code outside the library could name — they appear in the snapshot
+only because that tool reads bytecode, where Scala's qualified-private is not
+enforced: `GiteaRequest$StringImpl`, and `GiteaConfig.headersAccepting(String)`
+with the three loose `applicationJson`/`octetStream`/`textPlain` constants it
+matched against, replaced by the closed `Accept` type.
 
 ### Security
 

@@ -2757,7 +2757,11 @@ object GiteaClientSpec extends ZIOSpecDefault:
       },
       test("propagates commit status decode and transport errors through the facade") {
         val decodeBackend =
-          taskStub.whenAnyRequest.thenRespond(ResponseStub.adjust("""{"sha":"abc123","state":"unknown"}"""))
+          // A type the model cannot accept, rather than an unknown enum value:
+          // optional enum fields now decode an unrecognised value as `None`
+          // instead of failing, so that no longer produces a DecodeError. This
+          // test is about the facade propagating one, not about how it arises.
+          taskStub.whenAnyRequest.thenRespond(ResponseStub.adjust("""{"sha":{"not":"a string"}}"""))
         val failure = RuntimeException("connection refused")
         val transportBackend = taskStub.whenAnyRequest.thenThrow(failure)
         val decodeClient = GiteaClient.fromBackend(config, decodeBackend)
