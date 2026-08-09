@@ -19,7 +19,17 @@ final case class GiteaConfig(
     otp: Option[String],
     maxRetries: Int,
     observer: GiteaObserver = GiteaObserver.noop
-)
+):
+  /** Redacts the one-time password.
+    *
+    * `auth` redacts itself. `otp` is a bare `Option[String]` on this case
+    * class, so without an override the compiler-generated `toString` prints
+    * it — and `s"starting with $config"` is the most natural diagnostic line
+    * anyone writes.
+    */
+  override def toString: String =
+    val redactedOtp = otp.map(_ => "***")
+    s"GiteaConfig($baseUrl, $auth, $timeout, $pageSize, $userAgent, $redactedOtp, $maxRetries, $observer)"
 
 sealed trait GiteaConfigError extends Product with Serializable:
   def message: String

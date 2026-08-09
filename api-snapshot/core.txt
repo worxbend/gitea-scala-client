@@ -704,6 +704,7 @@ public abstract class io.worxbend.gitea4s.model.Auth implements scala.reflect.En
   public java.lang.String productPrefix();
   public java.lang.String productElementName(int);
   public scala.collection.Iterator<java.lang.String> productElementNames();
+  public java.lang.String toString();
   public static io.worxbend.gitea4s.model.Auth fromOrdinal(int);
 }
 
@@ -725,7 +726,6 @@ public final class io.worxbend.gitea4s.model.Auth$Basic extends io.worxbend.gite
   public io.worxbend.gitea4s.model.Auth$Basic(java.lang.String, java.lang.String);
   public int hashCode();
   public boolean equals(java.lang.Object);
-  public java.lang.String toString();
   public boolean canEqual(java.lang.Object);
   public int productArity();
   public java.lang.String productPrefix();
@@ -761,7 +761,6 @@ public final class io.worxbend.gitea4s.model.Auth$OAuth2 extends io.worxbend.git
   public io.worxbend.gitea4s.model.Auth$OAuth2(java.lang.String);
   public int hashCode();
   public boolean equals(java.lang.Object);
-  public java.lang.String toString();
   public boolean canEqual(java.lang.Object);
   public int productArity();
   public java.lang.String productPrefix();
@@ -794,7 +793,6 @@ public final class io.worxbend.gitea4s.model.Auth$Token extends io.worxbend.gite
   public io.worxbend.gitea4s.model.Auth$Token(java.lang.String);
   public int hashCode();
   public boolean equals(java.lang.Object);
-  public java.lang.String toString();
   public boolean canEqual(java.lang.Object);
   public int productArity();
   public java.lang.String productPrefix();

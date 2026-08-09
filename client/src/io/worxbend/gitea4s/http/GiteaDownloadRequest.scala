@@ -17,4 +17,19 @@ final case class GiteaDownloadRequest(
     uri: Uri,
     headers: Map[String, String],
     timeout: FiniteDuration
-)
+):
+  /** Redacts the credential-bearing headers.
+    *
+    * By the time a request reaches this type the token has already been
+    * flattened into `headers`, so redacting [[io.worxbend.gitea4s.model.Auth]]
+    * alone would not cover it. Read `headers` directly for the real values.
+    */
+  override def toString: String =
+    val safeHeaders = headers.map { (name, value) =>
+      if GiteaDownloadRequest.redactedHeaders.contains(name.toLowerCase) then s"$name -> ***"
+      else s"$name -> $value"
+    }
+    s"GiteaDownloadRequest($endpoint, $uri, Map(${safeHeaders.mkString(", ")}), $timeout)"
+
+object GiteaDownloadRequest:
+  private val redactedHeaders: Set[String] = Set("authorization", "x-gitea-otp")
