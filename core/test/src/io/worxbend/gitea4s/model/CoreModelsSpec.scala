@@ -2306,26 +2306,27 @@ object CoreModelsSpec extends ZIOSpecDefault:
           page.toJson.fromJson[Page[User]] == Right(page)
         )
       },
-      test("rejects unknown closed-set enum values") {
-        val issue = """{ "id": 1, "state": "paused" }""".fromJson[Issue]
-        val repository = """{ "id": 1, "object_format_name": "md5" }""".fromJson[Repository]
-        val team = """{ "id": 1, "permission": "maintain" }""".fromJson[Team]
-        val notificationSubject =
-          """{ "title": "Invalid", "state": "stale", "type": "Message" }""".fromJson[NotificationSubject]
-        val pullReview = """{ "id": 1, "state": "STALE" }""".fromJson[PullReview]
-        val commitStatus = """{ "id": 1, "status": "queued" }""".fromJson[CommitStatus]
-        val createStatus = """{ "state": "queued" }""".fromJson[CreateStatusOption]
+      test("rejects an unknown enum value where the field is not optional") {
+        // Optional enum fields deliberately tolerate an unknown value now — a
+        // newer Gitea must not be able to fail a whole page — and that
+        // behaviour is covered in EnumDriftSpec. What stays strict is a
+        // *required* enum field, where there is no `None` to fall back to and
+        // an unrecognised value means the payload cannot be honoured.
         val mergeOption = """{ "Do": "cherry-pick" }""".fromJson[MergePullRequestOption]
+        val validMergeOption = """{ "Do": "squash" }""".fromJson[MergePullRequestOption]
 
         assertTrue(
-          issue.isLeft,
-          repository.isLeft,
-          team.isLeft,
-          notificationSubject.isLeft,
-          pullReview.isLeft,
-          commitStatus.isLeft,
-          createStatus.isLeft,
-          mergeOption.isLeft
+          mergeOption.isLeft,
+          validMergeOption.map(_.mergeMethod) == Right(MergePullRequestMethod.Squash),
+          // The strict lookup every write path builds on is unchanged.
+          IssueState.fromString("paused").isLeft,
+          ObjectFormatName.fromString("md5").isLeft,
+          TeamPermission.fromString("maintain").isLeft,
+          NotificationSubjectState.fromString("stale").isLeft,
+          NotificationSubjectType.fromString("Message").isLeft,
+          PullReviewState.fromString("STALE").isLeft,
+          CommitStatusState.fromString("queued").isLeft,
+          MergePullRequestMethod.fromString("cherry-pick").isLeft
         )
       },
       test("models auth modes and core error ADT values") {
