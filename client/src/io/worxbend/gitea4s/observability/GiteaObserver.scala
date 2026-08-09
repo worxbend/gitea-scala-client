@@ -50,9 +50,15 @@ final case class RequestEvent(
   *
   * Because an observer runs inline on the request's fiber, it must not block
   * and must not perform unbounded I/O: a slow observer delays a result that has
-  * already been computed, and one that never completes withholds it entirely.
-  * Hand work off instead — offer to a `Queue` the application drains elsewhere,
-  * or use ZIO's own metrics, which are non-blocking.
+  * already been computed. Hand work off instead — offer to a `Queue` the
+  * application drains elsewhere, or use ZIO's own metrics, which are
+  * non-blocking.
+  *
+  * A callback that has not finished within one second is abandoned and its
+  * event dropped, so an observer can no longer withhold a completed result
+  * indefinitely. Note the limit: that frees the caller, not the thread. An
+  * observer that blocks its carrier thread inside `ZIO.succeed` still ties up
+  * that thread, because nothing can interrupt code that never yields.
   *
   * Set one through `GiteaConfig.withObserver(...)`, for example
   * `config.withObserver(GiteaObserver.logging ++ GiteaObserver.metrics)`.

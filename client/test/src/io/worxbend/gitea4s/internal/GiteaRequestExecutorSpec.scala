@@ -181,6 +181,19 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
           events <- ref.get
         yield assertTrue(events.size == 1, events.head.attempts == 2, events.head.retried)
       } @@ TestAspect.withLiveClock,
+      test("an observer that never finishes cannot withhold the result") {
+        // `catchAllCause` handles an observer that fails, not one that hangs.
+        // The recommended escape hatch in the scaladoc — offer to a `Queue` —
+        // is precisely what suspends forever once that queue is full, so this
+        // is the shape a well-intentioned observer actually fails in.
+        val stalling = new GiteaObserver:
+          def onComplete(event: RequestEvent): zio.UIO[Unit] = ZIO.never
+
+        GiteaRequestExecutor(respondWith(ok(user)), maxRetries = 0, stalling)
+          .send(GiteaRequests.currentUser(config))
+          .timeout(zio.Duration.fromSeconds(30))
+          .map(result => assertTrue(result.exists(_.login.contains("alice"))))
+      } @@ TestAspect.withLiveClock,
       test("emits an event when the call dies with a defect") {
         // `Cause.failureOption` sees only typed failures, so a defect used to
         // produce no event at all and the success and failure counts stopped
