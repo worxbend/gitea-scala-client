@@ -167,7 +167,13 @@ object LiveGiteaIntegrationSpec extends ZIOSpecDefault:
       run: GiteaClient => ZIO[Any, Any, TestResult]
   ): ZIO[Any, Any, TestResult] =
     liveConfig match
-      case Right(None) => ZIO.succeed(assertTrue(true))
+      // Unreachable today: the suite carries `ifEnv` aspects on GITEA_URL and
+      // GITEA_TOKEN, so an unconfigured run reports every test as *ignored*
+      // rather than reaching this. Failing rather than succeeding keeps it that
+      // way — were those aspects ever dropped, a green "passed" that ran no
+      // live call is the one outcome this suite must never produce.
+      case Right(None) =>
+        ZIO.fail(s"${GiteaConfig.Env.url} and ${GiteaConfig.Env.token} must be set to run a live test")
       case Left(error) => ZIO.fail(error.message)
       case Right(Some(config)) =>
         ZIO.serviceWithZIO[GiteaClient](run).provideLayer(ZioGiteaBackend.configured(config))
