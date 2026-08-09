@@ -133,6 +133,52 @@ object GiteaResponseMapperSpec extends ZIOSpecDefault:
           )
         }
       ),
+      suite("pagination signals")(
+        test("keeps paging when the server returned fewer items than were requested") {
+          // Gitea clamps `limit` to MAX_RESPONSE_ITEMS (50 by default). Judging
+          // hasNext from the requested size concluded 2 * 100 >= 200 after two
+          // pages and silently dropped half the collection.
+          val page = decodeIntPage("[" + (1 to 50).mkString(",") + "]", Some(200), page = 2, pageSize = 100)
+
+          assertTrue(page.map(_.hasNext) == Right(true))
+        },
+        test("stops at the end of a collection when the counts line up") {
+          val page = decodeIntPage("[" + (1 to 50).mkString(",") + "]", Some(100), page = 2, pageSize = 50)
+
+          assertTrue(page.map(_.hasNext) == Right(false))
+        },
+        test("stops on an empty page") {
+          val page = decodeIntPage("[]", Some(200), page = 3, pageSize = 50)
+
+          assertTrue(page.map(_.hasNext) == Right(false))
+        },
+        test("stops when the response carries no pagination metadata at all") {
+          // Neither a Link header nor a total count is evidence of a further
+          // page. Continuing on no evidence would add a request to every such
+          // stream and would never terminate against a server that keeps
+          // answering with a full page.
+          val page = decodeIntPage("[1,2,3]", None, page = 1, pageSize = 3)
+
+          assertTrue(page.map(_.hasNext) == Right(false))
+        },
+        test("trusts an explicit next link even when the counts suggest otherwise") {
+          val response =
+            ResponseStub(
+              "[1,2]",
+              StatusCode.Ok,
+              Seq(sttp.model.Header("link", """<https://gitea.example/api/v1/x?page=2>; rel="next""""))
+            )
+
+          assertTrue(GiteaResponseMapper.decodePage[Int](response, 9, 50).map(_.hasNext) == Right(true))
+        },
+        test("reports the requested page size, not the received one") {
+          // Page.pageSize documents the size that was asked for; only the
+          // hasNext decision uses what actually arrived.
+          val page = decodeIntPage("[1,2]", Some(200), page = 1, pageSize = 100)
+
+          assertTrue(page.map(_.pageSize) == Right(100))
+        }
+      ),
       suite("membership answers")(
         test("204 means yes and 404 means no") {
           assertTrue(
@@ -175,6 +221,15 @@ object GiteaResponseMapperSpec extends ZIOSpecDefault:
         }
       )
     )
+
+  private def decodeIntPage(
+      body: String,
+      totalCount: Option[Long],
+      page: Int,
+      pageSize: Int
+  ): Either[GiteaError, io.worxbend.gitea4s.model.Page[Int]] =
+    val headers = totalCount.map(count => sttp.model.Header("x-total-count", count.toString)).toSeq
+    GiteaResponseMapper.decodePage[Int](ResponseStub(body, StatusCode.Ok, headers), page, pageSize)
 
   private def raw(body: String, statusCode: StatusCode): Response[String] =
     ResponseStub(body, statusCode)

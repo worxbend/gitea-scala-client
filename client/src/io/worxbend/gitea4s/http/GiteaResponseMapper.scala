@@ -69,7 +69,7 @@ object GiteaResponseMapper:
         totalCount = totalCount,
         page = page,
         pageSize = pageSize,
-        hasNext = hasNextPage(response, page, pageSize, totalCount)
+        hasNext = hasNextPage(response, page, values.size, totalCount)
       )
     }
 
@@ -79,13 +79,14 @@ object GiteaResponseMapper:
       pageSize: Int
   ): Either[GiteaError, Page[String]] =
     decodeJson[TopicNames](response).map { value =>
+      val topics = value.topics.getOrElse(Nil)
       val totalCount = longHeader(response, "x-total-count")
       Page(
-        data = Chunk.fromIterable(value.topics.getOrElse(Nil)),
+        data = Chunk.fromIterable(topics),
         totalCount = totalCount,
         page = page,
         pageSize = pageSize,
-        hasNext = hasNextPage(response, page, pageSize, totalCount)
+        hasNext = hasNextPage(response, page, topics.size, totalCount)
       )
     }
 
@@ -95,13 +96,14 @@ object GiteaResponseMapper:
       pageSize: Int
   ): Either[GiteaError, Page[User]] =
     decodeJson[UserSearchResults](response).map { value =>
+      val users = value.data.getOrElse(Nil)
       val totalCount = longHeader(response, "x-total-count")
       Page(
-        data = Chunk.fromIterable(value.data.getOrElse(Nil)),
+        data = Chunk.fromIterable(users),
         totalCount = totalCount,
         page = page,
         pageSize = pageSize,
-        hasNext = hasNextPage(response, page, pageSize, totalCount)
+        hasNext = hasNextPage(response, page, users.size, totalCount)
       )
     }
 
@@ -141,14 +143,40 @@ object GiteaResponseMapper:
     val kept = if bytes.length <= errorBodyLimit then bytes else bytes.take(errorBodyLimit)
     response.copy(body = String(kept, StandardCharsets.UTF_8))
 
+  /** Whether another page exists, judged from what actually arrived.
+    *
+    * The count that matters is the number of items received, not the number
+    * requested. Gitea clamps `limit` to its `MAX_RESPONSE_ITEMS` setting
+    * (default 50), so asking for 100 and comparing `page * 100` against a total
+    * of 200 concluded "no more pages" after two pages of 50 — silently dropping
+    * half the collection with no error. Endpoints that send a `Link` header
+    * were covered by the first disjunct; the ones that send only a total count,
+    * such as issue comments and repository topics, were not.
+    *
+    * `page * received` is a deliberate under-estimate of how much has been
+    * seen: it assumes every earlier page was as small as this one. On a final
+    * partial page that can read as "there may be more", costing one extra
+    * request that comes back empty and ends the stream through the empty-page
+    * guard in `Pagination`. Over-fetching one page is recoverable; silently
+    * truncating a collection is not.
+    *
+    * `received >= pageSize` is deliberately not used instead: under the very
+    * clamping this exists to fix, 50 >= 100 is false.
+    *
+    * A response carrying neither a `Link` header nor a total count says nothing
+    * about further pages, and is treated as the end of the collection — the
+    * behaviour such an endpoint has always had. Continuing on no evidence would
+    * add a request to every such stream, and against a server that keeps
+    * answering with a full page it would never terminate at all.
+    */
   private def hasNextPage(
       response: Response[String],
       page: Int,
-      pageSize: Int,
+      received: Int,
       totalCount: Option[Long]
   ): Boolean =
     response.header("link").exists(_.contains("""rel="next"""")) ||
-      totalCount.exists(total => page.toLong * pageSize.toLong < total)
+      (received > 0 && totalCount.exists(total => page.toLong * received.toLong < total))
 
   private def rateLimitReset(response: Response[String]): Option[Instant] =
     longHeader(response, "x-ratelimit-reset")

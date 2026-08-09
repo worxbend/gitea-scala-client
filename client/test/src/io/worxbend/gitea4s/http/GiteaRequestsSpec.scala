@@ -352,7 +352,11 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           decodeWith(built, backend).map(_.totalCount) == Right(Some(90L)),
           decodeWith(built, backend).map(_.page) == Right(4),
           decodeWith(built, backend).map(_.pageSize) == Right(25),
-          decodeWith(built, backend).map(_.hasNext) == Right(false)
+          // 90 items are advertised and this response carried one, so the
+          // client cannot conclude the collection is exhausted. hasNext is
+          // deliberately optimistic: over-fetching one page that comes back
+          // empty is recoverable, silently truncating a collection is not.
+          decodeWith(built, backend).map(_.hasNext) == Right(true)
         )
       },
       test("maps documented repository social metadata failures") {
