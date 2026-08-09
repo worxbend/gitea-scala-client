@@ -7,26 +7,28 @@ enum IssueState(val jsonValue: String):
   case Closed extends IssueState("closed")
 
 object IssueState:
-  private val byJsonValue = IssueState.values.map(state => state.jsonValue -> state).toMap
+  private val json = JsonValueLookup(IssueState.values, "issue state", _.jsonValue)
 
-  def fromString(value: String): Either[String, IssueState] =
-    byJsonValue.get(value).toRight(s"Unknown issue state: $value")
+  def fromString(value: String): Either[String, IssueState] = json.fromString(value)
 
-  given JsonCodec[IssueState] =
-    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+  given JsonCodec[IssueState] = json.codec
+
+  /** Unknown values read as `None`; see [[JsonValueLookup.lenientOptionDecoder]]. */
+  given JsonDecoder[Option[IssueState]] = json.lenientOptionDecoder
 
 enum ObjectFormatName(val jsonValue: String):
   case Sha1 extends ObjectFormatName("sha1")
   case Sha256 extends ObjectFormatName("sha256")
 
 object ObjectFormatName:
-  private val byJsonValue = ObjectFormatName.values.map(format => format.jsonValue -> format).toMap
+  private val json = JsonValueLookup(ObjectFormatName.values, "object format name", _.jsonValue)
 
-  def fromString(value: String): Either[String, ObjectFormatName] =
-    byJsonValue.get(value).toRight(s"Unknown object format name: $value")
+  def fromString(value: String): Either[String, ObjectFormatName] = json.fromString(value)
 
-  given JsonCodec[ObjectFormatName] =
-    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+  given JsonCodec[ObjectFormatName] = json.codec
+
+  /** Unknown values read as `None`; see [[JsonValueLookup.lenientOptionDecoder]]. */
+  given JsonDecoder[Option[ObjectFormatName]] = json.lenientOptionDecoder
 
 enum TeamPermission(val jsonValue: String):
   case None extends TeamPermission("none")
@@ -36,13 +38,14 @@ enum TeamPermission(val jsonValue: String):
   case Owner extends TeamPermission("owner")
 
 object TeamPermission:
-  private val byJsonValue = TeamPermission.values.map(permission => permission.jsonValue -> permission).toMap
+  private val json = JsonValueLookup(TeamPermission.values, "team permission", _.jsonValue)
 
-  def fromString(value: String): Either[String, TeamPermission] =
-    byJsonValue.get(value).toRight(s"Unknown team permission: $value")
+  def fromString(value: String): Either[String, TeamPermission] = json.fromString(value)
 
-  given JsonCodec[TeamPermission] =
-    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+  given JsonCodec[TeamPermission] = json.codec
+
+  /** Unknown values read as `None`; see [[JsonValueLookup.lenientOptionDecoder]]. */
+  given JsonDecoder[Option[TeamPermission]] = json.lenientOptionDecoder
 
 enum NotificationSubjectState(val jsonValue: String):
   case Open extends NotificationSubjectState("open")
@@ -50,13 +53,14 @@ enum NotificationSubjectState(val jsonValue: String):
   case Merged extends NotificationSubjectState("merged")
 
 object NotificationSubjectState:
-  private val byJsonValue = NotificationSubjectState.values.map(state => state.jsonValue -> state).toMap
+  private val json = JsonValueLookup(NotificationSubjectState.values, "notification subject state", _.jsonValue)
 
-  def fromString(value: String): Either[String, NotificationSubjectState] =
-    byJsonValue.get(value).toRight(s"Unknown notification subject state: $value")
+  def fromString(value: String): Either[String, NotificationSubjectState] = json.fromString(value)
 
-  given JsonCodec[NotificationSubjectState] =
-    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+  given JsonCodec[NotificationSubjectState] = json.codec
+
+  /** Unknown values read as `None`; see [[JsonValueLookup.lenientOptionDecoder]]. */
+  given JsonDecoder[Option[NotificationSubjectState]] = json.lenientOptionDecoder
 
 enum NotificationSubjectType(val jsonValue: String, val queryValue: String):
   case Issue extends NotificationSubjectType("Issue", "issue")
@@ -65,13 +69,14 @@ enum NotificationSubjectType(val jsonValue: String, val queryValue: String):
   case Repository extends NotificationSubjectType("Repository", "repository")
 
 object NotificationSubjectType:
-  private val byJsonValue = NotificationSubjectType.values.map(subjectType => subjectType.jsonValue -> subjectType).toMap
+  private val json = JsonValueLookup(NotificationSubjectType.values, "notification subject type", _.jsonValue)
 
-  def fromString(value: String): Either[String, NotificationSubjectType] =
-    byJsonValue.get(value).toRight(s"Unknown notification subject type: $value")
+  def fromString(value: String): Either[String, NotificationSubjectType] = json.fromString(value)
 
-  given JsonCodec[NotificationSubjectType] =
-    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+  given JsonCodec[NotificationSubjectType] = json.codec
+
+  /** Unknown values read as `None`; see [[JsonValueLookup.lenientOptionDecoder]]. */
+  given JsonDecoder[Option[NotificationSubjectType]] = json.lenientOptionDecoder
 
 enum PullReviewState(val jsonValue: String):
   case Approved extends PullReviewState("APPROVED")
@@ -81,13 +86,14 @@ enum PullReviewState(val jsonValue: String):
   case RequestReview extends PullReviewState("REQUEST_REVIEW")
 
 object PullReviewState:
-  private val byJsonValue = PullReviewState.values.map(state => state.jsonValue -> state).toMap
+  private val json = JsonValueLookup(PullReviewState.values, "pull review state", _.jsonValue)
 
-  def fromString(value: String): Either[String, PullReviewState] =
-    byJsonValue.get(value).toRight(s"Unknown pull review state: $value")
+  def fromString(value: String): Either[String, PullReviewState] = json.fromString(value)
 
-  given JsonCodec[PullReviewState] =
-    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+  given JsonCodec[PullReviewState] = json.codec
+
+  /** Unknown values read as `None`; see [[JsonValueLookup.lenientOptionDecoder]]. */
+  given JsonDecoder[Option[PullReviewState]] = json.lenientOptionDecoder
 
 enum MergePullRequestMethod(val jsonValue: String):
   case Merge extends MergePullRequestMethod("merge")
@@ -98,10 +104,11 @@ enum MergePullRequestMethod(val jsonValue: String):
   case ManuallyMerged extends MergePullRequestMethod("manually-merged")
 
 object MergePullRequestMethod:
-  private val byJsonValue = MergePullRequestMethod.values.map(method => method.jsonValue -> method).toMap
+  private val json = JsonValueLookup(MergePullRequestMethod.values, "merge pull request method", _.jsonValue)
 
-  def fromString(value: String): Either[String, MergePullRequestMethod] =
-    byJsonValue.get(value).toRight(s"Unknown merge pull request method: $value")
+  def fromString(value: String): Either[String, MergePullRequestMethod] = json.fromString(value)
 
-  given JsonCodec[MergePullRequestMethod] =
-    summon[JsonCodec[String]].transformOrFail(fromString, _.jsonValue)
+  given JsonCodec[MergePullRequestMethod] = json.codec
+
+  /** Unknown values read as `None`; see [[JsonValueLookup.lenientOptionDecoder]]. */
+  given JsonDecoder[Option[MergePullRequestMethod]] = json.lenientOptionDecoder

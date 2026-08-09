@@ -1622,6 +1622,7 @@ public abstract class io.worxbend.gitea4s.model.CommitStatusState implements sca
   public static io.worxbend.gitea4s.model.CommitStatusState fromOrdinal(int);
   public static scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.CommitStatusState> fromString(java.lang.String);
   public static zio.json.JsonCodec<io.worxbend.gitea4s.model.CommitStatusState> given_JsonCodec_CommitStatusState();
+  public static zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.CommitStatusState>> given_JsonDecoder_Option();
   public static io.worxbend.gitea4s.model.CommitStatusState valueOf(java.lang.String);
   public static io.worxbend.gitea4s.model.CommitStatusState[] values();
 }
@@ -1640,6 +1641,7 @@ public final class io.worxbend.gitea4s.model.CommitStatusState$ implements scala
   public io.worxbend.gitea4s.model.CommitStatusState fromOrdinal(int);
   public scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.CommitStatusState> fromString(java.lang.String);
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.CommitStatusState> given_JsonCodec_CommitStatusState();
+  public final zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.CommitStatusState>> given_JsonDecoder_Option();
   public int ordinal(io.worxbend.gitea4s.model.CommitStatusState);
   public int ordinal(java.lang.Object);
 }
@@ -3041,6 +3043,7 @@ public abstract class io.worxbend.gitea4s.model.IssueState implements scala.refl
   public static io.worxbend.gitea4s.model.IssueState fromOrdinal(int);
   public static scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.IssueState> fromString(java.lang.String);
   public static zio.json.JsonCodec<io.worxbend.gitea4s.model.IssueState> given_JsonCodec_IssueState();
+  public static zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.IssueState>> given_JsonDecoder_Option();
   public static io.worxbend.gitea4s.model.IssueState valueOf(java.lang.String);
   public static io.worxbend.gitea4s.model.IssueState[] values();
 }
@@ -3055,8 +3058,17 @@ public final class io.worxbend.gitea4s.model.IssueState$ implements scala.derivi
   public io.worxbend.gitea4s.model.IssueState fromOrdinal(int);
   public scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.IssueState> fromString(java.lang.String);
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.IssueState> given_JsonCodec_IssueState();
+  public final zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.IssueState>> given_JsonDecoder_Option();
   public int ordinal(io.worxbend.gitea4s.model.IssueState);
   public int ordinal(java.lang.Object);
+}
+
+## io.worxbend.gitea4s.model.JsonValueLookup
+public final class io.worxbend.gitea4s.model.JsonValueLookup<A> {
+  public io.worxbend.gitea4s.model.JsonValueLookup(java.lang.Object, java.lang.String, scala.Function1<A, java.lang.String>);
+  public scala.util.Either<java.lang.String, A> fromString(java.lang.String);
+  public zio.json.JsonCodec<A> codec();
+  public zio.json.JsonDecoder<scala.Option<A>> lenientOptionDecoder();
 }
 
 ## io.worxbend.gitea4s.model.Label
@@ -3205,6 +3217,7 @@ public abstract class io.worxbend.gitea4s.model.MergePullRequestMethod implement
   public static io.worxbend.gitea4s.model.MergePullRequestMethod fromOrdinal(int);
   public static scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.MergePullRequestMethod> fromString(java.lang.String);
   public static zio.json.JsonCodec<io.worxbend.gitea4s.model.MergePullRequestMethod> given_JsonCodec_MergePullRequestMethod();
+  public static zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.MergePullRequestMethod>> given_JsonDecoder_Option();
   public static io.worxbend.gitea4s.model.MergePullRequestMethod valueOf(java.lang.String);
   public static io.worxbend.gitea4s.model.MergePullRequestMethod[] values();
 }
@@ -3223,6 +3236,7 @@ public final class io.worxbend.gitea4s.model.MergePullRequestMethod$ implements 
   public io.worxbend.gitea4s.model.MergePullRequestMethod fromOrdinal(int);
   public scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.MergePullRequestMethod> fromString(java.lang.String);
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.MergePullRequestMethod> given_JsonCodec_MergePullRequestMethod();
+  public final zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.MergePullRequestMethod>> given_JsonDecoder_Option();
   public int ordinal(io.worxbend.gitea4s.model.MergePullRequestMethod);
   public int ordinal(java.lang.Object);
 }
@@ -3566,6 +3580,7 @@ public abstract class io.worxbend.gitea4s.model.NotificationSubjectState impleme
   public static io.worxbend.gitea4s.model.NotificationSubjectState fromOrdinal(int);
   public static scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.NotificationSubjectState> fromString(java.lang.String);
   public static zio.json.JsonCodec<io.worxbend.gitea4s.model.NotificationSubjectState> given_JsonCodec_NotificationSubjectState();
+  public static zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.NotificationSubjectState>> given_JsonDecoder_Option();
   public static io.worxbend.gitea4s.model.NotificationSubjectState valueOf(java.lang.String);
   public static io.worxbend.gitea4s.model.NotificationSubjectState[] values();
 }
@@ -3581,6 +3596,7 @@ public final class io.worxbend.gitea4s.model.NotificationSubjectState$ implement
   public io.worxbend.gitea4s.model.NotificationSubjectState fromOrdinal(int);
   public scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.NotificationSubjectState> fromString(java.lang.String);
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.NotificationSubjectState> given_JsonCodec_NotificationSubjectState();
+  public final zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.NotificationSubjectState>> given_JsonDecoder_Option();
   public int ordinal(io.worxbend.gitea4s.model.NotificationSubjectState);
   public int ordinal(java.lang.Object);
 }
@@ -3597,6 +3613,7 @@ public abstract class io.worxbend.gitea4s.model.NotificationSubjectType implemen
   public static io.worxbend.gitea4s.model.NotificationSubjectType fromOrdinal(int);
   public static scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.NotificationSubjectType> fromString(java.lang.String);
   public static zio.json.JsonCodec<io.worxbend.gitea4s.model.NotificationSubjectType> given_JsonCodec_NotificationSubjectType();
+  public static zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.NotificationSubjectType>> given_JsonDecoder_Option();
   public static io.worxbend.gitea4s.model.NotificationSubjectType valueOf(java.lang.String);
   public static io.worxbend.gitea4s.model.NotificationSubjectType[] values();
 }
@@ -3613,6 +3630,7 @@ public final class io.worxbend.gitea4s.model.NotificationSubjectType$ implements
   public io.worxbend.gitea4s.model.NotificationSubjectType fromOrdinal(int);
   public scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.NotificationSubjectType> fromString(java.lang.String);
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.NotificationSubjectType> given_JsonCodec_NotificationSubjectType();
+  public final zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.NotificationSubjectType>> given_JsonDecoder_Option();
   public int ordinal(io.worxbend.gitea4s.model.NotificationSubjectType);
   public int ordinal(java.lang.Object);
 }
@@ -3693,6 +3711,7 @@ public abstract class io.worxbend.gitea4s.model.ObjectFormatName implements scal
   public static io.worxbend.gitea4s.model.ObjectFormatName fromOrdinal(int);
   public static scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.ObjectFormatName> fromString(java.lang.String);
   public static zio.json.JsonCodec<io.worxbend.gitea4s.model.ObjectFormatName> given_JsonCodec_ObjectFormatName();
+  public static zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.ObjectFormatName>> given_JsonDecoder_Option();
   public static io.worxbend.gitea4s.model.ObjectFormatName valueOf(java.lang.String);
   public static io.worxbend.gitea4s.model.ObjectFormatName[] values();
 }
@@ -3707,6 +3726,7 @@ public final class io.worxbend.gitea4s.model.ObjectFormatName$ implements scala.
   public io.worxbend.gitea4s.model.ObjectFormatName fromOrdinal(int);
   public scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.ObjectFormatName> fromString(java.lang.String);
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.ObjectFormatName> given_JsonCodec_ObjectFormatName();
+  public final zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.ObjectFormatName>> given_JsonDecoder_Option();
   public int ordinal(io.worxbend.gitea4s.model.ObjectFormatName);
   public int ordinal(java.lang.Object);
 }
@@ -4588,6 +4608,7 @@ public abstract class io.worxbend.gitea4s.model.PullReviewState implements scala
   public static io.worxbend.gitea4s.model.PullReviewState fromOrdinal(int);
   public static scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.PullReviewState> fromString(java.lang.String);
   public static zio.json.JsonCodec<io.worxbend.gitea4s.model.PullReviewState> given_JsonCodec_PullReviewState();
+  public static zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.PullReviewState>> given_JsonDecoder_Option();
   public static io.worxbend.gitea4s.model.PullReviewState valueOf(java.lang.String);
   public static io.worxbend.gitea4s.model.PullReviewState[] values();
 }
@@ -4605,6 +4626,7 @@ public final class io.worxbend.gitea4s.model.PullReviewState$ implements scala.d
   public io.worxbend.gitea4s.model.PullReviewState fromOrdinal(int);
   public scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.PullReviewState> fromString(java.lang.String);
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.PullReviewState> given_JsonCodec_PullReviewState();
+  public final zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.PullReviewState>> given_JsonDecoder_Option();
   public int ordinal(io.worxbend.gitea4s.model.PullReviewState);
   public int ordinal(java.lang.Object);
 }
@@ -5500,6 +5522,7 @@ public abstract class io.worxbend.gitea4s.model.TeamPermission implements scala.
   public static io.worxbend.gitea4s.model.TeamPermission fromOrdinal(int);
   public static scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.TeamPermission> fromString(java.lang.String);
   public static zio.json.JsonCodec<io.worxbend.gitea4s.model.TeamPermission> given_JsonCodec_TeamPermission();
+  public static zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.TeamPermission>> given_JsonDecoder_Option();
   public static io.worxbend.gitea4s.model.TeamPermission valueOf(java.lang.String);
   public static io.worxbend.gitea4s.model.TeamPermission[] values();
 }
@@ -5517,6 +5540,7 @@ public final class io.worxbend.gitea4s.model.TeamPermission$ implements scala.de
   public io.worxbend.gitea4s.model.TeamPermission fromOrdinal(int);
   public scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.TeamPermission> fromString(java.lang.String);
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.TeamPermission> given_JsonCodec_TeamPermission();
+  public final zio.json.JsonDecoder<scala.Option<io.worxbend.gitea4s.model.TeamPermission>> given_JsonDecoder_Option();
   public int ordinal(io.worxbend.gitea4s.model.TeamPermission);
   public int ordinal(java.lang.Object);
 }
