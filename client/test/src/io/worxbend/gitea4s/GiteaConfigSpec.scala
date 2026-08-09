@@ -257,6 +257,43 @@ object GiteaConfigSpec extends ZIOSpecDefault:
         val message = result.left.map(_.message).left.getOrElse("")
         assertTrue(result.isLeft, !message.contains("ghp_SUPERSECRET123"), message.contains("HOCON"))
       },
+      test("retries idempotent requests by default") {
+        val result = GiteaConfig.fromEnv(baseEnv)
+
+        assertTrue(result.map(_.maxRetries) == Right(GiteaConfig.defaultMaxRetries), GiteaConfig.defaultMaxRetries > 0)
+      },
+      test("still honours an explicit request for no retries") {
+        val result = GiteaConfig.fromEnv(baseEnv + (GiteaConfig.Env.maxRetries -> "0"))
+
+        assertTrue(result.map(_.maxRetries) == Right(0))
+      },
+      test("redacts the one-time password from toString") {
+        val config = GiteaConfig.withToken(uri, "ghp_realSecretValue").withOtp(Some("123456"))
+        val rendered = config.toString
+
+        assertTrue(
+          !rendered.contains("ghp_realSecretValue"),
+          !rendered.contains("123456"),
+          rendered.contains("gitea.example")
+        )
+      },
+      test("redacts basic credentials from toString") {
+        val rendered = GiteaConfig.withBasic(uri, "alice", "hunter2").toString
+
+        assertTrue(!rendered.contains("hunter2"), rendered.contains("alice"))
+      },
+      test("builder methods produce the same config as copy") {
+        val config = GiteaConfig.withToken(uri, "t")
+
+        assertTrue(
+          config.withPageSize(17).pageSize == 17,
+          config.withMaxRetries(9).maxRetries == 9,
+          config.withTimeout(2.seconds).timeout == 2.seconds,
+          config.withUserAgent(None).userAgent.isEmpty,
+          config.withOtp(Some("999")).otp.contains("999"),
+          config.withAuth(Auth.Anonymous).auth == Auth.Anonymous
+        )
+      },
       test("derives request headers once per config") {
         val config = GiteaConfig.withBasic(uri, "alice", "hunter2")
 

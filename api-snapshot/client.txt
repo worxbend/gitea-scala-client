@@ -41,6 +41,14 @@ public final class io.worxbend.gitea4s.GiteaConfig implements scala.Product,java
   public scala.Option<java.lang.String> otp();
   public int maxRetries();
   public io.worxbend.gitea4s.observability.GiteaObserver observer();
+  public io.worxbend.gitea4s.GiteaConfig withBaseUrl(sttp.model.Uri);
+  public io.worxbend.gitea4s.GiteaConfig withAuth(io.worxbend.gitea4s.model.Auth);
+  public io.worxbend.gitea4s.GiteaConfig withTimeout(scala.concurrent.duration.FiniteDuration);
+  public io.worxbend.gitea4s.GiteaConfig withPageSize(int);
+  public io.worxbend.gitea4s.GiteaConfig withUserAgent(scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.GiteaConfig withOtp(scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.GiteaConfig withMaxRetries(int);
+  public io.worxbend.gitea4s.GiteaConfig withObserver(io.worxbend.gitea4s.observability.GiteaObserver);
   public scala.collection.immutable.Map<java.lang.String, java.lang.String> headersAccepting(java.lang.String);
   public scala.collection.immutable.Map<java.lang.String, java.lang.String> jsonHeaders();
   public scala.collection.immutable.Map<java.lang.String, java.lang.String> octetStreamHeaders();
@@ -68,6 +76,7 @@ public final class io.worxbend.gitea4s.GiteaConfig implements scala.Product,java
   public static io.worxbend.gitea4s.GiteaConfig apply(sttp.model.Uri, io.worxbend.gitea4s.model.Auth, scala.concurrent.duration.FiniteDuration, int, scala.Option<java.lang.String>, scala.Option<java.lang.String>, int, io.worxbend.gitea4s.observability.GiteaObserver);
   public static scala.Option<scala.Tuple2<java.lang.String, java.lang.String>> authorizationHeader(io.worxbend.gitea4s.model.Auth);
   public static io.worxbend.gitea4s.GiteaConfig default(sttp.model.Uri, io.worxbend.gitea4s.model.Auth);
+  public static int defaultMaxRetries();
   public static int defaultPageSize();
   public static scala.concurrent.duration.FiniteDuration defaultTimeout();
   public static zio.ZLayer<java.lang.Object, io.worxbend.gitea4s.GiteaConfigError, io.worxbend.gitea4s.GiteaConfig> environmentLayer();
@@ -107,6 +116,7 @@ public final class io.worxbend.gitea4s.GiteaConfig$ implements scala.deriving.Mi
   public java.lang.String textPlain();
   public scala.concurrent.duration.FiniteDuration defaultTimeout();
   public int defaultPageSize();
+  public int defaultMaxRetries();
   public io.worxbend.gitea4s.GiteaConfig default(sttp.model.Uri, io.worxbend.gitea4s.model.Auth);
   public io.worxbend.gitea4s.model.Auth default$default$2();
   public scala.Option<scala.Tuple2<java.lang.String, java.lang.String>> authorizationHeader(io.worxbend.gitea4s.model.Auth);

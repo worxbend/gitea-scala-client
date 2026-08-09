@@ -68,8 +68,12 @@ import zio.test.*
 import java.time.{Duration, Instant}
 
 object GiteaClientSpec extends ZIOSpecDefault:
+  // Retries are pinned off here. These cases exercise request building and
+  // response decoding, not retry policy, and with the default retry count a
+  // stubbed 5xx or 429 would sleep on a clock the test never advances. The
+  // cases that do cover retrying set `maxRetries` explicitly.
   private val config =
-    GiteaConfig.default(uri"https://gitea.example", Auth.Token("secret")).copy(pageSize = 1)
+    GiteaConfig.default(uri"https://gitea.example", Auth.Token("secret")).copy(pageSize = 1, maxRetries = 0)
 
   private def taskStub =
     BackendStub[Task](new RIOMonadAsyncError[Any])

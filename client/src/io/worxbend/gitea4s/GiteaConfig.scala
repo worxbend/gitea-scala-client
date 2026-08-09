@@ -22,6 +22,30 @@ final case class GiteaConfig(
     maxRetries: Int,
     observer: GiteaObserver = GiteaObserver.noop
 ):
+  /** Returns a copy with the base URL replaced. */
+  def withBaseUrl(value: Uri): GiteaConfig = copy(baseUrl = value)
+
+  /** Returns a copy authenticating differently. */
+  def withAuth(value: Auth): GiteaConfig = copy(auth = value)
+
+  /** Returns a copy with a different per-request read timeout. */
+  def withTimeout(value: FiniteDuration): GiteaConfig = copy(timeout = value)
+
+  /** Returns a copy requesting a different number of items per page. */
+  def withPageSize(value: Int): GiteaConfig = copy(pageSize = value)
+
+  /** Returns a copy sending a different `User-Agent`. */
+  def withUserAgent(value: Option[String]): GiteaConfig = copy(userAgent = value)
+
+  /** Returns a copy sending the given one-time password as `X-Gitea-OTP`. */
+  def withOtp(value: Option[String]): GiteaConfig = copy(otp = value)
+
+  /** Returns a copy retrying failed idempotent requests a different number of times. */
+  def withMaxRetries(value: Int): GiteaConfig = copy(maxRetries = value)
+
+  /** Returns a copy reporting completed requests to the given observer. */
+  def withObserver(value: GiteaObserver): GiteaConfig = copy(observer = value)
+
   /** The request headers for a given `Accept` value, derived once per config.
     *
     * Every input except `accept` is fixed for the lifetime of a config, so
@@ -121,6 +145,14 @@ object GiteaConfig:
   val defaultTimeout: FiniteDuration = 30.seconds
   val defaultPageSize: Int = 50
 
+  /** How many times an idempotent request is retried by default.
+    *
+    * Only GET and HEAD requests are ever retried, so this cannot duplicate a
+    * write. Delays are jittered, capped, and honour `Retry-After` when the
+    * server sends one.
+    */
+  val defaultMaxRetries: Int = 3
+
   def default(baseUrl: Uri, auth: Auth = Auth.Anonymous): GiteaConfig =
     GiteaConfig(
       baseUrl = baseUrl,
@@ -129,7 +161,7 @@ object GiteaConfig:
       pageSize = defaultPageSize,
       userAgent = Some("gitea4s"),
       otp = None,
-      maxRetries = 0
+      maxRetries = defaultMaxRetries
     )
 
   private[gitea4s] def authorizationHeader(auth: Auth): Option[(String, String)] =
@@ -156,7 +188,7 @@ object GiteaConfig:
       auth <- authFromEnv(env)
       pageSize <- positiveIntFromEnv(env, Env.pageSize, defaultPageSize)
       timeout <- finiteDurationFromEnv(env, Env.timeout, defaultTimeout)
-      maxRetries <- nonNegativeIntFromEnv(env, Env.maxRetries, 0)
+      maxRetries <- nonNegativeIntFromEnv(env, Env.maxRetries, defaultMaxRetries)
     yield default(baseUrl, auth).copy(
       timeout = timeout,
       pageSize = pageSize,
@@ -170,7 +202,12 @@ object GiteaConfig:
       auth <- authFromConfig(section, path)
       pageSize <- positiveIntFromConfig(section, qualified(path, Typesafe.pageSize), Typesafe.pageSize, defaultPageSize)
       timeout <- finiteDurationFromConfig(section, qualified(path, Typesafe.timeout), Typesafe.timeout, defaultTimeout)
-      maxRetries <- nonNegativeIntFromConfig(section, qualified(path, Typesafe.maxRetries), Typesafe.maxRetries, 0)
+      maxRetries <- nonNegativeIntFromConfig(
+        section,
+        qualified(path, Typesafe.maxRetries),
+        Typesafe.maxRetries,
+        defaultMaxRetries
+      )
       userAgent <- optionalStringFromConfig(section, qualified(path, Typesafe.userAgent), Typesafe.userAgent)
       otp <- optionalStringFromConfig(section, qualified(path, Typesafe.otp), Typesafe.otp)
     yield
