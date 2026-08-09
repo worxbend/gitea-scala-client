@@ -1,9 +1,9 @@
 package io.worxbend.gitea4s.examples
 
 import io.worxbend.gitea4s.http.{NotificationListParams, NotificationStatusType}
-import zio.{Chunk, ZIOAppDefault}
+import zio.Chunk
 
-object WatchNotifications extends ZIOAppDefault:
+object ListNotifications extends ExampleApp:
   private val params =
     NotificationListParams(
       statusTypes = Chunk(NotificationStatusType.Unread),

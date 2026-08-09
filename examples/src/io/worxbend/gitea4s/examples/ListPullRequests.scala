@@ -1,9 +1,9 @@
 package io.worxbend.gitea4s.examples
 
 import io.worxbend.gitea4s.http.{PullRequestListParams, PullRequestListState}
-import zio.{ZIO, ZIOAppDefault}
+import zio.ZIO
 
-object ListPullRequests extends ZIOAppDefault:
+object ListPullRequests extends ExampleApp:
   private val ownerEnv = "GITEA_OWNER"
   private val repoEnv = "GITEA_REPO"
 

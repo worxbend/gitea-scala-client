@@ -64,7 +64,7 @@ private[examples] object ExampleSupport:
 
   def describeFailure(error: GiteaError | Throwable): String =
     error match
-      case giteaError: GiteaError => describe(giteaError)
+      case giteaError: GiteaError => s"${giteaError.message}${detail(giteaError)}"
       case throwable: Throwable => s"backend initialization failed: ${throwable.getMessage}"
 
   def repositoryName(repository: Repository): String =
@@ -136,21 +136,19 @@ private[examples] object ExampleSupport:
   private def nonBlank(env: Map[String, String], name: String): Option[String] =
     env.get(name).map(_.trim).filter(_.nonEmpty)
 
-  private def describe(error: GiteaError): String =
+  /** What a `ServerError` says beyond its status.
+    *
+    * `GiteaError.message` renders a 5xx as `HTTP 500`, which is all it can say
+    * without inventing one — the status is the whole message. The body is the
+    * only diagnostic such a response carries, so a short prefix of it is worth
+    * showing rather than discarding.
+    */
+  private def detail(error: GiteaError): String =
     error match
-      case GiteaError.BadRequest(message, _) => s"bad request: $message"
-      case GiteaError.Unauthorized(message, _) => s"unauthorized: $message"
-      case GiteaError.Forbidden(message, _) => s"forbidden: $message"
-      case GiteaError.NotFound(message, _) => s"not found: $message"
-      case GiteaError.MethodNotAllowed(message, _) => s"method not allowed: $message"
-      case GiteaError.Conflict(message, _) => s"conflict: $message"
-      case GiteaError.PreconditionFailed(message, _) => s"precondition failed: $message"
-      case GiteaError.UnprocessableEntity(message, _) => s"unprocessable entity: $message"
-      case GiteaError.Locked(message, _) => s"locked: $message"
-      case GiteaError.RateLimited(resetAt, _) => s"rate limited; reset at ${resetAt.fold("unknown")(_.toString)}"
-      case GiteaError.ServerError(status, _) => s"server error: HTTP $status"
-      case GiteaError.DecodeError(message, _) => s"decode error: $message"
-      case GiteaError.TransportError(cause) => s"transport error: ${cause.getMessage}"
+      case GiteaError.ServerError(_, body) =>
+        val text = body.trim
+        if text.isEmpty then "" else s": ${text.take(200)}"
+      case _ => ""
 
   private def shortSha(value: String): String =
     value.take(12)
