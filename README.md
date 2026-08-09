@@ -212,6 +212,13 @@ default), so asking for more per page than the server allows is not an error —
 you simply get the server's maximum, and the stream keeps paging until the
 collection is exhausted.
 
+These streams are page-offset scans of a live collection, not snapshots. Each
+page is a separate request, so if items are inserted or deleted while a crawl
+is running, an item can be emitted twice or missed entirely — everything after
+the insertion point shifts by one. Resuming with `page = Some(n)` inherits the
+same hazard. If you need exactly-once handling, key on the item's `id` rather
+than assuming the stream delivers each item once.
+
 ## Namespaces
 
 The client is organized into resource namespaces; every call goes through one:
@@ -305,10 +312,15 @@ client.users.me.foldZIO(
 
 ## Observability
 
-Set a `GiteaObserver` to hook logging, metrics, or tracing into every request.
-It runs after each call completes (with the endpoint, total duration, and
-outcome), cannot change the result, and a faulty observer can never break a
-request. The default is a no-op with zero overhead.
+Set a `GiteaObserver` to hook logging, metrics, or tracing into every
+`GiteaClient` request. It runs after each call completes (with the endpoint,
+total duration, and outcome), cannot change the result, and a faulty observer
+can never break a request. The default is a no-op with zero overhead.
+
+`backend-zio`'s streaming downloads are the exception: `GiteaDownloads` sends
+directly against the backend rather than through the executor, so it emits no
+observer events. Those streams are bounded by their own stall budget rather
+than the executor's attempt budget, and are never retried.
 
 ```scala
 import io.worxbend.gitea4s.observability.GiteaObserver
@@ -336,9 +348,14 @@ never duplicate a write.
 
 On a `429` the client honours `Retry-After` — both the delay-seconds and
 HTTP-date forms — and falls back to `x-ratelimit-reset`. Those values are
-server-controlled, so they are bounded: an instant more than 24 hours out is
-ignored entirely, and the wait is capped at 60 seconds, so a bad or hostile
-header cannot silently override your timeout.
+server-controlled, so the **wait** they produce is capped at 60 seconds: a bad
+or hostile header cannot silently override your timeout.
+
+The instant itself is reported to you unfiltered. `GiteaError.RateLimited.resetAt`
+is whatever the server said, including a value implausibly far in the future —
+a proxy that reports the reset in milliseconds sends a number that is a valid
+epoch *second* thousands of years out. Treat it as untrusted input if you
+display it or act on it; only the client's own sleep is bounded.
 
 Each attempt is also capped end to end (five minutes). `GiteaConfig.timeout`
 alone cannot do this: it reaches the JDK as `HttpRequest.timeout`, which stops

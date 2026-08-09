@@ -74,9 +74,11 @@ compiled against it keeps working.
 - **Server-supplied retry delays are bounded.** A 429 carrying
   `x-ratelimit-reset` was believed unconditionally. A proxy that reports the
   reset in milliseconds sends a value that is a valid epoch *second* tens of
-  thousands of years out, which parked the fiber indefinitely. Retry instants
-  more than 24 hours ahead are now ignored, and the wait is capped at 60
-  seconds regardless, so a remote header can no longer override your timeout.
+  thousands of years out, which parked the fiber indefinitely. The wait is now
+  capped at 60 seconds, so a remote header can no longer override your timeout.
+  The instant itself is still reported on `GiteaError.RateLimited.resetAt`
+  exactly as the server sent it — deciding how long to wait is the client's
+  job, and a decoder has no clock to judge "how far ahead" with.
 - **JSON responses have a size ceiling.** sttp's default is unlimited, and
   `readTimeout` does not help because a body that arrives steadily never trips
   it. JSON and diff/patch responses are now capped at 32 MiB. The buffered

@@ -30,6 +30,11 @@ import java.util.concurrent.TimeoutException
   * These streams are not retried: a partially consumed body cannot be safely
   * replayed. Use the buffered `GiteaClient` methods where retry matters.
   *
+  * They also emit no `GiteaObserver` events. The request is sent straight at
+  * the backend rather than through `GiteaRequestExecutor`, which is what owns
+  * the observer — so a configured observer sees every `GiteaClient` call and
+  * none of these.
+  *
   * A stalled download fails rather than hanging. The budget measures the gap
   * between chunks, not the total download time, so an archive that takes an
   * hour to arrive is never penalised as long as it keeps arriving — see
