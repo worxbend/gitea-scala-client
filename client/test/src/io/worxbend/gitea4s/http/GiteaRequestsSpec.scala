@@ -4697,6 +4697,26 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           }
         )
       },
+      test("every verb carries the configured read timeout") {
+        // The response type, read timeout, common headers and retry flag used
+        // to be repeated in each verb helper; they are now applied in one
+        // place. Nothing else asserts the read timeout, so dropping it during
+        // that merge would have been silent — a request would simply have
+        // fallen back to sttp's default instead of honouring GiteaConfig.
+        // One request per verb helper, so no helper can lose the timeout unnoticed.
+        val requests: List[GiteaRequest[?]] = List(
+          GiteaRequests.currentUser(config),
+          GiteaRequests.stopIssueStopwatch(config, "owner", "repo", 1),
+          GiteaRequests.addIssueTrackedTime(config, "owner", "repo", 1, AddTimeOption(time = 60)),
+          GiteaRequests.addIssueSubscription(config, "owner", "repo", 1, "alice"),
+          GiteaRequests.lockIssue(config, "owner", "repo", 1, LockIssueOption(lockReason = Some("spam"))),
+          GiteaRequests.moveIssuePin(config, "owner", "repo", 1, 2),
+          GiteaRequests.editIssueComment(config, "owner", "repo", 1, EditIssueComment(body = "b")),
+          GiteaRequests.deleteIssueReaction(config, "owner", "repo", 1, EditReactionOption(content = "+1"))
+        )
+
+        assertTrue(requests.forall(_.request.options.readTimeout == config.timeout))
+      },
       suite("GiteaRequestExecutor is the sole supported execution path for byte responses")(
         test("executes a string-typed GiteaRequest through GiteaRequestExecutor and decodes the response") {
           val userJson = """{"id":1,"login":"alice"}"""
