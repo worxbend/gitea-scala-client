@@ -13,7 +13,7 @@ private[gitea4s] final class SttpNotificationsApi(config: GiteaConfig, executor:
   override def list(
       params: NotificationListParams = NotificationListParams.default
   ): ZStream[Any, GiteaError, NotificationThread] =
-    Pagination.paginated { page =>
+    Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.notifications(config, params.copy(page = Some(page))))
     }
 

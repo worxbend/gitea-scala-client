@@ -14,7 +14,7 @@ private[gitea4s] final class SttpReleasesApi(config: GiteaConfig, executor: Gite
       repo: String,
       params: ReleaseListParams = ReleaseListParams.default
   ): ZStream[Any, GiteaError, Release] =
-    Pagination.paginated { page =>
+    Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.repoReleases(config, owner, repo, params.copy(page = Some(page))))
     }
 

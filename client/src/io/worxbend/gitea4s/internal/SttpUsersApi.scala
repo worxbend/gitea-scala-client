@@ -26,7 +26,7 @@ private[gitea4s] final class SttpUsersApi(config: GiteaConfig, executor: GiteaRe
     }
 
   override def search(params: UserSearchParams): ZStream[Any, GiteaError, User] =
-    Pagination.paginated { page =>
+    Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.userSearch(config, params.copy(page = Some(page))))
     }
 

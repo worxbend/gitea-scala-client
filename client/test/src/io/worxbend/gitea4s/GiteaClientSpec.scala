@@ -2819,8 +2819,11 @@ object GiteaClientSpec extends ZIOSpecDefault:
           release.name.contains("Second")
         )
       },
-      test("starts release-list streams at page 1 while preserving filters and page size") {
-        val twoPageHeaders = List(Header("x-total-count", "4"))
+      test("starts release-list streams at the requested page while preserving filters") {
+        // `page` used to be overwritten with 1 on every request, so of the two
+        // paging fields on the params only `limit` had any effect. A caller
+        // resuming at page 7 silently replayed pages 1 to 6.
+        val twoPageHeaders = List(Header("x-total-count", "40"))
         val params =
           ReleaseListParams(draft = Some(true), preRelease = Some(false), page = Some(7), limit = Some(2))
 
@@ -2829,7 +2832,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
           responses <- Ref.make(
             List[Response[String]](
               stringResponse("""[{"id":10,"tag_name":"v2.0.0-rc1"}]""", StatusCode.Ok, twoPageHeaders),
-              stringResponse("""[{"id":11,"tag_name":"v2.0.0-rc2"}]""", StatusCode.Ok, twoPageHeaders)
+              stringResponse("""[{"id":11,"tag_name":"v2.0.0-rc2"}]""", StatusCode.Ok, twoPageHeaders),
+              stringResponse("""[]""", StatusCode.Ok, twoPageHeaders)
             )
           )
           backend = new Backend[Task]:
@@ -2860,16 +2864,18 @@ object GiteaClientSpec extends ZIOSpecDefault:
         yield assertTrue(
           releases.map(_.tagName) == Chunk(Some("v2.0.0-rc1"), Some("v2.0.0-rc2")),
           queries.headOption.exists { first =>
-            first.get("page").contains("1") &&
+            first.get("page").contains("7") &&
             first.get("limit").contains("2") &&
             first.get("draft").contains("true") &&
             first.get("pre-release").contains("false")
           },
-          queries.map(_("page")) == Vector("1", "2"),
+          // Starts where it was asked to and keeps going from there; the empty
+          // page 9 is what ends the stream.
+          queries.map(_("page")) == Vector("7", "8", "9"),
           queries.forall(_.get("draft").contains("true")),
           queries.forall(_.get("pre-release").contains("false")),
           queries.forall(_.get("limit").contains("2")),
-          !queries.exists(_.get("page").contains("7"))
+          !queries.exists(_.get("page").contains("1"))
         )
       },
       test("propagates release-list documented not-found errors through the facade") {
