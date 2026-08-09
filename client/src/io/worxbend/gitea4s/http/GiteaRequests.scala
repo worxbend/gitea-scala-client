@@ -31,7 +31,6 @@ import io.worxbend.gitea4s.model.{
   IssueDeadline,
   IssueLabelsOption,
   IssueMeta,
-  IssueState,
   Label,
   LanguageStatistics,
   LockIssueOption,

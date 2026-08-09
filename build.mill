@@ -29,7 +29,19 @@ trait Gitea4sModule extends ScalaModule:
     "-deprecation",
     "-feature",
     "-unchecked",
-    "-Wsafe-init"
+    "-Wsafe-init",
+    // Compile against exactly the Java 21 API the project advertises, so a
+    // newer local JDK cannot silently let a Java 22+ method into the jars.
+    "-release",
+    "21",
+    "-Wunused:all",
+    // The two checks that matter most for an effect library: a discarded ZIO
+    // value is an effect that silently never runs, and the compiler is the
+    // only thing that can see it.
+    "-Wvalue-discard",
+    "-Wnonunit-statement",
+    "-Xcheck-macros",
+    "-Werror"
   )
 
   def javacOptions = Seq("--release", "21")

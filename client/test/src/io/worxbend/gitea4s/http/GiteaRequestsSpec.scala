@@ -7,7 +7,6 @@ import io.worxbend.gitea4s.model.{
   AddTimeOption,
   Auth,
   BranchProtection,
-  ChangedFile,
   CommitDiffType,
   CreateIssue,
   CreateIssueComment,
@@ -43,8 +42,7 @@ import io.worxbend.gitea4s.model.{
   TagProtection,
   Team,
   TeamPermission,
-  User,
-  WatchInfo
+  User
 }
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError

@@ -1,6 +1,5 @@
 package io.worxbend.gitea4s.internal
 
-import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.Page
 import zio.{Chunk, Ref, ZIO}
 import zio.test.*
