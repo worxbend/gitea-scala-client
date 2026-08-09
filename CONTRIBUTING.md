@@ -138,6 +138,16 @@ env -u GITEA_IT -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD 
 A credential-stripped run proves hermetic skipping only; record real routing
 confidence only after an enabled probe observes the endpoint behavior.
 
+## Documentation Site
+
+`docs/` is a hand-written static site published by GitHub Pages from `master`
+(`Settings -> Pages`, source `master` / `/docs`). There is no generator and no
+build step: edit the HTML, push to `master`, and Pages republishes.
+
+Everything on it is drawn from this repository — README, CONTRIBUTING, or the
+code — so when you change behaviour that the site describes, update `docs/` in
+the same commit. `.nojekyll` is present so Pages serves the files as-is.
+
 ## Dependency Updates
 
 Renovate is configured with regex managers for the version pins Mill keeps

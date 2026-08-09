@@ -10,6 +10,7 @@ A Scala 3 client library for the [Gitea](https://gitea.io) API, built with
 - **Version:** `1.0.0` · **License:** Apache-2.0
 - **Backends:** `backend-zio` (Java `HttpClient`, default) and an optional
   `backend-okhttp` bridge
+- **Documentation:** <https://worxbend.github.io/gitea-scala-client/>
 
 > Status: read-only coverage for users, organizations, repositories, issues,
 > releases, pull requests, and notifications, plus a growing set of issue and
@@ -446,6 +447,8 @@ credentials they print the target API version and make no network calls.
 
 ## More
 
+- **Documentation site:** <https://worxbend.github.io/gitea-scala-client/> —
+  overview, guide, and usage cookbook (source in `docs/`)
 - **Roadmap:** `PLAN.md`
 - **Detailed API surface & release notes:** `CHANGELOG.md`
 - **Building, testing (incl. live integration), API conventions:** `CONTRIBUTING.md`
