@@ -13,12 +13,16 @@ import java.time.{Instant, ZonedDateTime}
 import scala.util.Try
 
 object GiteaResponseMapper:
-  /** How much of a failing response body is kept on the returned error.
+  /** How much server-supplied text is kept on the returned error.
     *
     * The body is genuinely useful — Gitea puts validation detail in it — but a
     * `GiteaError` is a value users log, and without a ceiling a single failed
     * request could put a multi-megabyte payload into a log line. Real 422
     * payloads run to a few kilobytes.
+    *
+    * Bounds both fields a `GiteaError` carries: the body and the message
+    * lifted out of it. Capping only the body would leave the ceiling defeated
+    * by moving the payload inside the JSON.
     */
   private val errorBodyLimit: Int = 8 * 1024
 
@@ -166,10 +170,19 @@ object GiteaResponseMapper:
         )
     }
 
+  /** The server's explanation of a failure, bounded like the body it came from.
+    *
+    * Every source here is server-controlled, so all three go through
+    * `truncate`. Capping only the body left the ceiling trivially defeated: a
+    * response of `{"message": "<4 MB>"}` put the whole payload on
+    * `GiteaError.message` while `body` was dutifully clipped to 8 KiB.
+    */
   private def errorMessage(response: Response[String]): String =
-    response.body.fromJson[GiteaErrorPayload].toOption.flatMap(_.message)
-      .orElse(response.header("message"))
-      .getOrElse(response.statusText)
+    truncate(
+      response.body.fromJson[GiteaErrorPayload].toOption.flatMap(_.message)
+        .orElse(response.header("message"))
+        .getOrElse(response.statusText)
+    )
 
   private def truncate(body: String): String =
     if body.length <= errorBodyLimit then body else body.take(errorBodyLimit)
