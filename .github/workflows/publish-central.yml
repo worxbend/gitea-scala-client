@@ -24,6 +24,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          # Tags are needed by the version check below, and the default shallow
+          # checkout fetches none.
+          fetch-depth: 0
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -42,10 +46,35 @@ jobs:
 
       - name: Verify release version
         run: |
+          set -euo pipefail
+
           if grep -q 'val library = ".*-SNAPSHOT"' build.mill; then
             echo "Refusing to publish a SNAPSHOT version to Maven Central." >&2
             exit 1
           fi
+
+          # This workflow is dispatched by hand against whatever ref the
+          # operator picked, and a Maven Central release can never be taken
+          # back. The only check was the SNAPSHOT one above, so a mistyped ref
+          # could permanently publish an arbitrary commit under whatever
+          # version build.mill happened to carry.
+          #
+          # Require the commit to be the one that was actually released: it has
+          # to carry the matching v<version> tag.
+          library="$(sed -n 's/^[[:space:]]*val library = "\(.*\)"$/\1/p' build.mill)"
+
+          if [ -z "$library" ]; then
+            echo "Could not read 'val library' from build.mill." >&2
+            exit 1
+          fi
+
+          if ! git tag --points-at HEAD | grep -qx "v$library"; then
+            echo "Refusing to publish: HEAD is not tagged 'v$library'." >&2
+            echo "Tags on HEAD: $(git tag --points-at HEAD | tr '\n' ' ')" >&2
+            exit 1
+          fi
+
+          echo "Publishing $library from tag v$library"
 
       - name: Validate build
         run: |
