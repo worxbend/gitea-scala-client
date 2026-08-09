@@ -9,7 +9,7 @@ lives in `README.md`; the roadmap lives in `PLAN.md`.
 ```bash
 ./mill __.compile            # compile all modules
 ./mill __.test               # hermetic unit tests
-./mill it.test               # opt-in live integration tests (see below)
+GITEA_IT=1 ./mill it.test    # opt-in live integration tests (see below)
 ./mill examples.run          # hermetic by default
 ./mill compatibility.check   # public-API binary-compat guard
 ./mill __.docJar __.sourceJar __.publishArtifacts
@@ -92,11 +92,21 @@ mapper tests, and pagination tests:
 Live tests run only when their required environment variables are all non-empty;
 otherwise ZIO Test reports them as ignored and makes no network calls.
 
+The whole suite additionally requires `GITEA_IT` to be set. Without it every
+test is ignored, including on a machine that happens to have `GITEA_URL` and
+`GITEA_TOKEN` exported — which is what keeps `./mill __.test` (where `it.test`
+also lives) genuinely hermetic for a maintainer.
+
 Baseline (authenticated user + repo stream):
 
 ```bash
-GITEA_URL=https://gitea.example GITEA_TOKEN=... ./mill it.test
+GITEA_IT=1 GITEA_URL=https://gitea.example GITEA_TOKEN=... ./mill it.test
 ```
+
+Basic auth works too: `GITEA_USERNAME` + `GITEA_PASSWORD` in place of
+`GITEA_TOKEN`. Both paths are gated equally — previously only the token was
+checked, so a username/password run reported every test ignored and a green
+`SUCCESS` having made no network calls at all.
 
 Additional probes are each gated on their own variables (all must be non-empty,
 in addition to `GITEA_URL`/`GITEA_TOKEN`/`GITEA_OWNER`/`GITEA_REPO`):
@@ -116,7 +126,7 @@ in addition to `GITEA_URL`/`GITEA_TOKEN`/`GITEA_OWNER`/`GITEA_REPO`):
 To prove hermetic skipping (no network), unset the full live-variable set:
 
 ```bash
-env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD \
+env -u GITEA_IT -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD \
     -u GITEA_OWNER -u GITEA_REPO -u GITEA_REF -u GITEA_ANNOTATED_TAG_SHA \
     -u GITEA_CONTENTS_FILEPATH -u GITEA_CONTENTS_REF -u GITEA_ARCHIVE \
     -u GITEA_RAW_FILEPATH -u GITEA_RAW_REF \
@@ -135,13 +145,14 @@ outside standard manifests:
 
 - `//| mill-version` in `build.mill`
 - `DEFAULT_MILL_VERSION` in the checked-in `mill` launcher
-- `Versions.scala`, `Versions.zio`, `Versions.zioJson`, `Versions.zioConfig`,
+- `Versions.scala`, `Versions.zio`, `Versions.zioJson`, `Versions.typesafeConfig`,
   and `Versions.sttp` in `build.mill`
 
 Dependency PRs should run the full release-readiness validation:
 
 ```bash
-./mill __.compile __.test it.test examples.run compatibility.check
+./mill __.compile __.test examples.run compatibility.check
+GITEA_IT=1 ./mill it.test    # only with a live server configured
 ./mill __.docJar __.sourceJar __.publishArtifacts
 ```
 
