@@ -106,6 +106,7 @@ in addition to `GITEA_URL`/`GITEA_TOKEN`/`GITEA_OWNER`/`GITEA_REPO`):
 | Slash-containing Git ref routing | `GITEA_REF` (e.g. `heads/main`) | Validates single-segment ref encoding. |
 | Annotated tag lookup | `GITEA_ANNOTATED_TAG_SHA` | Must be an annotated tag object SHA, not a tag-list entry. |
 | Repository contents filepath | `GITEA_CONTENTS_FILEPATH` (e.g. `docs/readme.md`); optional `GITEA_CONTENTS_REF` | |
+| Raw file download | `GITEA_RAW_FILEPATH`; optional `GITEA_RAW_REF` | Exercises the buffered byte-response path. |
 | Repository archive | `GITEA_ARCHIVE` (e.g. `main.zip`); optional comma-separated `GITEA_ARCHIVE_PATHS` | |
 | Release detail / asset list | `GITEA_RELEASE_ID` | Asset-list also asserts membership when `GITEA_RELEASE_ASSET_ID` is set. |
 | Single release asset | `GITEA_RELEASE_ID` + `GITEA_RELEASE_ASSET_ID` | |
@@ -118,6 +119,7 @@ To prove hermetic skipping (no network), unset the full live-variable set:
 env -u GITEA_URL -u GITEA_TOKEN -u GITEA_USERNAME -u GITEA_PASSWORD \
     -u GITEA_OWNER -u GITEA_REPO -u GITEA_REF -u GITEA_ANNOTATED_TAG_SHA \
     -u GITEA_CONTENTS_FILEPATH -u GITEA_CONTENTS_REF -u GITEA_ARCHIVE \
+    -u GITEA_RAW_FILEPATH -u GITEA_RAW_REF \
     -u GITEA_ARCHIVE_PATHS -u GITEA_RELEASE_ID -u GITEA_RELEASE_TAG \
     -u GITEA_LATEST_RELEASE_TAG -u GITEA_RELEASE_ASSET_ID \
     ./mill --no-server it.test
