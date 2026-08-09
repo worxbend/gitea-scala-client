@@ -135,6 +135,11 @@ GITEA_URL  GITEA_TOKEN  GITEA_USERNAME  GITEA_PASSWORD
 GITEA_PAGE_SIZE  GITEA_TIMEOUT  GITEA_MAX_RETRIES
 ```
 
+`GITEA_URL` is the **server root**, not the API root: use
+`https://gitea.example`, not `https://gitea.example/api/v1`. The `/api/v1`
+prefix is added for you, so including it yields `/api/v1/api/v1/...` and a
+`NotFound` on every call.
+
 HOCON via Typesafe config under the `gitea4s` path is also supported:
 
 ```hocon
@@ -144,11 +149,25 @@ gitea4s {
   page-size  = 50
   timeout    = 30s
   user-agent = "my-app"
-  max-retries = 2
+  max-retries = 3
 }
 ```
 
-Config errors name the invalid setting without echoing credential values.
+Every setting can also be changed on an existing config:
+
+```scala
+config.withMaxRetries(0).withPageSize(100).withObserver(GiteaObserver.metrics)
+```
+
+Config errors name the invalid setting without echoing credential values, and
+`toString` on a `GiteaConfig` or an `Auth` redacts the token, password and
+one-time password. Read the fields directly when you need the real value.
+
+Credentials embedded in the URL (`https://user:pass@gitea.example`) are stripped
+rather than rejected: nothing ever transmitted them, and keeping them only
+risked leaking the password through an exception message. Note also that a
+plain-`http://` base URL is accepted, so a token would travel in cleartext —
+that is your choice to make, and the library does not second-guess it.
 
 ## ZLayer Usage
 
@@ -170,6 +189,19 @@ plain (non-paginated) lists return `IO[GiteaError, Chunk[A]]` instead.
 client.repos.list(owner, RepoListParams(limit = Some(50))).take(100).runCollect
 client.notifications.list().take(100).runCollect
 ```
+
+Both paging fields on a `*Params` are honoured: `limit` sets the page size and
+`page` sets where the stream starts, so an interrupted crawl can be resumed
+without replaying what it already emitted.
+
+```scala
+client.issues.list(owner, repo, IssueListParams(page = Some(7), limit = Some(50)))
+```
+
+Note that Gitea clamps `limit` to its own `MAX_RESPONSE_ITEMS` setting (50 by
+default), so asking for more per page than the server allows is not an error —
+you simply get the server's maximum, and the stream keeps paging until the
+collection is exhausted.
 
 ## Namespaces
 
@@ -279,16 +311,36 @@ val config = GiteaConfig
 
 - `GiteaObserver.logging` — one ZIO log line per request (error type only,
   never bodies or credentials).
-- `GiteaObserver.metrics` — a `gitea4s_requests_total` counter and a
+- `GiteaObserver.metrics` — `gitea4s_requests_total` and
+  `gitea4s_request_attempts_total` counters plus a
   `gitea4s_request_duration_ms` histogram, tagged by method/operation/outcome.
+  Reading attempts against requests gives the retry amplification.
 - `GiteaObserver.fromFunction(event => ...)` — write your own (e.g. an
   OpenTelemetry span).
 
 ## Retry & Rate Limits
 
-Read-only requests honor `GiteaConfig.maxRetries` with jittered exponential
-backoff. Retries cover transport failures, `429` (using reset headers when
-present), and selected `500`/`502`/`503`/`504` responses. Writes are not retried.
+Read-only requests honour `GiteaConfig.maxRetries`, which **defaults to 3**,
+with jittered exponential backoff. Retries cover transport failures, `429`, and
+`500`/`502`/`503`/`504`. Only GET and HEAD are ever retried, so a retry can
+never duplicate a write.
+
+On a `429` the client honours `Retry-After` — both the delay-seconds and
+HTTP-date forms — and falls back to `x-ratelimit-reset`. Those values are
+server-controlled, so they are bounded: an instant more than 24 hours out is
+ignored entirely, and the wait is capped at 60 seconds, so a bad or hostile
+header cannot silently override your timeout.
+
+Each attempt is also capped end to end (five minutes). `GiteaConfig.timeout`
+alone cannot do this: it reaches the JDK as `HttpRequest.timeout`, which stops
+applying once response *headers* arrive, so a server that answers immediately
+and then sends the body one byte at a time would otherwise hang the call
+indefinitely.
+
+> **Upgrading from 1.0.0:** `maxRetries` used to default to `0`. If your tests
+> stub a `5xx` or `429` and run under zio-test's `TestClock`, they will now
+> block on a clock the test never advances. Set `maxRetries = 0` on the config
+> your tests use, or advance the clock.
 
 ## Backends
 

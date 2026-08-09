@@ -24,6 +24,28 @@ The standard pre-PR check is:
 JVM baseline is Java 21; Scala is pinned in `build.mill` (`Versions.scala`). CI
 runs the same flow in `.github/workflows/ci.yml`, and `Jenkinsfile` mirrors it.
 
+### Compiler settings
+
+The build compiles with `-Werror`, so a warning fails the build. Alongside the
+usual `-deprecation -feature -unchecked`, the settings that most often catch
+something real here are:
+
+- `-Wvalue-discard` and `-Wnonunit-statement`. In a ZIO codebase a value dropped
+  in statement position is an effect that is described and then never run. It
+  type checks and it compiles, and nothing at runtime tells you. If you
+  genuinely mean to discard a result, bind it: `val _ = thing`.
+- `-Wunused:all`, which covers imports as well as locals.
+- `-release 21`, so the Scala compiler links against exactly the Java 21 API
+  rather than whichever JDK you happen to have installed.
+
+### Formatting
+
+There is no enforced formatter. Match the surrounding code: two-space indent,
+120-column lines, significant indentation rather than braces. A `.scalafmt.conf`
+used to be present but had no `version` or `runner.dialect`, so Scalafmt 3
+refused to run against it; completing it would have reformatted a third of the
+tree, which is not a change worth making incidentally.
+
 ## API Design Conventions
 
 These conventions keep the hand-written client coherent as it grows. They are

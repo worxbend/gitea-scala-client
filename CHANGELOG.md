@@ -10,13 +10,182 @@ guarded by the `api-snapshot/` binary-compatibility check.
 
 ## Unreleased
 
+A hardening release. Everything here is source-compatible: code that compiled
+against `1.0.0` still compiles. Two things nonetheless need reading before you
+upgrade — some behaviour changed on purpose, and two case classes gained a
+field, which is a **binary** change even though it is not a source one.
+
+**Recompile against this release; do not drop it onto a classpath built against
+`1.0.0`.** `UserSearchParams` and `RequestEvent` each gained a field with a
+default. Scala generates a new `apply`, `copy` and constructor signature for the
+wider arity, so pre-compiled callers of the old three-argument forms would fail
+with `NoSuchMethodError` at runtime. Recompiling is enough; no source edit is
+needed. Nothing was removed: `Auth`'s per-case `toString` moved onto the `Auth`
+parent class, which callers still reach through normal virtual dispatch.
+
+### Security
+
+- **Credentials no longer appear in `toString`.** `Auth`, `GiteaConfig` and
+  `GiteaDownloadRequest` used the `toString` the compiler generates for a case
+  class or enum case, so `Auth.Token("ghp_…").toString` printed the token in
+  full and `s"starting with $config"` printed it along with the one-time
+  password. All three now redact. Read the fields directly when you need the
+  real values.
+- **Credentials read from the environment are trimmed.** `GITEA_TOKEN` and
+  friends were tested for emptiness after trimming but returned untrimmed, so a
+  secret read out of a file kept its trailing newline. With a token, the JDK
+  rejected the resulting header with an `IllegalArgumentException` that quoted
+  the credential — and that failure was classified retryable, so it repeated.
+  With basic auth it was quieter and worse: the newline base64-encoded into a
+  valid header and the server simply answered 401 forever.
+- **Userinfo is stripped from the configured base URL.** A `GITEA_URL` of
+  `https://user:secret@gitea.example` was stored whole, and sttp renders the
+  authority into every exception message, so a connection failure surfaced the
+  password. Nothing ever transmitted those credentials, so stripping them
+  changes no request.
+- **HOCON parse failures no longer echo the source text.** A syntax error
+  quoted the offending input, which is frequently adjacent to the token — a
+  missing `=` after `token` put the token into the message. Parse failures now
+  report the origin and line number instead. Type errors were already safe and
+  are unchanged.
+- **Server-supplied retry delays are bounded.** A 429 carrying
+  `x-ratelimit-reset` was believed unconditionally. A proxy that reports the
+  reset in milliseconds sends a value that is a valid epoch *second* tens of
+  thousands of years out, which parked the fiber indefinitely. Retry instants
+  more than 24 hours ahead are now ignored, and the wait is capped at 60
+  seconds regardless, so a remote header can no longer override your timeout.
+- **JSON responses have a size ceiling.** sttp's default is unlimited, and
+  `readTimeout` does not help because a body that arrives steadily never trips
+  it. JSON and diff/patch responses are now capped at 32 MiB. The buffered
+  binary downloads (`repos.rawFile`, `repos.mediaFile`, `repos.archive`) are
+  deliberately left uncapped, because an archive larger than any sensible
+  ceiling is ordinary; use `backend-zio`'s streaming `GiteaDownloads` for those.
+- **Error bodies retained on a `GiteaError` are truncated to 8 KiB.** A failing
+  request could otherwise put a multi-megabyte payload into whatever log line
+  the error reached.
+- **`repos.checkCollaborator` and `pulls.isMerged` fail closed.** Any
+  unexpected 2xx was read as an affirmative answer, so an identity-aware proxy
+  whose session had lapsed could answer `200 OK` with an HTML login page and
+  have it read as "yes, this user is a collaborator". Only 204 now means yes
+  and only 404 means no; anything else is an error.
+- **Redirects are not followed when an OTP is configured.** sttp strips
+  `Authorization` on every redirect, so the API token was never forwarded, but
+  `X-Gitea-OTP` is not in its sensitive-header set and would have been sent to
+  whatever host a `Location` named. Configs that set `otp` now decline to
+  follow redirects; configs without one are unaffected.
+
+### Fixed
+
+- **Pagination silently dropped data when the server clamped the page size.**
+  `hasNext` compared the page number against the page size that was *requested*
+  rather than the number of items that actually arrived. Gitea clamps `limit` to
+  its `MAX_RESPONSE_ITEMS` setting (50 by default), so with
+  `GITEA_PAGE_SIZE=100` against a 200-item collection the stream ended after 100
+  items with no error. Endpoints that send a `Link` header were protected by
+  it; the ones that send only `X-Total-Count` — issue comments and repository
+  topics among them — were not. The count is now taken from the response.
+  Because that count is a lower bound on how much has been seen, a final
+  partial page can read as "there may be more", so a stream may make one extra
+  request that comes back empty and ends it. Responses carrying neither a
+  `Link` header nor a total count are unchanged: with no evidence of a further
+  page, the collection is treated as complete.
+- **Streaming list methods ignored the requested start page.** Of the two paging
+  fields on the public `*Params` types, `limit` reached the request while `page`
+  was overwritten with 1 on every call. A caller resuming an interrupted crawl
+  at page 7 started again at page 1 and re-emitted everything before it.
+- **`Retry-After` is honoured.** The standard header for 429 and 503 — and the
+  one nginx, HAProxy and Cloudflare actually send — was ignored entirely, so a
+  rate-limited request was retried after about 100 ms, three times, all inside
+  the window the proxy was trying to protect. Both the delay-seconds and
+  HTTP-date forms are now understood, and `Retry-After` takes precedence over
+  `x-ratelimit-reset`.
+- **A total time budget bounds every attempt.** `GiteaConfig.timeout` reaches
+  the JDK as `HttpRequest.timeout`, which is cancelled the moment response
+  *headers* arrive, leaving the body untimed. A server that answered `200 OK`
+  immediately and then dribbled the body one byte at a time hung the call
+  forever. Each attempt is now capped at five minutes.
+- **Observability no longer loses requests that die with a defect.**
+  `Cause.failureOption` sees only typed failures, so a defect produced no event
+  at all and the success and failure counters stopped summing to the real
+  request count. Interruption still deliberately produces no event.
+- **The latency histogram spans the configured timeout.** Its buckets topped out
+  at 4096 ms against a 30-second default timeout, so every slow, retried or
+  rate-limited call fell into the overflow bucket and p95/p99 read as 4096 ms
+  whether the truth was five seconds or thirty.
+- **`GiteaEndpoints` is audited in full.** The contract audit checked 57 of the
+  130 declared endpoints and silently skipped any operation that was not
+  registered, so a new endpoint with a wrong path, operation id or parameter
+  list could ship green. Every endpoint is now audited, and an unregistered one
+  fails the build.
+- **The API compatibility check catches orphaned baselines.** It only iterated
+  the generated snapshots, so a baseline whose module had been dropped was never
+  compared and the check passed while a published artifact went unverified.
+
+### Changed
+
+- **Idempotent requests are now retried by default** (`maxRetries` moves from
+  `0` to `3`). Only GET and HEAD are ever retried, so this cannot duplicate a
+  write, and delays are jittered, capped and `Retry-After`-aware. **This can
+  affect your tests:** a suite that stubs a 5xx or 429 and runs under zio-test's
+  `TestClock` will now block, because the retry sleeps on a clock the test never
+  advances. Either set `maxRetries = 0` on the config your tests use — the
+  recommended fix, since those tests are usually about request building rather
+  than retry policy — or advance the test clock. Set
+  `GITEA_MAX_RETRIES=0`, `gitea4s.max-retries = 0`, or
+  `config.withMaxRetries(0)` to restore the old behaviour everywhere.
+- **The jars now require Java 21.** `-release 21` is enforced, moving the
+  class-file major version from 61 to 65. Java 21 has always been the
+  documented baseline; the previous jars happened to load on 17 through 20 and
+  no longer will.
+- **`client` no longer depends on `com.softwaremill.sttp.client4::zio-json`.**
+  It was declared but unused — the decode path goes through this library's own
+  mapper — and it appeared in the published POM of every consumer. zio-json
+  itself is unaffected; it comes from `core`. Declare the sttp integration
+  yourself if you were relying on it arriving transitively.
+
 ### Added
 
+- **`GiteaConfig` builder methods.** `withBaseUrl`, `withAuth`, `withTimeout`,
+  `withPageSize`, `withUserAgent`, `withOtp`, `withMaxRetries` and
+  `withObserver`. `copy` still works; the builders exist so that configuration
+  options can be added in future minor releases without the case class's
+  generated `apply`/`copy`/`unapply` arity becoming a compatibility problem.
+- **`RequestEvent` reports the HTTP status and the attempt count.** `status` is
+  the status of the last response, absent when no response arrived at all;
+  `attempts` is how many HTTP requests were actually issued, and `retried` is
+  the convenience predicate. `GiteaObserver.metrics` gains a
+  `gitea4s_request_attempts_total` counter, which read against
+  `gitea4s_requests_total` gives the retry amplification. Both fields have
+  defaults, so existing construction sites keep compiling — but as with
+  `UserSearchParams`, the generated `apply`/`copy`/constructor arity changes and
+  callers must be recompiled.
+- **`UserSearchParams.uid`.** The endpoint has always declared this query
+  parameter; the params type was the only one in `http/` that did not match its
+  endpoint, leaving no way to look a user up by numeric id. It is the last
+  field, so existing positional constructions keep compiling — but the
+  generated `apply`/`copy`/constructor arity changes, so callers must be
+  recompiled (see the note at the top).
 - **More distribution channels.** Besides Maven Central, the four modules are now
   published to GitHub Packages and attached as jars to each GitHub Release by the
   new `Release` workflow (`.github/workflows/release.yml`, triggered on `v*`
   tags), and can be built on demand through JitPack via `jitpack.yml`. See the
   "Distribution channels" table in `README.md`.
+
+### Performance
+
+- **List responses decode directly into `Chunk`.** They were decoded into a
+  `List` and then copied, so every item cost a cons cell and a second traversal
+  on every page of every stream.
+- **Request headers are derived once per config** rather than rebuilt per
+  request. For basic auth this also stops a fresh cleartext `username:password`
+  string and its backing byte array being left on the heap by every call.
+- **The `Page` codec is no longer re-derived on every summon.** Because it takes
+  a type parameter the compiler could not cache it in a lazy val, so it compiled
+  to a plain method carrying 58 allocations — magnolia metadata, the field-name
+  arrays and 34 list cells — that ran again for each element of
+  `pages.map(_.toJson)`. It is now memoised against the element codec, with a
+  cap so that a caller whose own `given` builds a fresh codec per summon cannot
+  grow the cache without limit.
 
 ## 1.0.0 - 2026-06-27
 
