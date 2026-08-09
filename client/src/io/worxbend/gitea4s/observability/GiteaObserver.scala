@@ -91,10 +91,31 @@ object GiteaObserver:
         case RequestOutcome.Success =>
           ZIO.logDebug(s"gitea4s ${e.method} ${e.path} (${e.operationId}) succeeded in ${ms}ms$retries")
         case RequestOutcome.Failure(error) =>
+          val status = event.status.fold("")(code => s" status=$code")
           ZIO.logWarning(
-            s"gitea4s ${e.method} ${e.path} (${e.operationId}) failed in ${ms}ms$retries: " +
-              error.getClass.getSimpleName
+            s"gitea4s ${e.method} ${e.path} (${e.operationId}) failed in ${ms}ms$retries$status: " +
+              describe(error)
           )
+
+  /** Names a failure precisely enough to act on, and nothing more.
+    *
+    * `getClass.getSimpleName` collapsed every network problem into the single
+    * word `TransportError`: DNS failure, connection refused, a TLS handshake
+    * error, a read timeout and the executor's own exhausted attempt budget all
+    * logged identically, which is no help at 3am. `ServerError` was equally
+    * mute about *which* 5xx, while `RequestEvent.status` was carried and never
+    * logged at all.
+    *
+    * Unwraps exactly one level. Only type names and a status code are
+    * produced, so the guarantee above — never response bodies, never
+    * credentials — still holds: an exception *message* can quote a URL or a
+    * header and is deliberately not included.
+    */
+  private def describe(error: GiteaError): String =
+    error match
+      case GiteaError.TransportError(cause) => s"TransportError(${cause.getClass.getSimpleName})"
+      case GiteaError.ServerError(status, _) => s"ServerError($status)"
+      case other => other.getClass.getSimpleName
 
   /** Latency buckets, in milliseconds.
     *

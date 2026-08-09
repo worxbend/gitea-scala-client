@@ -50,6 +50,38 @@ object GiteaObserverSpec extends ZIOSpecDefault:
             case _ => false
         )
       },
+      test("the logging observer names the wrapped cause and the status") {
+        // `getClass.getSimpleName` reported the bare word `TransportError` for
+        // DNS failure, connection refused, TLS errors, read timeouts and the
+        // executor's own exhausted budget alike — and never logged the status
+        // it was already carrying, so a 502 and a 403 read identically.
+        val lines = scala.collection.mutable.ListBuffer.empty[String]
+        val capture = new zio.ZLogger[String, Unit]:
+          def apply(
+              trace: zio.Trace,
+              fiberId: zio.FiberId,
+              level: zio.LogLevel,
+              message: () => String,
+              cause: zio.Cause[Any],
+              context: zio.FiberRefs,
+              spans: List[zio.LogSpan],
+              annotations: Map[String, String]
+          ): Unit = { val _ = lines.append(message()) }
+
+        val backend = stub("""{"message":"boom"}""", StatusCode.BadGateway)
+
+        GiteaRequestExecutor(backend, maxRetries = 0, GiteaObserver.logging)
+          .send(GiteaRequests.currentUser(config))
+          .either
+          .map { _ =>
+            val logged = lines.mkString("\n")
+            assertTrue(
+              logged.contains("ServerError(502)"),
+              logged.contains("status=502")
+            )
+          }
+          .provideLayer(zio.Runtime.removeDefaultLoggers ++ zio.Runtime.addLogger(capture))
+      },
       test("the default noop observer records nothing") {
         val backend = stub("""{"id":1,"login":"alice"}""", StatusCode.Ok)
         for
