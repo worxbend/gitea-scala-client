@@ -1,5 +1,6 @@
 package io.worxbend.gitea4s.backend.okhttp
 
+import io.worxbend.gitea4s.internal.GiteaRequestExecutor
 import io.worxbend.gitea4s.model.Auth
 import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import okhttp3.{Authenticator, Credentials, OkHttpClient, Request as OkHttpRequest, Response as OkHttpResponse, Route}
@@ -34,10 +35,15 @@ import scala.concurrent.{ExecutionContext, Future}
   * `Promise#future` is not.
   *
   * The consequence is bounded rather than a leak. The orphaned call is capped by
-  * `GiteaConfig.timeout` — that value is the OkHttp read timeout — and when it
-  * does finish, sttp reads the body and closes the response on OkHttp's
-  * dispatcher thread, which returns the connection to the pool. What is lost is
-  * releasing the connection *early*, not releasing it at all.
+  * OkHttp's call timeout, and when it does finish, sttp reads the body and closes
+  * the response on OkHttp's dispatcher thread, which returns the connection to
+  * the pool. What is lost is releasing the connection *early*, not releasing it
+  * at all.
+  *
+  * `GiteaConfig.timeout` is not what bounds it. That value is the OkHttp *read*
+  * timeout, which limits a single socket read rather than the call, so a server
+  * dribbling one byte at a time never trips it. The cap is the separate call
+  * timeout this module sets — see `callTimeoutMillis`.
   *
   * Where cancellation latency matters — a request racing a deadline shorter than
   * `GiteaConfig.timeout`, or a fiber that is interrupted often — prefer the
@@ -133,6 +139,7 @@ object OkHttpGiteaBackend:
       .followSslRedirects(false)
       .connectTimeout(options.connectionTimeout.toMillis, TimeUnit.MILLISECONDS)
       .readTimeout(config.timeout.toMillis, TimeUnit.MILLISECONDS)
+      .callTimeout(callTimeoutMillis, TimeUnit.MILLISECONDS)
 
     val withProxy = options.proxy.fold(builder) { proxy =>
       val routed = builder.proxySelector(proxy.asJavaProxySelector)
@@ -159,10 +166,39 @@ object OkHttpGiteaBackend:
     * client is the caller's client in every respect that matters — including
     * that shutting theirs down shuts this one down too, and that gitea4s never
     * shuts down either.
+    *
+    * Package-private rather than private so the spec can assert on the derived
+    * client's settings, the same reason [[ownedClient]] is; it is not part of
+    * the published Scala API.
     */
-  private def withRequestReadTimeout(client: OkHttpClient, config: GiteaConfig): OkHttpClient =
-    if client.readTimeoutMillis().toLong == config.timeout.toMillis then client
-    else client.newBuilder().readTimeout(config.timeout.toMillis, TimeUnit.MILLISECONDS).build()
+  private[okhttp] def withRequestReadTimeout(client: OkHttpClient, config: GiteaConfig): OkHttpClient =
+    val readTimeoutMatches = client.readTimeoutMillis().toLong == config.timeout.toMillis
+    // Only when the caller left it at OkHttp's default of 0, which means "no
+    // limit". A caller who chose their own call timeout keeps it.
+    val needsCallTimeout = client.callTimeoutMillis() == 0
+
+    if readTimeoutMatches && !needsCallTimeout then client
+    else
+      val builder = client.newBuilder().readTimeout(config.timeout.toMillis, TimeUnit.MILLISECONDS)
+      (if needsCallTimeout then builder.callTimeout(callTimeoutMillis, TimeUnit.MILLISECONDS) else builder).build()
+
+  /** A ceiling on one whole OkHttp call, which OkHttp does not set by default.
+    *
+    * `readTimeout` bounds one socket read, not the call, so a server that
+    * emits a byte every 29 seconds against the default 30-second timeout keeps
+    * a call alive indefinitely. That matters more here than it would
+    * elsewhere: this backend cannot cancel an orphaned call (see the note on
+    * the object above), and OkHttp's dispatcher runs five requests per host
+    * and queues the rest without bound, so a handful of stuck calls stalls
+    * every request behind them.
+    *
+    * Set from the executor's attempt budget rather than `GiteaConfig.timeout`:
+    * by the time that budget is spent the caller's fiber has already given up,
+    * so ending the call costs nothing — whereas `config.timeout` would kill a
+    * legitimately slow archive fetch that is still making progress.
+    */
+  private val callTimeoutMillis: Long =
+    GiteaRequestExecutor.defaultAttemptTimeout.toMillis
 
   /** Acquires the layer's own client and shuts it down when the scope closes.
     *

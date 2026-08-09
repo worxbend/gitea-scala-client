@@ -11,6 +11,7 @@ import zio.test.*
 
 import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.*
 
 object OkHttpGiteaBackendSpec extends ZIOSpecDefault:
@@ -53,6 +54,45 @@ object OkHttpGiteaBackendSpec extends ZIOSpecDefault:
           // must leave redirects alone, exactly as sttp's own default client does.
           !client.followRedirects(),
           !client.followSslRedirects()
+        )
+      },
+      test("caps a whole call on the client it owns") {
+        // OkHttp's call timeout defaults to 0, which means no limit at all.
+        // `readTimeout` bounds one socket read, so a server emitting a byte
+        // just inside that window keeps a call alive forever — and this
+        // backend cannot cancel an orphaned call, while OkHttp's dispatcher
+        // queues everything behind the five it runs per host.
+        val client = OkHttpGiteaBackend.ownedClient(config)
+
+        assertTrue(client.callTimeoutMillis() > 0)
+      },
+      test("caps a whole call on a borrowed client that had no limit") {
+        // Already carries the read timeout gitea4s wants, so the call timeout
+        // is the only reason left to derive a client at all.
+        val borrowed = OkHttpClient.Builder().readTimeout(config.timeout.toMillis, TimeUnit.MILLISECONDS).build()
+
+        val derived = OkHttpGiteaBackend.withRequestReadTimeout(borrowed, config)
+
+        assertTrue(
+          derived.callTimeoutMillis() > 0,
+          // The caller's own client is never mutated.
+          borrowed.callTimeoutMillis() == 0
+        )
+      },
+      test("leaves a borrowed client's own call timeout alone") {
+        // Ownership does not change, so a caller who chose a call timeout
+        // keeps it — gitea4s only fills in the unset default.
+        val chosen = 42.seconds
+        val borrowed = OkHttpClient
+          .Builder()
+          .callTimeout(chosen.toMillis, TimeUnit.MILLISECONDS)
+          .build()
+
+        val derived = OkHttpGiteaBackend.withRequestReadTimeout(borrowed, config)
+
+        assertTrue(
+          derived.callTimeoutMillis().toLong == chosen.toMillis,
+          derived.readTimeoutMillis().toLong == config.timeout.toMillis
         )
       },
       test("evicts the connection pool of the client it owns when the scope closes") {
