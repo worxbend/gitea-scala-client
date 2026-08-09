@@ -5,6 +5,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# This workflow only compiles and tests; it never writes to the repository.
+permissions:
+  contents: read
+
 jobs:
   mill:
     name: Java ${{ matrix.java }} / Scala ${{ matrix.scala }}
@@ -34,8 +38,6 @@ jobs:
             ~/.ivy2/cache
             ~/.mill
           key: ${{ runner.os }}-java-${{ matrix.java }}-scala-${{ matrix.scala }}-${{ hashFiles('build.mill', 'mill') }}
-          restore-keys: |
-            ${{ runner.os }}-java-${{ matrix.java }}-scala-${{ matrix.scala }}-
 
       - name: Verify build configuration
         run: |
@@ -49,9 +51,6 @@ jobs:
 
       - name: Unit tests
         run: ./mill __.test
-
-      - name: Integration tests
-        run: ./mill it.test
 
       - name: Examples
         run: ./mill examples.run
