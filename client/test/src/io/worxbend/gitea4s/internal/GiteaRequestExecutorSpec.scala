@@ -116,14 +116,14 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
         yield assertTrue(!request.retryable, events.head.attempts == 1)
       }
     ),
-    suite("total time budget")(
+    suite("attempt time budget")(
       test("a response that never arrives fails instead of hanging") {
         // `GiteaConfig.timeout` reaches the JDK as HttpRequest.timeout, which
         // stops applying once response headers arrive, so it cannot bound a
         // body that never ends. This budget can.
         val backend = BackendStub[Task](new RIOMonadAsyncError[Any]).whenAnyRequest.thenRespondF(_ => ZIO.never)
 
-        GiteaRequestExecutor(backend, maxRetries = 0, totalTimeout = Duration.fromMillis(200))
+        GiteaRequestExecutor(backend, maxRetries = 0, attemptTimeout = Duration.fromMillis(200))
           .send(GiteaRequests.currentUser(config))
           .either
           .map {
@@ -131,6 +131,35 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
               assertTrue(cause.isInstanceOf[java.util.concurrent.TimeoutException])
             case _ => assertTrue(false)
           }
+      } @@ TestAspect.withLiveClock,
+      test("an exhausted budget is surfaced, not retried") {
+        // The budget is applied per attempt, so a retried stall used to be
+        // paid for `maxRetries + 1` times over: a five-minute stall against
+        // the default configuration hung the caller for twenty. A stalled
+        // connection is also the condition least likely to have cleared by
+        // the time the retry runs, so the attempts bought nothing.
+        val request = GiteaRequests.currentUser(config)
+
+        for
+          // Counted at the backend, not on the telemetry event: `attempts` only
+          // advances when a response arrives, and here none ever does, so it
+          // reads 1 whether the stall was retried or not.
+          sent <- Ref.make(0)
+          backend = BackendStub[Task](new RIOMonadAsyncError[Any]).whenAnyRequest
+            .thenRespondF(_ => sent.update(_ + 1) *> ZIO.never)
+          result <- GiteaRequestExecutor(
+            backend,
+            maxRetries = 3,
+            attemptTimeout = Duration.fromMillis(200)
+          ).send(request).either
+          attempts <- sent.get
+        yield assertTrue(
+          // A retryable GET with three retries available: without the guard
+          // this reaches the backend four times and costs four budgets.
+          request.retryable,
+          result.isLeft,
+          attempts == 1
+        )
       } @@ TestAspect.withLiveClock
     ),
     suite("telemetry")(
