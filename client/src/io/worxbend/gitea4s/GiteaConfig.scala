@@ -126,6 +126,17 @@ object GiteaConfig:
     val pageSize: String = "GITEA_PAGE_SIZE"
     val timeout: String = "GITEA_TIMEOUT"
     val maxRetries: String = "GITEA_MAX_RETRIES"
+    val userAgent: String = "GITEA_USER_AGENT"
+
+    /** The `X-Gitea-OTP` header value.
+      *
+      * Present for parity with the HOCON reader, which has always accepted it.
+      * Be aware of what it can and cannot do: `X-Gitea-OTP` carries a
+      * *time-based* one-time password, so a value fixed in the environment is
+      * stale within about thirty seconds. It suits a short-lived command, not a
+      * long-running process.
+      */
+    val otp: String = "GITEA_OTP"
 
   object Typesafe:
     val root: String = "gitea4s"
@@ -190,11 +201,21 @@ object GiteaConfig:
       pageSize <- positiveIntFromEnv(env, Env.pageSize, defaultPageSize)
       timeout <- finiteDurationFromEnv(env, Env.timeout, defaultTimeout)
       maxRetries <- nonNegativeIntFromEnv(env, Env.maxRetries, defaultMaxRetries)
-    yield default(baseUrl, auth).copy(
-      timeout = timeout,
-      pageSize = pageSize,
-      maxRetries = maxRetries
-    )
+      // Through the same guard as the credentials: both become header content,
+      // and reading them with a plain `nonBlank` would reopen the injection
+      // hole that guard exists to close.
+      userAgent <- headerSafe(nonBlank(env, Env.userAgent), GiteaConfigError.InvalidEnv(Env.userAgent, _))
+      otp <- headerSafe(nonBlank(env, Env.otp), GiteaConfigError.InvalidEnv(Env.otp, _))
+    yield
+      val baseConfig = default(baseUrl, auth)
+      baseConfig.copy(
+        timeout = timeout,
+        pageSize = pageSize,
+        maxRetries = maxRetries,
+        // Same fallback as the HOCON reader, so both sources default alike.
+        userAgent = userAgent.orElse(baseConfig.userAgent),
+        otp = otp
+      )
 
   def fromTypesafeConfig(config: Config, path: String = Typesafe.root): Either[GiteaConfigError, GiteaConfig] =
     for

@@ -133,7 +133,15 @@ both `GITEA_USERNAME` and `GITEA_PASSWORD`):
 ```text
 GITEA_URL  GITEA_TOKEN  GITEA_USERNAME  GITEA_PASSWORD
 GITEA_PAGE_SIZE  GITEA_TIMEOUT  GITEA_MAX_RETRIES
+GITEA_USER_AGENT  GITEA_OTP
 ```
+
+The environment and HOCON readers accept the same settings. `GITEA_OTP` is
+included for that symmetry rather than as a way to do two-factor auth:
+`X-Gitea-OTP` carries a *time-based* one-time password, so a value fixed in the
+environment (or in a config file, which has always been possible) goes stale
+within about thirty seconds. It suits a short-lived command, not a long-running
+process.
 
 `GITEA_URL` is the **server root**, not the API root: use
 `https://gitea.example`, not `https://gitea.example/api/v1`. The `/api/v1`

@@ -206,6 +206,51 @@ object GiteaConfigSpec extends ZIOSpecDefault:
           !message.contains("password-secret")
         )
       },
+      test("reads the same settings from the environment as from HOCON") {
+        // `fromEnv` bound five settings while the HOCON reader bound seven, so
+        // an env-configured deployment could not change its User-Agent at all
+        // and could not send X-Gitea-OTP.
+        val env = GiteaConfig.fromEnv(
+          baseEnv ++ Map(
+            GiteaConfig.Env.token -> "t",
+            GiteaConfig.Env.userAgent -> "my-app/2.0",
+            GiteaConfig.Env.otp -> "123456"
+          )
+        )
+        val hocon = GiteaConfig.fromTypesafeString(
+          """gitea4s {
+            |  url = "https://gitea.example/root"
+            |  token = "t"
+            |  user-agent = "my-app/2.0"
+            |  otp = "123456"
+            |}""".stripMargin
+        )
+
+        assertTrue(
+          env.map(_.userAgent) == Right(Some("my-app/2.0")),
+          env.map(_.otp) == Right(Some("123456")),
+          // The whole config, not just the two new fields.
+          env == hocon
+        )
+      },
+      test("defaults the User-Agent identically from either source") {
+        val env = GiteaConfig.fromEnv(baseEnv + (GiteaConfig.Env.token -> "t"))
+        val hocon = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example/root", token = "t" }"""
+        )
+
+        assertTrue(env.map(_.userAgent) == Right(Some("gitea4s")), env.map(_.userAgent) == hocon.map(_.userAgent))
+      },
+      test("rejects control characters in the new environment variables too") {
+        val agent = GiteaConfig.fromEnv(baseEnv ++ Map(GiteaConfig.Env.userAgent -> "bad\ragent"))
+        val otp = GiteaConfig.fromEnv(baseEnv ++ Map(GiteaConfig.Env.otp -> "12\n34"))
+
+        assertTrue(
+          agent.isLeft,
+          otp.isLeft,
+          !otp.left.toOption.map(_.toString).getOrElse("").contains("1234")
+        )
+      },
       test("builds the basic-auth header the way HTTP specifies") {
         // `Auth.Basic` header construction had no hermetic assertion at all —
         // only the live integration suite would have caught a wrong encoding,
