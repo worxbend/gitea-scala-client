@@ -153,6 +153,17 @@ gitea4s {
 }
 ```
 
+Durations must carry a unit. Typesafe Config reads a bare number in duration
+position as *milliseconds*, so `timeout = 30` would mean 30ms rather than the 30
+seconds almost anyone writing it intends; it is rejected with the same message
+the environment reader gives. `timeout = 30s` and `timeout = 2 minutes` both
+work.
+
+Settings spelled the way the environment spells them are also rejected rather
+than ignored — `maxRetries` in a `gitea4s { }` block is a different key from
+`max-retries`, and used to be read by nobody. Keys unrelated to gitea4s are left
+alone, so an application can keep its own settings alongside these.
+
 Every setting can also be changed on an existing config:
 
 ```scala

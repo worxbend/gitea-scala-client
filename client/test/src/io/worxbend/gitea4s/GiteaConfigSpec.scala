@@ -206,6 +206,59 @@ object GiteaConfigSpec extends ZIOSpecDefault:
           !message.contains("password-secret")
         )
       },
+      test("rejects a HOCON duration written without a unit") {
+        // Typesafe Config reads a bare number in duration position as
+        // milliseconds, so `timeout = 30` used to parse as 30ms and give every
+        // request a 30-millisecond budget. The identical GITEA_TIMEOUT=30 was
+        // rejected, so the same text meant two different things and the wrong
+        // one was silent.
+        val bare = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", timeout = 30 }"""
+        )
+        val quoted = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", timeout = "30" }"""
+        )
+
+        assertTrue(
+          bare.isLeft,
+          quoted.isLeft,
+          bare.left.toOption.map(_.toString).getOrElse("").contains("30s")
+        )
+      },
+      test("accepts the HOCON duration spellings Typesafe config allows") {
+        // The check rejects only the unitless form. HOCON's own spellings must
+        // keep working, including ones Scala's Duration parser would reject.
+        val seconds = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", timeout = 30s }"""
+        )
+        val spaced = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", timeout = 2 minutes }"""
+        )
+
+        assertTrue(
+          seconds.map(_.timeout) == Right(30.seconds),
+          spaced.map(_.timeout) == Right(2.minutes)
+        )
+      },
+      test("rejects a setting spelled the way the environment spells it") {
+        // `maxRetries` is simply a different key from `max-retries`, so it used
+        // to be read by nobody: the config loaded and the setting did nothing.
+        val result = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", maxRetries = 9 }"""
+        )
+        val message = result.left.toOption.map(_.toString).getOrElse("")
+
+        assertTrue(result.isLeft, message.contains("maxRetries"), message.contains("max-retries"))
+      },
+      test("leaves a genuinely unrelated key alone") {
+        // Applications legitimately keep their own settings beside these, so
+        // only near misses are rejected.
+        val result = GiteaConfig.fromTypesafeString(
+          """gitea4s { url = "https://gitea.example", token = "t", my-own-setting = 7 }"""
+        )
+
+        assertTrue(result.map(_.maxRetries) == Right(GiteaConfig.defaultMaxRetries))
+      },
       test("rejects a token with a control character in the middle") {
         // Trimming only strips the ends. An embedded CR/LF used to survive
         // into `Authorization: token ...` and fail later — as an untyped JDK
