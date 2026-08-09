@@ -23,10 +23,16 @@ with `NoSuchMethodError` at runtime. Recompiling is enough; no source edit is
 needed. Nothing was removed: `Auth`'s per-case `toString` moved onto the `Auth`
 parent class, which callers still reach through normal virtual dispatch.
 
-The API snapshot gained entries in `backend-zio` and `backend-okhttp` only;
-`core` and `client` are byte-identical. Every entry is an addition — the
-existing `ZioGiteaDownloads(config, backend)` constructor is unchanged, so code
-compiled against it keeps working.
+All four modules gained `api-snapshot/` entries, and every entry is an addition:
+`GiteaError.message` and the lenient enum decoders in `core`, two environment
+variable names in `client`, and test seams in the two backends. Nothing was
+re-typed and no signature moved, so code compiled against `1.0.0` keeps
+compiling — the recompile note above is about the widened case classes, not
+these.
+
+One entry was removed: `GiteaRequest$StringImpl`, a `private final class` that
+no Scala code outside its own file could ever name. It appeared in the snapshot
+only because that tool reads bytecode, where Scala's `private` is not enforced.
 
 ### Security
 
