@@ -206,6 +206,16 @@ object GiteaConfigSpec extends ZIOSpecDefault:
           !message.contains("password-secret")
         )
       },
+      test("builds the basic-auth header the way HTTP specifies") {
+        // `Auth.Basic` header construction had no hermetic assertion at all —
+        // only the live integration suite would have caught a wrong encoding,
+        // and only as a 401.
+        val expected =
+          "Basic " + java.util.Base64.getEncoder.encodeToString("alice:hunter2".getBytes("UTF-8"))
+        val config = GiteaConfig.withBasic(Uri.unsafeParse("https://gitea.example"), "alice", "hunter2")
+
+        assertTrue(config.jsonHeaders.get("Authorization").contains(expected))
+      },
       test("rejects a HOCON duration written without a unit") {
         // Typesafe Config reads a bare number in duration position as
         // milliseconds, so `timeout = 30` used to parse as 30ms and give every
