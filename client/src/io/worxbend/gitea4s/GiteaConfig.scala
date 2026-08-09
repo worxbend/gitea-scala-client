@@ -6,6 +6,8 @@ import io.worxbend.gitea4s.observability.GiteaObserver
 import sttp.model.Uri
 import zio.{ZIO, ZLayer}
 
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 import scala.concurrent.duration.*
 import scala.jdk.DurationConverters.*
 import scala.util.Try
@@ -20,6 +22,39 @@ final case class GiteaConfig(
     maxRetries: Int,
     observer: GiteaObserver = GiteaObserver.noop
 ):
+  /** The request headers for a given `Accept` value, derived once per config.
+    *
+    * Every input except `accept` is fixed for the lifetime of a config, so
+    * there is no reason to rebuild these per request. For
+    * [[io.worxbend.gitea4s.model.Auth.Basic]] that matters beyond the object
+    * count: deriving the header on each call left a fresh cleartext
+    * `username:password` string and its backing byte array on the heap every
+    * time, multiplying the copies a heap dump or a swap file could recover.
+    *
+    * The three `Accept` values this library actually sends are memoised; any
+    * other value is still handled, just without the memoisation, so adding an
+    * endpoint that negotiates a new content type cannot silently be served the
+    * wrong `Accept` header.
+    */
+  private[gitea4s] def headersAccepting(accept: String): Map[String, String] =
+    accept match
+      case GiteaConfig.applicationJson => jsonHeaders
+      case GiteaConfig.octetStream => octetStreamHeaders
+      case GiteaConfig.textPlain => textPlainHeaders
+      case other => buildHeaders(other)
+
+  private[gitea4s] lazy val jsonHeaders: Map[String, String] = buildHeaders(GiteaConfig.applicationJson)
+  private[gitea4s] lazy val octetStreamHeaders: Map[String, String] = buildHeaders(GiteaConfig.octetStream)
+  private[gitea4s] lazy val textPlainHeaders: Map[String, String] = buildHeaders(GiteaConfig.textPlain)
+
+  private def buildHeaders(accept: String): Map[String, String] =
+    List(
+      Some("Accept" -> accept),
+      GiteaConfig.authorizationHeader(auth),
+      userAgent.map("User-Agent" -> _),
+      otp.map("X-Gitea-OTP" -> _)
+    ).flatten.toMap
+
   /** Redacts the one-time password.
     *
     * `auth` redacts itself. `otp` is a bare `Option[String]` on this case
@@ -79,6 +114,10 @@ object GiteaConfig:
     val otp: String = "otp"
     val maxRetries: String = "max-retries"
 
+  private[gitea4s] val applicationJson: String = "application/json"
+  private[gitea4s] val octetStream: String = "application/octet-stream"
+  private[gitea4s] val textPlain: String = "text/plain"
+
   val defaultTimeout: FiniteDuration = 30.seconds
   val defaultPageSize: Int = 50
 
@@ -92,6 +131,15 @@ object GiteaConfig:
       otp = None,
       maxRetries = 0
     )
+
+  private[gitea4s] def authorizationHeader(auth: Auth): Option[(String, String)] =
+    auth match
+      case Auth.Token(value) => Some("Authorization" -> s"token $value")
+      case Auth.OAuth2(token) => Some("Authorization" -> s"Bearer $token")
+      case Auth.Basic(username, password) =>
+        val raw = s"$username:$password".getBytes(StandardCharsets.UTF_8)
+        Some("Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(raw)}")
+      case Auth.Anonymous => None
 
   def withToken(baseUrl: Uri, token: String): GiteaConfig =
     default(baseUrl, Auth.Token(token))

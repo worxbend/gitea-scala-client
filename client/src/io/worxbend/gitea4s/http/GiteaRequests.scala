@@ -4,7 +4,6 @@ import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
   AnnotatedTag,
-  Auth,
   Branch,
   BranchProtection,
   ChangedFile,
@@ -65,8 +64,6 @@ import sttp.model.{MediaType, Method, Uri}
 import zio.Chunk
 import zio.json.*
 
-import java.nio.charset.StandardCharsets
-import java.util.Base64
 
 object GiteaRequests:
   def currentUser(config: GiteaConfig): GiteaRequest[User] =
@@ -1682,6 +1679,13 @@ object GiteaRequests:
       .contentType(MediaType.ApplicationJson)
       .headers(commonHeaders(config))
 
+  // sttp's `asStringAlways` and `asByteArrayAlways` are `def`s whose bodies
+  // capture the charset, so every call rebuilds an identical description graph
+  // for what is a compile-time constant. sttp shares one itself for the same
+  // reason (`val quickRequest = basicRequest.response(asStringAlways)`).
+  private val stringResponse: ResponseAs[String] = asStringAlways
+  private val byteArrayResponse: ResponseAs[Array[Byte]] = asByteArrayAlways
+
   private def get[A](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
@@ -1694,7 +1698,7 @@ object GiteaRequests:
       endpoint = endpoint,
       request = basicRequest
         .get(apiUri(config.baseUrl, path, query))
-        .response(asStringAlways)
+        .response(stringResponse)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config, accept)),
       decode = decode,
@@ -1711,7 +1715,7 @@ object GiteaRequests:
       endpoint = endpoint,
       request = basicRequest
         .get(apiUri(config.baseUrl, path, query))
-        .response(asByteArrayAlways)
+        .response(byteArrayResponse)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config, "application/octet-stream")),
       decode = GiteaResponseMapper.decodeBytes,
@@ -1742,7 +1746,7 @@ object GiteaRequests:
       endpoint = endpoint,
       request = basicRequest
         .post(apiUri(config.baseUrl, path, query))
-        .response(asStringAlways)
+        .response(stringResponse)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),
       decode = decode,
@@ -1770,7 +1774,7 @@ object GiteaRequests:
         .post(apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
-        .response(asStringAlways)
+        .response(stringResponse)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),
       decode = decode,
@@ -1790,7 +1794,7 @@ object GiteaRequests:
         .put(apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
-        .response(asStringAlways)
+        .response(stringResponse)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),
       decode = decode,
@@ -1807,7 +1811,7 @@ object GiteaRequests:
       endpoint = endpoint,
       request = basicRequest
         .put(apiUri(config.baseUrl, path, Nil))
-        .response(asStringAlways)
+        .response(stringResponse)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),
       decode = decode,
@@ -1827,7 +1831,7 @@ object GiteaRequests:
         .patch(apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
-        .response(asStringAlways)
+        .response(stringResponse)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),
       decode = decode,
@@ -1844,7 +1848,7 @@ object GiteaRequests:
       endpoint = endpoint,
       request = basicRequest
         .patch(apiUri(config.baseUrl, path, Nil))
-        .response(asStringAlways)
+        .response(stringResponse)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),
       decode = decode,
@@ -1861,7 +1865,7 @@ object GiteaRequests:
       endpoint = endpoint,
       request = basicRequest
         .delete(apiUri(config.baseUrl, path, Nil))
-        .response(asStringAlways)
+        .response(stringResponse)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),
       decode = decode,
@@ -1881,7 +1885,7 @@ object GiteaRequests:
         .method(Method.DELETE, apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
-        .response(asStringAlways)
+        .response(stringResponse)
         .readTimeout(config.timeout)
         .headers(commonHeaders(config)),
       decode = decode,
@@ -1891,22 +1895,9 @@ object GiteaRequests:
   private def apiUri(baseUrl: Uri, path: List[String], query: List[(String, String)]): Uri =
     baseUrl.addPath(List("api", "v1") ++ path).addParams(query*)
 
+  // Derived once per config rather than per request; see GiteaConfig.headersAccepting.
   private def commonHeaders(config: GiteaConfig, accept: String = MediaType.ApplicationJson.toString): Map[String, String] =
-    List(
-      Some("Accept" -> accept),
-      authorizationHeader(config.auth),
-      config.userAgent.map("User-Agent" -> _),
-      config.otp.map("X-Gitea-OTP" -> _)
-    ).flatten.toMap
-
-  private def authorizationHeader(auth: Auth): Option[(String, String)] =
-    auth match
-      case Auth.Token(value) => Some("Authorization" -> s"token $value")
-      case Auth.OAuth2(token) => Some("Authorization" -> s"Bearer $token")
-      case Auth.Basic(username, password) =>
-        val raw = s"$username:$password".getBytes(StandardCharsets.UTF_8)
-        Some("Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(raw)}")
-      case Auth.Anonymous => None
+    config.headersAccepting(accept)
 
   private def issueQuery(params: IssueListParams, page: Int, pageSize: Int): List[(String, String)] =
     List(
@@ -1927,6 +1918,7 @@ object GiteaRequests:
   private def userSearchQuery(params: UserSearchParams, page: Int, pageSize: Int): List[(String, String)] =
     List(
       params.q.map("q" -> _),
+      params.uid.map(uid => "uid" -> uid.toString),
       Some("page" -> page.toString),
       Some("limit" -> pageSize.toString)
     ).flatten

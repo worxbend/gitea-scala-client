@@ -1,6 +1,7 @@
 package io.worxbend.gitea4s
 
 import io.worxbend.gitea4s.model.Auth
+import sttp.model.Uri
 import zio.ZIO
 import zio.test.*
 
@@ -256,6 +257,27 @@ object GiteaConfigSpec extends ZIOSpecDefault:
         val message = result.left.map(_.message).left.getOrElse("")
         assertTrue(result.isLeft, !message.contains("ghp_SUPERSECRET123"), message.contains("HOCON"))
       },
+      test("derives request headers once per config") {
+        val config = GiteaConfig.withBasic(uri, "alice", "hunter2")
+
+        assertTrue(
+          config.jsonHeaders eq config.jsonHeaders,
+          config.headersAccepting("application/json") eq config.jsonHeaders,
+          config.headersAccepting("application/octet-stream") eq config.octetStreamHeaders,
+          config.headersAccepting("text/plain") eq config.textPlainHeaders
+        )
+      },
+      test("sends the requested Accept value even for a content type it does not memoise") {
+        // A two-way switch here would have silently answered text/plain
+        // requests with the octet-stream header set.
+        val config = GiteaConfig.withToken(uri, "t")
+
+        assertTrue(
+          config.headersAccepting("text/plain").get("Accept").contains("text/plain"),
+          config.headersAccepting("application/vnd.custom").get("Accept").contains("application/vnd.custom"),
+          config.headersAccepting("application/vnd.custom").get("Authorization").contains("token t")
+        )
+      },
       test("rejects invalid Typesafe retry counts") {
         val result =
           GiteaConfig.fromTypesafeString(
@@ -270,3 +292,5 @@ object GiteaConfigSpec extends ZIOSpecDefault:
         assertTrue(result == Left(GiteaConfigError.InvalidConfig("gitea4s.max-retries", "must be zero or a positive integer")))
       }
     )
+
+  private lazy val uri: Uri = Uri.parse("https://gitea.example/root").toOption.get
