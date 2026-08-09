@@ -101,7 +101,6 @@ object client extends PublishableGitea4sModule:
 
   def mvnDeps = Seq(
     mvn"com.softwaremill.sttp.client4::core:${Versions.sttp}",
-    mvn"com.softwaremill.sttp.client4::zio-json:${Versions.sttp}",
     mvn"dev.zio::zio-config:${Versions.zioConfig}",
     mvn"dev.zio::zio-config-typesafe:${Versions.zioConfig}"
   )
