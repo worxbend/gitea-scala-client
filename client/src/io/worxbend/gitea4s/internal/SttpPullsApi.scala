@@ -32,7 +32,7 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
   override def list(
       owner: String,
       repo: String,
-      params: PullRequestListParams = PullRequestListParams.default
+      params: PullRequestListParams
   ): ZStream[Any, GiteaError, PullRequest] =
     Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.repoPullRequests(config, owner, repo, params.copy(page = Some(page))))
@@ -172,7 +172,7 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
       repo: String,
       index: Long,
       diffType: PullRequestDiffType,
-      binary: Option[Boolean] = None
+      binary: Option[Boolean]
   ): IO[GiteaError, String] =
     executor.send(GiteaRequests.repoPullRequestDiffOrPatch(config, owner, repo, index, diffType, binary))
 
@@ -180,7 +180,7 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       repo: String,
       index: Long,
-      params: PullRequestFilesParams = PullRequestFilesParams.default
+      params: PullRequestFilesParams
   ): ZStream[Any, GiteaError, ChangedFile] =
     Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.repoPullRequestFiles(config, owner, repo, index, params.copy(page = Some(page))))
@@ -190,7 +190,7 @@ private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRe
       owner: String,
       repo: String,
       index: Long,
-      params: PullRequestCommitsParams = PullRequestCommitsParams.default
+      params: PullRequestCommitsParams
   ): ZStream[Any, GiteaError, Commit] =
     Pagination.paginatedFrom(params.page.getOrElse(1)) { page =>
       executor.send(GiteaRequests.repoPullRequestCommits(config, owner, repo, index, params.copy(page = Some(page))))
