@@ -1686,6 +1686,55 @@ object GiteaRequests:
   private val stringResponse: ResponseAs[String] = asStringAlways
   private val byteArrayResponse: ResponseAs[Array[Byte]] = asByteArrayAlways
 
+  /** Ceiling on a buffered JSON (or diff/patch) response body.
+    *
+    * sttp's default is no limit at all, so a hostile or simply broken server
+    * could stream an unbounded body into the heap; `readTimeout` does not
+    * help, because a body that arrives steadily never trips it. Real Gitea API
+    * pages are orders of magnitude below this.
+    *
+    * The limit counts bytes as they arrive on the wire, before decompression:
+    * both shipped backends apply it to the raw body and decompress afterwards,
+    * and `basicRequest` sends `Accept-Encoding: gzip, deflate`. A highly
+    * compressible payload can therefore still expand well past this figure
+    * once decoded, which is why the number is a safety ceiling rather than a
+    * tight bound.
+    */
+  private val jsonBodyLimit: Long = 32L * 1024 * 1024
+
+  /** The base request for a JSON endpoint, carrying the body-size ceiling. */
+  private def jsonRequest(config: GiteaConfig): PartialRequest[Either[String, String]] =
+    redirectPolicy(config, basicRequest.maxResponseBodyLength(jsonBodyLimit))
+
+  /** The base request for a binary endpoint.
+    *
+    * Deliberately uncapped: a repository archive larger than any ceiling worth
+    * setting is completely ordinary, so a limit here would turn a slow but
+    * successful fetch into a transport failure. Callers pulling large archives
+    * should prefer `backend-zio`'s streaming `GiteaDownloads`, which never
+    * buffers the body at all.
+    */
+  private def binaryRequest(config: GiteaConfig): PartialRequest[Either[String, String]] =
+    redirectPolicy(config, basicRequest)
+
+  /** Stops a configured one-time password from being replayed to a redirect target.
+    *
+    * sttp strips `Authorization` on every redirect, so the API token is never
+    * forwarded. It does not strip `X-Gitea-OTP`, which is not in its sensitive
+    * header set, so a `Location` pointing anywhere — including a plain-HTTP
+    * host — would receive the second factor. Wrapping the backend in another
+    * `FollowRedirectsBackend` with a wider sensitive set does not help: the
+    * inner, default-configured wrapper is closer to the socket and handles the
+    * 3xx before the outer one ever sees it. Declining to follow redirects at
+    * all is the containment that works, and it only applies to configs that
+    * actually set an OTP.
+    */
+  private def redirectPolicy(
+      config: GiteaConfig,
+      request: PartialRequest[Either[String, String]]
+  ): PartialRequest[Either[String, String]] =
+    if config.otp.isDefined then request.followRedirects(false) else request
+
   private def get[A](
       config: GiteaConfig,
       endpoint: GiteaEndpoint,
@@ -1696,7 +1745,7 @@ object GiteaRequests:
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
-      request = basicRequest
+      request = jsonRequest(config)
         .get(apiUri(config.baseUrl, path, query))
         .response(stringResponse)
         .readTimeout(config.timeout)
@@ -1713,7 +1762,7 @@ object GiteaRequests:
   ): GiteaRequest[Chunk[Byte]] =
     GiteaRequest.withBody[Chunk[Byte], Array[Byte]](
       endpoint = endpoint,
-      request = basicRequest
+      request = binaryRequest(config)
         .get(apiUri(config.baseUrl, path, query))
         .response(byteArrayResponse)
         .readTimeout(config.timeout)
@@ -1744,7 +1793,7 @@ object GiteaRequests:
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
-      request = basicRequest
+      request = jsonRequest(config)
         .post(apiUri(config.baseUrl, path, query))
         .response(stringResponse)
         .readTimeout(config.timeout)
@@ -1770,7 +1819,7 @@ object GiteaRequests:
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
-      request = basicRequest
+      request = jsonRequest(config)
         .post(apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
@@ -1790,7 +1839,7 @@ object GiteaRequests:
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
-      request = basicRequest
+      request = jsonRequest(config)
         .put(apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
@@ -1809,7 +1858,7 @@ object GiteaRequests:
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
-      request = basicRequest
+      request = jsonRequest(config)
         .put(apiUri(config.baseUrl, path, Nil))
         .response(stringResponse)
         .readTimeout(config.timeout)
@@ -1827,7 +1876,7 @@ object GiteaRequests:
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
-      request = basicRequest
+      request = jsonRequest(config)
         .patch(apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
@@ -1846,7 +1895,7 @@ object GiteaRequests:
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
-      request = basicRequest
+      request = jsonRequest(config)
         .patch(apiUri(config.baseUrl, path, Nil))
         .response(stringResponse)
         .readTimeout(config.timeout)
@@ -1863,7 +1912,7 @@ object GiteaRequests:
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
-      request = basicRequest
+      request = jsonRequest(config)
         .delete(apiUri(config.baseUrl, path, Nil))
         .response(stringResponse)
         .readTimeout(config.timeout)
@@ -1881,7 +1930,7 @@ object GiteaRequests:
   ): GiteaRequest[A] =
     GiteaRequest(
       endpoint = endpoint,
-      request = basicRequest
+      request = jsonRequest(config)
         .method(Method.DELETE, apiUri(config.baseUrl, path, Nil))
         .body(json)
         .contentType(MediaType.ApplicationJson)
@@ -1918,7 +1967,6 @@ object GiteaRequests:
   private def userSearchQuery(params: UserSearchParams, page: Int, pageSize: Int): List[(String, String)] =
     List(
       params.q.map("q" -> _),
-      params.uid.map(uid => "uid" -> uid.toString),
       Some("page" -> page.toString),
       Some("limit" -> pageSize.toString)
     ).flatten

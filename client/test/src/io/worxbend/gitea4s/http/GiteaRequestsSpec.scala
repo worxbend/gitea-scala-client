@@ -58,6 +58,13 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
     GiteaConfig.default(uri"https://gitea.example/root", Auth.Token("secret"))
       .copy(pageSize = 25, userAgent = Some("gitea4s-test"), otp = Some("123456"))
 
+
+  private val otpConfig =
+    GiteaConfig.default(uri"https://gitea.example/root", Auth.Token("secret")).copy(otp = Some("123456"))
+
+  private val noOtpConfig =
+    GiteaConfig.default(uri"https://gitea.example/root", Auth.Token("secret")).copy(otp = None)
+
   def spec =
     suite("Gitea request layer")(
       test("builds /user request with auth and JSON accept headers") {
@@ -317,6 +324,20 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           decodeWith(built, backend).map(_.page) == Right(3),
           decodeWith(built, backend).map(_.pageSize) == Right(25),
           decodeWith(built, backend).map(_.hasNext) == Right(true)
+        )
+      },
+      test("stops following redirects when a one-time password is configured") {
+        // sttp strips Authorization on every redirect, so the token is never
+        // forwarded, but X-Gitea-OTP is not in its sensitive-header set and
+        // would be sent to whatever host a Location named.
+        val withOtp = GiteaRequests.repository(otpConfig, "alice", "api").request
+        val withoutOtp = GiteaRequests.repository(noOtpConfig, "alice", "api").request
+
+        assertTrue(
+          !withOtp.options.followRedirects,
+          withoutOtp.options.followRedirects,
+          withOtp.header("X-Gitea-OTP").contains("123456"),
+          withOtp.options.maxResponseBodyLength.nonEmpty
         )
       },
       test("builds and decodes schema-traceable paginated repository subscribers request") {
