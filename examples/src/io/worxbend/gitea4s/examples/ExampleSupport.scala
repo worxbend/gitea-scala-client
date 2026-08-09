@@ -1,14 +1,60 @@
 package io.worxbend.gitea4s.examples
 
+import io.worxbend.gitea4s.backend.zio.ZioGiteaBackend
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.{ApiReference, Branch, NotificationThread, PullRequest, Release, Repository, Tag, User}
-import io.worxbend.gitea4s.{GiteaConfig, GiteaConfigError}
+import io.worxbend.gitea4s.{GiteaClient, GiteaConfig, GiteaConfigError}
+import zio.{Console, ZIO}
 
 private[examples] object ExampleSupport:
   val referenceLine: String = s"gitea4s targets Gitea API ${ApiReference.gitea1262.version}"
 
   val credentialsHint: String =
     "Set GITEA_URL with GITEA_TOKEN or GITEA_USERNAME/GITEA_PASSWORD to run the live example."
+
+  /** Runs one example against a live server, or explains why it cannot.
+    *
+    * Every main here had its own copy of the same twenty lines: match on the
+    * config, print the reference line on all three branches, build the backend
+    * layer, fold the failure into a message and re-fail, then print the result.
+    * That ceremony was most of each file, which buried the two or three lines
+    * that actually demonstrate the library — and these examples exist to be
+    * read.
+    *
+    * `use` returns the lines to print, so an example describes *what* it wants
+    * shown and never repeats *how* to show it. `hints` are printed instead when
+    * no credentials are configured, so each example can say which extra
+    * environment variables it needs.
+    */
+  def runExample(failureLabel: String, hints: String*)(
+      use: GiteaClient => ZIO[Any, GiteaError, Seq[String]]
+  ): ZIO[Any, Any, Unit] =
+    liveConfigFromEnv match
+      case Right(None) =>
+        printLines(referenceLine +: hints.prepended(credentialsHint))
+
+      case Left(error) =>
+        Console.printLine(referenceLine) *>
+          Console.printLineError(s"Cannot read live Gitea config: ${error.message}") *>
+          ZIO.fail(error)
+
+      case Right(Some(config)) =>
+        Console.printLine(referenceLine) *>
+          ZIO
+            .serviceWithZIO[GiteaClient](use)
+            .provideLayer(ZioGiteaBackend.configured(config))
+            .foldZIO(
+              error =>
+                Console.printLineError(s"$failureLabel failed: ${describeFailure(error)}") *> ZIO.fail(error),
+              printLines
+            )
+
+  /** Reads an environment variable that an example needs, ignoring blanks. */
+  def optionalEnv(name: String): Option[String] =
+    nonBlank(sys.env.toMap, name)
+
+  private def printLines(lines: Seq[String]): ZIO[Any, Nothing, Unit] =
+    ZIO.foreachDiscard(lines)(line => Console.printLine(line).orDie)
 
   def liveConfigFromEnv: Either[GiteaConfigError, Option[GiteaConfig]] =
     val env = sys.env.toMap
