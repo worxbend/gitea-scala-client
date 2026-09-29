@@ -29,12 +29,14 @@ import io.worxbend.gitea4s.model.{
   CreateStatusOption,
   DismissPullReviewOptions,
   EditDeadlineOption,
+  EditGitHookOption,
   EditIssueComment,
   EditIssue,
   EditRepoOption,
   EditPullRequestOption,
   EditReactionOption,
   GitBlobResponse,
+  GitHook,
   GitTreeResponse,
   Issue,
   IssueAssigneesOption,
@@ -57,6 +59,7 @@ import io.worxbend.gitea4s.model.{
   PullReviewRequestOptions,
   Reaction,
   Reference,
+  RenameBranchRepoOption,
   Release,
   ReleaseAsset,
   RepoCollaboratorPermission,
@@ -67,6 +70,7 @@ import io.worxbend.gitea4s.model.{
   TagProtection,
   Team,
   TransferRepoOption,
+  UpdateBranchRepoOption,
   TrackedTime,
   User,
   WatchInfo
@@ -126,6 +130,66 @@ object GiteaRequests:
     delete(
       config, GiteaEndpoints.repoDeleteBranch, List("repos", owner, repo, "branches", branch),
       GiteaResponseMapper.decodeNoContent
+    )
+
+  def getBranch(config: GiteaConfig, owner: String, repo: String, branch: String): GiteaRequest[Branch] =
+    get(
+      config, GiteaEndpoints.repoGetBranch, List("repos", owner, repo, "branches", branch), Nil,
+      GiteaResponseMapper.decodeJson[Branch]
+    )
+
+  def updateBranch(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      branch: String,
+      body: UpdateBranchRepoOption
+  ): GiteaRequest[Unit] =
+    putJson(
+      config, GiteaEndpoints.repoUpdateBranch, List("repos", owner, repo, "branches", branch), body.toJson,
+      GiteaResponseMapper.decodeNoContent
+    )
+
+  def renameBranch(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      branch: String,
+      body: RenameBranchRepoOption
+  ): GiteaRequest[Unit] =
+    patchJson(
+      config, GiteaEndpoints.repoRenameBranch, List("repos", owner, repo, "branches", branch), body.toJson,
+      GiteaResponseMapper.decodeNoContent
+    )
+
+  def listGitHooks(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Chunk[GitHook]] =
+    get(
+      config, GiteaEndpoints.repoListGitHooks, List("repos", owner, repo, "hooks", "git"), Nil,
+      GiteaResponseMapper.decodeChunk[GitHook]
+    )
+
+  def getGitHook(config: GiteaConfig, owner: String, repo: String, id: String): GiteaRequest[GitHook] =
+    get(
+      config, GiteaEndpoints.repoGetGitHook, List("repos", owner, repo, "hooks", "git", id), Nil,
+      GiteaResponseMapper.decodeJson[GitHook]
+    )
+
+  def deleteGitHook(config: GiteaConfig, owner: String, repo: String, id: String): GiteaRequest[Unit] =
+    delete(
+      config, GiteaEndpoints.repoDeleteGitHook, List("repos", owner, repo, "hooks", "git", id),
+      GiteaResponseMapper.decodeNoContent
+    )
+
+  def editGitHook(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      id: String,
+      body: EditGitHookOption
+  ): GiteaRequest[GitHook] =
+    patchJson(
+      config, GiteaEndpoints.repoEditGitHook, List("repos", owner, repo, "hooks", "git", id), body.toJson,
+      response => GiteaResponseMapper.decodeJsonAt[GitHook](response, StatusCode.Ok)
     )
 
   def transferRepository(

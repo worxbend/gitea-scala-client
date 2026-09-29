@@ -22,7 +22,10 @@ user and both organization routes), edit, deletion, fork, branch creation and
 deletion, and ownership transfer request/accept/reject. Destructive writes
 accept only their documented success statuses; mirror credentials in
 `EditRepoOption.toString` are redacted. This is **not** full v1.27.3 coverage:
-330 operations remain missing; track them in `API_V1273_PLAN.md`.
+The subsequent branch and Git-hook batch adds typed branch read/update/rename
+and Git-hook list/get/edit/delete. Branch writes require the documented 204
+status. This is **not** full v1.27.3 coverage: 323 operations remain missing;
+track them in `API_V1273_PLAN.md`.
 
 A hardening release. Everything here is source-compatible: code that compiled
 against `1.0.0` still compiles. Some behaviour changed on purpose; read the

@@ -2907,6 +2907,41 @@ public final class io.worxbend.gitea4s.model.EditDeadlineOption$ implements scal
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.EditGitHookOption
+public final class io.worxbend.gitea4s.model.EditGitHookOption implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.EditGitHookOption(scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.String> content();
+  public io.worxbend.gitea4s.model.EditGitHookOption copy(scala.Option<java.lang.String>);
+  public scala.Option<java.lang.String> copy$default$1();
+  public scala.Option<java.lang.String> _1();
+  public static io.worxbend.gitea4s.model.EditGitHookOption apply(scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.EditGitHookOption fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.EditGitHookOption> given_JsonCodec_EditGitHookOption();
+  public static io.worxbend.gitea4s.model.EditGitHookOption unapply(io.worxbend.gitea4s.model.EditGitHookOption);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$1();
+}
+
+## io.worxbend.gitea4s.model.EditGitHookOption$
+public final class io.worxbend.gitea4s.model.EditGitHookOption$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.EditGitHookOption$ MODULE$;
+  public io.worxbend.gitea4s.model.EditGitHookOption apply(scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.EditGitHookOption unapply(io.worxbend.gitea4s.model.EditGitHookOption);
+  public scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.EditGitHookOption> given_JsonCodec_EditGitHookOption();
+  public io.worxbend.gitea4s.model.EditGitHookOption fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.EditIssue
 public final class io.worxbend.gitea4s.model.EditIssue implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.EditIssue(scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.IssueState>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>);
@@ -3615,6 +3650,51 @@ public final class io.worxbend.gitea4s.model.GitEntry$ implements scala.deriving
   public scala.Option<java.lang.String> $lessinit$greater$default$6();
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.GitEntry> given_JsonCodec_GitEntry();
   public io.worxbend.gitea4s.model.GitEntry fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.GitHook
+public final class io.worxbend.gitea4s.model.GitHook implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.GitHook(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.String> content();
+  public scala.Option<java.lang.Object> isActive();
+  public scala.Option<java.lang.String> name();
+  public io.worxbend.gitea4s.model.GitHook copy(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public scala.Option<java.lang.String> copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.String> copy$default$3();
+  public scala.Option<java.lang.String> _1();
+  public scala.Option<java.lang.Object> _2();
+  public scala.Option<java.lang.String> _3();
+  public static io.worxbend.gitea4s.model.GitHook apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.GitHook fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.GitHook> given_JsonCodec_GitHook();
+  public static io.worxbend.gitea4s.model.GitHook unapply(io.worxbend.gitea4s.model.GitHook);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$3();
+}
+
+## io.worxbend.gitea4s.model.GitHook$
+public final class io.worxbend.gitea4s.model.GitHook$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.GitHook$ MODULE$;
+  public io.worxbend.gitea4s.model.GitHook apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.GitHook unapply(io.worxbend.gitea4s.model.GitHook);
+  public scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.GitHook> given_JsonCodec_GitHook();
+  public io.worxbend.gitea4s.model.GitHook fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 
@@ -6086,6 +6166,39 @@ public final class io.worxbend.gitea4s.model.ReleaseAsset$ implements scala.deri
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.RenameBranchRepoOption
+public final class io.worxbend.gitea4s.model.RenameBranchRepoOption implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.RenameBranchRepoOption(java.lang.String);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public java.lang.String name();
+  public io.worxbend.gitea4s.model.RenameBranchRepoOption copy(java.lang.String);
+  public java.lang.String copy$default$1();
+  public java.lang.String _1();
+  public static io.worxbend.gitea4s.model.RenameBranchRepoOption apply(java.lang.String);
+  public static io.worxbend.gitea4s.model.RenameBranchRepoOption fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.RenameBranchRepoOption> given_JsonCodec_RenameBranchRepoOption();
+  public static io.worxbend.gitea4s.model.RenameBranchRepoOption unapply(io.worxbend.gitea4s.model.RenameBranchRepoOption);
+}
+
+## io.worxbend.gitea4s.model.RenameBranchRepoOption$
+public final class io.worxbend.gitea4s.model.RenameBranchRepoOption$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.RenameBranchRepoOption$ MODULE$;
+  public io.worxbend.gitea4s.model.RenameBranchRepoOption apply(java.lang.String);
+  public io.worxbend.gitea4s.model.RenameBranchRepoOption unapply(io.worxbend.gitea4s.model.RenameBranchRepoOption);
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.RenameBranchRepoOption> given_JsonCodec_RenameBranchRepoOption();
+  public io.worxbend.gitea4s.model.RenameBranchRepoOption fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.RepoCollaboratorPermission
 public final class io.worxbend.gitea4s.model.RepoCollaboratorPermission implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.RepoCollaboratorPermission(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.User>);
@@ -6906,6 +7019,49 @@ public final class io.worxbend.gitea4s.model.TransferRepoOption$ implements scal
   public scala.Option<zio.Chunk<java.lang.Object>> $lessinit$greater$default$2();
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.TransferRepoOption> given_JsonCodec_TransferRepoOption();
   public io.worxbend.gitea4s.model.TransferRepoOption fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.UpdateBranchRepoOption
+public final class io.worxbend.gitea4s.model.UpdateBranchRepoOption implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.UpdateBranchRepoOption(java.lang.String, scala.Option<java.lang.String>, scala.Option<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public java.lang.String newCommitId();
+  public scala.Option<java.lang.String> oldCommitId();
+  public scala.Option<java.lang.Object> force();
+  public io.worxbend.gitea4s.model.UpdateBranchRepoOption copy(java.lang.String, scala.Option<java.lang.String>, scala.Option<java.lang.Object>);
+  public java.lang.String copy$default$1();
+  public scala.Option<java.lang.String> copy$default$2();
+  public scala.Option<java.lang.Object> copy$default$3();
+  public java.lang.String _1();
+  public scala.Option<java.lang.String> _2();
+  public scala.Option<java.lang.Object> _3();
+  public static io.worxbend.gitea4s.model.UpdateBranchRepoOption apply(java.lang.String, scala.Option<java.lang.String>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.model.UpdateBranchRepoOption fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.UpdateBranchRepoOption> given_JsonCodec_UpdateBranchRepoOption();
+  public static io.worxbend.gitea4s.model.UpdateBranchRepoOption unapply(io.worxbend.gitea4s.model.UpdateBranchRepoOption);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+}
+
+## io.worxbend.gitea4s.model.UpdateBranchRepoOption$
+public final class io.worxbend.gitea4s.model.UpdateBranchRepoOption$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.UpdateBranchRepoOption$ MODULE$;
+  public io.worxbend.gitea4s.model.UpdateBranchRepoOption apply(java.lang.String, scala.Option<java.lang.String>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.model.UpdateBranchRepoOption unapply(io.worxbend.gitea4s.model.UpdateBranchRepoOption);
+  public scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.UpdateBranchRepoOption> given_JsonCodec_UpdateBranchRepoOption();
+  public io.worxbend.gitea4s.model.UpdateBranchRepoOption fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 

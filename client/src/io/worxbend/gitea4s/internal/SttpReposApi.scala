@@ -21,6 +21,7 @@ import io.worxbend.gitea4s.model.{
   CreateBranchRepoOption,
   CreateForkOption,
   CreateRepoOption,
+  EditGitHookOption,
   CombinedStatus,
   Commit,
   CommitDiffType,
@@ -29,17 +30,20 @@ import io.worxbend.gitea4s.model.{
   CreateStatusOption,
   GitBlobResponse,
   GitTreeResponse,
+  GitHook,
   EditRepoOption,
   LanguageStatistics,
   NewIssuePinsAllowed,
   Note,
   Reference,
+  RenameBranchRepoOption,
   RepoCollaboratorPermission,
   Repository,
   Tag,
   TagProtection,
   Team,
   TransferRepoOption,
+  UpdateBranchRepoOption,
   User
 }
 import zio.{Chunk, IO}
@@ -63,6 +67,27 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
 
   override def deleteBranch(owner: String, repo: String, branch: String): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.deleteBranch(config, owner, repo, branch))
+
+  override def getBranch(owner: String, repo: String, branch: String): IO[GiteaError, Branch] =
+    executor.send(GiteaRequests.getBranch(config, owner, repo, branch))
+
+  override def updateBranch(owner: String, repo: String, branch: String, body: UpdateBranchRepoOption): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.updateBranch(config, owner, repo, branch, body))
+
+  override def renameBranch(owner: String, repo: String, branch: String, body: RenameBranchRepoOption): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.renameBranch(config, owner, repo, branch, body))
+
+  override def gitHooks(owner: String, repo: String): IO[GiteaError, Chunk[GitHook]] =
+    executor.send(GiteaRequests.listGitHooks(config, owner, repo))
+
+  override def gitHook(owner: String, repo: String, id: String): IO[GiteaError, GitHook] =
+    executor.send(GiteaRequests.getGitHook(config, owner, repo, id))
+
+  override def editGitHook(owner: String, repo: String, id: String, body: EditGitHookOption): IO[GiteaError, GitHook] =
+    executor.send(GiteaRequests.editGitHook(config, owner, repo, id, body))
+
+  override def deleteGitHook(owner: String, repo: String, id: String): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteGitHook(config, owner, repo, id))
 
   override def transfer(owner: String, repo: String, body: TransferRepoOption): IO[GiteaError, Repository] =
     executor.send(GiteaRequests.transferRepository(config, owner, repo, body))

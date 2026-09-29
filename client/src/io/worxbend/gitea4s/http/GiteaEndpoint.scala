@@ -221,6 +221,39 @@ object GiteaEndpoints:
       repoGet.parameters :+ GiteaParameter("branch", "path", required = true), "#/responses/empty"
     )
 
+  val repoGetBranch: GiteaEndpoint =
+    GiteaEndpoint("GET", repoDeleteBranch.path, "repoGetBranch", repoDeleteBranch.parameters, "#/responses/Branch")
+
+  val repoUpdateBranch: GiteaEndpoint =
+    GiteaEndpoint(
+      "PUT", repoDeleteBranch.path, "repoUpdateBranch",
+      repoDeleteBranch.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/empty"
+    )
+
+  val repoRenameBranch: GiteaEndpoint =
+    GiteaEndpoint(
+      "PATCH", repoDeleteBranch.path, "repoRenameBranch",
+      repoDeleteBranch.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/empty"
+    )
+
+  val repoListGitHooks: GiteaEndpoint =
+    GiteaEndpoint("GET", "/repos/{owner}/{repo}/hooks/git", "repoListGitHooks", repoGet.parameters, "#/responses/GitHookList")
+
+  val repoGetGitHook: GiteaEndpoint =
+    GiteaEndpoint(
+      "GET", "/repos/{owner}/{repo}/hooks/git/{id}", "repoGetGitHook",
+      repoGet.parameters :+ GiteaParameter("id", "path", required = true), "#/responses/GitHook"
+    )
+
+  val repoDeleteGitHook: GiteaEndpoint =
+    GiteaEndpoint("DELETE", repoGetGitHook.path, "repoDeleteGitHook", repoGetGitHook.parameters, "#/responses/empty")
+
+  val repoEditGitHook: GiteaEndpoint =
+    GiteaEndpoint(
+      "PATCH", repoGetGitHook.path, "repoEditGitHook",
+      repoGetGitHook.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/GitHook"
+    )
+
   val repoTransfer: GiteaEndpoint =
     GiteaEndpoint(
       "POST", "/repos/{owner}/{repo}/transfer", "repoTransfer",
@@ -1991,6 +2024,13 @@ object GiteaEndpoints:
     createFork,
     repoCreateBranch,
     repoDeleteBranch,
+    repoGetBranch,
+    repoUpdateBranch,
+    repoRenameBranch,
+    repoListGitHooks,
+    repoGetGitHook,
+    repoDeleteGitHook,
+    repoEditGitHook,
     repoTransfer,
     acceptRepoTransfer,
     rejectRepoTransfer,

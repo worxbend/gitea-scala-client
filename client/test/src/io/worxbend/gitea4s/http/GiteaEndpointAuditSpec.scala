@@ -7,6 +7,9 @@ import io.worxbend.gitea4s.model.{
   CreateForkOption,
   CreateRepoOption,
   EditRepoOption,
+  EditGitHookOption,
+  RenameBranchRepoOption,
+  UpdateBranchRepoOption,
   TransferRepoOption,
   IssueAssigneesOption,
   CommitDiffType,
@@ -72,6 +75,16 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     AuditedRequest(GiteaRequests.transferRepository(config, "owner", "repo", TransferRepoOption("team")), false),
     AuditedRequest(GiteaRequests.acceptRepositoryTransfer(config, "owner", "repo"), false),
     AuditedRequest(GiteaRequests.rejectRepositoryTransfer(config, "owner", "repo"), false)
+  )
+
+  private val branchAndHookRequests = List(
+    AuditedRequest(GiteaRequests.getBranch(config, "owner", "repo", "main"), false),
+    AuditedRequest(GiteaRequests.updateBranch(config, "owner", "repo", "main", UpdateBranchRepoOption("abc")), false),
+    AuditedRequest(GiteaRequests.renameBranch(config, "owner", "repo", "main", RenameBranchRepoOption("next")), false),
+    AuditedRequest(GiteaRequests.listGitHooks(config, "owner", "repo"), false),
+    AuditedRequest(GiteaRequests.getGitHook(config, "owner", "repo", "pre-receive"), false),
+    AuditedRequest(GiteaRequests.editGitHook(config, "owner", "repo", "pre-receive", EditGitHookOption(Some("script"))), false),
+    AuditedRequest(GiteaRequests.deleteGitHook(config, "owner", "repo", "pre-receive"), false)
   )
 
   private val pullReviewLifecycleRequests = List(
@@ -532,6 +545,22 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   )
 
   private val expectedNonSuccessResponseLabels = Map(
+    "repoGetBranch" -> List(GiteaResponseLabel("404", "#/responses/notFound")),
+    "repoUpdateBranch" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("409", "#/responses/conflict"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoRenameBranch" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoListGitHooks" -> List(GiteaResponseLabel("404", "#/responses/notFound")),
+    "repoGetGitHook" -> List(GiteaResponseLabel("404", "#/responses/notFound")),
+    "repoDeleteGitHook" -> List(GiteaResponseLabel("404", "#/responses/notFound")),
+    "repoEditGitHook" -> List(GiteaResponseLabel("404", "#/responses/notFound")),
     "createCurrentUserRepo" -> List(
       GiteaResponseLabel("400", "#/responses/error"),
       GiteaResponseLabel("409", "description: The repository with the same name already exists."),
@@ -842,6 +871,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Gitea endpoint metadata audit")(
+      test("branch and Git hook operations match gitea-v1.27.3.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = branchAndHookRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
       test("repository lifecycle operations match gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = repositoryLifecycleRequests.flatMap(audit(swagger, _))
@@ -1129,9 +1164,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
         assertTrue(
           swaggerIds.size == 482,
-          implemented.size == 152,
+          implemented.size == 159,
           implemented.distinct.size == implemented.size,
-          missing.size == 330
+          missing.size == 323
         ) ?? s"remaining operation IDs: ${missing.toList.sorted.mkString(", ")}"
       },
       test("GiteaEndpoints.all lists every endpoint constant") {

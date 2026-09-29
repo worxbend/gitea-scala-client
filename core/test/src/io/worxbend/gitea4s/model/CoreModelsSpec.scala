@@ -392,6 +392,19 @@ object CoreModelsSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Core models")(
+      test("branch and Git hook models cover their v1.27.3 schema fields") {
+        val expectedFields = Map(
+          "UpdateBranchRepoOption" -> Set("new_commit_id", "old_commit_id", "force"),
+          "RenameBranchRepoOption" -> Set("name"),
+          "GitHook" -> Set("content", "is_active", "name"),
+          "EditGitHookOption" -> Set("content")
+        )
+        val mismatches = expectedFields.toList.collect {
+          case (name, fields) if latestDefinitionFields.get(name) != Some(fields) => name
+        }
+
+        assertTrue(mismatches.isEmpty) ?? mismatches.mkString(", ")
+      },
       test("repository lifecycle request models cover their v1.27.3 schema fields") {
         val expectedFields = Map(
           "CreateRepoOption" -> Set(
