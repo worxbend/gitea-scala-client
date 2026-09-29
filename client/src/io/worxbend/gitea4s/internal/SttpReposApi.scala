@@ -187,6 +187,11 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
       executor.send(GiteaRequests.repoBranches(config, owner, repo, page))
     }
 
+  override def branches(owner: String, repo: String, query: String): ZStream[Any, GiteaError, Branch] =
+    Pagination.paginated { page =>
+      executor.send(GiteaRequests.repoBranches(config, owner, repo, query, page))
+    }
+
   override def tags(owner: String, repo: String): ZStream[Any, GiteaError, Tag] =
     Pagination.paginated { page =>
       executor.send(GiteaRequests.repoTags(config, owner, repo, page))

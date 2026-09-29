@@ -172,7 +172,8 @@ Deliberately not done, with reasons recorded in the review:
 - Validate every change with `./mill __.compile __.test compatibility.check`;
   run `./mill compatibility.writeSnapshot` only for intentional public-API
   changes.
-- Keep the spec contract-audit (`plugin-redoc-2.yaml`) authoritative for any
-  new or changed endpoint.
+- Keep the current spec contract-audit (`gitea-v1.27.3.yaml`) authoritative for
+  any new or changed endpoint. The 1.26.2 document remains for the published
+  `ApiReference.gitea1262` value and legacy model-shape checks.
 - Pre-1.0, breaking changes are allowed but should be deliberate and recorded in
   `CHANGELOG.md`.

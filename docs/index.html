@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>gitea4s — a Scala 3 client for the Gitea API</title>
-<meta name="description" content="gitea4s is a Scala 3 client library for the Gitea API, built on ZIO 2, sttp client4 and zio-json, with every endpoint audited against the Gitea 1.26.2 OpenAPI contract.">
+<meta name="description" content="gitea4s is a Scala 3 client library for the Gitea API, built on ZIO 2, sttp client4 and zio-json, with every implemented endpoint audited against the Gitea 1.27.3 OpenAPI contract.">
 <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
@@ -34,7 +34,7 @@
       <span class="badge">Java 21 baseline</span>
       <span class="badge">ZIO 2</span>
       <span class="badge">sttp client4</span>
-      <span class="badge">Gitea API 1.26.2</span>
+      <span class="badge">Gitea API 1.27.3</span>
       <span class="badge">Apache-2.0</span>
     </div>
     <div class="cta">
@@ -119,7 +119,7 @@ object Main extends ZIOAppDefault:
     <div class="card">
       <h3>Audited against the contract</h3>
       <p>Every endpoint's method, path, parameters and response labels are checked against the
-      vendored <code>plugin-redoc-2.yaml</code>, and the URI a builder produces is checked against
+      vendored <code>gitea-v1.27.3.yaml</code>, and the URI a builder produces is checked against
       the path template it declares.</p>
     </div>
     <div class="card">
@@ -160,7 +160,7 @@ backend-okhttp  -&gt; client</code></pre>
 
 <footer class="site">
   <div class="wrap">
-    <p>gitea4s is licensed under Apache-2.0. Targets the Gitea API <code>1.26.2</code>.</p>
+    <p>gitea4s is licensed under Apache-2.0. Targets the Gitea API <code>1.27.3</code>.</p>
     <p><a href="https://github.com/worxbend/gitea-scala-client">Source and issue tracker on GitHub</a></p>
   </div>
 </footer>

@@ -380,6 +380,17 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.method == Method.GET,
           request.uri.toString.contains("/api/v1/repos/worx%20bend/gitea%2Fscala/branches?"),
           request.uri.paramsMap.get("page").contains("3"),
+          request.uri.paramsMap.get("limit").contains("25"),
+          request.uri.paramsMap.get("q").isEmpty
+        )
+      },
+      test("sends the v1.27.3 branch-search query without changing the original builder") {
+        val request = GiteaRequests.repoBranches(config, "owner", "repo", query = "release/next", page = 4).request
+
+        assertTrue(
+          request.method == Method.GET,
+          request.uri.paramsMap.get("q").contains("release/next"),
+          request.uri.paramsMap.get("page").contains("4"),
           request.uri.paramsMap.get("limit").contains("25")
         )
       },
@@ -2136,7 +2147,7 @@ object GiteaRequestsSpec extends ZIOSpecDefault:
           request.header("Accept").contains("application/json"),
           request.header("Content-Type").exists(_.startsWith("application/json")),
           requestBody ==
-            """{"Do":"squash","MergeCommitID":"abc123","MergeMessageField":"Squash commits","MergeTitleField":"Add feature","delete_branch_after_merge":true,"force_merge":false,"head_commit_id":"def456","merge_when_checks_succeed":true}""",
+            """{"do":"squash","merge_commit_id":"abc123","merge_message_field":"Squash commits","merge_title_field":"Add feature","delete_branch_after_merge":true,"force_merge":false,"head_commit_id":"def456","merge_when_checks_succeed":true}""",
           built.retryable == false,
           decodeWith(built, backend) == Right(())
         )

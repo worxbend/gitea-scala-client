@@ -699,169 +699,169 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Gitea endpoint metadata audit")(
-      test("pull-review lifecycle metadata matches plugin-redoc-2.yaml") {
+      test("pull-review lifecycle metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = pullReviewLifecycleRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("commit-status metadata matches plugin-redoc-2.yaml") {
+      test("commit-status metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = commitStatusRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("commit pull-request metadata matches plugin-redoc-2.yaml") {
+      test("commit pull-request metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = commitPullRequestRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("single commit metadata matches plugin-redoc-2.yaml") {
+      test("single commit metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = singleCommitRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("commit note metadata matches plugin-redoc-2.yaml") {
+      test("commit note metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = commitNoteRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("git tree metadata matches plugin-redoc-2.yaml") {
+      test("git tree metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = gitTreeRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("git blob metadata matches plugin-redoc-2.yaml") {
+      test("git blob metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = gitBlobRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("annotated Git tag metadata matches plugin-redoc-2.yaml") {
+      test("annotated Git tag metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = annotatedTagRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("git refs metadata matches plugin-redoc-2.yaml") {
+      test("git refs metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = gitRefEndpoints.flatMap(auditEndpoint(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository contents metadata matches plugin-redoc-2.yaml") {
+      test("repository contents metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = contentsRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository raw file metadata matches plugin-redoc-2.yaml") {
+      test("repository raw file metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = rawFileRequests.flatMap(auditRawFile(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository archive metadata matches plugin-redoc-2.yaml") {
+      test("repository archive metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = archiveRequests.flatMap(auditArchive(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository release list/detail/latest metadata matches plugin-redoc-2.yaml") {
+      test("repository release list/detail/latest metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = releaseRequests.flatMap(auditRelease(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository release asset metadata matches plugin-redoc-2.yaml") {
+      test("repository release asset metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = releaseAssetRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository release by tag metadata matches plugin-redoc-2.yaml") {
+      test("repository release by tag metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = releaseByTagRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository tag lookup metadata matches plugin-redoc-2.yaml") {
+      test("repository tag lookup metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = repoTagRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository languages metadata matches plugin-redoc-2.yaml") {
+      test("repository languages metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = repositoryLanguagesEndpoints.flatMap(auditEndpoint(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository GPG signing-key metadata matches plugin-redoc-2.yaml") {
+      test("repository GPG signing-key metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = repositorySigningKeyRequests.flatMap(auditTextPlainString(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository assignees metadata matches plugin-redoc-2.yaml") {
+      test("repository assignees metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = repositoryAssigneeRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository social metadata matches plugin-redoc-2.yaml") {
+      test("repository social metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = repositorySocialMetadataRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository tag-protection metadata matches plugin-redoc-2.yaml") {
+      test("repository tag-protection metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = tagProtectionEndpoints.flatMap(auditEndpoint(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository branch-protection metadata matches plugin-redoc-2.yaml") {
+      test("repository branch-protection metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = branchProtectionRequests.flatMap(auditBranchProtection(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository collaborator metadata matches plugin-redoc-2.yaml") {
+      test("repository collaborator metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = collaboratorRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("repository team metadata matches plugin-redoc-2.yaml") {
+      test("repository team metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = repositoryTeamRequests.flatMap(auditRepositoryTeam(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("commit diff or patch metadata matches plugin-redoc-2.yaml") {
+      test("commit diff or patch metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = commitDiffOrPatchRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("pull-request merge/update metadata matches plugin-redoc-2.yaml") {
+      test("pull-request merge/update metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = pullRequestMergeUpdateRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("pull-request create/edit metadata matches plugin-redoc-2.yaml") {
+      test("pull-request create/edit metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = pullRequestCreateEditRequests.flatMap(audit(swagger, _))
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("commit-status query enums match plugin-redoc-2.yaml") {
+      test("commit-status query enums match gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures =
           List(
@@ -905,7 +905,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("pull-request update query enums match plugin-redoc-2.yaml") {
+      test("pull-request update query enums match gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures =
           compareSwagger(
@@ -920,7 +920,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
-      test("path enum values match plugin-redoc-2.yaml") {
+      test("path enum values match gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = pathEnumAudits.flatMap(auditPathEnum(swagger, _))
 
@@ -929,7 +929,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       // The suites above audit whichever endpoints somebody remembered to
       // register. These last two audit the catalog itself, so an endpoint
       // cannot be added without being checked against the contract at all.
-      test("every endpoint in GiteaEndpoints.all resolves in plugin-redoc-2.yaml") {
+      test("every endpoint in GiteaEndpoints.all resolves in gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = GiteaEndpoints.all.flatMap(auditEndpointIdentity(swagger, _))
 
@@ -1162,7 +1162,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     * endpoint declares.
     *
     * Without this the two are never compared to each other. `GiteaEndpoint`
-    * mirrors `plugin-redoc-2.yaml`, and every assertion above checks that
+    * mirrors `gitea-v1.27.3.yaml`, and every assertion above checks that
     * mirror against the spec — but `GiteaRequests` builds the real URI from a
     * separate list of segments, so a typo there (`"relases"` for `"releases"`)
     * changes what goes on the wire while leaving all of the metadata audits
@@ -1290,7 +1290,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
     private def findPath(path: String): Either[String, Int] =
       lines.indexWhere(_.trim == s"$path:") match
-        case -1    => Left(s"Swagger path lookup failed: path not found in plugin-redoc-2.yaml: $path")
+        case -1    => Left(s"Swagger path lookup failed: path not found in gitea-v1.27.3.yaml: $path")
         case index => Right(index)
 
     private def findMethod(pathIndex: Int, method: String): Either[String, Int] =
@@ -1408,9 +1408,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       val candidates = Iterator
         .iterate(Paths.get("").toAbsolutePath)(_.getParent)
         .takeWhile(_ != null)
-        .map(_.resolve("plugin-redoc-2.yaml"))
+        .map(_.resolve("gitea-v1.27.3.yaml"))
         .toList
 
-      candidates.find(Files.isRegularFile(_)).getOrElse(Paths.get("plugin-redoc-2.yaml").toAbsolutePath)
+      candidates.find(Files.isRegularFile(_)).getOrElse(Paths.get("gitea-v1.27.3.yaml").toAbsolutePath)
 
   private final case class SwaggerParameter(name: String, in: String, required: Boolean, enumValues: List[String])

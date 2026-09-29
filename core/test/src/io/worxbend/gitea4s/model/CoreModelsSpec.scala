@@ -22,7 +22,7 @@ object CoreModelsSpec extends ZIOSpecDefault:
       sampleKeys: Set[String]
   )
 
-  /** The field names each schema declares in `plugin-redoc-2.yaml`.
+  /** The field names each schema declares in the 1.26.2 reference.
     *
     * Wire field names used to live in three places: the vendored spec, the
     * `@jsonField` annotations on the models, and a hand-typed copy of the spec
@@ -35,7 +35,13 @@ object CoreModelsSpec extends ZIOSpecDefault:
     * `responses:`, and an unscoped search finds the wrong one.
     */
   private lazy val swaggerDefinitionFields: Map[String, Set[String]] =
-    val lines = Files.readString(swaggerPath(), StandardCharsets.UTF_8).linesIterator.toVector
+    definitionFields("plugin-redoc-2.yaml")
+
+  private lazy val latestDefinitionFields: Map[String, Set[String]] =
+    definitionFields("gitea-v1.27.3.yaml")
+
+  private def definitionFields(document: String): Map[String, Set[String]] =
+    val lines = Files.readString(swaggerPath(document), StandardCharsets.UTF_8).linesIterator.toVector
     val start = lines.indexWhere(_ == "definitions:")
     val end =
       lines.indexWhere(line => line.nonEmpty && !line.head.isWhitespace, start + 1) match
@@ -71,13 +77,13 @@ object CoreModelsSpec extends ZIOSpecDefault:
   /** Finds the vendored spec by walking up from the working directory, the
     * same way `GiteaEndpointAuditSpec` does, so the suite runs from any module.
     */
-  private def swaggerPath(): Path =
+  private def swaggerPath(document: String): Path =
     Iterator
       .iterate(Paths.get("").toAbsolutePath)(_.getParent)
       .takeWhile(_ != null)
-      .map(_.resolve("plugin-redoc-2.yaml"))
+      .map(_.resolve(document))
       .find(Files.isRegularFile(_))
-      .getOrElse(Paths.get("plugin-redoc-2.yaml").toAbsolutePath)
+      .getOrElse(throw IllegalStateException(s"Cannot find $document"))
 
   private val schemaFieldChecklist = List(
     SchemaFieldChecklist(
@@ -386,6 +392,23 @@ object CoreModelsSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Core models")(
+      test("published response fields still exist in the v1.27.3 schemas") {
+        val removedFields = schemaFieldChecklist.flatMap { checklist =>
+          latestDefinitionFields.get(checklist.swaggerDefinition) match
+            case None => List(s"${checklist.swaggerDefinition} is missing")
+            case Some(fields) =>
+              checklist.jsonFields.diff(fields).toList.sorted.map(field => s"${checklist.swaggerDefinition}.$field")
+        }
+
+        assertTrue(removedFields.isEmpty)
+      },
+      test("merge write fields use the v1.27.3 schema names") {
+        val fields = latestDefinitionFields.getOrElse("MergePullRequestOption", Set.empty[String])
+        assertTrue(
+          Set("do", "merge_commit_id", "merge_message_field", "merge_title_field").subsetOf(fields),
+          fields.intersect(Set("Do", "MergeCommitID", "MergeMessageField", "MergeTitleField")).isEmpty
+        )
+      },
       test("records Swagger field checklist for schema-traced response models") {
         // Every definition the checklist claims to trace must exist in the
         // vendored spec, and the checklist must account for every field that
@@ -2066,9 +2089,11 @@ object CoreModelsSpec extends ZIOSpecDefault:
 
         assertTrue(
           payload.toJson ==
-            """{"Do":"rebase-merge","MergeCommitID":"abc123","MergeMessageField":"Merge pull request","MergeTitleField":"PR title","delete_branch_after_merge":true,"force_merge":false,"head_commit_id":"def456","merge_when_checks_succeed":true}""",
+            """{"do":"rebase-merge","merge_commit_id":"abc123","merge_message_field":"Merge pull request","merge_title_field":"PR title","delete_branch_after_merge":true,"force_merge":false,"head_commit_id":"def456","merge_when_checks_succeed":true}""",
           decoded == Right(payload),
-          MergePullRequestOption(MergePullRequestMethod.Merge).toJson == """{"Do":"merge"}""",
+          MergePullRequestOption(MergePullRequestMethod.Merge).toJson == """{"do":"merge"}""",
+          """{"Do":"merge","MergeCommitID":"abc123"}""".fromJson[MergePullRequestOption] ==
+            Right(MergePullRequestOption(MergePullRequestMethod.Merge, mergeCommitId = Some("abc123"))),
           MergePullRequestMethod.values.map(_.jsonValue).toList ==
             List("merge", "rebase", "rebase-merge", "squash", "fast-forward-only", "manually-merged")
         )
@@ -2312,8 +2337,8 @@ object CoreModelsSpec extends ZIOSpecDefault:
         // behaviour is covered in EnumDriftSpec. What stays strict is a
         // *required* enum field, where there is no `None` to fall back to and
         // an unrecognised value means the payload cannot be honoured.
-        val mergeOption = """{ "Do": "cherry-pick" }""".fromJson[MergePullRequestOption]
-        val validMergeOption = """{ "Do": "squash" }""".fromJson[MergePullRequestOption]
+        val mergeOption = """{ "do": "cherry-pick" }""".fromJson[MergePullRequestOption]
+        val validMergeOption = """{ "do": "squash" }""".fromJson[MergePullRequestOption]
 
         assertTrue(
           mergeOption.isLeft,

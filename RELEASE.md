@@ -144,7 +144,7 @@ From `1.0.0` the published modules follow [Semantic Versioning](https://semver.o
 - **Major** — breaking changes to the public API of `core`, `client`,
   `backend-zio`, or `backend-okhttp`.
 - **Minor** — backward-compatible additions, including new typed endpoints and
-  models as the client fills out more of the Gitea API `1.26.2` contract.
+  models as the client fills out more of the Gitea API `1.27.3` contract.
   `1.0.0` is an API-stability commitment, not a coverage commitment.
 - **Patch** — bug fixes, documentation, and build/publishing fixes.
 

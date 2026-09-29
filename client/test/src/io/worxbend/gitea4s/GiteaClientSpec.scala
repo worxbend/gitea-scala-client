@@ -1961,6 +1961,25 @@ object GiteaClientSpec extends ZIOSpecDefault:
           tags.map(_.name) == Chunk(Some("v1.0.0"), Some("v1.1.0"))
         )
       },
+      test("filters repository branches on every page") {
+        val twoPageHeaders = List(Header("x-total-count", "2"))
+        val backend =
+          taskStub.whenRequestMatches { request =>
+            request.uri.path.endsWith(List("repos", "alice", "api", "branches")) &&
+              request.uri.paramsMap.get("q").contains("release/") &&
+              request.uri.paramsMap.get("page").contains("1")
+          }.thenRespond(ResponseStub.adjust("""[{"name":"release/1"}]""", StatusCode.Ok, twoPageHeaders))
+            .whenRequestMatches { request =>
+              request.uri.path.endsWith(List("repos", "alice", "api", "branches")) &&
+                request.uri.paramsMap.get("q").contains("release/") &&
+                request.uri.paramsMap.get("page").contains("2")
+            }.thenRespond(ResponseStub.adjust("""[{"name":"release/2"}]""", StatusCode.Ok, twoPageHeaders))
+        val client = GiteaClient.fromBackend(config, backend)
+
+        client.repos.branches("alice", "api", "release/").runCollect.map { branches =>
+          assertTrue(branches.map(_.name) == Chunk(Some("release/1"), Some("release/2")))
+        }
+      },
       test("loads repository language statistics through the ReposApi") {
         val backend =
           taskStub.whenRequestMatches { request =>
@@ -3458,8 +3477,8 @@ object GiteaClientSpec extends ZIOSpecDefault:
                 request.uri.path.endsWith(List("repos", "alice", "api", "pulls", "2", "merge")) &&
                 (request.body match
                   case StringBody(body, _, _) =>
-                    body.contains(""""Do":"squash"""") &&
-                      body.contains(""""MergeTitleField":"Merge typed facade"""")
+                     body.contains(""""do":"squash"""") &&
+                       body.contains(""""merge_title_field":"Merge typed facade"""")
                   case _ => false)
             }
             .thenRespond(ResponseStub.adjust("", StatusCode.Ok))

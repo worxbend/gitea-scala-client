@@ -537,10 +537,10 @@ object EditPullRequestOption:
   given JsonCodec[EditPullRequestOption] = DeriveJsonCodec.gen[EditPullRequestOption]
 
 final case class MergePullRequestOption(
-    @jsonField("Do") mergeMethod: MergePullRequestMethod,
-    @jsonField("MergeCommitID") mergeCommitId: Option[String] = None,
-    @jsonField("MergeMessageField") mergeMessageField: Option[String] = None,
-    @jsonField("MergeTitleField") mergeTitleField: Option[String] = None,
+    @jsonField("do") @jsonAliases("Do") mergeMethod: MergePullRequestMethod,
+    @jsonField("merge_commit_id") @jsonAliases("MergeCommitID") mergeCommitId: Option[String] = None,
+    @jsonField("merge_message_field") @jsonAliases("MergeMessageField") mergeMessageField: Option[String] = None,
+    @jsonField("merge_title_field") @jsonAliases("MergeTitleField") mergeTitleField: Option[String] = None,
     @jsonField("delete_branch_after_merge") deleteBranchAfterMerge: Option[Boolean] = None,
     @jsonField("force_merge") forceMerge: Option[Boolean] = None,
     @jsonField("head_commit_id") headCommitId: Option[String] = None,

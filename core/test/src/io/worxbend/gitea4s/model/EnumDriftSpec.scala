@@ -62,7 +62,7 @@ object EnumDriftSpec extends ZIOSpecDefault:
         assertTrue(
           MergePullRequestMethod.fromString("teleport").isLeft,
           IssueState.fromString("archived").isLeft,
-          """{"Do":"teleport"}""".fromJson[MergePullRequestOption].isLeft
+          """{"do":"teleport"}""".fromJson[MergePullRequestOption].isLeft
         )
       }
     )

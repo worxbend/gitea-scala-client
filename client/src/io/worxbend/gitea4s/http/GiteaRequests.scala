@@ -187,6 +187,16 @@ object GiteaRequests:
   def repoBranches(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Branch]] =
     paginated[Branch](config, GiteaEndpoints.repoListBranches, List("repos", owner, repo, "branches"), page)
 
+  def repoBranches(config: GiteaConfig, owner: String, repo: String, query: String, page: Int): GiteaRequest[Page[Branch]] =
+    paginatedWindow[Branch](
+      config,
+      GiteaEndpoints.repoListBranches,
+      List("repos", owner, repo, "branches"),
+      Some(page),
+      None,
+      (currentPage, pageSize) => pageQuery(currentPage, pageSize) :+ ("q" -> query)
+    )
+
   def repoTags(config: GiteaConfig, owner: String, repo: String, page: Int = 1): GiteaRequest[Page[Tag]] =
     paginated[Tag](config, GiteaEndpoints.repoListTags, List("repos", owner, repo, "tags"), page)
 

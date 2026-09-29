@@ -7,7 +7,7 @@ import io.worxbend.gitea4s.{GiteaClient, GiteaConfig, GiteaConfigError}
 import zio.{Console, ZIO}
 
 private[examples] object ExampleSupport:
-  val referenceLine: String = s"gitea4s targets Gitea API ${ApiReference.gitea1262.version}"
+  val referenceLine: String = s"gitea4s targets Gitea API ${ApiReference.gitea1273.version}"
 
   val credentialsHint: String =
     "Set GITEA_URL with GITEA_TOKEN or GITEA_USERNAME/GITEA_PASSWORD to run the live example."

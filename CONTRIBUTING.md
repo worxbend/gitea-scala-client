@@ -51,9 +51,15 @@ tree, which is not a change worth making incidentally.
 These conventions keep the hand-written client coherent as it grows. They are
 the reason the codebase looks the way it does.
 
-- **Spec is authoritative.** `plugin-redoc-2.yaml` (Gitea API `1.26.2`, Swagger
+- **Spec is authoritative.** `gitea-v1.27.3.yaml` (Gitea API `1.27.3`, Swagger
   2.0) is the source of truth for operation IDs, paths, parameters, response
   shapes, and payload fields. Do not implement endpoints from memory.
+  It is a YAML rendering of the tagged Gitea
+  [`templates/swagger/v1_json.tmpl`](https://github.com/go-gitea/gitea/blob/v1.27.3/templates/swagger/v1_json.tmpl)
+  (SHA-256 `5a95a50cf527825dfb251071f1dea4634d1ec28adca93f408d1cbc2380779215`),
+  with `SwaggerAppVer` set to `1.27.3` and `SwaggerAppSubUrl` empty. Keep
+  `plugin-redoc-2.yaml` as the 1.26.2 reference named by the published
+  `ApiReference.gitea1262` value.
 - **Contract audit.** Every implemented endpoint registers typed metadata in
   `GiteaEndpoint`/`GiteaEndpoints` and is audited against the spec in
   `GiteaEndpointAuditSpec` (method, path, operation ID, required path params,

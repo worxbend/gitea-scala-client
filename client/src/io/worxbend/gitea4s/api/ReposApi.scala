@@ -147,6 +147,12 @@ trait ReposApi:
 
   def branches(owner: String, repo: String): ZStream[Any, GiteaError, Branch]
 
+  /** Filters branches by name. The built-in client sends `q` to Gitea; other
+    * implementations retain a working default without implementing the new method.
+    */
+  def branches(owner: String, repo: String, query: String): ZStream[Any, GiteaError, Branch] =
+    branches(owner, repo).filter(_.name.exists(_.contains(query)))
+
   def tags(owner: String, repo: String): ZStream[Any, GiteaError, Tag]
 
   def languages(owner: String, repo: String): IO[GiteaError, LanguageStatistics]

@@ -203,7 +203,8 @@ object GiteaEndpoints:
         GiteaParameter("owner", "path", required = true),
         GiteaParameter("repo", "path", required = true),
         GiteaParameter("page", "query", required = false),
-        GiteaParameter("limit", "query", required = false)
+        GiteaParameter("limit", "query", required = false),
+        GiteaParameter("q", "query", required = false)
       ),
       response = "#/responses/BranchList"
     )

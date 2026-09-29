@@ -61,7 +61,7 @@ trait PublishableGitea4sModule extends Gitea4sModule, SonatypeCentralPublishModu
   def publishVersion = Versions.library
 
   def pomSettings = PomSettings(
-    description = "Scala 3 ZIO client library for Gitea API v1.26.2",
+    description = "Scala 3 ZIO client library for Gitea API v1.27.3",
     organization = "io.worxbend",
     url = "https://github.com/worxbend/gitea-scala-client",
     licenses = Seq(

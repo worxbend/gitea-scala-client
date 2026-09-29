@@ -6,7 +6,8 @@ A Scala 3 client library for the [Gitea](https://gitea.io) API, built with
 
 - **Package root:** `io.worxbend.gitea4s`
 - **JVM baseline:** Java 21 · **Scala:** 3.x
-- **API target:** Gitea `1.26.2` (local `plugin-redoc-2.yaml` is the contract)
+- **API target:** Gitea `1.27.3` (`gitea-v1.27.3.yaml` is the current contract;
+  `plugin-redoc-2.yaml` preserves the 1.26.2 reference)
 - **Version:** `1.0.0` · **License:** Apache-2.0
 - **Backends:** `backend-zio` (Java `HttpClient`, default) and an optional
   `backend-okhttp` bridge
@@ -119,6 +120,8 @@ object Main extends ZIOAppDefault:
       yield ()
     }.provideLayer(layer)
 ```
+
+To search branches by name on Gitea 1.27.3, call `client.repos.branches("owner", "repo", "release/")`. The stream sends the `q` filter on every page; the two-argument overload still lists all branches.
 
 ## Authentication
 

@@ -8,4 +8,7 @@ object ApiReference:
   val gitea1262: ApiReference =
     ApiReference(version = "1.26.2", document = "plugin-redoc-2.yaml")
 
+  val gitea1273: ApiReference =
+    ApiReference(version = "1.27.3", document = "gitea-v1.27.3.yaml")
+
   given JsonCodec[ApiReference] = DeriveJsonCodec.gen[ApiReference]

@@ -688,6 +688,7 @@ public final class io.worxbend.gitea4s.model.ApiReference implements scala.Produ
   public static io.worxbend.gitea4s.model.ApiReference apply(java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.model.ApiReference fromProduct(scala.Product);
   public static io.worxbend.gitea4s.model.ApiReference gitea1262();
+  public static io.worxbend.gitea4s.model.ApiReference gitea1273();
   public static zio.json.JsonCodec<io.worxbend.gitea4s.model.ApiReference> given_JsonCodec_ApiReference();
   public static io.worxbend.gitea4s.model.ApiReference unapply(io.worxbend.gitea4s.model.ApiReference);
 }
@@ -698,6 +699,7 @@ public final class io.worxbend.gitea4s.model.ApiReference$ implements scala.deri
   public io.worxbend.gitea4s.model.ApiReference apply(java.lang.String, java.lang.String);
   public io.worxbend.gitea4s.model.ApiReference unapply(io.worxbend.gitea4s.model.ApiReference);
   public io.worxbend.gitea4s.model.ApiReference gitea1262();
+  public io.worxbend.gitea4s.model.ApiReference gitea1273();
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.ApiReference> given_JsonCodec_ApiReference();
   public io.worxbend.gitea4s.model.ApiReference fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);

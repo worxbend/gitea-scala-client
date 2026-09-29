@@ -14,6 +14,15 @@ A hardening release. Everything here is source-compatible: code that compiled
 against `1.0.0` still compiles. Some behaviour changed on purpose; read the
 notes below before upgrading.
 
+The API target is now Gitea 1.27.3. Its tagged Swagger contract is vendored as
+`gitea-v1.27.3.yaml`; the 1.26.2 document and `ApiReference.gitea1262` remain
+available. All 130 implemented operations retain their method and path. The
+optional branch-list `q` is available through new request-builder and
+`ReposApi.branches` overloads; the existing unfiltered stream is unchanged.
+Merge-request JSON now uses the lowercase field names declared by 1.27.3; decoding still accepts the previous
+capitalized names. New optional response fields and the eleven new operations
+in the server spec are not yet represented by the typed client.
+
 **The three-argument JVM constructors, `apply`, and `copy` from `1.0.0` are
 restored** for `UserSearchParams` and `RequestEvent`. Adding defaulted fields
 had replaced these methods with wider-arity versions, so pre-compiled callers
