@@ -2719,6 +2719,8 @@ public final class io.worxbend.gitea4s.http.UserSearchParams implements scala.Pr
   public scala.Option<java.lang.Object> page();
   public scala.Option<java.lang.Object> limit();
   public scala.Option<java.lang.Object> uid();
+  public io.worxbend.gitea4s.http.UserSearchParams(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.http.UserSearchParams copy(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
   public io.worxbend.gitea4s.http.UserSearchParams copy(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
   public scala.Option<java.lang.String> copy$default$1();
   public scala.Option<java.lang.Object> copy$default$2();
@@ -2728,6 +2730,7 @@ public final class io.worxbend.gitea4s.http.UserSearchParams implements scala.Pr
   public scala.Option<java.lang.Object> _2();
   public scala.Option<java.lang.Object> _3();
   public scala.Option<java.lang.Object> _4();
+  public static io.worxbend.gitea4s.http.UserSearchParams apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
   public static io.worxbend.gitea4s.http.UserSearchParams apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
   public static io.worxbend.gitea4s.http.UserSearchParams default();
   public static io.worxbend.gitea4s.http.UserSearchParams fromProduct(scala.Product);
@@ -2749,6 +2752,7 @@ public final class io.worxbend.gitea4s.http.UserSearchParams$ implements scala.d
   public scala.Option<java.lang.Object> $lessinit$greater$default$3();
   public scala.Option<java.lang.Object> $lessinit$greater$default$4();
   public io.worxbend.gitea4s.http.UserSearchParams default();
+  public io.worxbend.gitea4s.http.UserSearchParams apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
   public io.worxbend.gitea4s.http.UserSearchParams fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
@@ -2799,6 +2803,8 @@ public final class io.worxbend.gitea4s.observability.RequestEvent implements sca
   public io.worxbend.gitea4s.observability.RequestOutcome outcome();
   public scala.Option<java.lang.Object> status();
   public int attempts();
+  public io.worxbend.gitea4s.observability.RequestEvent(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome);
+  public io.worxbend.gitea4s.observability.RequestEvent copy(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome);
   public boolean succeeded();
   public boolean retried();
   public io.worxbend.gitea4s.observability.RequestEvent copy(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome, scala.Option<java.lang.Object>, int);
@@ -2812,6 +2818,7 @@ public final class io.worxbend.gitea4s.observability.RequestEvent implements sca
   public io.worxbend.gitea4s.observability.RequestOutcome _3();
   public scala.Option<java.lang.Object> _4();
   public int _5();
+  public static io.worxbend.gitea4s.observability.RequestEvent apply(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome);
   public static io.worxbend.gitea4s.observability.RequestEvent apply(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome, scala.Option<java.lang.Object>, int);
   public static io.worxbend.gitea4s.observability.RequestEvent fromProduct(scala.Product);
   public static io.worxbend.gitea4s.observability.RequestEvent unapply(io.worxbend.gitea4s.observability.RequestEvent);
@@ -2825,9 +2832,10 @@ public final class io.worxbend.gitea4s.observability.RequestEvent$ implements sc
   public static {};
   public io.worxbend.gitea4s.observability.RequestEvent apply(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome, scala.Option<java.lang.Object>, int);
   public io.worxbend.gitea4s.observability.RequestEvent unapply(io.worxbend.gitea4s.observability.RequestEvent);
-  public java.lang.String toString();
   public scala.Option<java.lang.Object> $lessinit$greater$default$4();
   public int $lessinit$greater$default$5();
+  public io.worxbend.gitea4s.observability.RequestEvent apply(io.worxbend.gitea4s.http.GiteaEndpoint, java.time.Duration, io.worxbend.gitea4s.observability.RequestOutcome);
+  public java.lang.String toString();
   public io.worxbend.gitea4s.observability.RequestEvent fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }

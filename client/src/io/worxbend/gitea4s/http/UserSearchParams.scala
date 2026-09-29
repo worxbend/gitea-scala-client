@@ -11,12 +11,17 @@ final case class UserSearchParams(
     q: Option[String] = None,
     page: Option[Int] = None,
     limit: Option[Int] = None,
-    // Added after the fields above so that existing positional constructions
-    // keep compiling. The endpoint has always declared this parameter; the
-    // params type was the only one in this package that did not match its
-    // endpoint, which left no way to look a user up by id.
     uid: Option[Long] = None
-)
+):
+  // Preserve the signatures emitted for the three-field case class in 1.0.0.
+  def this(q: Option[String], page: Option[Int], limit: Option[Int]) =
+    this(q, page, limit, None)
+
+  def copy(q: Option[String], page: Option[Int], limit: Option[Int]): UserSearchParams =
+    new UserSearchParams(q, page, limit, uid)
 
 object UserSearchParams:
   val default: UserSearchParams = UserSearchParams()
+
+  def apply(q: Option[String], page: Option[Int], limit: Option[Int]): UserSearchParams =
+    new UserSearchParams(q, page, limit, None)

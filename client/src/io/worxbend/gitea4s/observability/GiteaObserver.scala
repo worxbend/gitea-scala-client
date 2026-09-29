@@ -32,6 +32,13 @@ final case class RequestEvent(
     status: Option[Int] = None,
     attempts: Int = 1
 ):
+  // Preserve the signatures emitted for the three-field case class in 1.0.0.
+  def this(endpoint: GiteaEndpoint, duration: Duration, outcome: RequestOutcome) =
+    this(endpoint, duration, outcome, None, 1)
+
+  def copy(endpoint: GiteaEndpoint, duration: Duration, outcome: RequestOutcome): RequestEvent =
+    new RequestEvent(endpoint, duration, outcome, status, attempts)
+
   def succeeded: Boolean =
     outcome match
       case RequestOutcome.Success => true
@@ -39,6 +46,12 @@ final case class RequestEvent(
 
   /** Whether this call was retried at least once. */
   def retried: Boolean = attempts > 1
+
+object RequestEvent:
+  def apply(endpoint: GiteaEndpoint, duration: Duration, outcome: RequestOutcome): RequestEvent =
+    new RequestEvent(endpoint, duration, outcome, None, 1)
+
+  override def toString: String = "RequestEvent"
 
 /** A hook invoked after every Gitea request completes.
   *

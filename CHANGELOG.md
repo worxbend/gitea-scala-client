@@ -11,17 +11,20 @@ guarded by the `api-snapshot/` binary-compatibility check.
 ## Unreleased
 
 A hardening release. Everything here is source-compatible: code that compiled
-against `1.0.0` still compiles. Two things nonetheless need reading before you
-upgrade — some behaviour changed on purpose, and two case classes gained a
-field, which is a **binary** change even though it is not a source one.
+against `1.0.0` still compiles. Some behaviour changed on purpose; read the
+notes below before upgrading.
 
-**Recompile against this release; do not drop it onto a classpath built against
-`1.0.0`.** `UserSearchParams` and `RequestEvent` each gained a field with a
-default. Scala generates a new `apply`, `copy` and constructor signature for the
-wider arity, so pre-compiled callers of the old three-argument forms would fail
-with `NoSuchMethodError` at runtime. Recompiling is enough; no source edit is
-needed. Nothing was removed: `Auth`'s per-case `toString` moved onto the `Auth`
-parent class, which callers still reach through normal virtual dispatch.
+**The three-argument JVM constructors, `apply`, and `copy` from `1.0.0` are
+restored** for `UserSearchParams` and `RequestEvent`. Adding defaulted fields
+had replaced these methods with wider-arity versions, so pre-compiled callers
+would have failed with `NoSuchMethodError`. The restored constructors and
+`apply` methods use the new fields' defaults; the restored `copy` methods
+retain their receiver's new fields. Focused tests assert the old JVM methods
+exist and produce those values. This addresses those known linkage breaks;
+`compatibility.check` compares against the checked-in, refreshed snapshot,
+not independently against the released `1.0.0` jars. `Auth`'s per-case
+`toString` moved onto the `Auth` parent class, which callers still reach through
+normal virtual dispatch.
 
 All four modules gained `api-snapshot/` entries, and every entry is an addition:
 `GiteaError.message` and the lenient enum decoders in `core`, two environment
@@ -260,14 +263,13 @@ matched against, replaced by the closed `Accept` type.
   `gitea4s_request_attempts_total` counter, which read against
   `gitea4s_requests_total` gives the retry amplification. Both fields have
   defaults, so existing construction sites keep compiling — but as with
-  `UserSearchParams`, the generated `apply`/`copy`/constructor arity changes and
-  callers must be recompiled.
+  `UserSearchParams`, the generated `apply`/`copy`/constructor arity changes;
+  three-argument JVM overloads are retained for pre-compiled callers.
 - **`UserSearchParams.uid`.** The endpoint has always declared this query
   parameter; the params type was the only one in `http/` that did not match its
   endpoint, leaving no way to look a user up by numeric id. It is the last
-  field, so existing positional constructions keep compiling — but the
-  generated `apply`/`copy`/constructor arity changes, so callers must be
-  recompiled (see the note at the top).
+  field, so existing positional constructions keep compiling. The former
+  three-argument JVM overloads are retained for pre-compiled callers.
 - **More distribution channels.** Besides Maven Central, the four modules are now
   published to GitHub Packages and attached as jars to each GitHub Release by the
   new `Release` workflow (`.github/workflows/release.yml`, triggered on `v*`
