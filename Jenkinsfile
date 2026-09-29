@@ -50,6 +50,7 @@ pipeline {
     stage('Compatibility Check') {
       steps {
         sh './mill compatibility.check'
+        sh './mill compatibility.testReleaseGuard'
       }
     }
 

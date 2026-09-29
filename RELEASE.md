@@ -154,6 +154,10 @@ in a minor release (additive) or a major release (breaking), and the baseline is
 refreshed with `./mill compatibility.writeSnapshot`.
 
 `./mill compatibility.check` compares the current published module JVM public
-signatures against the checked-in `api-snapshot/` baseline. The baseline covers
-`core`, `client`, `backend-zio`, and `backend-okhttp`, excluding implementation
-classes under `internal` and generated anonymous codec classes.
+signatures against the checked-in `api-snapshot/` baseline and rejects missing
+v1.0.0 signatures from the pinned release tag. The baseline covers `core`,
+`client`, `backend-zio`, and `backend-okhttp`, excluding implementation classes
+under `internal` and generated anonymous codec classes. Fetch the v1.0.0 tag
+in shallow clones before running the check. This is a tag-snapshot comparison,
+not a comparison against published jars; verify artifact-level compatibility
+separately when those jars are available.

@@ -126,6 +126,10 @@ matched against, replaced by the closed `Accept` type.
 
 ### Fixed
 
+- The compatibility check now rejects missing v1.0.0 JVM signatures from the
+  pinned release tag even if the working API snapshot is refreshed. The check
+  still cannot independently verify published jars that are unavailable.
+
 - **An unknown enum value no longer discards a whole page.** Every enum decoder
   rejected any string it did not list, and a page decodes as one `Chunk`, so a
   single unrecognised value failed the entire page and then the stream above it.

@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # compatibility.check reads the pinned v1.0.0 tag
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -63,6 +65,9 @@ jobs:
 
       - name: Compatibility check
         run: ./mill compatibility.check
+
+      - name: Regression-test release guard
+        run: ./mill compatibility.testReleaseGuard
 
       - name: Publishable artifacts
         run: ./mill __.docJar __.sourceJar __.publishArtifacts
