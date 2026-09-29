@@ -9,6 +9,15 @@ release; the next release must communicate this breaking change. The
 
 ## Unreleased
 
+Request telemetry now counts transport failures as attempts. Rate-limit parsing
+rejects signed retry delays and falls back between reset headers only after
+validating their timestamps. Download credential redaction is independent of
+the default locale. Page codec caching enforces its size bound during concurrent
+inserts, and pagination fails explicitly instead of wrapping beyond the maximum
+supported page number.
+Pagination also recognizes multiple Link headers, unquoted relations, and
+quoted relation lists while ignoring separators inside URL targets and titles.
+
 The source tree now covers all 482 operation IDs in the vendored v1.27.3
 contract. Typed methods for the remaining 312 operations are available from
 the ordinary `GiteaClient` namespaces; 222 full-schema DTOs live in

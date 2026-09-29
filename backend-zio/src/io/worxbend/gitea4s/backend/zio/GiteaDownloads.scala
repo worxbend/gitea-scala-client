@@ -95,43 +95,34 @@ final class ZioGiteaDownloads private (
   ): ZStream[Any, GiteaError, Byte] =
     stream(GiteaRequests.archiveDownload(config, owner, repo, archive, params))
 
-  private def stream(descriptor: GiteaDownloadRequest): ZStream[Any, GiteaError, Byte] =
-    // `asStreamUnsafe` is the only response description that lets the body escape as a
-    // stream: the safe variants close the body as soon as the function they are handed
-    // returns, which would defeat the point here. Ownership passes to the stream built
-    // below, which cancels the subscription when its scope closes. Error bodies are not
-    // affected — `asStreamUnsafe` reads a non-2xx body fully as a `String` first.
-    val request =
-      basicRequest
-        .get(descriptor.uri)
-        .headers(descriptor.headers)
-        .readTimeout(descriptor.timeout)
-        .response(asStreamUnsafe(ZioStreams))
+  private type DownloadBody = Either[String, ZStream[Any, Throwable, Byte]]
 
-    ZStream.unwrap {
-      request
-        .send(backend)
-        .mapError(GiteaError.TransportError.apply)
-        .map { response =>
-          response.body match
-            case Right(bytes) =>
-              bytes
-                .mapError(GiteaError.TransportError.apply)
-                // The only limit on this path was `readTimeout`, which reaches
-                // the JDK as `HttpRequest.timeout` and stops applying the
-                // moment response headers arrive. So the path deliberately
-                // used for the *largest* bodies was the one with no backstop
-                // at all: a server that answered `200 OK` and then stopped
-                // sending held the consumer open indefinitely.
-                //
-                // `ZStream#timeoutFail` bounds each pull rather than the whole
-                // stream, which is what makes it safe here — a legitimately
-                // slow multi-gigabyte archive is never cut off, only a server
-                // that has stopped producing.
-                .timeoutFail(ZioGiteaDownloads.stalled(stallTimeout))(stallTimeout)
-            case Left(errorBody) => ZStream.fail(GiteaResponseMapper.toError(response.copy(body = errorBody)))
-        }
-    }
+  private def stream(descriptor: GiteaDownloadRequest): ZStream[Any, GiteaError, Byte] =
+    ZStream.unwrap(fetch(descriptor).map(responseStream))
+
+  private def fetch(descriptor: GiteaDownloadRequest): zio.IO[GiteaError, Response[DownloadBody]] =
+    // The unsafe response description transfers the open body to the returned stream.
+    // Safe variants close it when their callback returns; non-2xx bodies are still
+    // read fully as strings before the response is returned.
+    basicRequest
+      .get(descriptor.uri)
+      .headers(descriptor.headers)
+      .readTimeout(descriptor.timeout)
+      .response(asStreamUnsafe(ZioStreams))
+      .send(backend)
+      .mapError(GiteaError.TransportError.apply)
+
+  private def responseStream(response: Response[DownloadBody]): ZStream[Any, GiteaError, Byte] =
+    response.body match
+      case Right(bytes) => protectBody(bytes)
+      case Left(errorBody) => ZStream.fail(GiteaResponseMapper.toError(response.copy(body = errorBody)))
+
+  private def protectBody(bytes: ZStream[Any, Throwable, Byte]): ZStream[Any, GiteaError, Byte] =
+    // The JDK request timeout stops applying once headers arrive. Bound each
+    // subsequent pull so stalled bodies fail without limiting total download time.
+    bytes
+      .mapError(GiteaError.TransportError.apply)
+      .timeoutFail(ZioGiteaDownloads.stalled(stallTimeout))(stallTimeout)
 
 object ZioGiteaDownloads:
   /** How long a running download may go without producing a single byte.

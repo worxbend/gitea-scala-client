@@ -1,6 +1,7 @@
 package io.worxbend.gitea4s.http
 
 import io.worxbend.gitea4s.error.GiteaError
+import io.worxbend.gitea4s.internal.http.PaginationLinks
 import io.worxbend.gitea4s.model.{GiteaErrorPayload, Page, TopicNames, User}
 import sttp.client4.Response
 import sttp.model.StatusCode
@@ -168,19 +169,18 @@ object GiteaResponseMapper:
   private def retryAfter(response: Response[String]): Option[Instant] =
     response.header("retry-after").flatMap { raw =>
       val value = raw.trim
-      // RFC 9110 allows either a delay in seconds or an HTTP-date. The
-      // delay form has to be anchored to some "now" to become the absolute
-      // instant `GiteaError.RateLimited` carries, and a decoder has no
-      // effectful clock, so it uses the wall clock. In production that is the
-      // same clock ZIO reads, so the resulting wait is right; under a test
-      // clock the two differ, which is why the executor's own cap — not this
-      // value — is what actually bounds the sleep.
-      value.toLongOption
-        .flatMap(seconds => Try(Instant.now().plusSeconds(seconds)).toOption)
-        .orElse(
-          Try(ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant).toOption
-        )
+      retryAfterDelay(value).orElse(parseHttpDate(value))
     }
+
+  private def retryAfterDelay(value: String): Option[Instant] =
+    // RFC 9110's delay-seconds is one or more decimal digits, without a sign.
+    // Anchor the delay to the wall clock; the executor caps the actual wait.
+    Option.when(value.nonEmpty && value.forall(character => character >= '0' && character <= '9'))(value)
+      .flatMap(_.toLongOption)
+      .flatMap(seconds => Try(Instant.now().plusSeconds(seconds)).toOption)
+
+  private def parseHttpDate(value: String): Option[Instant] =
+    Try(ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant).toOption
 
   /** The server's explanation of a failure, bounded like the body it came from.
     *
@@ -239,16 +239,18 @@ object GiteaResponseMapper:
       received: Int,
       totalCount: Option[Long]
   ): Boolean =
-    response.header("link").exists(_.contains("""rel="next"""")) ||
+    PaginationLinks.hasNext(response.headers.iterator.filter(_.name.equalsIgnoreCase("link")).map(_.value).toList) ||
       (received > 0 && totalCount.exists(total => page.toLong * received.toLong < total))
 
   private def rateLimitReset(response: Response[String]): Option[Instant] =
-    longHeader(response, "x-ratelimit-reset")
-      .orElse(longHeader(response, "x-rate-limit-reset"))
-      .flatMap(epochSeconds => Try(Instant.ofEpochSecond(epochSeconds)).toOption)
+    epochHeader(response, "x-ratelimit-reset")
+      .orElse(epochHeader(response, "x-rate-limit-reset"))
+
+  private def epochHeader(response: Response[String], name: String): Option[Instant] =
+    longHeader(response, name).flatMap(epochSeconds => Try(Instant.ofEpochSecond(epochSeconds)).toOption)
 
   private def longHeader(response: Response[String], name: String): Option[Long] =
-    response.header(name).flatMap(value => Try(value.toLong).toOption)
+    response.header(name).flatMap(_.trim.toLongOption)
 
   private final case class UserSearchResults(
       data: Option[Chunk[User]] = None,

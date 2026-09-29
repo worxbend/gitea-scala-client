@@ -2,6 +2,7 @@ package io.worxbend.gitea4s.http
 
 import sttp.model.Uri
 
+import java.util.Locale
 import scala.concurrent.duration.FiniteDuration
 
 /** A prepared binary-download request.
@@ -26,7 +27,7 @@ final case class GiteaDownloadRequest(
     */
   override def toString: String =
     val safeHeaders = headers.map { (name, value) =>
-      if GiteaDownloadRequest.redactedHeaders.contains(name.toLowerCase) then s"$name -> ***"
+      if GiteaDownloadRequest.redactedHeaders.contains(name.toLowerCase(Locale.ROOT)) then s"$name -> ***"
       else s"$name -> $value"
     }
     s"GiteaDownloadRequest($endpoint, $uri, Map(${safeHeaders.mkString(", ")}), $timeout)"

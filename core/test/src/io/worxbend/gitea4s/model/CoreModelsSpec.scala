@@ -9,6 +9,7 @@ import zio.test.*
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.time.Instant
+import java.util.concurrent.{Callable, CountDownLatch, Executors, TimeUnit}
 
 object CoreModelsSpec extends ZIOSpecDefault:
   private final case class SchemaFieldChecklist(
@@ -702,6 +703,26 @@ object CoreModelsSpec extends ZIOSpecDefault:
           payload.toJson == "{}"
         )
       },
+      test("accepts exact 64-bit language byte counts") {
+        val json = """{"minimum":-9223372036854775808,"maximum":9223372036854775807}"""
+
+        assertTrue(
+          json.fromJson[LanguageStatistics] ==
+            Right(LanguageStatistics(Map("minimum" -> Long.MinValue, "maximum" -> Long.MaxValue)))
+        )
+      },
+      test("rejects fractional and overflowing language byte counts") {
+        assertTrue(
+          """{"Scala":1.5}""".fromJson[LanguageStatistics].isLeft,
+          """{"Scala":9223372036854775808}""".fromJson[LanguageStatistics].isLeft,
+          """{"Scala":-9223372036854775809}""".fromJson[LanguageStatistics].isLeft
+        )
+      },
+      test("reports the first invalid language byte count") {
+        val decoded = """{"Scala":true,"Java":1.5}""".fromJson[LanguageStatistics]
+
+        assertTrue(decoded.left.exists(_.contains("language byte count for 'Scala' must be a JSON integer")))
+      },
       test("reuses one Page codec per element codec instead of re-deriving it") {
         // The given takes a type parameter, so the compiler cannot cache it in
         // a lazy val the way it does for every other model codec here; without
@@ -714,6 +735,34 @@ object CoreModelsSpec extends ZIOSpecDefault:
           first eq second,
           page.toJson.fromJson[Page[Int]] == Right(page)
         )
+      },
+      test("concurrent Page codec requests reuse the cached instance") {
+        val workers = 8
+        val ready = new CountDownLatch(workers)
+        val start = new CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(workers)
+        val baseCodec = summon[JsonCodec[Int]]
+        val elementCodec = JsonCodec(baseCodec.encoder, baseCodec.decoder)
+
+        try
+          val requests = Vector.fill(workers) {
+            executor.submit(new Callable[JsonCodec[Page[Int]]]:
+              def call(): JsonCodec[Page[Int]] =
+                given JsonCodec[Int] = elementCodec
+                ready.countDown()
+                if !start.await(10, TimeUnit.SECONDS) then
+                  throw IllegalStateException("Page codec requests did not start")
+                summon[JsonCodec[Page[Int]]]
+            )
+          }
+          val allReady = ready.await(10, TimeUnit.SECONDS)
+          start.countDown()
+          val codecs = requests.map(_.get(10, TimeUnit.SECONDS))
+
+          assertTrue(allReady, codecs.forall(_ eq codecs.head))
+        finally
+          start.countDown()
+          val _ = executor.shutdownNow()
       },
       test("rejects non-numeric language byte counts") {
         val stringValue = """{"Scala":"1234"}"""

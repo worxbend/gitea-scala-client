@@ -338,10 +338,7 @@ object GiteaConfig:
       name: String,
       defaultValue: Int
   ): Either[GiteaConfigError, Int] =
-    nonBlank(env, name) match
-      case None => Right(defaultValue)
-      case Some(raw) =>
-        raw.trim.toIntOption.filter(_ > 0).toRight(GiteaConfigError.InvalidEnv(name, "must be a positive integer"))
+    intFromEnv(env, name, defaultValue, _ > 0, "must be a positive integer")
 
   private def finiteDurationFromEnv(
       env: Map[String, String],
@@ -353,10 +350,10 @@ object GiteaConfig:
       case Some(raw) =>
         Try(Duration(raw.trim)).toEither
           .left
-          .map(_ => GiteaConfigError.InvalidEnv(name, "must be a positive finite duration such as 30s"))
+          .map(_ => GiteaConfigError.InvalidEnv(name, durationRequirement))
           .flatMap {
             case duration: FiniteDuration if duration > Duration.Zero => Right(duration)
-            case _ => Left(GiteaConfigError.InvalidEnv(name, "must be a positive finite duration such as 30s"))
+            case _ => Left(GiteaConfigError.InvalidEnv(name, durationRequirement))
           }
 
   private def nonNegativeIntFromEnv(
@@ -364,10 +361,19 @@ object GiteaConfig:
       name: String,
       defaultValue: Int
   ): Either[GiteaConfigError, Int] =
+    intFromEnv(env, name, defaultValue, _ >= 0, "must be zero or a positive integer")
+
+  private def intFromEnv(
+      env: Map[String, String],
+      name: String,
+      defaultValue: Int,
+      valid: Int => Boolean,
+      requirement: String
+  ): Either[GiteaConfigError, Int] =
     nonBlank(env, name) match
       case None => Right(defaultValue)
       case Some(raw) =>
-        raw.trim.toIntOption.filter(_ >= 0).toRight(GiteaConfigError.InvalidEnv(name, "must be zero or a positive integer"))
+        raw.toIntOption.filter(valid).toRight(GiteaConfigError.InvalidEnv(name, requirement))
 
   private def typesafeSection(config: Config, path: String): Either[GiteaConfigError, Config] =
     try
@@ -450,11 +456,7 @@ object GiteaConfig:
       localPath: String,
       defaultValue: Int
   ): Either[GiteaConfigError, Int] =
-    optionalIntFromConfig(config, path, localPath).flatMap {
-      case None => Right(defaultValue)
-      case Some(value) if value > 0 => Right(value)
-      case Some(_) => Left(GiteaConfigError.InvalidConfig(path, "must be a positive integer"))
-    }
+    intFromConfig(config, path, localPath, defaultValue, _ > 0, "must be a positive integer")
 
   private def nonNegativeIntFromConfig(
       config: Config,
@@ -462,10 +464,20 @@ object GiteaConfig:
       localPath: String,
       defaultValue: Int
   ): Either[GiteaConfigError, Int] =
+    intFromConfig(config, path, localPath, defaultValue, _ >= 0, "must be zero or a positive integer")
+
+  private def intFromConfig(
+      config: Config,
+      path: String,
+      localPath: String,
+      defaultValue: Int,
+      valid: Int => Boolean,
+      requirement: String
+  ): Either[GiteaConfigError, Int] =
     optionalIntFromConfig(config, path, localPath).flatMap {
       case None => Right(defaultValue)
-      case Some(value) if value >= 0 => Right(value)
-      case Some(_) => Left(GiteaConfigError.InvalidConfig(path, "must be zero or a positive integer"))
+      case Some(value) if valid(value) => Right(value)
+      case Some(_) => Left(GiteaConfigError.InvalidConfig(path, requirement))
     }
 
   private def finiteDurationFromConfig(

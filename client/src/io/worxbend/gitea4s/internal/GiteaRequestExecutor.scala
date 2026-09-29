@@ -103,14 +103,17 @@ final class GiteaRequestExecutor(
       request: GiteaRequest[A],
       recorder: GiteaRequestExecutor.AttemptRecorder
   ): IO[GiteaError, A] =
-    request.request
-      .send(backend)
-      .mapError(GiteaError.TransportError.apply)
-      .flatMap { response =>
-        recorder.record(response.code.code)
-        ZIO.fromEither(request.decode(response))
-      }
-      .timeoutFail(GiteaRequestExecutor.attemptBudgetExhausted(attemptTimeout))(attemptTimeout)
+    ZIO.suspendSucceed {
+      recorder.startAttempt()
+      request.request
+        .send(backend)
+        .mapError(GiteaError.TransportError.apply)
+        .flatMap { response =>
+          recorder.recordStatus(response.code.code)
+          ZIO.fromEither(request.decode(response))
+        }
+        .timeoutFail(GiteaRequestExecutor.attemptBudgetExhausted(attemptTimeout))(attemptTimeout)
+    }
 
   private def retryDelay(error: GiteaError, attempt: Int): UIO[Option[Duration]] =
     error match
@@ -213,20 +216,18 @@ object GiteaRequestExecutor:
   private def attemptBudgetExhausted(after: Duration): GiteaError =
     GiteaError.TransportError(new AttemptBudgetExhausted(s"Gitea request attempt exceeded its time budget of $after"))
 
-  /** Where each attempt reports the status it got back.
-    *
-    * The send path does not care whether anybody is listening, so it is handed
-    * a recorder rather than a nullable holder. Previously the default path
-    * passed `null` and every attempt paid for a `ne null` guard on the happy
-    * path to describe a contract that appeared in no type.
+  /** Separates request attempts from received responses: a transport failure
+    * still counts as an attempt even though it has no HTTP status.
     */
   private sealed trait AttemptRecorder:
-    def record(code: Int): Unit
+    def startAttempt(): Unit
+    def recordStatus(code: Int): Unit
 
   private object AttemptRecorder:
     /** Shared and stateless, so the default path still allocates nothing. */
     val discarding: AttemptRecorder = new AttemptRecorder:
-      def record(code: Int): Unit = ()
+      def startAttempt(): Unit = ()
+      def recordStatus(code: Int): Unit = ()
 
   /** Per-call scratch space for the facts an observer wants but the result type
     * does not carry: how many HTTP requests were issued, and what the last one
@@ -240,13 +241,12 @@ object GiteaRequestExecutor:
     @volatile private var status: Int = -1
     @volatile private var count: Int = 0
 
-    def record(code: Int): Unit =
-      status = code
+    def startAttempt(): Unit =
       count += 1
+
+    def recordStatus(code: Int): Unit =
+      status = code
 
     def lastStatus: Option[Int] = if status < 0 then None else Some(status)
 
-    /** At least one, so an event always reports a real attempt count even when
-      * the call failed before any response arrived.
-      */
-    def attempts: Int = math.max(1, count)
+    def attempts: Int = count

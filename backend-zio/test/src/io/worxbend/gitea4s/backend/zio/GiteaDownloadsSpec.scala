@@ -30,6 +30,31 @@ object GiteaDownloadsSpec extends ZIOSpecDefault:
           .runCollect
           .map(bytes => assertTrue(bytes == payload))
       },
+      test("maps a request failure to a transport error retaining its cause") {
+        val cause = new java.io.IOException("connection refused")
+        val backend =
+          StreamBackendStub[Task, ZioStreams](new RIOMonadAsyncError[Any]).whenAnyRequest
+            .thenRespondF(_ => ZIO.fail(cause))
+
+        ZioGiteaDownloads(config, backend)
+          .rawFile("alice", "api", "README.md")
+          .runCollect
+          .either
+          .map {
+            case Left(GiteaError.TransportError(error)) => assertTrue(error.getCause == cause)
+            case other => assertNever(s"expected a transport error, got $other")
+          }
+      },
+      test("preserves the cause of a response body failure as a transport error") {
+        val cause = new java.io.IOException("response body disconnected")
+        val body: ZStream[Any, Throwable, Byte] = ZStream.fail(cause)
+
+        ZioGiteaDownloads(config, stubBackend(body))
+          .mediaFile("alice", "api", "image.png")
+          .runCollect
+          .either
+          .map(result => assertTrue(result == Left(GiteaError.TransportError(cause))))
+      },
       test("releases the response body when the stream is consumed only partially") {
         for
           released <- Ref.make(0)

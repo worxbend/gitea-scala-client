@@ -14,17 +14,9 @@ private[examples] object ExampleSupport:
 
   /** Runs one example against a live server, or explains why it cannot.
     *
-    * Every main here had its own copy of the same twenty lines: match on the
-    * config, print the reference line on all three branches, build the backend
-    * layer, fold the failure into a message and re-fail, then print the result.
-    * That ceremony was most of each file, which buried the two or three lines
-    * that actually demonstrate the library — and these examples exist to be
-    * read.
-    *
-    * `use` returns the lines to print, so an example describes *what* it wants
-    * shown and never repeats *how* to show it. `hints` are printed instead when
-    * no credentials are configured, so each example can say which extra
-    * environment variables it needs.
+    * `use` returns output lines; `hints` explain extra environment variables
+    * when credentials are absent. Failures are printed and propagated so the
+    * process exits unsuccessfully.
     */
   def runExample(failureLabel: String, hints: String*)(
       use: GiteaClient => ZIO[Any, GiteaError, Seq[String]]
@@ -136,13 +128,7 @@ private[examples] object ExampleSupport:
   private def nonBlank(env: Map[String, String], name: String): Option[String] =
     env.get(name).map(_.trim).filter(_.nonEmpty)
 
-  /** What a `ServerError` says beyond its status.
-    *
-    * `GiteaError.message` renders a 5xx as `HTTP 500`, which is all it can say
-    * without inventing one — the status is the whole message. The body is the
-    * only diagnostic such a response carries, so a short prefix of it is worth
-    * showing rather than discarding.
-    */
+  /** Include a bounded body excerpt because server-error messages contain only the HTTP status. */
   private def detail(error: GiteaError): String =
     error match
       case GiteaError.ServerError(_, body) =>

@@ -134,6 +134,46 @@ object GiteaResponseMapperSpec extends ZIOSpecDefault:
         }
       ),
       suite("pagination signals")(
+        test("recognizes next relations in valid Link header forms") {
+          val links = Seq(
+            """<https://gitea.example/x?page=2>; rel=next""",
+            """<https://gitea.example/x?page=2>; rel="prev next"""",
+            """<https://gitea.example/x?page=2>; REL = "NEXT"""",
+            """<https://gitea.example/x?q=a,b;c>; title="comma,semicolon;"; rel=next""",
+            """<https://gitea.example/x>; title="an escaped \" quote, and ; delimiter"; rel=next""",
+            """<https://gitea.example/x?page=1>; rel=prev, <https://gitea.example/x?page=3>; rel=next"""
+          )
+          val results = links.map { link =>
+            GiteaResponseMapper.decodePage[Int](withHeaders("[1]", StatusCode.Ok, "link" -> link), 1, 50)
+          }
+
+          assertTrue(results.forall(_.map(_.hasNext) == Right(true)))
+        },
+        test("examines every Link field when a response contains multiple fields") {
+          val response = withHeaders(
+            "[1]", StatusCode.Ok,
+            "Link" -> """<https://gitea.example/x?page=1>; rel=prev""",
+            "link" -> """<https://gitea.example/x?page=3>; rel=next"""
+          )
+
+          assertTrue(GiteaResponseMapper.decodePage[Int](response, 1, 50).map(_.hasNext) == Right(true))
+        },
+        test("requires a complete next relation and honors only the first rel parameter") {
+          val links = Seq(
+            """<https://gitea.example/x?rel="next">; rel=prev""",
+            """<https://gitea.example/x>; title="rel=\"next\""; rel=prev""",
+            """<https://gitea.example/x>; title="a comma, and semicolon; rel=next"; rel=prev""",
+            """<https://gitea.example/x>; rel="next-page"""",
+            """<https://gitea.example/x>; rel="https://gitea.example/next"""",
+            """<https://gitea.example/x>; rel=prev; rel=next""",
+            """<https://gitea.example/x>; rel="next"unfinished"""
+          )
+          val results = links.map { link =>
+            GiteaResponseMapper.decodePage[Int](withHeaders("[1]", StatusCode.Ok, "link" -> link), 1, 50)
+          }
+
+          assertTrue(results.forall(_.map(_.hasNext) == Right(false)))
+        },
         test("keeps paging when the server returned fewer items than were requested") {
           // Gitea clamps `limit` to MAX_RESPONSE_ITEMS (50 by default). Judging
           // hasNext from the requested size concluded 2 * 100 >= 200 after two
@@ -220,6 +260,36 @@ object GiteaResponseMapperSpec extends ZIOSpecDefault:
           error match
             case GiteaError.RateLimited(Some(at), _) => assertTrue(at.getEpochSecond == 99999999999L)
             case _ => assertTrue(false)
+        },
+        test("ignores signed Retry-After delays and uses the reset fallback") {
+          val reset = java.time.Instant.parse("2030-01-01T00:00:00Z")
+          val errors = Seq("-60", "+60").map { delay =>
+            GiteaResponseMapper.toError(
+              withHeaders("", StatusCode.TooManyRequests, "retry-after" -> delay, "x-ratelimit-reset" -> reset.getEpochSecond.toString)
+            )
+          }
+
+          assertTrue(errors.forall(_ == GiteaError.RateLimited(Some(reset), "")))
+        },
+        test("uses the alternate reset header when the first is outside Instant's range") {
+          val reset = java.time.Instant.parse("2030-01-01T00:00:00Z")
+          val error = GiteaResponseMapper.toError(
+            withHeaders(
+              "", StatusCode.TooManyRequests,
+              "x-ratelimit-reset" -> Long.MaxValue.toString,
+              "x-rate-limit-reset" -> reset.getEpochSecond.toString
+            )
+          )
+
+          assertTrue(error == GiteaError.RateLimited(Some(reset), ""))
+        },
+        test("accepts surrounding whitespace in reset headers") {
+          val reset = java.time.Instant.parse("2030-01-01T00:00:00Z")
+          val error = GiteaResponseMapper.toError(
+            withHeaders("", StatusCode.TooManyRequests, "x-ratelimit-reset" -> s"  ${reset.getEpochSecond}\t")
+          )
+
+          assertTrue(error == GiteaError.RateLimited(Some(reset), ""))
         },
         test("ignores an unparseable reset header") {
           val error =

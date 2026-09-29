@@ -109,6 +109,33 @@ object GiteaConfigSpec extends ZIOSpecDefault:
 
         assertTrue(negative.isLeft, decimal.isLeft)
       },
+      test("environment integer settings enforce their distinct lower bounds") {
+        val zeroPageSize = GiteaConfig.fromEnv(baseEnv + (GiteaConfig.Env.pageSize -> "0"))
+        val zeroRetries = GiteaConfig.fromEnv(baseEnv + (GiteaConfig.Env.maxRetries -> "0"))
+        val negativeRetries = GiteaConfig.fromEnv(baseEnv + (GiteaConfig.Env.maxRetries -> "-1"))
+
+        assertTrue(
+          zeroPageSize == Left(GiteaConfigError.InvalidEnv(GiteaConfig.Env.pageSize, "must be a positive integer")),
+          zeroRetries.map(_.maxRetries) == Right(0),
+          negativeRetries == Left(
+            GiteaConfigError.InvalidEnv(GiteaConfig.Env.maxRetries, "must be zero or a positive integer")
+          )
+        )
+      },
+      test("HOCON integer settings enforce their distinct lower bounds") {
+        val base = "gitea4s.url = \"https://gitea.example\"\n"
+        val zeroPageSize = GiteaConfig.fromTypesafeString(base + "gitea4s.page-size = 0")
+        val zeroRetries = GiteaConfig.fromTypesafeString(base + "gitea4s.max-retries = 0")
+        val negativeRetries = GiteaConfig.fromTypesafeString(base + "gitea4s.max-retries = -1")
+
+        assertTrue(
+          zeroPageSize == Left(GiteaConfigError.InvalidConfig("gitea4s.page-size", "must be a positive integer")),
+          zeroRetries.map(_.maxRetries) == Right(0),
+          negativeRetries == Left(
+            GiteaConfigError.InvalidConfig("gitea4s.max-retries", "must be zero or a positive integer")
+          )
+        )
+      },
       test("rejects relative or non-HTTP base URLs") {
         val relative = GiteaConfig.fromEnv(Map(GiteaConfig.Env.url -> "gitea.local"))
         val ssh = GiteaConfig.fromEnv(Map(GiteaConfig.Env.url -> "ssh://gitea.example"))

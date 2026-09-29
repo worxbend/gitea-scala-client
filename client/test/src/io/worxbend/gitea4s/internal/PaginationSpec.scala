@@ -1,5 +1,6 @@
 package io.worxbend.gitea4s.internal
 
+import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.Page
 import zio.{Chunk, Ref, ZIO}
 import zio.test.*
@@ -53,5 +54,27 @@ object PaginationSpec extends ZIOSpecDefault:
           _ <- stream.runCollect
           fetched <- calls.get
         yield assertTrue(fetched == Chunk(1))
+      },
+      test("fails rather than fetching a wrapped page number after the largest supported page") {
+        for
+          calls <- Ref.make(Chunk.empty[Int])
+          result <- Pagination.paginatedFrom(Int.MaxValue) { p =>
+            calls.update(_ :+ p) *> ZIO.succeed(page(Chunk(1), p, hasNext = true))
+          }.runCollect.either
+          fetched <- calls.get
+        yield assertTrue(
+          fetched == Chunk(Int.MaxValue),
+          result == Left(GiteaError.DecodeError("Pagination exceeded the maximum supported page number", ""))
+        )
+      },
+      test("emits the largest supported page before checking its continuation") {
+        Pagination.paginatedFrom(Int.MaxValue) { p =>
+          ZIO.succeed(page(Chunk(1), p, hasNext = true))
+        }.take(1).runCollect.map(items => assertTrue(items == Chunk(1)))
+      },
+      test("finishes successfully at the largest supported page when there is no continuation") {
+        Pagination.paginatedFrom(Int.MaxValue) { p =>
+          ZIO.succeed(page(Chunk(1), p, hasNext = false))
+        }.runCollect.map(items => assertTrue(items == Chunk(1)))
       }
     )

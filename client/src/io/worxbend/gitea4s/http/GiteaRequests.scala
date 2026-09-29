@@ -98,12 +98,7 @@ object GiteaRequests:
       path: List[String],
       query: List[(String, String)] = Nil
   ): GiteaRequest[Chunk[Byte]] =
-    val request = binaryRequest(config)
-      .get(apiUri(config.baseUrl, path, query))
-      .response(byteArrayResponse)
-      .readTimeout(config.timeout)
-      .headers(commonHeaders(config, Accept.OctetStream))
-    GiteaRequest.withBody(endpoint, request, GiteaResponseMapper.decodeBytes, retryable = true)
+    getBytes(config, endpoint, path, query)
 
   def downloadArtifact(config: GiteaConfig, owner: String, repo: String, artifactId: String): GiteaRequest[Chunk[Byte]] =
     binaryFromContract(config, GiteaEndpoints.downloadArtifact,

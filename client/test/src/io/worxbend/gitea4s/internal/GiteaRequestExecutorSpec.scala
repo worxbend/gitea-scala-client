@@ -9,7 +9,7 @@ import sttp.client4.impl.zio.RIOMonadAsyncError
 import sttp.client4.testing.{BackendStub, ResponseStub, StubBody}
 import sttp.model.{Header, StatusCode}
 import zio.test.*
-import zio.{Chunk, Duration, Ref, Task, ZIO}
+import zio.{Chunk, Clock, Duration, Ref, Task, UIO, ZIO}
 
 import java.time.Instant
 
@@ -43,6 +43,15 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
   private def recording(ref: Ref[Chunk[RequestEvent]]): GiteaObserver =
     GiteaObserver.fromFunction(event => ref.update(_ :+ event))
 
+  private def awaitRetrySleep: UIO[Unit] =
+    Clock.instant.flatMap { now =>
+      // Retry delays are capped at 60 seconds; the five-minute attempt timeout
+      // must not be mistaken for the retry sleep we need to advance.
+      TestClock.sleeps.repeatUntil(_.exists { deadline =>
+        deadline.isAfter(now) && deadline.isBefore(now.plusSeconds(61))
+      }).unit
+    }
+
   def spec: Spec[Any, Any] = suite("GiteaRequestExecutor")(
     suite("retry delays")(
       test("caps the wait when the server names a reset instant in the far future") {
@@ -56,6 +65,7 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
         for
           _ <- TestClock.setTime(Instant.parse("2030-01-01T00:00:00Z"))
           fiber <- GiteaRequestExecutor(backend, maxRetries = 1).send(GiteaRequests.currentUser(config)).fork
+          _ <- awaitRetrySleep
           _ <- TestClock.adjust(Duration.fromSeconds(59))
           early <- fiber.poll
           _ <- TestClock.adjust(Duration.fromSeconds(2))
@@ -70,6 +80,7 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
         for
           _ <- TestClock.setTime(now)
           fiber <- GiteaRequestExecutor(backend, maxRetries = 1).send(GiteaRequests.currentUser(config)).fork
+          _ <- awaitRetrySleep
           _ <- TestClock.adjust(Duration.fromSeconds(4))
           early <- fiber.poll
           _ <- TestClock.adjust(Duration.fromSeconds(2))
@@ -98,16 +109,9 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
         yield assertTrue(result.isLeft, events.head.attempts == 3)
       } @@ TestAspect.withLiveClock,
       test("backs off further after each failed attempt") {
-        // Nothing else in this suite reaches `jitteredBackoff` with attempt > 1,
-        // so the doubling was unexercised: replacing the shift with a constant
-        // left the whole build green.
-        //
-        // The clock is stepped rather than jumped, waiting for each attempt to
-        // actually land before advancing again. Forking and immediately calling
-        // `TestClock.adjust` races the forked fiber: if it has not reached its
-        // sleep yet, the adjust passes time it never observes and the attempt
-        // count comes up short. That is a real flake, not a hypothetical — it
-        // failed once on a cold build before this was rewritten.
+        // Wait for each retry sleep to be registered before advancing time.
+        // The backend counter advances earlier, so observing an attempt alone
+        // does not guarantee that its backoff can see the clock adjustment.
         //
         // Waits double from 100ms, and jitter spans 0.8-1.2, so attempt N is
         // unblocked by at most 120/240/480ms while a flat policy would need at
@@ -126,10 +130,13 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
             .fork
           // The first attempt needs no clock movement.
           _ <- sent.get.repeatUntil(_ >= 1)
+          _ <- awaitRetrySleep
           _ <- TestClock.adjust(Duration.fromMillis(120))
           _ <- sent.get.repeatUntil(_ >= 2)
+          _ <- awaitRetrySleep
           _ <- TestClock.adjust(Duration.fromMillis(240))
           _ <- sent.get.repeatUntil(_ >= 3)
+          _ <- awaitRetrySleep
           _ <- TestClock.adjust(Duration.fromMillis(150))
           attempts <- sent.get
           _ <- TestClock.adjust(Duration.fromSeconds(5))
@@ -186,9 +193,8 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
         val request = GiteaRequests.currentUser(config)
 
         for
-          // Counted at the backend, not on the telemetry event: `attempts` only
-          // advances when a response arrives, and here none ever does, so it
-          // reads 1 whether the stall was retried or not.
+          // Count backend calls independently of the observer to verify that
+          // timeout exhaustion actually prevents another send.
           sent <- Ref.make(0)
           backend = BackendStub[Task](new RIOMonadAsyncError[Any]).whenAnyRequest
             .thenRespondF(_ => sent.update(_ + 1) *> ZIO.never)
@@ -225,6 +231,47 @@ object GiteaRequestExecutorSpec extends ZIOSpecDefault:
           _ <- GiteaRequestExecutor(backend, maxRetries = 2, recording(ref)).send(GiteaRequests.currentUser(config))
           events <- ref.get
         yield assertTrue(events.size == 1, events.head.attempts == 2, events.head.retried)
+      } @@ TestAspect.withLiveClock,
+      test("counts transport failures before a successful response") {
+        for
+          sent <- Ref.make(0)
+          backend = BackendStub[Task](new RIOMonadAsyncError[Any]).whenAnyRequest.thenRespondF { _ =>
+            sent.getAndUpdate(_ + 1).flatMap { previous =>
+              if previous < 2 then ZIO.fail(new RuntimeException("connection refused"))
+              else ZIO.succeed(ok(user))
+            }
+          }
+          ref <- Ref.make(Chunk.empty[RequestEvent])
+          result <- GiteaRequestExecutor(backend, maxRetries = 2, recording(ref))
+            .send(GiteaRequests.currentUser(config))
+          events <- ref.get
+          issued <- sent.get
+        yield assertTrue(
+          result.login.contains("alice"),
+          issued == 3,
+          events.size == 1,
+          events.head.attempts == issued,
+          events.head.status.contains(200),
+          events.head.retried
+        )
+      } @@ TestAspect.withLiveClock,
+      test("counts every failed transport attempt when no response arrives") {
+        val backend = BackendStub[Task](new RIOMonadAsyncError[Any]).whenAnyRequest
+          .thenRespondF(_ => ZIO.fail(new RuntimeException("connection refused")))
+
+        for
+          ref <- Ref.make(Chunk.empty[RequestEvent])
+          result <- GiteaRequestExecutor(backend, maxRetries = 2, recording(ref))
+            .send(GiteaRequests.currentUser(config))
+            .either
+          events <- ref.get
+        yield assertTrue(
+          result.isLeft,
+          events.size == 1,
+          events.head.attempts == 3,
+          events.head.status.isEmpty,
+          events.head.retried
+        )
       } @@ TestAspect.withLiveClock,
       test("an observer that never finishes cannot withhold the result") {
         // `catchAllCause` handles an observer that fails, not one that hangs.

@@ -30,6 +30,25 @@ object GiteaDownloadRequestsSpec extends ZIOSpecDefault:
           req.headers.get("Accept").contains("application/octet-stream")
         )
       },
+      test("repository and Actions binary requests share the configured download policy") {
+        val otpConfig = config.copy(otp = Some("123456"))
+        val requests = List(
+          GiteaRequests.repoRawFile(otpConfig, "alice", "api", "logo.png"),
+          GiteaRequests.downloadArtifact(otpConfig, "alice", "api", "42"),
+          GeneratedActionsRequests.downloadActionsRunJobLogs(otpConfig, "alice", "api", 42)
+        )
+
+        assertTrue(
+          requests.forall(_.retryable),
+          requests.forall(_.request.method.method == "GET"),
+          requests.forall(_.request.header("Accept").contains("application/octet-stream")),
+          requests.forall(_.request.header("Authorization").contains("token secret")),
+          requests.forall(_.request.header("X-Gitea-OTP").contains("123456")),
+          requests.forall(_.request.options.readTimeout == otpConfig.timeout),
+          requests.forall(request => !request.request.options.followRedirects),
+          requests.forall(_.request.options.maxResponseBodyLength.isEmpty)
+        )
+      },
       test("archiveDownload sends repeated path query values") {
         val req = GiteaRequests.archiveDownload(
           config,

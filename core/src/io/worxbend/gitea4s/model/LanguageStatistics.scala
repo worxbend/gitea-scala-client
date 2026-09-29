@@ -14,19 +14,25 @@ object LanguageStatistics:
       case Json.Obj(fields) =>
         fields
           .foldLeft[Either[String, Map[String, Long]]](Right(Map.empty)) {
-            case (Right(bytesByLanguage), (language, Json.Num(value))) =>
-              try Right(bytesByLanguage.updated(language, value.longValueExact()))
-              catch case _: ArithmeticException =>
-                Left(s"language byte count for '$language' must fit in a 64-bit integer")
-            case (Right(_), (language, _)) =>
-              Left(s"language byte count for '$language' must be a JSON integer")
-            case (left @ Left(_), _) =>
-              left
+            case (result, (language, value)) =>
+              for
+                bytesByLanguage <- result
+                count <- byteCount(language, value)
+              yield bytesByLanguage.updated(language, count)
           }
           .map(LanguageStatistics.apply)
       case _ =>
         Left("LanguageStatistics must be a JSON object")
     }
+
+  private def byteCount(language: String, value: Json): Either[String, Long] =
+    value match
+      case Json.Num(number) =>
+        try Right(number.longValueExact())
+        catch case _: ArithmeticException =>
+          Left(s"language byte count for '$language' must fit in a 64-bit integer")
+      case _ =>
+        Left(s"language byte count for '$language' must be a JSON integer")
 
   given JsonCodec[LanguageStatistics] =
     JsonCodec(encoder, decoder)
