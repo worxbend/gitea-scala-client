@@ -8,17 +8,18 @@ A Scala 3 client library for the [Gitea](https://gitea.io) API, built with
 - **JVM baseline:** Java 21 · **Scala:** 3.x
 - **API target:** Gitea `1.27.3` (`gitea-v1.27.3.yaml` is the current contract;
   `plugin-redoc-2.yaml` preserves the 1.26.2 reference)
-- **Coverage:** 170 of 482 v1.27.3 operations; see [`API_V1273_PLAN.md`](API_V1273_PLAN.md)
-  for the full-coverage work and remaining gaps.
+- **Source coverage (unreleased):** 482 of 482 v1.27.3 operations; see the
+  [operation reference](docs/contract-operations.md) and [wire models](docs/contract-models.md).
 - **Version:** `1.0.0` · **License:** Apache-2.0
 - **Backends:** `backend-zio` (Java `HttpClient`, default) and an optional
   `backend-okhttp` bridge
 - **Documentation:** <https://worxbend.github.io/gitea-scala-client/>
 
-> Status: read-only coverage for users, organizations, repositories, issues,
-> releases, pull requests, and notifications, plus a growing set of issue and
-> pull-request writes. See `PLAN.md` for the roadmap and `CHANGELOG.md` for the
-> detailed surface.
+> The repository's current `master` branch has the full typed v1.27.3 surface;
+> the published `1.0.0` artifacts do not. The 312 newly covered routes are
+> available through the ordinary `GiteaClient` namespaces, with generated DTOs
+> in `io.worxbend.gitea4s.model.contract`. Exercise destructive routes only
+> against instances you are authorized to change.
 
 ## Installation
 

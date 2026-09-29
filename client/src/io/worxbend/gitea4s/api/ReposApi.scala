@@ -55,7 +55,7 @@ import zio.stream.ZStream
   * Git data (commits, trees, blobs, refs, tags), file contents and downloads,
   * collaborators and teams, branch/tag protections, and commit statuses.
   */
-trait ReposApi:
+trait ReposApi extends io.worxbend.gitea4s.api.generated.ReposOperations:
   def createForCurrentUser(body: CreateRepoOption): IO[GiteaError, Repository]
   def edit(owner: String, repo: String, body: EditRepoOption): IO[GiteaError, Repository]
   /** Permanently deletes the named repository. */

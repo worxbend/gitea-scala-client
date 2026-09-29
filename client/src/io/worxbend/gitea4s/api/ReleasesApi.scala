@@ -7,7 +7,9 @@ import zio.{Chunk, IO}
 import zio.stream.ZStream
 
 /** Release and release-asset operations, reached through `client.releases`. */
-trait ReleasesApi:
+trait ReleasesApi extends io.worxbend.gitea4s.api.generated.ReleasesOperations:
+  def createAttachment(owner: String, repo: String, id: Long, upload: io.worxbend.gitea4s.model.AttachmentUpload,
+      name: Option[String] = None): IO[GiteaError, io.worxbend.gitea4s.model.contract.Attachment]
   def list(
       owner: String,
       repo: String,

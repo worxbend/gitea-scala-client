@@ -34,6 +34,7 @@ import sttp.client4.*
 import sttp.model.Uri
 import zio.Chunk
 import zio.test.*
+import io.worxbend.gitea4s.http.contract.GeneratedAuditExpectations
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
@@ -929,6 +930,40 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Gitea endpoint metadata audit")(
+      test("every generated and exceptional response, parameter, and method matches the current contract") {
+        val swagger = SwaggerAudit.load()
+        val endpoints = GeneratedEndpoints.all ++ List(
+          GiteaEndpoints.downloadArtifact,
+          GiteaEndpoints.issueCreateIssueCommentAttachment,
+          GiteaEndpoints.issueCreateIssueAttachment,
+          GiteaEndpoints.repoCreateReleaseAttachment
+        )
+        val failures = endpoints.flatMap { endpoint =>
+          swagger.operation(endpoint.path, endpoint.method) match
+            case Left(error) => List(s"${endpoint.operationId}: $error")
+            case Right(operation) =>
+              val actual = (operation.successResponses ++ operation.nonSuccessResponses).map(label => label.status -> label.label)
+              val expected = GeneratedAuditExpectations.responseLabels.get(endpoint.operationId)
+              List(
+                compare("operation ID", endpoint.operationId, operation.operationId),
+                Option.when(
+                  !(operation.successResponseLabels ++ operation.nonSuccessResponses.collect {
+                    case GiteaResponseLabel("302", label) => label
+                  }).contains(endpoint.response)
+                )(s"endpoint response ${endpoint.response} is absent from the contract"),
+                compare("response status and schema labels", expected, Some(actual)),
+                compare("parameters", endpoint.parameters, operation.parameters),
+                compare("required path parameters", endpoint.parameters.collect {
+                  case GiteaParameter(name, "path", true) => name
+                }, operation.requiredPathParameters),
+                compare("optional query parameters", endpoint.parameters.collect {
+                  case GiteaParameter(name, "query", false) => name
+                }, operation.optionalQueryParameters),
+                compare("body presence", endpoint.parameters.exists(_.in == "body"), operation.hasRequestBody)
+              ).flatten.map(s"${endpoint.operationId}: " + _)
+        }
+        assertTrue(endpoints.size == 312, failures.isEmpty) ?? failures.mkString("\n")
+      },
       test("public settings reads match gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = settingsRequests.flatMap(audit(swagger, _))
@@ -1239,9 +1274,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
         assertTrue(
           swaggerIds.size == 482,
-          implemented.size == 170,
+          implemented.size == 482,
           implemented.distinct.size == implemented.size,
-          missing.size == 312
+          missing.isEmpty
         ) ?? s"remaining operation IDs: ${missing.toList.sorted.mkString(", ")}"
       },
       test("GiteaEndpoints.all lists every endpoint constant") {
@@ -1278,9 +1313,11 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     * the constants without anyone maintaining a second list of their names.
     */
   private def definedEndpointConstants: List[GiteaEndpoint] =
-    GiteaEndpoints.getClass.getMethods.toList
-      .filter(method => method.getReturnType == classOf[GiteaEndpoint] && method.getParameterCount == 0)
-      .map(_.invoke(GiteaEndpoints).asInstanceOf[GiteaEndpoint])
+    List(GiteaEndpoints, GeneratedEndpoints).flatMap { owner =>
+      owner.getClass.getMethods.toList
+        .filter(method => method.getReturnType == classOf[GiteaEndpoint] && method.getParameterCount == 0)
+        .map(_.invoke(owner).asInstanceOf[GiteaEndpoint])
+    }
 
   private def auditEndpoint(swagger: SwaggerAudit, endpoint: GiteaEndpoint): List[String] =
     val expectedNonSuccessResponses = expectedNonSuccessResponseLabels.get(endpoint.operationId)
@@ -1532,6 +1569,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
       path: String,
       method: String,
       operationId: String,
+      parameters: List[GiteaParameter],
       requiredPathParameters: List[String],
       optionalQueryParameters: List[String],
       successResponseLabels: List[String],
@@ -1562,6 +1600,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
         path = path,
         method = method.toUpperCase,
         operationId = operationId,
+        parameters = parameters.map(p => GiteaParameter(p.name, p.in, p.required)),
         requiredPathParameters = parameters.collect {
           case SwaggerParameter(name, "path", true, _) => name
         },
@@ -1690,7 +1729,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
         }
 
     private def responseLabel(entry: Vector[String]): Option[String] =
-      entryValue(entry, "$ref")
+      entry
+        .find(_.startsWith(" " * 10 + "$ref:"))
+        .map(_.trim.stripPrefix("$ref:").trim.stripPrefix("'").stripSuffix("'"))
         .orElse(responseSchemaType(entry).map(schemaType => s"type:$schemaType"))
         .orElse(entryValue(entry, "description").map(description => s"description: $description"))
 

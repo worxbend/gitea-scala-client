@@ -8,8 +8,8 @@ import io.worxbend.gitea4s.model.{NotificationCount, NotificationThread}
 import zio.IO
 import zio.stream.ZStream
 
-private[gitea4s] final class SttpNotificationsApi(config: GiteaConfig, executor: GiteaRequestExecutor)
-    extends NotificationsApi:
+private[gitea4s] final class SttpNotificationsApi(protected val config: GiteaConfig, protected val executor: GiteaRequestExecutor)
+    extends NotificationsApi with generated.LiveNotificationsOperations:
   override def list(
       params: NotificationListParams
   ): ZStream[Any, GiteaError, NotificationThread] =

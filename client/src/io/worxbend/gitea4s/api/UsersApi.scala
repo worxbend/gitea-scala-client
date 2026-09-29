@@ -9,7 +9,7 @@ import zio.stream.ZStream
 /** User operations, reached through `client.users`: the authenticated user
   * ([[me]]), user lookup and search, followers/following, and active stopwatches.
   */
-trait UsersApi:
+trait UsersApi extends io.worxbend.gitea4s.api.generated.UsersOperations:
   def me: IO[GiteaError, User]
 
   def get(username: String): IO[GiteaError, User]

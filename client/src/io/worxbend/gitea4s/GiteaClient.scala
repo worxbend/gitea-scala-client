@@ -12,6 +12,7 @@ import io.worxbend.gitea4s.api.{
   TokensApi,
   UsersApi
 }
+import io.worxbend.gitea4s.api.generated.{AdminOperations, CatalogOperations, PackagesOperations, TeamsOperations}
 import io.worxbend.gitea4s.internal.SttpGiteaClient
 import sttp.client4.Backend
 import zio.Task
@@ -31,6 +32,10 @@ import zio.Task
   *   - [[settings]] — public instance settings
   */
 trait GiteaClient:
+  def admin: AdminOperations
+  def teams: TeamsOperations
+  def packages: PackagesOperations
+  def catalog: CatalogOperations
   def settings: SettingsApi
   def actions: ActionsApi
   def tokens: TokensApi

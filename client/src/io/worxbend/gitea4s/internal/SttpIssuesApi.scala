@@ -35,7 +35,18 @@ import io.worxbend.gitea4s.model.{
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
-private[gitea4s] final class SttpIssuesApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends IssuesApi:
+private[gitea4s] final class SttpIssuesApi(protected val config: GiteaConfig, protected val executor: GiteaRequestExecutor)
+    extends IssuesApi with generated.LiveIssuesOperations:
+  override def createCommentAttachment(owner: String, repo: String, id: Long,
+      upload: io.worxbend.gitea4s.model.AttachmentUpload, name: Option[String]
+  ): IO[GiteaError, io.worxbend.gitea4s.model.contract.Attachment] =
+    executor.send(GiteaRequests.issueCreateIssueCommentAttachment(config, owner, repo, id, upload, name))
+
+  override def createIssueAttachment(owner: String, repo: String, index: Long,
+      upload: io.worxbend.gitea4s.model.AttachmentUpload, name: Option[String]
+  ): IO[GiteaError, io.worxbend.gitea4s.model.contract.Attachment] =
+    executor.send(GiteaRequests.issueCreateIssueAttachment(config, owner, repo, index, upload, name))
+
   override def addAssignees(owner: String, repo: String, index: Long, assignees: Chunk[String]): IO[GiteaError, Issue] =
     executor.send(GiteaRequests.issueAddAssignees(config, owner, repo, index, IssueAssigneesOption(assignees)))
 

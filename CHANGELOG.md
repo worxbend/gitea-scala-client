@@ -9,6 +9,15 @@ release; the next release must communicate this breaking change. The
 
 ## Unreleased
 
+The source tree now covers all 482 operation IDs in the vendored v1.27.3
+contract. Typed methods for the remaining 312 operations are available from
+the ordinary `GiteaClient` namespaces; 222 full-schema DTOs live in
+`model.contract`. The generator in `tools/generate_contract.py` produces
+operation builders, typed facades, DTOs, contract audits, wire tests, and
+reference documentation. Multipart attachments and binary artifact/job-log
+downloads have dedicated builders. This source-only change is not in the
+published `1.0.0` artifacts.
+
 The first full-coverage batch adds all eleven operations introduced in Gitea
 1.27.3: current-token metadata and revocation, issue/repository assignee
 operations, bulk deletion of organization repositories, pull-review comment
@@ -28,8 +37,8 @@ Branch-protection create/edit/delete and priority reorder now use typed bodies.
 `BranchProtection` and its ordinary list/detail reads include the new bypass
 allowlist fields. Version-suffixed client facades and the old-release JVM guard
 have been removed; use `GiteaClient` directly. The four public `/settings`
-routes now have typed responses on `client.settings`. This is **not** full v1.27.3 coverage: 312 operations remain
-missing; track them in `API_V1273_PLAN.md`.
+routes now have typed responses on `client.settings`. The remaining 312
+operations are included in the full-contract change described above.
 
 This release changes the client API to represent the current Gitea contract;
 callers relying on earlier client binaries must recompile and may need to

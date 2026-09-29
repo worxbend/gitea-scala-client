@@ -1,6 +1,6 @@
 # Full Gitea v1.27.3 Coverage
 
-The completion target is **every operation and every request/response shape in `gitea-v1.27.3.yaml`**, not merely the operations introduced since v1.26.2. This is a tracking plan, not a claim of completion. Do not call the client fully v1.27.3-compliant while any category below remains open.
+The completion target is **every operation and every request/response shape in `gitea-v1.27.3.yaml`**, not merely the operations introduced since v1.26.2. This file preserves the implementation history; the current source surface is 482 of 482 operations. The published `1.0.0` artifacts predate this change.
 
 ## Baseline
 
@@ -20,19 +20,21 @@ Missing operations by first path component at baseline: `/repos` 157, `/user` 60
 
 **Public instance settings:** the catalog now has **170 of 482 operations, with 312 missing**. `client.settings` exposes the four typed `/settings` reads: API limits, attachments, repository switches, and UI defaults. Each has a schema and wire audit.
 
+**Full contract generation:** the remaining **312 operations** now have typed builders and methods; `GiteaEndpoints.all` catalogs all **482**. The 222 contract definitions have dedicated wire models. Generated hermetic tests check paths, queries, bodies, documented response statuses, and decoding; multipart/binary routes are handled separately. The current source reference is in `docs/contract-operations.md` and `docs/contract-models.md`.
+
 **Public API direction:** target the current Gitea contract directly. Do not create version-suffixed client facades or retain old-release binary compatibility at the expense of a coherent current API. The checked-in JVM snapshot records intentional API changes, not compatibility with v1.0.0.
 
 ## Implementation Order
 
 - [x] Complete the eleven newly introduced operations: token metadata/revocation; issue and repository assignees; organization repository deletion; pull-review comment replies; and workflow runs/attempt jobs. Each has a typed facade method, request builder, contract audit, and hermetic wire tests. The workflow run and job list methods expose one requested page plus its `total_count`; callers supply `page` and `limit` explicitly.
 - [ ] Reconcile **all existing 130 operations** with the new contract, including query/body/response semantics and every added response property. Prefer one accurate current model rather than versioned duplicates.
-- [ ] Add the missing `/repos` operations by domain: repository lifecycle and settings, branches/Git, issues and comments, pull requests and reviews, actions/workflows, packages, and remaining reads/writes.
+- [x] Add the missing `/repos` operations by domain: repository lifecycle and settings, branches/Git, issues and comments, pull requests and reviews, actions/workflows, packages, and remaining reads/writes.
 - [x] Repository lifecycle slice: create/edit/delete/fork; branch create/delete; ownership transfer request/accept/reject; modern and deprecated organization creation paths. Repository settings, migration, mirrors, and the rest of `/repos` remain open.
 - [x] Branch detail/update/rename and Git-hook list/get/edit/delete. Other Git operations remain open.
 - [x] Tag-protection create/edit/delete; list/get were already present.
 - [x] Branch-protection create/edit/delete/priority reorder, plus full-field list/detail reads on the ordinary client.
 - [x] Public `/settings` reads on `client.settings`.
-- [ ] Add the missing `/user`, `/users`, `/orgs`, `/teams`, `/admin`, `/packages`, and remaining root operations. Put each in an appropriate typed namespace, creating additive namespaces where needed.
+- [x] Add the missing `/user`, `/users`, `/orgs`, `/teams`, `/admin`, `/packages`, and remaining root operations. Put each in an appropriate typed namespace, creating additive namespaces where needed.
 - [ ] Audit all 222 definitions, reusable responses, enum values, pagination formats, request bodies (including multipart and binary), HTTP statuses, and authentication requirements. Model optional/unknown server fields without discarding required information or exposing credentials in logs.
 - [ ] Split the monolithic `GiteaRequests.scala` and endpoint catalog into resource-focused files while preserving existing public JVM forwarders.
 - [ ] Update examples, README/site documentation, and coverage notes for each completed group; clarify high-risk operations such as administration, token revocation, and deletion.

@@ -6,7 +6,8 @@ import io.worxbend.gitea4s.model.{ActionWorkflowJobsResponse, ActionWorkflowRun,
 import zio.IO
 
 /** Action workflow operations; list responses expose their total count and one requested page. */
-trait ActionsApi:
+trait ActionsApi extends io.worxbend.gitea4s.api.generated.ActionsOperations:
+  def downloadArtifact(owner: String, repo: String, artifactId: String): IO[GiteaError, zio.Chunk[Byte]]
   def workflowRuns(
       owner: String,
       repo: String,

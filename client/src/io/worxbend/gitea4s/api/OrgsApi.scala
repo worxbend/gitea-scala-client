@@ -9,7 +9,7 @@ import zio.stream.ZStream
 /** Organization operations, reached through `client.orgs`: organization
   * metadata, members and public members, and organization repositories.
   */
-trait OrgsApi:
+trait OrgsApi extends io.worxbend.gitea4s.api.generated.OrgsOperations:
   def createRepository(org: String, body: CreateRepoOption): IO[GiteaError, Repository]
   /** Legacy `/org/{org}/repos` route; prefer `createRepository`. */
   def createRepositoryLegacy(org: String, body: CreateRepoOption): IO[GiteaError, Repository]

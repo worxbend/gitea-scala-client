@@ -33,7 +33,9 @@ final case class User(
     @jsonField("following_count") followingCount: Option[Long] = None,
     @jsonField("starred_repos_count") starredReposCount: Option[Long] = None,
     created: Option[Instant] = None,
-    @jsonField("last_login") lastLogin: Option[Instant] = None
+    @jsonField("last_login") lastLogin: Option[Instant] = None,
+    @jsonField("prohibit_login") prohibitLogin: Option[Boolean] = None,
+    @jsonField("source_id") sourceId: Option[Long] = None
 )
 
 object User:
@@ -73,39 +75,6 @@ final case class RepoCollaboratorPermission(
 
 object RepoCollaboratorPermission:
   given JsonCodec[RepoCollaboratorPermission] = DeriveJsonCodec.gen[RepoCollaboratorPermission]
-
-final case class Repository(
-    id: Option[Long] = None,
-    owner: Option[User] = None,
-    name: Option[String] = None,
-    @jsonField("full_name") fullName: Option[String] = None,
-    description: Option[String] = None,
-    @jsonField("private") isPrivate: Option[Boolean] = None,
-    fork: Option[Boolean] = None,
-    empty: Option[Boolean] = None,
-    archived: Option[Boolean] = None,
-    mirror: Option[Boolean] = None,
-    template: Option[Boolean] = None,
-    @jsonField("html_url") htmlUrl: Option[String] = None,
-    @jsonField("clone_url") cloneUrl: Option[String] = None,
-    @jsonField("ssh_url") sshUrl: Option[String] = None,
-    @jsonField("default_branch") defaultBranch: Option[String] = None,
-    language: Option[String] = None,
-    size: Option[Long] = None,
-    @jsonField("stars_count") starsCount: Option[Long] = None,
-    @jsonField("forks_count") forksCount: Option[Long] = None,
-    @jsonField("watchers_count") watchersCount: Option[Long] = None,
-    @jsonField("open_issues_count") openIssuesCount: Option[Long] = None,
-    permissions: Option[Permission] = None,
-    topics: Option[List[String]] = None,
-    @jsonField("object_format_name") objectFormatName: Option[ObjectFormatName] = None,
-    @jsonField("created_at") createdAt: Option[Instant] = None,
-    @jsonField("updated_at") updatedAt: Option[Instant] = None,
-    url: Option[String] = None
-)
-
-object Repository:
-  given JsonCodec[Repository] = DeriveJsonCodec.gen[Repository]
 
 final case class TopicNames(
     topics: Option[List[String]] = None
@@ -204,7 +173,15 @@ final case class Issue(
     @jsonField("closed_at") closedAt: Option[Instant] = None,
     @jsonField("due_date") dueDate: Option[Instant] = None,
     @jsonField("html_url") htmlUrl: Option[String] = None,
-    url: Option[String] = None
+    url: Option[String] = None,
+    @jsonField("assets") assets: Option[List[contract.Attachment]] = None,
+    @jsonField("content_version") contentVersion: Option[Long] = None,
+    @jsonField("original_author") originalAuthor: Option[String] = None,
+    @jsonField("original_author_id") originalAuthorId: Option[Long] = None,
+    @jsonField("pin_order") pinOrder: Option[Long] = None,
+    @jsonField("projects") projects: Option[List[contract.Project]] = None,
+    @jsonField("ref") ref: Option[String] = None,
+    @jsonField("time_estimate") timeEstimate: Option[Long] = None
 )
 
 object Issue:
@@ -376,7 +353,10 @@ final case class Comment(
     @jsonField("pull_request_url") pullRequestUrl: Option[String] = None,
     @jsonField("html_url") htmlUrl: Option[String] = None,
     @jsonField("created_at") createdAt: Option[Instant] = None,
-    @jsonField("updated_at") updatedAt: Option[Instant] = None
+    @jsonField("updated_at") updatedAt: Option[Instant] = None,
+    @jsonField("assets") assets: Option[List[contract.Attachment]] = None,
+    @jsonField("original_author") originalAuthor: Option[String] = None,
+    @jsonField("original_author_id") originalAuthorId: Option[Long] = None
 )
 
 object Comment:
@@ -409,7 +389,18 @@ final case class PullRequest(
     @jsonField("created_at") createdAt: Option[Instant] = None,
     @jsonField("updated_at") updatedAt: Option[Instant] = None,
     @jsonField("closed_at") closedAt: Option[Instant] = None,
-    url: Option[String] = None
+    url: Option[String] = None,
+    @jsonField("allow_maintainer_edit") allowMaintainerEdit: Option[Boolean] = None,
+    @jsonField("comments") comments: Option[Long] = None,
+    @jsonField("content_version") contentVersion: Option[Long] = None,
+    @jsonField("due_date") dueDate: Option[java.time.Instant] = None,
+    @jsonField("is_locked") isLocked: Option[Boolean] = None,
+    @jsonField("merge_base") mergeBase: Option[String] = None,
+    @jsonField("merge_commit_sha") mergeCommitSha: Option[String] = None,
+    @jsonField("pin_order") pinOrder: Option[Long] = None,
+    @jsonField("requested_reviewers") requestedReviewers: Option[List[User]] = None,
+    @jsonField("requested_reviewers_teams") requestedReviewersTeams: Option[List[Team]] = None,
+    @jsonField("review_comments") reviewComments: Option[Long] = None
 )
 
 object PullRequest:
@@ -625,7 +616,8 @@ final case class Release(
     @jsonField("upload_url") uploadUrl: Option[String] = None,
     @jsonField("created_at") createdAt: Option[Instant] = None,
     @jsonField("published_at") publishedAt: Option[Instant] = None,
-    url: Option[String] = None
+    url: Option[String] = None,
+    @jsonField("assets") assets: Option[List[contract.Attachment]] = None
 )
 
 object Release:
@@ -736,7 +728,8 @@ final case class PRBranchInfo(
     label: Option[String] = None,
     ref: Option[String] = None,
     sha: Option[String] = None,
-    @jsonField("repo_id") repoId: Option[Long] = None
+    @jsonField("repo_id") repoId: Option[Long] = None,
+    repo: Option[Repository] = None
 )
 
 object PRBranchInfo:
@@ -751,7 +744,8 @@ final case class Team(
     @jsonField("includes_all_repositories") includesAllRepositories: Option[Boolean] = None,
     @jsonField("can_create_org_repo") canCreateOrgRepo: Option[Boolean] = None,
     units: Option[List[String]] = None,
-    @jsonField("units_map") unitsMap: Option[Map[String, String]] = None
+    @jsonField("units_map") unitsMap: Option[Map[String, String]] = None,
+    @jsonField("visibility") visibility: Option[String] = None
 )
 
 object Team:

@@ -13,6 +13,7 @@ import io.worxbend.gitea4s.api.{
   UsersApi,
   TokensApi
 }
+import io.worxbend.gitea4s.api.generated.{AdminOperations, CatalogOperations, PackagesOperations, TeamsOperations}
 import sttp.client4.Backend
 import zio.Task
 
@@ -35,3 +36,7 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override val tokens: TokensApi = SttpTokensApi(config, executor)
   override val actions: ActionsApi = SttpActionsApi(config, executor)
   override val settings: SettingsApi = SttpSettingsApi(config, executor)
+  override val admin: AdminOperations = SttpAdminApi(config, executor)
+  override val teams: TeamsOperations = SttpTeamsApi(config, executor)
+  override val packages: PackagesOperations = SttpPackagesApi(config, executor)
+  override val catalog: CatalogOperations = SttpCatalogApi(config, executor)

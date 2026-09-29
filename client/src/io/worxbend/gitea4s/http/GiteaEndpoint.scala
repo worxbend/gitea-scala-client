@@ -11,6 +11,34 @@ final case class GiteaEndpoint(
 final case class GiteaParameter(name: String, in: String, required: Boolean)
 
 object GiteaEndpoints:
+  val downloadArtifact: GiteaEndpoint =
+    GiteaEndpoint(
+      "GET", "/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip", "downloadArtifact",
+      List(GiteaParameter("owner", "path", true), GiteaParameter("repo", "path", true), GiteaParameter("artifact_id", "path", true)),
+      "description: redirect to the blob download"
+    )
+
+  val issueCreateIssueCommentAttachment: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/repos/{owner}/{repo}/issues/comments/{id}/assets", "issueCreateIssueCommentAttachment",
+      List(GiteaParameter("owner", "path", true), GiteaParameter("repo", "path", true), GiteaParameter("id", "path", true),
+        GiteaParameter("name", "query", false), GiteaParameter("attachment", "formData", true)), "#/responses/Attachment"
+    )
+
+  val issueCreateIssueAttachment: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/repos/{owner}/{repo}/issues/{index}/assets", "issueCreateIssueAttachment",
+      List(GiteaParameter("owner", "path", true), GiteaParameter("repo", "path", true), GiteaParameter("index", "path", true),
+        GiteaParameter("name", "query", false), GiteaParameter("attachment", "formData", true)), "#/responses/Attachment"
+    )
+
+  val repoCreateReleaseAttachment: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/repos/{owner}/{repo}/releases/{id}/assets", "repoCreateReleaseAttachment",
+      List(GiteaParameter("owner", "path", true), GiteaParameter("repo", "path", true), GiteaParameter("id", "path", true),
+        GiteaParameter("name", "query", false), GiteaParameter("attachment", "formData", false)), "#/responses/Attachment"
+    )
+
   val getGeneralAPISettings: GiteaEndpoint =
     GiteaEndpoint("GET", "/settings/api", "getGeneralAPISettings", Nil, "#/responses/GeneralAPISettings")
 
@@ -2066,7 +2094,11 @@ object GiteaEndpoints:
     * GiteaEndpointAuditSpec compares the list against the constants it finds by
     * reflection and fails when the two disagree.
     */
-  private[gitea4s] val all: List[GiteaEndpoint] = List(
+  private[gitea4s] val all: List[GiteaEndpoint] = GeneratedEndpoints.all ++ List(
+    downloadArtifact,
+    issueCreateIssueCommentAttachment,
+    issueCreateIssueAttachment,
+    repoCreateReleaseAttachment,
     getGeneralAPISettings,
     getGeneralAttachmentSettings,
     getGeneralRepositorySettings,

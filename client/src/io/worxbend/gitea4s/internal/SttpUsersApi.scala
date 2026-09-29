@@ -8,7 +8,8 @@ import io.worxbend.gitea4s.model.{StopWatch, User}
 import zio.IO
 import zio.stream.ZStream
 
-private[gitea4s] final class SttpUsersApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends UsersApi:
+private[gitea4s] final class SttpUsersApi(protected val config: GiteaConfig, protected val executor: GiteaRequestExecutor)
+    extends UsersApi with generated.LiveUsersOperations:
   override def me: IO[GiteaError, User] =
     executor.send(GiteaRequests.currentUser(config))
 

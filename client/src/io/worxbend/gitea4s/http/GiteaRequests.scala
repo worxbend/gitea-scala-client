@@ -8,6 +8,7 @@ import io.worxbend.gitea4s.model.{
   ActionWorkflowRunsResponse,
   AddTimeOption,
   AnnotatedTag,
+  AttachmentUpload,
   Branch,
   BranchProtection,
   ChangedFile,
@@ -91,6 +92,76 @@ import zio.json.*
 
 
 object GiteaRequests:
+  private[http] def binaryFromContract(
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      query: List[(String, String)] = Nil
+  ): GiteaRequest[Chunk[Byte]] =
+    val request = binaryRequest(config)
+      .get(apiUri(config.baseUrl, path, query))
+      .response(byteArrayResponse)
+      .readTimeout(config.timeout)
+      .headers(commonHeaders(config, Accept.OctetStream))
+    GiteaRequest.withBody(endpoint, request, GiteaResponseMapper.decodeBytes, retryable = true)
+
+  def downloadArtifact(config: GiteaConfig, owner: String, repo: String, artifactId: String): GiteaRequest[Chunk[Byte]] =
+    binaryFromContract(config, GiteaEndpoints.downloadArtifact,
+      List("repos", owner, repo, "actions", "artifacts", artifactId, "zip"))
+
+  private def uploadAttachment(
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      name: Option[String],
+      upload: AttachmentUpload
+  ): GiteaRequest[io.worxbend.gitea4s.model.contract.Attachment] =
+    val query = name.toList.map("name" -> _)
+    val request = jsonRequest(config)
+      .post(apiUri(config.baseUrl, path, query))
+      .multipartBody(multipart("attachment", upload.content.toArray).fileName(upload.fileName))
+    jsonCall(config, endpoint, request, response =>
+      GiteaResponseMapper.decodeJsonAt[io.worxbend.gitea4s.model.contract.Attachment](response, StatusCode.Created))
+
+  def issueCreateIssueCommentAttachment(
+      config: GiteaConfig, owner: String, repo: String, id: Long, upload: AttachmentUpload, name: Option[String] = None
+  ): GiteaRequest[io.worxbend.gitea4s.model.contract.Attachment] =
+    uploadAttachment(config, GiteaEndpoints.issueCreateIssueCommentAttachment,
+      List("repos", owner, repo, "issues", "comments", id.toString, "assets"), name, upload)
+
+  def issueCreateIssueAttachment(
+      config: GiteaConfig, owner: String, repo: String, index: Long, upload: AttachmentUpload, name: Option[String] = None
+  ): GiteaRequest[io.worxbend.gitea4s.model.contract.Attachment] =
+    uploadAttachment(config, GiteaEndpoints.issueCreateIssueAttachment,
+      List("repos", owner, repo, "issues", index.toString, "assets"), name, upload)
+
+  def repoCreateReleaseAttachment(
+      config: GiteaConfig, owner: String, repo: String, id: Long, upload: AttachmentUpload, name: Option[String] = None
+  ): GiteaRequest[io.worxbend.gitea4s.model.contract.Attachment] =
+    uploadAttachment(config, GiteaEndpoints.repoCreateReleaseAttachment,
+      List("repos", owner, repo, "releases", id.toString, "assets"), name, upload)
+
+  private[http] def fromContract[A](
+      config: GiteaConfig,
+      endpoint: GiteaEndpoint,
+      path: List[String],
+      query: List[(String, String)],
+      body: Option[String],
+      decode: Response[String] => Either[GiteaError, A],
+      contentType: MediaType = MediaType.ApplicationJson,
+      accept: Accept = Accept.Json
+  ): GiteaRequest[A] =
+    val uri = apiUri(config.baseUrl, path, query)
+    val base = jsonRequest(config)
+    val request = endpoint.method match
+      case "GET"    => base.get(uri)
+      case "POST"   => base.post(uri)
+      case "PUT"    => base.put(uri)
+      case "PATCH"  => base.patch(uri)
+      case "DELETE" => base.delete(uri)
+      case other     => throw new IllegalArgumentException(s"Unsupported Gitea method: $other")
+    jsonCall(config, endpoint, body.fold(request)(json => request.body(json).contentType(contentType)), decode, accept)
+
   def generalAPISettings(config: GiteaConfig): GiteaRequest[GeneralAPISettings] =
     get(config, GiteaEndpoints.getGeneralAPISettings, List("settings", "api"), Nil,
       GiteaResponseMapper.decodeJson[GeneralAPISettings])

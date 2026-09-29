@@ -8,7 +8,8 @@ import io.worxbend.gitea4s.model.{CreateRepoOption, Organization, Repository, Us
 import zio.IO
 import zio.stream.ZStream
 
-private[gitea4s] final class SttpOrgsApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends OrgsApi:
+private[gitea4s] final class SttpOrgsApi(protected val config: GiteaConfig, protected val executor: GiteaRequestExecutor)
+    extends OrgsApi with generated.LiveOrgsOperations:
   override def createRepository(org: String, body: CreateRepoOption): IO[GiteaError, Repository] =
     executor.send(GiteaRequests.createOrgRepo(config, org, body))
 

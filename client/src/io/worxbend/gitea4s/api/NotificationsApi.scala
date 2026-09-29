@@ -7,7 +7,7 @@ import zio.IO
 import zio.stream.ZStream
 
 /** Notification operations, reached through `client.notifications`. */
-trait NotificationsApi:
+trait NotificationsApi extends io.worxbend.gitea4s.api.generated.NotificationsOperations:
   def list(
       params: NotificationListParams = NotificationListParams.default
   ): ZStream[Any, GiteaError, NotificationThread]

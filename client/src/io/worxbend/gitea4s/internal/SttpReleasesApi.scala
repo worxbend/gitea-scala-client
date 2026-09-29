@@ -8,7 +8,13 @@ import io.worxbend.gitea4s.model.{Release, ReleaseAsset}
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
-private[gitea4s] final class SttpReleasesApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends ReleasesApi:
+private[gitea4s] final class SttpReleasesApi(protected val config: GiteaConfig, protected val executor: GiteaRequestExecutor)
+    extends ReleasesApi with generated.LiveReleasesOperations:
+  override def createAttachment(owner: String, repo: String, id: Long,
+      upload: io.worxbend.gitea4s.model.AttachmentUpload, name: Option[String]
+  ): IO[GiteaError, io.worxbend.gitea4s.model.contract.Attachment] =
+    executor.send(GiteaRequests.repoCreateReleaseAttachment(config, owner, repo, id, upload, name))
+
   override def list(
       owner: String,
       repo: String,

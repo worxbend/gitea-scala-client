@@ -26,6 +26,7 @@ private[gitea4s] enum Accept(val headerValue: String):
   case Json extends Accept("application/json")
   case OctetStream extends Accept("application/octet-stream")
   case TextPlain extends Accept("text/plain")
+  case Html extends Accept("text/html")
 
 final case class GiteaConfig(
     baseUrl: Uri,
@@ -81,10 +82,12 @@ final case class GiteaConfig(
       case Accept.Json => jsonHeaders
       case Accept.OctetStream => octetStreamHeaders
       case Accept.TextPlain => textPlainHeaders
+      case Accept.Html => htmlHeaders
 
   private[gitea4s] lazy val jsonHeaders: Map[String, String] = buildHeaders(Accept.Json.headerValue)
   private[gitea4s] lazy val octetStreamHeaders: Map[String, String] = buildHeaders(Accept.OctetStream.headerValue)
   private[gitea4s] lazy val textPlainHeaders: Map[String, String] = buildHeaders(Accept.TextPlain.headerValue)
+  private[gitea4s] lazy val htmlHeaders: Map[String, String] = buildHeaders(Accept.Html.headerValue)
 
   private def buildHeaders(accept: String): Map[String, String] =
     List(

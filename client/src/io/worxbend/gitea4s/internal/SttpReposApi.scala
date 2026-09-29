@@ -54,7 +54,8 @@ import io.worxbend.gitea4s.model.{
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
-private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends ReposApi:
+private[gitea4s] final class SttpReposApi(protected val config: GiteaConfig, protected val executor: GiteaRequestExecutor)
+    extends ReposApi with generated.LiveReposOperations:
   override def createForCurrentUser(body: CreateRepoOption): IO[GiteaError, Repository] =
     executor.send(GiteaRequests.createCurrentUserRepo(config, body))
 

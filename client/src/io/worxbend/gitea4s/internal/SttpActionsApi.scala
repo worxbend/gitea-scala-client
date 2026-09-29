@@ -7,7 +7,10 @@ import io.worxbend.gitea4s.http.{GiteaRequests, WorkflowAttemptJobsParams, Workf
 import io.worxbend.gitea4s.model.{ActionWorkflowJobsResponse, ActionWorkflowRun, ActionWorkflowRunsResponse}
 import zio.IO
 
-private[gitea4s] final class SttpActionsApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends ActionsApi:
+private[gitea4s] final class SttpActionsApi(protected val config: GiteaConfig, protected val executor: GiteaRequestExecutor)
+    extends ActionsApi with generated.LiveActionsOperations:
+  override def downloadArtifact(owner: String, repo: String, artifactId: String): IO[GiteaError, zio.Chunk[Byte]] =
+    executor.send(GiteaRequests.downloadArtifact(config, owner, repo, artifactId))
   override def workflowRuns(
       owner: String,
       repo: String,

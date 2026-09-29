@@ -9,6 +9,7 @@ import io.worxbend.gitea4s.http.{
 }
 import io.worxbend.gitea4s.model.{
   AddTimeOption,
+  AttachmentUpload,
   Comment,
   CreateIssue,
   EditDeadlineOption,
@@ -32,7 +33,11 @@ import zio.stream.ZStream
   * comments, labels, reactions, subscriptions, dependencies, locking, deadlines,
   * tracked time, and stopwatches.
   */
-trait IssuesApi:
+trait IssuesApi extends io.worxbend.gitea4s.api.generated.IssuesOperations:
+  def createCommentAttachment(owner: String, repo: String, id: Long, upload: AttachmentUpload,
+      name: Option[String] = None): IO[GiteaError, io.worxbend.gitea4s.model.contract.Attachment]
+  def createIssueAttachment(owner: String, repo: String, index: Long, upload: AttachmentUpload,
+      name: Option[String] = None): IO[GiteaError, io.worxbend.gitea4s.model.contract.Attachment]
   def addAssignees(owner: String, repo: String, index: Long, assignees: Chunk[String]): IO[GiteaError, Issue]
   def removeAssignees(owner: String, repo: String, index: Long, assignees: Chunk[String]): IO[GiteaError, Issue]
   /** A 404 also occurs when an issue is inaccessible. */
