@@ -24,8 +24,9 @@ accept only their documented success statuses; mirror credentials in
 `EditRepoOption.toString` are redacted. This is **not** full v1.27.3 coverage:
 The subsequent branch and Git-hook batch adds typed branch read/update/rename
 and Git-hook list/get/edit/delete. Branch writes require the documented 204
-status. This is **not** full v1.27.3 coverage: 323 operations remain missing;
-track them in `API_V1273_PLAN.md`.
+status. Tag-protection creation, edit, and deletion now have typed request
+bodies and status-checked responses. This is **not** full v1.27.3 coverage:
+320 operations remain missing; track them in `API_V1273_PLAN.md`.
 
 A hardening release. Everything here is source-compatible: code that compiled
 against `1.0.0` still compiles. Some behaviour changed on purpose; read the

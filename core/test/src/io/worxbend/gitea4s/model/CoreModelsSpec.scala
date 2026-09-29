@@ -392,6 +392,13 @@ object CoreModelsSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Core models")(
+      test("tag protection writes match their v1.27.3 schemas") {
+        val fields = Set("name_pattern", "whitelist_teams", "whitelist_usernames")
+        assertTrue(
+          latestDefinitionFields.get("CreateTagProtectionOption").contains(fields),
+          latestDefinitionFields.get("EditTagProtectionOption").contains(fields)
+        )
+      },
       test("branch and Git hook models cover their v1.27.3 schema fields") {
         val expectedFields = Map(
           "UpdateBranchRepoOption" -> Set("new_commit_id", "old_commit_id", "force"),

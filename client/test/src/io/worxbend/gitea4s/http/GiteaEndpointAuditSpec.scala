@@ -6,7 +6,9 @@ import io.worxbend.gitea4s.model.{
   CreateBranchRepoOption,
   CreateForkOption,
   CreateRepoOption,
+  CreateTagProtectionOption,
   EditRepoOption,
+  EditTagProtectionOption,
   EditGitHookOption,
   RenameBranchRepoOption,
   UpdateBranchRepoOption,
@@ -85,6 +87,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     AuditedRequest(GiteaRequests.getGitHook(config, "owner", "repo", "pre-receive"), false),
     AuditedRequest(GiteaRequests.editGitHook(config, "owner", "repo", "pre-receive", EditGitHookOption(Some("script"))), false),
     AuditedRequest(GiteaRequests.deleteGitHook(config, "owner", "repo", "pre-receive"), false)
+  )
+
+  private val tagProtectionRequests = List(
+    AuditedRequest(GiteaRequests.createTagProtection(config, "owner", "repo", CreateTagProtectionOption()), false),
+    AuditedRequest(GiteaRequests.editTagProtection(config, "owner", "repo", 12L, EditTagProtectionOption()), false),
+    AuditedRequest(GiteaRequests.deleteTagProtection(config, "owner", "repo", 12L), false)
   )
 
   private val pullReviewLifecycleRequests = List(
@@ -545,6 +553,18 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   )
 
   private val expectedNonSuccessResponseLabels = Map(
+    "repoCreateTagProtection" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError"),
+      GiteaResponseLabel("423", "#/responses/repoArchivedError")
+    ),
+    "repoDeleteTagProtection" -> List(GiteaResponseLabel("404", "#/responses/notFound")),
+    "repoEditTagProtection" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError"),
+      GiteaResponseLabel("423", "#/responses/repoArchivedError")
+    ),
     "repoGetBranch" -> List(GiteaResponseLabel("404", "#/responses/notFound")),
     "repoUpdateBranch" -> List(
       GiteaResponseLabel("403", "#/responses/forbidden"),
@@ -871,6 +891,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Gitea endpoint metadata audit")(
+      test("tag protection writes match gitea-v1.27.3.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = tagProtectionRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
       test("branch and Git hook operations match gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = branchAndHookRequests.flatMap(audit(swagger, _))
@@ -1164,9 +1190,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
         assertTrue(
           swaggerIds.size == 482,
-          implemented.size == 159,
+          implemented.size == 162,
           implemented.distinct.size == implemented.size,
-          missing.size == 323
+          missing.size == 320
         ) ?? s"remaining operation IDs: ${missing.toList.sorted.mkString(", ")}"
       },
       test("GiteaEndpoints.all lists every endpoint constant") {

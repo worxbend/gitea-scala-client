@@ -724,6 +724,9 @@ public interface io.worxbend.gitea4s.api.ReposApiV1273 extends io.worxbend.gitea
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GitHook> gitHook(java.lang.String, java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GitHook> editGitHook(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditGitHookOption);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteGitHook(java.lang.String, java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.TagProtection> createTagProtection(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateTagProtectionOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.TagProtection> editTagProtection(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditTagProtectionOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteTagProtection(java.lang.String, java.lang.String, long);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> transfer(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.TransferRepoOption);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> acceptTransfer(java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> rejectTransfer(java.lang.String, java.lang.String);
@@ -1224,17 +1227,20 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoCreatePullReviewCommentReply();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoCreatePullReviewRequests();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoCreateStatus();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoCreateTagProtection();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDelete();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDeleteBranch();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDeleteGitHook();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDeletePullReview();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDeletePullReviewRequests();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoDeleteTagProtection();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDismissPullReview();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDownloadCommitDiffOrPatch();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDownloadPullDiffOrPatch();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoEdit();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoEditGitHook();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoEditPullRequest();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoEditTagProtection();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGet();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetArchive();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoGetAssignees();
@@ -1340,6 +1346,9 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetGitHook();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoDeleteGitHook();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoEditGitHook();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoCreateTagProtection();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoDeleteTagProtection();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoEditTagProtection();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoTransfer();
   public io.worxbend.gitea4s.http.GiteaEndpoint acceptRepoTransfer();
   public io.worxbend.gitea4s.http.GiteaEndpoint rejectRepoTransfer();
@@ -1570,6 +1579,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullReview> createPullReview(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.CreatePullReviewOptions);
   public static io.worxbend.gitea4s.http.GiteaRequest<zio.Chunk<io.worxbend.gitea4s.model.PullReview>> createPullReviewRequests(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.PullReviewRequestOptions);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.CommitStatus> createStatus(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateStatusOption);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.TagProtection> createTagProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateTagProtectionOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.CurrentAccessToken> currentToken(io.worxbend.gitea4s.GiteaConfig);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.User> currentUser(io.worxbend.gitea4s.GiteaConfig);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteBranch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
@@ -1585,6 +1595,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deletePullReview(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deletePullReviewRequests(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.PullReviewRequestOptions);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteRepository(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);
+  public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteTagProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullReview> dismissPullReview(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long, io.worxbend.gitea4s.model.DismissPullReviewOptions);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GitHook> editGitHook(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditGitHookOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> editIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssue);
@@ -1592,6 +1603,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.IssueDeadline> editIssueDeadline(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditDeadlineOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> editPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditPullRequestOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> editRepository(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditRepoOption);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.TagProtection> editTagProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditTagProtectionOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Branch> getBranch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GitHook> getGitHook(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.ActionWorkflowRun> getWorkflowRunAttempt(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
@@ -1780,6 +1792,9 @@ public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Se
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GitHook> getGitHook(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteGitHook(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GitHook> editGitHook(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditGitHookOption);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.TagProtection> createTagProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateTagProtectionOption);
+  public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteTagProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.TagProtection> editTagProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditTagProtectionOption);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> transferRepository(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.TransferRepoOption);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> acceptRepositoryTransfer(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> rejectRepositoryTransfer(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);

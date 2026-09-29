@@ -27,12 +27,14 @@ import io.worxbend.gitea4s.model.{
   CreatePullReviewCommentReplyOptions,
   CreatePullReviewOptions,
   CreateStatusOption,
+  CreateTagProtectionOption,
   DismissPullReviewOptions,
   EditDeadlineOption,
   EditGitHookOption,
   EditIssueComment,
   EditIssue,
   EditRepoOption,
+  EditTagProtectionOption,
   EditPullRequestOption,
   EditReactionOption,
   GitBlobResponse,
@@ -190,6 +192,35 @@ object GiteaRequests:
     patchJson(
       config, GiteaEndpoints.repoEditGitHook, List("repos", owner, repo, "hooks", "git", id), body.toJson,
       response => GiteaResponseMapper.decodeJsonAt[GitHook](response, StatusCode.Ok)
+    )
+
+  def createTagProtection(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      body: CreateTagProtectionOption
+  ): GiteaRequest[TagProtection] =
+    postJson(
+      config, GiteaEndpoints.repoCreateTagProtection, List("repos", owner, repo, "tag_protections"), body.toJson,
+      response => GiteaResponseMapper.decodeJsonAt[TagProtection](response, StatusCode.Created)
+    )
+
+  def deleteTagProtection(config: GiteaConfig, owner: String, repo: String, id: Long): GiteaRequest[Unit] =
+    delete(
+      config, GiteaEndpoints.repoDeleteTagProtection, List("repos", owner, repo, "tag_protections", id.toString),
+      GiteaResponseMapper.decodeNoContent
+    )
+
+  def editTagProtection(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      id: Long,
+      body: EditTagProtectionOption
+  ): GiteaRequest[TagProtection] =
+    patchJson(
+      config, GiteaEndpoints.repoEditTagProtection, List("repos", owner, repo, "tag_protections", id.toString),
+      body.toJson, response => GiteaResponseMapper.decodeJsonAt[TagProtection](response, StatusCode.Ok)
     )
 
   def transferRepository(

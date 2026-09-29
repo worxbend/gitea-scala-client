@@ -254,6 +254,24 @@ object GiteaEndpoints:
       repoGetGitHook.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/GitHook"
     )
 
+  val repoCreateTagProtection: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/repos/{owner}/{repo}/tag_protections", "repoCreateTagProtection",
+      repoGet.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/TagProtection"
+    )
+
+  val repoDeleteTagProtection: GiteaEndpoint =
+    GiteaEndpoint(
+      "DELETE", "/repos/{owner}/{repo}/tag_protections/{id}", "repoDeleteTagProtection",
+      repoGet.parameters :+ GiteaParameter("id", "path", required = true), "#/responses/empty"
+    )
+
+  val repoEditTagProtection: GiteaEndpoint =
+    GiteaEndpoint(
+      "PATCH", repoDeleteTagProtection.path, "repoEditTagProtection",
+      repoDeleteTagProtection.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/TagProtection"
+    )
+
   val repoTransfer: GiteaEndpoint =
     GiteaEndpoint(
       "POST", "/repos/{owner}/{repo}/transfer", "repoTransfer",
@@ -2031,6 +2049,9 @@ object GiteaEndpoints:
     repoGetGitHook,
     repoDeleteGitHook,
     repoEditGitHook,
+    repoCreateTagProtection,
+    repoDeleteTagProtection,
+    repoEditTagProtection,
     repoTransfer,
     acceptRepoTransfer,
     rejectRepoTransfer,

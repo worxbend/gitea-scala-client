@@ -14,6 +14,8 @@ Missing operations by first path component at baseline: `/repos` 157, `/user` 60
 
 **Branch and Git-hook batch:** the catalog now has **159 of 482 operations, with 323 missing**. Seven additional operations cover single-branch read, commit update, rename, and Git-hook list/get/edit/delete. Git refs have only read operations in this spec, both already supported. Branch-protection writes remain open; the published `BranchProtection` response model must not be widened incompatibly.
 
+**Tag-protection writes:** the catalog now has **162 of 482 operations, with 320 missing**. Creation, edit, and deletion have typed request bodies, strict success-status decoding, schema audits, and hermetic wire tests. Existing tag-protection list/get operations and the published response model already match this slice of the spec.
+
 ## Implementation Order
 
 - [x] Complete the eleven newly introduced operations: token metadata/revocation; issue and repository assignees; organization repository deletion; pull-review comment replies; and workflow runs/attempt jobs. Each has a typed facade method, request builder, contract audit, and hermetic wire tests. The workflow run and job list methods expose one requested page plus its `total_count`; callers supply `page` and `limit` explicitly.
@@ -21,6 +23,7 @@ Missing operations by first path component at baseline: `/repos` 157, `/user` 60
 - [ ] Add the missing `/repos` operations by domain: repository lifecycle and settings, branches/Git, issues and comments, pull requests and reviews, actions/workflows, packages, and remaining reads/writes.
 - [x] Repository lifecycle slice: create/edit/delete/fork; branch create/delete; ownership transfer request/accept/reject; modern and deprecated organization creation paths. Repository settings, migration, mirrors, and the rest of `/repos` remain open.
 - [x] Branch detail/update/rename and Git-hook list/get/edit/delete. Branch protection writes and other Git operations remain open.
+- [x] Tag-protection create/edit/delete; list/get were already present.
 - [ ] Add the missing `/user`, `/users`, `/orgs`, `/teams`, `/admin`, `/packages`, and remaining root operations. Put each in an appropriate typed namespace, creating additive namespaces where needed.
 - [ ] Audit all 222 definitions, reusable responses, enum values, pagination formats, request bodies (including multipart and binary), HTTP statuses, and authentication requirements. Model optional/unknown server fields without discarding required information or exposing credentials in logs.
 - [ ] Split the monolithic `GiteaRequests.scala` and endpoint catalog into resource-focused files while preserving existing public JVM forwarders.

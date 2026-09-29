@@ -21,6 +21,7 @@ import io.worxbend.gitea4s.model.{
   CreateBranchRepoOption,
   CreateForkOption,
   CreateRepoOption,
+  CreateTagProtectionOption,
   EditGitHookOption,
   CombinedStatus,
   Commit,
@@ -32,6 +33,7 @@ import io.worxbend.gitea4s.model.{
   GitTreeResponse,
   GitHook,
   EditRepoOption,
+  EditTagProtectionOption,
   LanguageStatistics,
   NewIssuePinsAllowed,
   Note,
@@ -88,6 +90,15 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
 
   override def deleteGitHook(owner: String, repo: String, id: String): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.deleteGitHook(config, owner, repo, id))
+
+  override def createTagProtection(owner: String, repo: String, body: CreateTagProtectionOption): IO[GiteaError, TagProtection] =
+    executor.send(GiteaRequests.createTagProtection(config, owner, repo, body))
+
+  override def editTagProtection(owner: String, repo: String, id: Long, body: EditTagProtectionOption): IO[GiteaError, TagProtection] =
+    executor.send(GiteaRequests.editTagProtection(config, owner, repo, id, body))
+
+  override def deleteTagProtection(owner: String, repo: String, id: Long): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteTagProtection(config, owner, repo, id))
 
   override def transfer(owner: String, repo: String, body: TransferRepoOption): IO[GiteaError, Repository] =
     executor.send(GiteaRequests.transferRepository(config, owner, repo, body))

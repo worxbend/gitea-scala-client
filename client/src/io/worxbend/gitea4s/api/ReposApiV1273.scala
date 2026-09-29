@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
-import io.worxbend.gitea4s.model.{Branch, CreateBranchRepoOption, CreateForkOption, CreateRepoOption, EditGitHookOption, EditRepoOption, GitHook, RenameBranchRepoOption, Repository, TransferRepoOption, UpdateBranchRepoOption}
+import io.worxbend.gitea4s.model.{Branch, CreateBranchRepoOption, CreateForkOption, CreateRepoOption, CreateTagProtectionOption, EditGitHookOption, EditRepoOption, EditTagProtectionOption, GitHook, RenameBranchRepoOption, Repository, TagProtection, TransferRepoOption, UpdateBranchRepoOption}
 import zio.IO
 import zio.Chunk
 
@@ -33,6 +33,12 @@ trait ReposApiV1273 extends ReposApi:
   def editGitHook(owner: String, repo: String, id: String, body: EditGitHookOption): IO[GiteaError, GitHook]
 
   def deleteGitHook(owner: String, repo: String, id: String): IO[GiteaError, Unit]
+
+  def createTagProtection(owner: String, repo: String, body: CreateTagProtectionOption): IO[GiteaError, TagProtection]
+
+  def editTagProtection(owner: String, repo: String, id: Long, body: EditTagProtectionOption): IO[GiteaError, TagProtection]
+
+  def deleteTagProtection(owner: String, repo: String, id: Long): IO[GiteaError, Unit]
 
   /** Requests transfer of repository ownership to `newOwner`. */
   def transfer(owner: String, repo: String, body: TransferRepoOption): IO[GiteaError, Repository]
