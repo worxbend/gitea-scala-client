@@ -79,14 +79,11 @@ the reason the codebase looks the way it does.
   assertions with an opt-in live probe before generalizing routing assumptions.
 - **"Not implemented" is deliberate.** Adjacent endpoints are not added by
   inference; each is selected and audited against its exact Swagger contract.
-- **Public API stability.** `./mill compatibility.check` compares the JVM public
-  signatures of the four published modules against `api-snapshot/` and checks
-  for missing v1.0.0 signatures against the pinned release tag. A shallow clone
-  must fetch that tag first. Run `./mill compatibility.writeSnapshot` only for
-  an intentional API change; refreshing the working snapshot cannot waive a
-  v1.0.0 removal. Record API changes in `CHANGELOG.md`.
-  `./mill compatibility.testReleaseGuard` exercises the missing-class and
-  missing-member cases, including a refreshed working snapshot; CI runs it.
+- **Public API snapshot.** `./mill compatibility.check` compares JVM public
+  signatures of the four published modules against `api-snapshot/`. Refresh
+  with `./mill compatibility.writeSnapshot` after an intentional API change,
+  and record the change in `CHANGELOG.md`. The snapshot detects drift; it does
+  not require compatibility with older client releases.
 
 ## Testing
 

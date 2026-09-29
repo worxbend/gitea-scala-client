@@ -8,22 +8,27 @@ The tagged v1.27.3 Swagger template declares 482 operation IDs and 222 definitio
 
 Missing operations by first path component at baseline: `/repos` 157, `/user` 60, `/orgs` 47, `/admin` 32, `/teams` 12, `/users` 12, `/packages` 9, `/settings` 4, and 19 across the remaining roots. The counts come from comparing operation IDs in the vendored spec to the explicit `operationId` entries in `client/src/io/worxbend/gitea4s/http/GiteaEndpoint.scala`. Recompute them after each batch.
 
-**First batch:** the catalog now has 141 endpoints, including all eleven introduced by v1.27.3. **341 older operations remain missing.** Some endpoint constants reuse metadata with `copy`, so count `GiteaEndpoints.all` rather than merely counting literal `operationId =` expressions. `GiteaClientV1273.fromBackend` exposes the additive methods without adding abstract members to the published `GiteaClient` trait.
+**First batch:** the catalog now has 141 endpoints, including all eleven introduced by v1.27.3. **341 older operations remain missing.** Some endpoint constants reuse metadata with `copy`, so count `GiteaEndpoints.all` rather than merely counting literal `operationId =` expressions.
 
 **Repository lifecycle batch:** the catalog now has **152 of 482 operations, with 330 missing**. Eleven additional operations cover current-user and organization repository creation (including the legacy organization path), repository edit/delete, fork, branch create/delete, and ownership transfer request/accept/reject. The accompanying write models account for every field in their v1.27.3 schemas. No live or destructive request was sent during testing.
 
-**Branch and Git-hook batch:** the catalog now has **159 of 482 operations, with 323 missing**. Seven additional operations cover single-branch read, commit update, rename, and Git-hook list/get/edit/delete. Git refs have only read operations in this spec, both already supported. Branch-protection writes remain open; the published `BranchProtection` response model must not be widened incompatibly.
+**Branch and Git-hook batch:** the catalog now has **159 of 482 operations, with 323 missing**. Seven additional operations cover single-branch read, commit update, rename, and Git-hook list/get/edit/delete. Git refs have only read operations in this spec, both already supported.
 
 **Tag-protection writes:** the catalog now has **162 of 482 operations, with 320 missing**. Creation, edit, and deletion have typed request bodies, strict success-status decoding, schema audits, and hermetic wire tests. Existing tag-protection list/get operations and the published response model already match this slice of the spec.
+
+**Branch protection:** the catalog now has **166 of 482 operations, with 316 missing**. Create, edit, delete, and priority reorder have typed requests and hermetic wire tests. The ordinary `BranchProtection` response and existing list/detail reads cover the current contract's bypass-allowlist fields.
+
+**Public API direction:** target the current Gitea contract directly. Do not create version-suffixed client facades or retain old-release binary compatibility at the expense of a coherent current API. The checked-in JVM snapshot records intentional API changes, not compatibility with v1.0.0.
 
 ## Implementation Order
 
 - [x] Complete the eleven newly introduced operations: token metadata/revocation; issue and repository assignees; organization repository deletion; pull-review comment replies; and workflow runs/attempt jobs. Each has a typed facade method, request builder, contract audit, and hermetic wire tests. The workflow run and job list methods expose one requested page plus its `total_count`; callers supply `page` and `limit` explicitly.
-- [ ] Reconcile **all existing 130 operations** with the new contract, including query/body/response semantics and every added response property. Preserve 1.0.0 JVM members; add overloads, separate read models, or explicitly version an incompatible change rather than silently changing published case-class arity.
+- [ ] Reconcile **all existing 130 operations** with the new contract, including query/body/response semantics and every added response property. Prefer one accurate current model rather than versioned duplicates.
 - [ ] Add the missing `/repos` operations by domain: repository lifecycle and settings, branches/Git, issues and comments, pull requests and reviews, actions/workflows, packages, and remaining reads/writes.
 - [x] Repository lifecycle slice: create/edit/delete/fork; branch create/delete; ownership transfer request/accept/reject; modern and deprecated organization creation paths. Repository settings, migration, mirrors, and the rest of `/repos` remain open.
-- [x] Branch detail/update/rename and Git-hook list/get/edit/delete. Branch protection writes and other Git operations remain open.
+- [x] Branch detail/update/rename and Git-hook list/get/edit/delete. Other Git operations remain open.
 - [x] Tag-protection create/edit/delete; list/get were already present.
+- [x] Branch-protection create/edit/delete/priority reorder, plus full-field list/detail reads on the ordinary client.
 - [ ] Add the missing `/user`, `/users`, `/orgs`, `/teams`, `/admin`, `/packages`, and remaining root operations. Put each in an appropriate typed namespace, creating additive namespaces where needed.
 - [ ] Audit all 222 definitions, reusable responses, enum values, pagination formats, request bodies (including multipart and binary), HTTP statuses, and authentication requirements. Model optional/unknown server fields without discarding required information or exposing credentials in logs.
 - [ ] Split the monolithic `GiteaRequests.scala` and endpoint catalog into resource-focused files while preserving existing public JVM forwarders.
@@ -31,10 +36,10 @@ Missing operations by first path component at baseline: `/repos` 157, `/user` 60
 
 ## Completion Gate For Each Operation
 
-1. A typed public facade method, explicit endpoint metadata, and a request builder all correspond to the same operation ID in the vendored spec. New APIs must not remove v1.0.0 members or add abstract obligations to published traits without a compatible default.
+1. A typed public facade method, explicit endpoint metadata, and a request builder all correspond to the same operation ID in the vendored spec. Expose operations on the ordinary `GiteaClient` namespaces.
 2. Focused hermetic tests exercise method, escaped path, query, authorization, exact JSON/multipart/binary body, success decoding (including pagination), and documented failure statuses. The endpoint audit verifies the operation against the vendored spec. Opt-in live tests run only with credentials.
-3. Response models preserve every modeled v1.27.3 field, including nested and optional fields. Changes to previously published models pass the release-tag compatibility guard.
-4. `./mill --no-server __.compile __.test compatibility.check` and `./mill --no-server compatibility.testReleaseGuard` pass. Refresh working snapshots only for additive API changes.
+3. Response models preserve every modeled v1.27.3 field, including nested and optional fields. Update existing models when the current contract adds fields.
+4. `./mill --no-server __.compile __.test compatibility.check` passes. Refresh the public API snapshot for intentional API changes.
 
 ## Final Acceptance
 

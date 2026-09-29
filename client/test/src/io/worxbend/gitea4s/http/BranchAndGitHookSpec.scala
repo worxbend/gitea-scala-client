@@ -1,6 +1,6 @@
 package io.worxbend.gitea4s.http
 
-import io.worxbend.gitea4s.{GiteaClientV1273, GiteaConfig}
+import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.{Auth, EditGitHookOption, RenameBranchRepoOption, UpdateBranchRepoOption}
 import sttp.client4.*
@@ -120,7 +120,7 @@ object BranchAndGitHookSpec extends ZIOSpecDefault:
           .thenRespond(ResponseStub.adjust("""{"name":"main"}"""))
           .whenRequestMatches(_.uri.path.endsWith(List("hooks", "git")))
           .thenRespond(ResponseStub.adjust("""[{"name":"pre-receive"}]"""))
-        val client = GiteaClientV1273.fromBackend(config, backend)
+        val client = GiteaClient.fromBackend(config, backend)
 
         for
           branch <- client.repos.getBranch("owner", "repo", "main")

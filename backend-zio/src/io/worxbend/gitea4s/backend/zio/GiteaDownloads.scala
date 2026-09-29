@@ -67,10 +67,7 @@ final class ZioGiteaDownloads private (
     backend: StreamBackend[Task, ZioStreams],
     stallTimeout: Duration
 ) extends GiteaDownloads:
-  /** The published constructor. Unchanged: the stall budget is not a knob
-    * callers have asked for, and adding a parameter to this signature would
-    * break binary compatibility for 1.0.0.
-    */
+  /** Uses the standard stall budget; callers do not configure it per download. */
   def this(config: GiteaConfig, backend: StreamBackend[Task, ZioStreams]) =
     this(config, backend, ZioGiteaDownloads.stallTimeout)
 

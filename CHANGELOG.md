@@ -2,11 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-This project follows [Semantic Versioning](https://semver.org). From `1.0.0`
-onward the public API of the published modules is stable: breaking changes
-require a major version. `1.0.0` does not imply full Gitea API coverage — the
-typed endpoint surface keeps growing in backward-compatible minor releases,
-guarded by the `api-snapshot/` binary-compatibility check.
+This project follows [Semantic Versioning](https://semver.org). The current
+Gitea contract takes priority over compatibility with the previous client
+release; the next release must communicate this breaking change. The
+`api-snapshot/` files record the intended current JVM surface.
 
 ## Unreleased
 
@@ -14,23 +13,26 @@ The first full-coverage batch adds all eleven operations introduced in Gitea
 1.27.3: current-token metadata and revocation, issue/repository assignee
 operations, bulk deletion of organization repositories, pull-review comment
 replies, and workflow runs and attempt jobs. Use
-`GiteaClientV1273.fromBackend` to access the additive typed namespaces without
-changing the published `GiteaClient` interface. The token deletion and bulk
+`GiteaClient.fromBackend` to access these typed namespaces. The token deletion and bulk
 repository deletion decoders accept only the documented success statuses.
 The next repository lifecycle batch adds typed repository creation (current
 user and both organization routes), edit, deletion, fork, branch creation and
 deletion, and ownership transfer request/accept/reject. Destructive writes
 accept only their documented success statuses; mirror credentials in
-`EditRepoOption.toString` are redacted. This is **not** full v1.27.3 coverage:
+`EditRepoOption.toString` are redacted.
 The subsequent branch and Git-hook batch adds typed branch read/update/rename
 and Git-hook list/get/edit/delete. Branch writes require the documented 204
 status. Tag-protection creation, edit, and deletion now have typed request
-bodies and status-checked responses. This is **not** full v1.27.3 coverage:
-320 operations remain missing; track them in `API_V1273_PLAN.md`.
+bodies and status-checked responses.
+Branch-protection create/edit/delete and priority reorder now use typed bodies.
+`BranchProtection` and its ordinary list/detail reads include the new bypass
+allowlist fields. Version-suffixed client facades and the old-release JVM guard
+have been removed; use `GiteaClient` directly. This is **not** full v1.27.3 coverage: 316 operations remain
+missing; track them in `API_V1273_PLAN.md`.
 
-A hardening release. Everything here is source-compatible: code that compiled
-against `1.0.0` still compiles. Some behaviour changed on purpose; read the
-notes below before upgrading.
+This release changes the client API to represent the current Gitea contract;
+callers relying on earlier client binaries must recompile and may need to
+update their code. Read the notes below before upgrading.
 
 The API target is now Gitea 1.27.3. Its tagged Swagger contract is vendored as
 `gitea-v1.27.3.yaml`; the 1.26.2 document and `ApiReference.gitea1262` remain

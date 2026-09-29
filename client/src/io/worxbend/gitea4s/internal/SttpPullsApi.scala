@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.internal
 
 import io.worxbend.gitea4s.GiteaConfig
-import io.worxbend.gitea4s.api.PullRequestsApiV1273
+import io.worxbend.gitea4s.api.PullRequestsApi
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
   GiteaRequests,
@@ -28,7 +28,7 @@ import io.worxbend.gitea4s.model.{
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
-private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends PullRequestsApiV1273:
+private[gitea4s] final class SttpPullsApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends PullRequestsApi:
   override def replyToReviewComment(
       owner: String,
       repo: String,

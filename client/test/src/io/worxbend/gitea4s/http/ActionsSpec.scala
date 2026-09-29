@@ -1,6 +1,6 @@
 package io.worxbend.gitea4s.http
 
-import io.worxbend.gitea4s.{GiteaClientV1273, GiteaConfig}
+import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.model.Auth
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -77,7 +77,7 @@ object ActionsSpec extends ZIOSpecDefault:
       test("exposes the workflow attempt through the versioned facade and propagates 404") {
         val backend = BackendStub[Task](new RIOMonadAsyncError[Any])
           .whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.NotFound))
-        val client = GiteaClientV1273.fromBackend(config, backend)
+        val client = GiteaClient.fromBackend(config, backend)
 
         client.actions.runAttempt("owner", "repo", 17, 2).either.map { result =>
           assertTrue(result.isLeft)

@@ -1,6 +1,6 @@
 package io.worxbend.gitea4s.http
 
-import io.worxbend.gitea4s.{GiteaClientV1273, GiteaConfig}
+import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.{Auth, CreateBranchRepoOption, CreateForkOption, CreateRepoOption, EditRepoOption, TransferRepoOption}
 import sttp.client4.*
@@ -221,7 +221,7 @@ object RepositoryLifecycleSpec extends ZIOSpecDefault:
           .thenRespond(ResponseStub.adjust("""{"name":"new-repo"}""", StatusCode.Created))
           .whenRequestMatches(_.uri.path.endsWith(List("orgs", "team", "repos")))
           .thenRespond(ResponseStub.adjust("""{"name":"new-repo"}""", StatusCode.Created))
-        val client = GiteaClientV1273.fromBackend(config, backend)
+        val client = GiteaClient.fromBackend(config, backend)
 
         for
           own <- client.repos.createForCurrentUser(createBody)
@@ -236,7 +236,7 @@ object RepositoryLifecycleSpec extends ZIOSpecDefault:
           .thenRespond(ResponseStub.adjust("""{"name":"repo"}"""))
           .whenRequestMatches(_.uri.path.endsWith(List("repo", "transfer")))
           .thenRespond(ResponseStub.adjust("""{"name":"repo"}""", StatusCode.Accepted))
-        val client = GiteaClientV1273.fromBackend(config, backend)
+        val client = GiteaClient.fromBackend(config, backend)
 
         for
           requested <- client.repos.transfer("owner", "repo", TransferRepoOption("new-owner"))

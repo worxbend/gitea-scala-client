@@ -1,12 +1,14 @@
 package io.worxbend.gitea4s
 
 import io.worxbend.gitea4s.api.{
+  ActionsApi,
   IssuesApi,
   NotificationsApi,
   OrgsApi,
   PullRequestsApi,
   ReleasesApi,
   ReposApi,
+  TokensApi,
   UsersApi
 }
 import io.worxbend.gitea4s.internal.SttpGiteaClient
@@ -23,8 +25,12 @@ import zio.Task
   *   - [[notifications]] — notification threads and counts
   *   - [[users]] — the current user, user lookup, search, followers
   *   - [[orgs]] — organizations and their members/repositories
+  *   - [[tokens]] — current access-token metadata and revocation
+  *   - [[actions]] — workflows, runs, and jobs
   */
 trait GiteaClient:
+  def actions: ActionsApi
+  def tokens: TokensApi
   def repos: ReposApi
   def issues: IssuesApi
   def pulls: PullRequestsApi

@@ -1,6 +1,6 @@
 package io.worxbend.gitea4s.http
 
-import io.worxbend.gitea4s.{GiteaClientV1273, GiteaConfig}
+import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.{Auth, CreateTagProtectionOption, EditTagProtectionOption}
 import sttp.client4.*
@@ -88,7 +88,7 @@ object TagProtectionWritesSpec extends ZIOSpecDefault:
           .thenRespond(ResponseStub.adjust("""{"id":12}"""))
           .whenRequestMatches(_.method == Method.DELETE)
           .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
-        val client = GiteaClientV1273.fromBackend(config, backend)
+        val client = GiteaClient.fromBackend(config, backend)
 
         for
           created <- client.repos.createTagProtection("owner", "repo", CreateTagProtectionOption())

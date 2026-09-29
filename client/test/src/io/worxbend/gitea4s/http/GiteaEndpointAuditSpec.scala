@@ -6,12 +6,15 @@ import io.worxbend.gitea4s.model.{
   CreateBranchRepoOption,
   CreateForkOption,
   CreateRepoOption,
+  CreateBranchProtectionOption,
   CreateTagProtectionOption,
   EditRepoOption,
+  EditBranchProtectionOption,
   EditTagProtectionOption,
   EditGitHookOption,
   RenameBranchRepoOption,
   UpdateBranchRepoOption,
+  UpdateBranchProtectionPriorities,
   TransferRepoOption,
   IssueAssigneesOption,
   CommitDiffType,
@@ -93,6 +96,13 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     AuditedRequest(GiteaRequests.createTagProtection(config, "owner", "repo", CreateTagProtectionOption()), false),
     AuditedRequest(GiteaRequests.editTagProtection(config, "owner", "repo", 12L, EditTagProtectionOption()), false),
     AuditedRequest(GiteaRequests.deleteTagProtection(config, "owner", "repo", 12L), false)
+  )
+
+  private val branchProtectionWrites = List(
+    AuditedRequest(GiteaRequests.createBranchProtection(config, "owner", "repo", CreateBranchProtectionOption()), false),
+    AuditedRequest(GiteaRequests.updateBranchProtectionPriorities(config, "owner", "repo", UpdateBranchProtectionPriorities(List(1L))), false),
+    AuditedRequest(GiteaRequests.editBranchProtection(config, "owner", "repo", "main", EditBranchProtectionOption()), false),
+    AuditedRequest(GiteaRequests.deleteBranchProtection(config, "owner", "repo", "main"), false)
   )
 
   private val pullReviewLifecycleRequests = List(
@@ -553,6 +563,23 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   )
 
   private val expectedNonSuccessResponseLabels = Map(
+    "repoCreateBranchProtection" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError"),
+      GiteaResponseLabel("423", "#/responses/repoArchivedError")
+    ),
+    "repoUpdateBranchProtectionPriories" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError"),
+      GiteaResponseLabel("423", "#/responses/repoArchivedError")
+    ),
+    "repoDeleteBranchProtection" -> List(GiteaResponseLabel("404", "#/responses/notFound")),
+    "repoEditBranchProtection" -> List(
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError"),
+      GiteaResponseLabel("423", "#/responses/repoArchivedError")
+    ),
     "repoCreateTagProtection" -> List(
       GiteaResponseLabel("403", "#/responses/forbidden"),
       GiteaResponseLabel("404", "#/responses/notFound"),
@@ -891,6 +918,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Gitea endpoint metadata audit")(
+      test("branch protection writes match gitea-v1.27.3.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = branchProtectionWrites.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
       test("tag protection writes match gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = tagProtectionRequests.flatMap(audit(swagger, _))
@@ -1190,9 +1223,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
         assertTrue(
           swaggerIds.size == 482,
-          implemented.size == 162,
+          implemented.size == 166,
           implemented.distinct.size == implemented.size,
-          missing.size == 320
+          missing.size == 316
         ) ?? s"remaining operation IDs: ${missing.toList.sorted.mkString(", ")}"
       },
       test("GiteaEndpoints.all lists every endpoint constant") {

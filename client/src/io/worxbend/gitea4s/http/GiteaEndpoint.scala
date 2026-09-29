@@ -545,6 +545,27 @@ object GiteaEndpoints:
       response = "#/responses/BranchProtection"
     )
 
+  val repoCreateBranchProtection: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", repoListBranchProtection.path, "repoCreateBranchProtection",
+      repoListBranchProtection.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/BranchProtection"
+    )
+
+  val repoUpdateBranchProtectionPriories: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/repos/{owner}/{repo}/branch_protections/priority", "repoUpdateBranchProtectionPriories",
+      repoListBranchProtection.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/empty"
+    )
+
+  val repoDeleteBranchProtection: GiteaEndpoint =
+    GiteaEndpoint("DELETE", repoGetBranchProtection.path, "repoDeleteBranchProtection", repoGetBranchProtection.parameters, "#/responses/empty")
+
+  val repoEditBranchProtection: GiteaEndpoint =
+    GiteaEndpoint(
+      "PATCH", repoGetBranchProtection.path, "repoEditBranchProtection",
+      repoGetBranchProtection.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/BranchProtection"
+    )
+
   val repoListReleases: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",
@@ -2090,6 +2111,10 @@ object GiteaEndpoints:
     repoGetTagProtection,
     repoListBranchProtection,
     repoGetBranchProtection,
+    repoCreateBranchProtection,
+    repoUpdateBranchProtectionPriories,
+    repoDeleteBranchProtection,
+    repoEditBranchProtection,
     repoListReleases,
     repoGetRelease,
     repoGetLatestRelease,

@@ -33,6 +33,11 @@ import zio.stream.ZStream
   * tracked time, and stopwatches.
   */
 trait IssuesApi:
+  def addAssignees(owner: String, repo: String, index: Long, assignees: Chunk[String]): IO[GiteaError, Issue]
+  def removeAssignees(owner: String, repo: String, index: Long, assignees: Chunk[String]): IO[GiteaError, Issue]
+  /** A 404 also occurs when an issue is inaccessible. */
+  def isAssignee(owner: String, repo: String, index: Long, assignee: String): IO[GiteaError, Boolean]
+
   def get(owner: String, repo: String, index: Long): IO[GiteaError, Issue]
 
   def list(

@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.internal
 
 import io.worxbend.gitea4s.GiteaConfig
-import io.worxbend.gitea4s.api.IssuesApiV1273
+import io.worxbend.gitea4s.api.IssuesApi
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
   GiteaRequests,
@@ -35,7 +35,7 @@ import io.worxbend.gitea4s.model.{
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
-private[gitea4s] final class SttpIssuesApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends IssuesApiV1273:
+private[gitea4s] final class SttpIssuesApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends IssuesApi:
   override def addAssignees(owner: String, repo: String, index: Long, assignees: Chunk[String]): IO[GiteaError, Issue] =
     executor.send(GiteaRequests.issueAddAssignees(config, owner, repo, index, IssueAssigneesOption(assignees)))
 

@@ -135,7 +135,6 @@ object it extends Gitea4sModule:
   def moduleDeps = Seq(`backend-zio`)
 
 object compatibility extends Module:
-  private val v1ReleaseCommit = "24fda6ec0051258a0cb7866fb3a7db4cf70fa5ed"
 
   // Mill does set `PWD` to the workspace root, so the previous `sys.env("PWD")`
   // lookup worked — but its `user.dir` fallback resolved to the throwaway
@@ -210,68 +209,6 @@ object compatibility extends Module:
       os.write.over(baselineDir / generatedFile.last, os.read.bytes(generatedFile), createFolders = true)
   }
 
-  // The 1.0.0 tag is fixed independently of the refreshable working snapshot.
-  // These three classes were Scala-private in 1.0.0 despite javap reporting
-  // them as public. Compiler-generated names are not callable API; toString
-  // still resolves virtually from a superclass when a local override moves.
-  private val v1PrivateClasses = Set(
-    "io.worxbend.gitea4s.http.GiteaRequest$StringImpl",
-    "io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults",
-    "io.worxbend.gitea4s.http.GiteaResponseMapper$UserSearchResults$"
-  )
-
-  private def releaseSignatures(snapshot: String): Map[String, Set[String]] =
-    snapshot.split("(?m)^## ").iterator.drop(1).map { section =>
-      val lines = section.linesIterator.toList
-      val className = lines.head.trim
-      val members = lines.tail.map(_.trim).filter { member =>
-        member.startsWith("public ") && member.endsWith(";") &&
-        member != "public java.lang.String toString();" &&
-        !member.contains("$$anon") && !member.contains("$$$given_")
-      }.toSet
-      className -> members
-    }.filterNot { case (name, _) => v1PrivateClasses.contains(name) }.toMap
-
-  private def missingReleaseSignatures(released: String, current: String): Seq[String] =
-    val currentClasses = releaseSignatures(current)
-    releaseSignatures(released).toSeq.sortBy(_._1).flatMap { case (className, members) =>
-      currentClasses.get(className) match
-        case None => Seq(s"Missing v1.0.0 class: $className")
-        case Some(currentMembers) =>
-          (members -- currentMembers).toSeq.sorted.map(member => s"Missing v1.0.0 member in $className: $member")
-    }
-
-  private def releasedSnapshot(snapshotName: String): String =
-    os.proc("git", "-C", workspaceRoot, "show", s"$v1ReleaseCommit:api-snapshot/$snapshotName")
-      .call()
-      .out.text()
-
-  private def verifyV1Tag(): Unit =
-    val tagCommit = os.proc("git", "-C", workspaceRoot, "rev-parse", "--verify", "v1.0.0^{commit}")
-      .call(check = false).out.text().trim
-    if tagCommit != v1ReleaseCommit then
-      throw new Exception("The pinned v1.0.0 tag is missing or moved; fetch the original tag before checking compatibility.")
-
-  def testReleaseGuard() = Task.Command {
-    val released = "## example.Public\npublic final class example.Public {\n  public example.Public();\n  public int count();\n}\n"
-    val changed = "## example.Public\npublic final class example.Public {\n  public example.Public();\n  public int total();\n}\n"
-    val missingClass = "## example.Other\npublic final class example.Other {\n}\n"
-    assert(missingReleaseSignatures(released, released).isEmpty)
-    assert(missingReleaseSignatures(released, released.replace("  public int count();", "  public int count();\n  public int total();")).isEmpty)
-    assert(missingReleaseSignatures(released, changed) == Seq("Missing v1.0.0 member in example.Public: public int count();"))
-    assert(missingReleaseSignatures(released, missingClass) == Seq("Missing v1.0.0 class: example.Public"))
-
-    verifyV1Tag()
-    val currentClient = os.read(generated().path / "client.txt")
-    val v1Client = releasedSnapshot("client.txt")
-    val oldApply = "public io.worxbend.gitea4s.http.UserSearchParams apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);"
-    assert(currentClient.contains(s"  $oldApply\n"))
-    val refreshedWithoutOldApply = currentClient.replace(s"  $oldApply\n", "")
-    assert(missingReleaseSignatures(v1Client, refreshedWithoutOldApply).contains(
-      s"Missing v1.0.0 member in io.worxbend.gitea4s.http.UserSearchParams$$: $oldApply"
-    ))
-  }
-
   private def workingSnapshotFailures(baselineDir: os.Path, generatedFiles: Seq[os.Path]): Seq[String] =
     // The comparison below only walks the *generated* files. On its own that
     // means a baseline whose module has been dropped from `publishedModules` is
@@ -298,21 +235,14 @@ object compatibility extends Module:
         Some(s"API snapshot changed for ${generatedFile.last}:\n$diff")
     }
 
-  private def releaseFailures(generatedFiles: Seq[os.Path]): Seq[String] =
-    generatedFiles.flatMap { generatedFile =>
-      missingReleaseSignatures(releasedSnapshot(generatedFile.last), os.read(generatedFile))
-    }
-
   def check() = Task.Command {
-    verifyV1Tag()
     val generatedFiles = os.list(generated().path)
-    val failures = workingSnapshotFailures(workspaceRoot / "api-snapshot", generatedFiles) ++
-      releaseFailures(generatedFiles)
+    val failures = workingSnapshotFailures(workspaceRoot / "api-snapshot", generatedFiles)
 
     if failures.nonEmpty then
       throw new Exception(
         failures.mkString(
-          "Public API compatibility check failed. Refreshing api-snapshot cannot waive a v1.0.0 break.\n\n",
+          "Public API snapshot differs from the checked-in current surface.\n\n",
           "\n",
           ""
         )

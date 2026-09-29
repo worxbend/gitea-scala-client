@@ -21,6 +21,7 @@ import io.worxbend.gitea4s.model.{
   CreateIssue,
   CreateIssueComment,
   CreateBranchRepoOption,
+  CreateBranchProtectionOption,
   CreateForkOption,
   CreateRepoOption,
   CreatePullRequestOption,
@@ -34,6 +35,7 @@ import io.worxbend.gitea4s.model.{
   EditIssueComment,
   EditIssue,
   EditRepoOption,
+  EditBranchProtectionOption,
   EditTagProtectionOption,
   EditPullRequestOption,
   EditReactionOption,
@@ -73,6 +75,7 @@ import io.worxbend.gitea4s.model.{
   Team,
   TransferRepoOption,
   UpdateBranchRepoOption,
+  UpdateBranchProtectionPriorities,
   TrackedTime,
   User,
   WatchInfo
@@ -84,6 +87,36 @@ import zio.json.*
 
 
 object GiteaRequests:
+  def createBranchProtection(
+      config: GiteaConfig, owner: String, repo: String, body: CreateBranchProtectionOption
+  ): GiteaRequest[BranchProtection] =
+    postJson(
+      config, GiteaEndpoints.repoCreateBranchProtection, List("repos", owner, repo, "branch_protections"), body.toJsonBody,
+      response => GiteaResponseMapper.decodeJsonAt[BranchProtection](response, StatusCode.Created)
+    )
+
+  def updateBranchProtectionPriorities(
+      config: GiteaConfig, owner: String, repo: String, body: UpdateBranchProtectionPriorities
+  ): GiteaRequest[Unit] =
+    postJson(
+      config, GiteaEndpoints.repoUpdateBranchProtectionPriories, List("repos", owner, repo, "branch_protections", "priority"),
+      body.toJson, GiteaResponseMapper.decodeNoContent
+    )
+
+  def editBranchProtection(
+      config: GiteaConfig, owner: String, repo: String, name: String, body: EditBranchProtectionOption
+  ): GiteaRequest[BranchProtection] =
+    patchJson(
+      config, GiteaEndpoints.repoEditBranchProtection, List("repos", owner, repo, "branch_protections", name),
+      body.toJsonBody, response => GiteaResponseMapper.decodeJsonAt[BranchProtection](response, StatusCode.Ok)
+    )
+
+  def deleteBranchProtection(config: GiteaConfig, owner: String, repo: String, name: String): GiteaRequest[Unit] =
+    delete(
+      config, GiteaEndpoints.repoDeleteBranchProtection, List("repos", owner, repo, "branch_protections", name),
+      GiteaResponseMapper.decodeNoContent
+    )
+
   def createCurrentUserRepo(config: GiteaConfig, body: CreateRepoOption): GiteaRequest[Repository] =
     postJson(
       config, GiteaEndpoints.createCurrentUserRepo, List("user", "repos"), body.toJson,

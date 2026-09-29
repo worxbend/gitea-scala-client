@@ -1,6 +1,6 @@
 package io.worxbend.gitea4s.http
 
-import io.worxbend.gitea4s.{GiteaClientV1273, GiteaConfig}
+import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.model.Auth
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -43,7 +43,7 @@ object PullReviewCommentReplySpec extends ZIOSpecDefault:
       test("replies through the versioned client") {
         val backend = BackendStub[Task](new RIOMonadAsyncError[Any])
           .whenAnyRequest.thenRespond(ResponseStub.adjust("""{"id":43}""", StatusCode.Created))
-        val client = GiteaClientV1273.fromBackend(config, backend)
+        val client = GiteaClient.fromBackend(config, backend)
 
         client.pulls.replyToReviewComment("owner", "repo", 12, 42, "Thanks").map { comment =>
           assertTrue(comment.id.contains(43L))

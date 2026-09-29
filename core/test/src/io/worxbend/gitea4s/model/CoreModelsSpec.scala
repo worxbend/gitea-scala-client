@@ -392,6 +392,15 @@ object CoreModelsSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Core models")(
+      test("branch protection response and writes match the v1.27.3 schema") {
+        val shared = BranchProtectionModelSpec.sharedSchemaFields
+        assertTrue(
+          latestDefinitionFields.get("EditBranchProtectionOption").contains(shared),
+          latestDefinitionFields.get("CreateBranchProtectionOption").contains(shared ++ Set("branch_name", "rule_name")),
+          latestDefinitionFields.get("BranchProtection").contains(shared ++ Set("branch_name", "rule_name", "created_at", "updated_at")),
+          latestDefinitionFields.get("UpdateBranchProtectionPriories").contains(Set("ids"))
+        )
+      },
       test("tag protection writes match their v1.27.3 schemas") {
         val fields = Set("name_pattern", "whitelist_teams", "whitelist_usernames")
         assertTrue(

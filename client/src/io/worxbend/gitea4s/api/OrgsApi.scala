@@ -2,7 +2,7 @@ package io.worxbend.gitea4s.api
 
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.RepoListParams
-import io.worxbend.gitea4s.model.{Organization, Repository, User}
+import io.worxbend.gitea4s.model.{CreateRepoOption, Organization, Repository, User}
 import zio.IO
 import zio.stream.ZStream
 
@@ -10,6 +10,12 @@ import zio.stream.ZStream
   * metadata, members and public members, and organization repositories.
   */
 trait OrgsApi:
+  def createRepository(org: String, body: CreateRepoOption): IO[GiteaError, Repository]
+  /** Legacy `/org/{org}/repos` route; prefer `createRepository`. */
+  def createRepositoryLegacy(org: String, body: CreateRepoOption): IO[GiteaError, Repository]
+  /** Deletes all repositories in the organization. This operation is irreversible. */
+  def deleteAllRepositories(org: String): IO[GiteaError, Unit]
+
   def get(org: String): IO[GiteaError, Organization]
 
   def members(org: String): ZStream[Any, GiteaError, User]

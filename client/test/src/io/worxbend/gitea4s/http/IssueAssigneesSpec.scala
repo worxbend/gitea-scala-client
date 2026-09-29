@@ -1,6 +1,6 @@
 package io.worxbend.gitea4s.http
 
-import io.worxbend.gitea4s.{GiteaClientV1273, GiteaConfig}
+import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.model.{Auth, IssueAssigneesOption}
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -91,7 +91,7 @@ object IssueAssigneesSpec extends ZIOSpecDefault:
         val backend = BackendStub[Task](new RIOMonadAsyncError[Any])
           .whenRequestMatches(_.method == Method.POST)
           .thenRespond(ResponseStub.adjust("""{"number":12}""", StatusCode.Created))
-        val client = GiteaClientV1273.fromBackend(config, backend)
+        val client = GiteaClient.fromBackend(config, backend)
 
         client.issues.addAssignees("owner", "repo", 12, Chunk("alice")).map { issue =>
           assertTrue(issue.number.contains(12L))

@@ -1,6 +1,6 @@
 package io.worxbend.gitea4s.http
 
-import io.worxbend.gitea4s.{GiteaClientV1273, GiteaConfig}
+import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.model.Auth
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -60,7 +60,7 @@ object CurrentTokenSpec extends ZIOSpecDefault:
           .thenRespond(ResponseStub.adjust("""{"id":42,"name":"automation"}"""))
           .whenRequestMatches(_.method == Method.DELETE)
           .thenRespond(ResponseStub.adjust("", StatusCode.NoContent))
-        val client = GiteaClientV1273.fromBackend(config, backend)
+        val client = GiteaClient.fromBackend(config, backend)
 
         for
           token <- client.tokens.current

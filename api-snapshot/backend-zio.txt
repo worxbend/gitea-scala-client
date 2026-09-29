@@ -19,26 +19,20 @@ public interface io.worxbend.gitea4s.backend.zio.GiteaDownloads {
 public final class io.worxbend.gitea4s.backend.zio.ZioGiteaBackend {
   public static zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> anonymous(sttp.model.Uri);
   public static zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> configured(io.worxbend.gitea4s.GiteaConfig);
-  public static zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClientV1273> configuredV1273(io.worxbend.gitea4s.GiteaConfig);
   public static zio.ZLayer<io.worxbend.gitea4s.GiteaConfig, java.lang.Throwable, io.worxbend.gitea4s.backend.zio.GiteaDownloads> downloads();
   public static zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.backend.zio.GiteaDownloads> downloadsConfigured(io.worxbend.gitea4s.GiteaConfig);
   public static zio.ZLayer<java.lang.Object, scala.runtime.Nothing$, io.worxbend.gitea4s.backend.zio.GiteaDownloads> downloadsUsingClient(io.worxbend.gitea4s.GiteaConfig, java.net.http.HttpClient);
   public static zio.ZLayer<io.worxbend.gitea4s.GiteaConfig, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> live();
-  public static zio.ZLayer<io.worxbend.gitea4s.GiteaConfig, java.lang.Throwable, io.worxbend.gitea4s.GiteaClientV1273> liveV1273();
   public static zio.ZLayer<java.lang.Object, scala.runtime.Nothing$, io.worxbend.gitea4s.GiteaClient> usingClient(io.worxbend.gitea4s.GiteaConfig, java.net.http.HttpClient);
   public static zio.ZLayer<io.worxbend.gitea4s.GiteaConfig, scala.runtime.Nothing$, io.worxbend.gitea4s.GiteaClient> usingClient(java.net.http.HttpClient);
   public static zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> withBasic(sttp.model.Uri, java.lang.String, java.lang.String);
   public static zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> withToken(sttp.model.Uri, java.lang.String);
-  public static zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClientV1273> withTokenV1273(sttp.model.Uri, java.lang.String);
 }
 
 ## io.worxbend.gitea4s.backend.zio.ZioGiteaBackend$
 public final class io.worxbend.gitea4s.backend.zio.ZioGiteaBackend$ implements java.io.Serializable {
   public static final io.worxbend.gitea4s.backend.zio.ZioGiteaBackend$ MODULE$;
   public static {};
-  public zio.ZLayer<io.worxbend.gitea4s.GiteaConfig, java.lang.Throwable, io.worxbend.gitea4s.GiteaClientV1273> liveV1273();
-  public zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClientV1273> configuredV1273(io.worxbend.gitea4s.GiteaConfig);
-  public zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClientV1273> withTokenV1273(sttp.model.Uri, java.lang.String);
   public zio.ZLayer<io.worxbend.gitea4s.GiteaConfig, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> live();
   public zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> configured(io.worxbend.gitea4s.GiteaConfig);
   public zio.ZLayer<java.lang.Object, java.lang.Throwable, io.worxbend.gitea4s.GiteaClient> withToken(sttp.model.Uri, java.lang.String);

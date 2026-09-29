@@ -47,10 +47,9 @@ pipeline {
       }
     }
 
-    stage('Compatibility Check') {
+    stage('Public API Snapshot Check') {
       steps {
         sh './mill compatibility.check'
-        sh './mill compatibility.testReleaseGuard'
       }
     }
 

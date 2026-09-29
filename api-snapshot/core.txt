@@ -1300,7 +1300,7 @@ public final class io.worxbend.gitea4s.model.Branch$ implements scala.deriving.M
 
 ## io.worxbend.gitea4s.model.BranchProtection
 public final class io.worxbend.gitea4s.model.BranchProtection implements scala.Product,java.io.Serializable {
-  public io.worxbend.gitea4s.model.BranchProtection(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>);
+  public io.worxbend.gitea4s.model.BranchProtection(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>);
   public scala.collection.Iterator<java.lang.Object> productIterator();
   public scala.collection.Iterator<java.lang.String> productElementNames();
   public int hashCode();
@@ -1318,9 +1318,12 @@ public final class io.worxbend.gitea4s.model.BranchProtection implements scala.P
   public scala.Option<java.lang.Object> blockOnOutdatedBranch();
   public scala.Option<java.lang.Object> blockOnRejectedReviews();
   public scala.Option<java.lang.String> branchName();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> bypassAllowlistTeams();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> bypassAllowlistUsernames();
   public scala.Option<java.time.Instant> createdAt();
   public scala.Option<java.lang.Object> dismissStaleApprovals();
   public scala.Option<java.lang.Object> enableApprovalsWhitelist();
+  public scala.Option<java.lang.Object> enableBypassAllowlist();
   public scala.Option<java.lang.Object> enableForcePush();
   public scala.Option<java.lang.Object> enableForcePushAllowlist();
   public scala.Option<java.lang.Object> enableMergeWhitelist();
@@ -1344,7 +1347,7 @@ public final class io.worxbend.gitea4s.model.BranchProtection implements scala.P
   public scala.Option<scala.collection.immutable.List<java.lang.String>> statusCheckContexts();
   public scala.Option<java.lang.String> unprotectedFilePatterns();
   public scala.Option<java.time.Instant> updatedAt();
-  public io.worxbend.gitea4s.model.BranchProtection copy(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>);
+  public io.worxbend.gitea4s.model.BranchProtection copy(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>);
   public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$1();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$2();
   public scala.Option<java.lang.Object> copy$default$3();
@@ -1352,9 +1355,9 @@ public final class io.worxbend.gitea4s.model.BranchProtection implements scala.P
   public scala.Option<java.lang.Object> copy$default$5();
   public scala.Option<java.lang.Object> copy$default$6();
   public scala.Option<java.lang.String> copy$default$7();
-  public scala.Option<java.time.Instant> copy$default$8();
-  public scala.Option<java.lang.Object> copy$default$9();
-  public scala.Option<java.lang.Object> copy$default$10();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$8();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$9();
+  public scala.Option<java.time.Instant> copy$default$10();
   public scala.Option<java.lang.Object> copy$default$11();
   public scala.Option<java.lang.Object> copy$default$12();
   public scala.Option<java.lang.Object> copy$default$13();
@@ -1362,22 +1365,25 @@ public final class io.worxbend.gitea4s.model.BranchProtection implements scala.P
   public scala.Option<java.lang.Object> copy$default$15();
   public scala.Option<java.lang.Object> copy$default$16();
   public scala.Option<java.lang.Object> copy$default$17();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$18();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$19();
+  public scala.Option<java.lang.Object> copy$default$18();
+  public scala.Option<java.lang.Object> copy$default$19();
   public scala.Option<java.lang.Object> copy$default$20();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$21();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$22();
   public scala.Option<java.lang.Object> copy$default$23();
-  public scala.Option<java.lang.String> copy$default$24();
-  public scala.Option<java.lang.Object> copy$default$25();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$26();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$27();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$24();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$25();
+  public scala.Option<java.lang.Object> copy$default$26();
+  public scala.Option<java.lang.String> copy$default$27();
   public scala.Option<java.lang.Object> copy$default$28();
-  public scala.Option<java.lang.Object> copy$default$29();
-  public scala.Option<java.lang.String> copy$default$30();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$31();
-  public scala.Option<java.lang.String> copy$default$32();
-  public scala.Option<java.time.Instant> copy$default$33();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$29();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$30();
+  public scala.Option<java.lang.Object> copy$default$31();
+  public scala.Option<java.lang.Object> copy$default$32();
+  public scala.Option<java.lang.String> copy$default$33();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$34();
+  public scala.Option<java.lang.String> copy$default$35();
+  public scala.Option<java.time.Instant> copy$default$36();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> _1();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> _2();
   public scala.Option<java.lang.Object> _3();
@@ -1385,9 +1391,9 @@ public final class io.worxbend.gitea4s.model.BranchProtection implements scala.P
   public scala.Option<java.lang.Object> _5();
   public scala.Option<java.lang.Object> _6();
   public scala.Option<java.lang.String> _7();
-  public scala.Option<java.time.Instant> _8();
-  public scala.Option<java.lang.Object> _9();
-  public scala.Option<java.lang.Object> _10();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _8();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _9();
+  public scala.Option<java.time.Instant> _10();
   public scala.Option<java.lang.Object> _11();
   public scala.Option<java.lang.Object> _12();
   public scala.Option<java.lang.Object> _13();
@@ -1395,23 +1401,26 @@ public final class io.worxbend.gitea4s.model.BranchProtection implements scala.P
   public scala.Option<java.lang.Object> _15();
   public scala.Option<java.lang.Object> _16();
   public scala.Option<java.lang.Object> _17();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> _18();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> _19();
+  public scala.Option<java.lang.Object> _18();
+  public scala.Option<java.lang.Object> _19();
   public scala.Option<java.lang.Object> _20();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> _21();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> _22();
   public scala.Option<java.lang.Object> _23();
-  public scala.Option<java.lang.String> _24();
-  public scala.Option<java.lang.Object> _25();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> _26();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> _27();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _24();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _25();
+  public scala.Option<java.lang.Object> _26();
+  public scala.Option<java.lang.String> _27();
   public scala.Option<java.lang.Object> _28();
-  public scala.Option<java.lang.Object> _29();
-  public scala.Option<java.lang.String> _30();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> _31();
-  public scala.Option<java.lang.String> _32();
-  public scala.Option<java.time.Instant> _33();
-  public static io.worxbend.gitea4s.model.BranchProtection apply(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>);
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _29();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _30();
+  public scala.Option<java.lang.Object> _31();
+  public scala.Option<java.lang.Object> _32();
+  public scala.Option<java.lang.String> _33();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _34();
+  public scala.Option<java.lang.String> _35();
+  public scala.Option<java.time.Instant> _36();
+  public static io.worxbend.gitea4s.model.BranchProtection apply(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>);
   public static io.worxbend.gitea4s.model.BranchProtection fromProduct(scala.Product);
   public static zio.json.JsonCodec<io.worxbend.gitea4s.model.BranchProtection> given_JsonCodec_BranchProtection();
   public static io.worxbend.gitea4s.model.BranchProtection unapply(io.worxbend.gitea4s.model.BranchProtection);
@@ -1422,7 +1431,205 @@ public final class io.worxbend.gitea4s.model.BranchProtection implements scala.P
   public static scala.Option<java.lang.Object> $lessinit$greater$default$5();
   public static scala.Option<java.lang.Object> $lessinit$greater$default$6();
   public static scala.Option<java.lang.String> $lessinit$greater$default$7();
-  public static scala.Option<java.time.Instant> $lessinit$greater$default$8();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$8();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$9();
+  public static scala.Option<java.time.Instant> $lessinit$greater$default$10();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$11();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$12();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$13();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$14();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$15();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$16();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$17();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$18();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$19();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$20();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$21();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$22();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$23();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$24();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$25();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$26();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$27();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$28();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$29();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$30();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$31();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$32();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$33();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$34();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$35();
+  public static scala.Option<java.time.Instant> $lessinit$greater$default$36();
+}
+
+## io.worxbend.gitea4s.model.BranchProtection$
+public final class io.worxbend.gitea4s.model.BranchProtection$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.BranchProtection$ MODULE$;
+  public io.worxbend.gitea4s.model.BranchProtection apply(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>);
+  public io.worxbend.gitea4s.model.BranchProtection unapply(io.worxbend.gitea4s.model.BranchProtection);
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$1();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$2();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$6();
+  public scala.Option<java.lang.String> $lessinit$greater$default$7();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$8();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$9();
+  public scala.Option<java.time.Instant> $lessinit$greater$default$10();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$11();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$12();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$13();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$14();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$15();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$16();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$17();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$18();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$19();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$20();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$21();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$22();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$23();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$24();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$25();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$26();
+  public scala.Option<java.lang.String> $lessinit$greater$default$27();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$28();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$29();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$30();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$31();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$32();
+  public scala.Option<java.lang.String> $lessinit$greater$default$33();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$34();
+  public scala.Option<java.lang.String> $lessinit$greater$default$35();
+  public scala.Option<java.time.Instant> $lessinit$greater$default$36();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.BranchProtection> given_JsonCodec_BranchProtection();
+  public io.worxbend.gitea4s.model.BranchProtection fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.BranchProtectionSettings
+public final class io.worxbend.gitea4s.model.BranchProtectionSettings implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.BranchProtectionSettings(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> approvalsWhitelistTeams();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> approvalsWhitelistUsernames();
+  public scala.Option<java.lang.Object> blockAdminMergeOverride();
+  public scala.Option<java.lang.Object> blockOnOfficialReviewRequests();
+  public scala.Option<java.lang.Object> blockOnOutdatedBranch();
+  public scala.Option<java.lang.Object> blockOnRejectedReviews();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> bypassAllowlistTeams();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> bypassAllowlistUsernames();
+  public scala.Option<java.lang.Object> dismissStaleApprovals();
+  public scala.Option<java.lang.Object> enableApprovalsWhitelist();
+  public scala.Option<java.lang.Object> enableBypassAllowlist();
+  public scala.Option<java.lang.Object> enableForcePush();
+  public scala.Option<java.lang.Object> enableForcePushAllowlist();
+  public scala.Option<java.lang.Object> enableMergeWhitelist();
+  public scala.Option<java.lang.Object> enablePush();
+  public scala.Option<java.lang.Object> enablePushWhitelist();
+  public scala.Option<java.lang.Object> enableStatusCheck();
+  public scala.Option<java.lang.Object> forcePushAllowlistDeployKeys();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> forcePushAllowlistTeams();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> forcePushAllowlistUsernames();
+  public scala.Option<java.lang.Object> ignoreStaleApprovals();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> mergeWhitelistTeams();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> mergeWhitelistUsernames();
+  public scala.Option<java.lang.Object> priority();
+  public scala.Option<java.lang.String> protectedFilePatterns();
+  public scala.Option<java.lang.Object> pushWhitelistDeployKeys();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> pushWhitelistTeams();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> pushWhitelistUsernames();
+  public scala.Option<java.lang.Object> requireSignedCommits();
+  public scala.Option<java.lang.Object> requiredApprovals();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> statusCheckContexts();
+  public scala.Option<java.lang.String> unprotectedFilePatterns();
+  public io.worxbend.gitea4s.model.BranchProtectionSettings copy(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>);
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$1();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$2();
+  public scala.Option<java.lang.Object> copy$default$3();
+  public scala.Option<java.lang.Object> copy$default$4();
+  public scala.Option<java.lang.Object> copy$default$5();
+  public scala.Option<java.lang.Object> copy$default$6();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$7();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$8();
+  public scala.Option<java.lang.Object> copy$default$9();
+  public scala.Option<java.lang.Object> copy$default$10();
+  public scala.Option<java.lang.Object> copy$default$11();
+  public scala.Option<java.lang.Object> copy$default$12();
+  public scala.Option<java.lang.Object> copy$default$13();
+  public scala.Option<java.lang.Object> copy$default$14();
+  public scala.Option<java.lang.Object> copy$default$15();
+  public scala.Option<java.lang.Object> copy$default$16();
+  public scala.Option<java.lang.Object> copy$default$17();
+  public scala.Option<java.lang.Object> copy$default$18();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$19();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$20();
+  public scala.Option<java.lang.Object> copy$default$21();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$22();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$23();
+  public scala.Option<java.lang.Object> copy$default$24();
+  public scala.Option<java.lang.String> copy$default$25();
+  public scala.Option<java.lang.Object> copy$default$26();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$27();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$28();
+  public scala.Option<java.lang.Object> copy$default$29();
+  public scala.Option<java.lang.Object> copy$default$30();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$31();
+  public scala.Option<java.lang.String> copy$default$32();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _1();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _2();
+  public scala.Option<java.lang.Object> _3();
+  public scala.Option<java.lang.Object> _4();
+  public scala.Option<java.lang.Object> _5();
+  public scala.Option<java.lang.Object> _6();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _7();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _8();
+  public scala.Option<java.lang.Object> _9();
+  public scala.Option<java.lang.Object> _10();
+  public scala.Option<java.lang.Object> _11();
+  public scala.Option<java.lang.Object> _12();
+  public scala.Option<java.lang.Object> _13();
+  public scala.Option<java.lang.Object> _14();
+  public scala.Option<java.lang.Object> _15();
+  public scala.Option<java.lang.Object> _16();
+  public scala.Option<java.lang.Object> _17();
+  public scala.Option<java.lang.Object> _18();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _19();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _20();
+  public scala.Option<java.lang.Object> _21();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _22();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _23();
+  public scala.Option<java.lang.Object> _24();
+  public scala.Option<java.lang.String> _25();
+  public scala.Option<java.lang.Object> _26();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _27();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _28();
+  public scala.Option<java.lang.Object> _29();
+  public scala.Option<java.lang.Object> _30();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _31();
+  public scala.Option<java.lang.String> _32();
+  public static io.worxbend.gitea4s.model.BranchProtectionSettings apply(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.BranchProtectionSettings fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.BranchProtectionSettings> given_JsonCodec_BranchProtectionSettings();
+  public static io.worxbend.gitea4s.model.BranchProtectionSettings unapply(io.worxbend.gitea4s.model.BranchProtectionSettings);
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$1();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$6();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$7();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$8();
   public static scala.Option<java.lang.Object> $lessinit$greater$default$9();
   public static scala.Option<java.lang.Object> $lessinit$greater$default$10();
   public static scala.Option<java.lang.Object> $lessinit$greater$default$11();
@@ -1432,37 +1639,36 @@ public final class io.worxbend.gitea4s.model.BranchProtection implements scala.P
   public static scala.Option<java.lang.Object> $lessinit$greater$default$15();
   public static scala.Option<java.lang.Object> $lessinit$greater$default$16();
   public static scala.Option<java.lang.Object> $lessinit$greater$default$17();
-  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$18();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$18();
   public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$19();
-  public static scala.Option<java.lang.Object> $lessinit$greater$default$20();
-  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$21();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$20();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$21();
   public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$22();
-  public static scala.Option<java.lang.Object> $lessinit$greater$default$23();
-  public static scala.Option<java.lang.String> $lessinit$greater$default$24();
-  public static scala.Option<java.lang.Object> $lessinit$greater$default$25();
-  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$26();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$23();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$24();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$25();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$26();
   public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$27();
-  public static scala.Option<java.lang.Object> $lessinit$greater$default$28();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$28();
   public static scala.Option<java.lang.Object> $lessinit$greater$default$29();
-  public static scala.Option<java.lang.String> $lessinit$greater$default$30();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$30();
   public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$31();
   public static scala.Option<java.lang.String> $lessinit$greater$default$32();
-  public static scala.Option<java.time.Instant> $lessinit$greater$default$33();
 }
 
-## io.worxbend.gitea4s.model.BranchProtection$
-public final class io.worxbend.gitea4s.model.BranchProtection$ implements scala.deriving.Mirror$Product,java.io.Serializable {
-  public static final io.worxbend.gitea4s.model.BranchProtection$ MODULE$;
-  public io.worxbend.gitea4s.model.BranchProtection apply(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>, scala.Option<java.time.Instant>);
-  public io.worxbend.gitea4s.model.BranchProtection unapply(io.worxbend.gitea4s.model.BranchProtection);
+## io.worxbend.gitea4s.model.BranchProtectionSettings$
+public final class io.worxbend.gitea4s.model.BranchProtectionSettings$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.BranchProtectionSettings$ MODULE$;
+  public io.worxbend.gitea4s.model.BranchProtectionSettings apply(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.BranchProtectionSettings unapply(io.worxbend.gitea4s.model.BranchProtectionSettings);
   public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$1();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$2();
   public scala.Option<java.lang.Object> $lessinit$greater$default$3();
   public scala.Option<java.lang.Object> $lessinit$greater$default$4();
   public scala.Option<java.lang.Object> $lessinit$greater$default$5();
   public scala.Option<java.lang.Object> $lessinit$greater$default$6();
-  public scala.Option<java.lang.String> $lessinit$greater$default$7();
-  public scala.Option<java.time.Instant> $lessinit$greater$default$8();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$7();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$8();
   public scala.Option<java.lang.Object> $lessinit$greater$default$9();
   public scala.Option<java.lang.Object> $lessinit$greater$default$10();
   public scala.Option<java.lang.Object> $lessinit$greater$default$11();
@@ -1472,24 +1678,23 @@ public final class io.worxbend.gitea4s.model.BranchProtection$ implements scala.
   public scala.Option<java.lang.Object> $lessinit$greater$default$15();
   public scala.Option<java.lang.Object> $lessinit$greater$default$16();
   public scala.Option<java.lang.Object> $lessinit$greater$default$17();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$18();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$18();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$19();
-  public scala.Option<java.lang.Object> $lessinit$greater$default$20();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$21();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$20();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$21();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$22();
-  public scala.Option<java.lang.Object> $lessinit$greater$default$23();
-  public scala.Option<java.lang.String> $lessinit$greater$default$24();
-  public scala.Option<java.lang.Object> $lessinit$greater$default$25();
-  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$26();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$23();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$24();
+  public scala.Option<java.lang.String> $lessinit$greater$default$25();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$26();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$27();
-  public scala.Option<java.lang.Object> $lessinit$greater$default$28();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$28();
   public scala.Option<java.lang.Object> $lessinit$greater$default$29();
-  public scala.Option<java.lang.String> $lessinit$greater$default$30();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$30();
   public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$31();
   public scala.Option<java.lang.String> $lessinit$greater$default$32();
-  public scala.Option<java.time.Instant> $lessinit$greater$default$33();
-  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.BranchProtection> given_JsonCodec_BranchProtection();
-  public io.worxbend.gitea4s.model.BranchProtection fromProduct(scala.Product);
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.BranchProtectionSettings> given_JsonCodec_BranchProtectionSettings();
+  public io.worxbend.gitea4s.model.BranchProtectionSettings fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 
@@ -2224,6 +2429,52 @@ public final class io.worxbend.gitea4s.model.ContentsResponse$ implements scala.
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.CreateBranchProtectionOption
+public final class io.worxbend.gitea4s.model.CreateBranchProtectionOption implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.CreateBranchProtectionOption(io.worxbend.gitea4s.model.BranchProtectionSettings, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public io.worxbend.gitea4s.model.BranchProtectionSettings settings();
+  public scala.Option<java.lang.String> branchName();
+  public scala.Option<java.lang.String> ruleName();
+  public java.lang.String toJsonBody();
+  public io.worxbend.gitea4s.model.CreateBranchProtectionOption copy(io.worxbend.gitea4s.model.BranchProtectionSettings, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.BranchProtectionSettings copy$default$1();
+  public scala.Option<java.lang.String> copy$default$2();
+  public scala.Option<java.lang.String> copy$default$3();
+  public io.worxbend.gitea4s.model.BranchProtectionSettings _1();
+  public scala.Option<java.lang.String> _2();
+  public scala.Option<java.lang.String> _3();
+  public static io.worxbend.gitea4s.model.CreateBranchProtectionOption apply(io.worxbend.gitea4s.model.BranchProtectionSettings, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.CreateBranchProtectionOption fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.model.CreateBranchProtectionOption unapply(io.worxbend.gitea4s.model.CreateBranchProtectionOption);
+  public static io.worxbend.gitea4s.model.BranchProtectionSettings $lessinit$greater$default$1();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$3();
+}
+
+## io.worxbend.gitea4s.model.CreateBranchProtectionOption$
+public final class io.worxbend.gitea4s.model.CreateBranchProtectionOption$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.CreateBranchProtectionOption$ MODULE$;
+  public static {};
+  public io.worxbend.gitea4s.model.CreateBranchProtectionOption apply(io.worxbend.gitea4s.model.BranchProtectionSettings, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.CreateBranchProtectionOption unapply(io.worxbend.gitea4s.model.CreateBranchProtectionOption);
+  public java.lang.String toString();
+  public io.worxbend.gitea4s.model.BranchProtectionSettings $lessinit$greater$default$1();
+  public scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public io.worxbend.gitea4s.model.CreateBranchProtectionOption fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.CreateBranchRepoOption
 public final class io.worxbend.gitea4s.model.CreateBranchRepoOption implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.CreateBranchRepoOption(java.lang.String, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
@@ -2916,6 +3167,42 @@ public final class io.worxbend.gitea4s.model.DismissPullReviewOptions$ implement
   public scala.Option<java.lang.Object> $lessinit$greater$default$2();
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.DismissPullReviewOptions> given_JsonCodec_DismissPullReviewOptions();
   public io.worxbend.gitea4s.model.DismissPullReviewOptions fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.EditBranchProtectionOption
+public final class io.worxbend.gitea4s.model.EditBranchProtectionOption implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.EditBranchProtectionOption(io.worxbend.gitea4s.model.BranchProtectionSettings);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public io.worxbend.gitea4s.model.BranchProtectionSettings settings();
+  public java.lang.String toJsonBody();
+  public io.worxbend.gitea4s.model.EditBranchProtectionOption copy(io.worxbend.gitea4s.model.BranchProtectionSettings);
+  public io.worxbend.gitea4s.model.BranchProtectionSettings copy$default$1();
+  public io.worxbend.gitea4s.model.BranchProtectionSettings _1();
+  public static io.worxbend.gitea4s.model.EditBranchProtectionOption apply(io.worxbend.gitea4s.model.BranchProtectionSettings);
+  public static io.worxbend.gitea4s.model.EditBranchProtectionOption fromProduct(scala.Product);
+  public static io.worxbend.gitea4s.model.EditBranchProtectionOption unapply(io.worxbend.gitea4s.model.EditBranchProtectionOption);
+  public static io.worxbend.gitea4s.model.BranchProtectionSettings $lessinit$greater$default$1();
+}
+
+## io.worxbend.gitea4s.model.EditBranchProtectionOption$
+public final class io.worxbend.gitea4s.model.EditBranchProtectionOption$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.EditBranchProtectionOption$ MODULE$;
+  public static {};
+  public io.worxbend.gitea4s.model.EditBranchProtectionOption apply(io.worxbend.gitea4s.model.BranchProtectionSettings);
+  public io.worxbend.gitea4s.model.EditBranchProtectionOption unapply(io.worxbend.gitea4s.model.EditBranchProtectionOption);
+  public java.lang.String toString();
+  public io.worxbend.gitea4s.model.BranchProtectionSettings $lessinit$greater$default$1();
+  public io.worxbend.gitea4s.model.EditBranchProtectionOption fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 
@@ -7109,6 +7396,39 @@ public final class io.worxbend.gitea4s.model.TransferRepoOption$ implements scal
   public scala.Option<zio.Chunk<java.lang.Object>> $lessinit$greater$default$2();
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.TransferRepoOption> given_JsonCodec_TransferRepoOption();
   public io.worxbend.gitea4s.model.TransferRepoOption fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities
+public final class io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities(scala.collection.immutable.List<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.collection.immutable.List<java.lang.Object> ids();
+  public io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities copy(scala.collection.immutable.List<java.lang.Object>);
+  public scala.collection.immutable.List<java.lang.Object> copy$default$1();
+  public scala.collection.immutable.List<java.lang.Object> _1();
+  public static io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities apply(scala.collection.immutable.List<java.lang.Object>);
+  public static io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities> given_JsonCodec_UpdateBranchProtectionPriorities();
+  public static io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities unapply(io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities);
+}
+
+## io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities$
+public final class io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities$ MODULE$;
+  public io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities apply(scala.collection.immutable.List<java.lang.Object>);
+  public io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities unapply(io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities);
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities> given_JsonCodec_UpdateBranchProtectionPriorities();
+  public io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 

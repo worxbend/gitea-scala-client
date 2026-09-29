@@ -8,7 +8,7 @@ A Scala 3 client library for the [Gitea](https://gitea.io) API, built with
 - **JVM baseline:** Java 21 · **Scala:** 3.x
 - **API target:** Gitea `1.27.3` (`gitea-v1.27.3.yaml` is the current contract;
   `plugin-redoc-2.yaml` preserves the 1.26.2 reference)
-- **Coverage:** 162 of 482 v1.27.3 operations; see [`API_V1273_PLAN.md`](API_V1273_PLAN.md)
+- **Coverage:** 166 of 482 v1.27.3 operations; see [`API_V1273_PLAN.md`](API_V1273_PLAN.md)
   for the full-coverage work and remaining gaps.
 - **Version:** `1.0.0` · **License:** Apache-2.0
 - **Backends:** `backend-zio` (Java `HttpClient`, default) and an optional
@@ -125,25 +125,27 @@ object Main extends ZIOAppDefault:
 
 To search branches by name on Gitea 1.27.3, call `client.repos.branches("owner", "repo", "release/")`. The stream sends the `q` filter on every page; the two-argument overload still lists all branches.
 
-The additive v1.27.3 operations use `GiteaClientV1273` so existing `GiteaClient` implementations remain compatible. For example, we can read current-token metadata using the ZIO backend:
+All implemented operations are available through `GiteaClient`. For example, read current-token metadata using the ZIO backend:
 
 ```scala
-import io.worxbend.gitea4s.GiteaClientV1273
+import io.worxbend.gitea4s.GiteaClient
 import io.worxbend.gitea4s.backend.zio.ZioGiteaBackend
 import sttp.client4.*
 import zio.ZIO
 
-val currentToken = ZIO.serviceWithZIO[GiteaClientV1273](_.tokens.current)
-  .provideLayer(ZioGiteaBackend.withTokenV1273(uri"https://gitea.example", sys.env("GITEA_TOKEN")))
+val currentToken = ZIO.serviceWithZIO[GiteaClient](_.tokens.current)
+  .provideLayer(ZioGiteaBackend.withToken(uri"https://gitea.example", sys.env("GITEA_TOKEN")))
 ```
 
-`GiteaClientV1273` also exposes issue and repository assignee checks, pull-review comment replies, organization repository deletion, and workflow-run attempt reads. `orgs.deleteAllRepositories` deletes every repository in an organization; use it only when that bulk action is intended.
+The client also exposes issue and repository assignee checks, pull-review comment replies, organization repository deletion, and workflow-run attempt reads. `orgs.deleteAllRepositories` deletes every repository in an organization; use it only when that bulk action is intended.
 
-For repository lifecycle writes, use `client.repos.createForCurrentUser(CreateRepoOption("demo"))`, `client.orgs.createRepository("team", CreateRepoOption("demo"))`, or the corresponding edit, fork, branch, and transfer methods on the versioned client. `client.repos.delete` permanently removes a repository; `client.repos.transfer` changes ownership. Neither method retries automatically.
+For repository lifecycle writes, use `client.repos.createForCurrentUser(CreateRepoOption("demo"))`, `client.orgs.createRepository("team", CreateRepoOption("demo"))`, or the corresponding edit, fork, branch, and transfer methods. `client.repos.delete` permanently removes a repository; `client.repos.transfer` changes ownership. Neither method retries automatically.
 
-The versioned repository API also supports `getBranch`, `updateBranch` (with `UpdateBranchRepoOption`), and `renameBranch` (with `RenameBranchRepoOption`). `gitHooks`, `gitHook`, `editGitHook`, and `deleteGitHook` manage repository Git hooks. Branch updates and renames target a single named branch; Git-hook deletion is permanent. These writes are not automatically retried.
+The repository API also supports `getBranch`, `updateBranch` (with `UpdateBranchRepoOption`), and `renameBranch` (with `RenameBranchRepoOption`). `gitHooks`, `gitHook`, `editGitHook`, and `deleteGitHook` manage repository Git hooks. Branch updates and renames target a single named branch; Git-hook deletion is permanent. These writes are not automatically retried.
 
 Use `client.repos.createTagProtection`, `editTagProtection`, and `deleteTagProtection` for tag rules. Creation and edits accept typed allowlists; deletion permanently removes a rule. These writes are not automatically retried.
+
+For branch rules, use `client.repos.createBranchProtection("owner", "repo", CreateBranchProtectionOption(BranchProtectionSettings(enableBypassAllowlist = Some(false)), branchName = Some("main")))`. The same API provides `editBranchProtection`, `deleteBranchProtection`, and `updateBranchProtectionPriorities("owner", "repo", UpdateBranchProtectionPriorities(List(2L, 1L)))`. The ordinary `branchProtections` and `branchProtection` reads include bypass-allowlist fields. Deletion permanently removes the rule; writes are not automatically retried.
 
 ## Authentication
 

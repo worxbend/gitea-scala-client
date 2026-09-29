@@ -15,24 +15,38 @@ import io.worxbend.gitea4s.model.{
   AnnotatedTag,
   Branch,
   BranchProtection,
+  CreateBranchProtectionOption,
+  CreateBranchRepoOption,
+  CreateForkOption,
+  CreateRepoOption,
+  CreateTagProtectionOption,
   Commit,
   CommitDiffType,
   CombinedStatus,
   CommitStatus,
   ContentsResponse,
   CreateStatusOption,
+  EditBranchProtectionOption,
+  EditGitHookOption,
+  EditRepoOption,
+  EditTagProtectionOption,
   GitBlobResponse,
+  GitHook,
   GitTreeResponse,
   LanguageStatistics,
   NewIssuePinsAllowed,
   Note,
   Reference,
+  RenameBranchRepoOption,
   RepoCollaboratorPermission,
   Repository,
   User,
   Tag,
   TagProtection,
-  Team
+  Team,
+  TransferRepoOption,
+  UpdateBranchProtectionPriorities,
+  UpdateBranchRepoOption
 }
 import zio.{Chunk, IO}
 import zio.stream.ZStream
@@ -42,6 +56,34 @@ import zio.stream.ZStream
   * collaborators and teams, branch/tag protections, and commit statuses.
   */
 trait ReposApi:
+  def createForCurrentUser(body: CreateRepoOption): IO[GiteaError, Repository]
+  def edit(owner: String, repo: String, body: EditRepoOption): IO[GiteaError, Repository]
+  /** Permanently deletes the named repository. */
+  def delete(owner: String, repo: String): IO[GiteaError, Unit]
+  def fork(owner: String, repo: String, body: CreateForkOption): IO[GiteaError, Repository]
+  def createBranch(owner: String, repo: String, body: CreateBranchRepoOption): IO[GiteaError, Branch]
+  def deleteBranch(owner: String, repo: String, branch: String): IO[GiteaError, Unit]
+  def getBranch(owner: String, repo: String, branch: String): IO[GiteaError, Branch]
+  def updateBranch(owner: String, repo: String, branch: String, body: UpdateBranchRepoOption): IO[GiteaError, Unit]
+  def renameBranch(owner: String, repo: String, branch: String, body: RenameBranchRepoOption): IO[GiteaError, Unit]
+  def gitHooks(owner: String, repo: String): IO[GiteaError, Chunk[GitHook]]
+  def gitHook(owner: String, repo: String, id: String): IO[GiteaError, GitHook]
+  def editGitHook(owner: String, repo: String, id: String, body: EditGitHookOption): IO[GiteaError, GitHook]
+  def deleteGitHook(owner: String, repo: String, id: String): IO[GiteaError, Unit]
+  def createTagProtection(owner: String, repo: String, body: CreateTagProtectionOption): IO[GiteaError, TagProtection]
+  def editTagProtection(owner: String, repo: String, id: Long, body: EditTagProtectionOption): IO[GiteaError, TagProtection]
+  def deleteTagProtection(owner: String, repo: String, id: Long): IO[GiteaError, Unit]
+  def createBranchProtection(owner: String, repo: String, body: CreateBranchProtectionOption): IO[GiteaError, BranchProtection]
+  def editBranchProtection(owner: String, repo: String, name: String, body: EditBranchProtectionOption): IO[GiteaError, BranchProtection]
+  def deleteBranchProtection(owner: String, repo: String, name: String): IO[GiteaError, Unit]
+  def updateBranchProtectionPriorities(owner: String, repo: String, body: UpdateBranchProtectionPriorities): IO[GiteaError, Unit]
+  /** Requests transfer of repository ownership to `newOwner`. */
+  def transfer(owner: String, repo: String, body: TransferRepoOption): IO[GiteaError, Repository]
+  def acceptTransfer(owner: String, repo: String): IO[GiteaError, Repository]
+  def rejectTransfer(owner: String, repo: String): IO[GiteaError, Repository]
+  /** A 404 also occurs when a repository is inaccessible. */
+  def isAssignee(owner: String, repo: String, assignee: String): IO[GiteaError, Boolean]
+
   def get(owner: String, repo: String): IO[GiteaError, Repository]
 
   def commit(

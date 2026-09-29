@@ -27,6 +27,14 @@ import zio.stream.ZStream
 
 /** Pull-request operations, reached through `client.pulls`. */
 trait PullRequestsApi:
+  def replyToReviewComment(
+      owner: String,
+      repo: String,
+      index: Long,
+      commentId: Long,
+      body: String
+  ): IO[GiteaError, PullReviewComment]
+
   def list(
       owner: String,
       repo: String,

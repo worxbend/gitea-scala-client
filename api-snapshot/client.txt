@@ -31,6 +31,8 @@ public final class io.worxbend.gitea4s.Accept$ implements scala.deriving.Mirror$
 
 ## io.worxbend.gitea4s.GiteaClient
 public interface io.worxbend.gitea4s.GiteaClient {
+  public abstract io.worxbend.gitea4s.api.ActionsApi actions();
+  public abstract io.worxbend.gitea4s.api.TokensApi tokens();
   public abstract io.worxbend.gitea4s.api.ReposApi repos();
   public abstract io.worxbend.gitea4s.api.IssuesApi issues();
   public abstract io.worxbend.gitea4s.api.PullRequestsApi pulls();
@@ -46,24 +48,6 @@ public final class io.worxbend.gitea4s.GiteaClient$ implements java.io.Serializa
   public static final io.worxbend.gitea4s.GiteaClient$ MODULE$;
   public static {};
   public io.worxbend.gitea4s.GiteaClient fromBackend(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Backend<zio.ZIO<java.lang.Object, java.lang.Throwable, java.lang.Object>>);
-}
-
-## io.worxbend.gitea4s.GiteaClientV1273
-public interface io.worxbend.gitea4s.GiteaClientV1273 extends io.worxbend.gitea4s.GiteaClient {
-  public abstract io.worxbend.gitea4s.api.ActionsApi actions();
-  public abstract io.worxbend.gitea4s.api.ReposApiV1273 repos();
-  public abstract io.worxbend.gitea4s.api.IssuesApiV1273 issues();
-  public abstract io.worxbend.gitea4s.api.OrgsApiV1273 orgs();
-  public abstract io.worxbend.gitea4s.api.PullRequestsApiV1273 pulls();
-  public abstract io.worxbend.gitea4s.api.TokensApi tokens();
-  public static io.worxbend.gitea4s.GiteaClientV1273 fromBackend(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Backend<zio.ZIO<java.lang.Object, java.lang.Throwable, java.lang.Object>>);
-}
-
-## io.worxbend.gitea4s.GiteaClientV1273$
-public final class io.worxbend.gitea4s.GiteaClientV1273$ implements java.io.Serializable {
-  public static final io.worxbend.gitea4s.GiteaClientV1273$ MODULE$;
-  public static {};
-  public io.worxbend.gitea4s.GiteaClientV1273 fromBackend(io.worxbend.gitea4s.GiteaConfig, sttp.client4.Backend<zio.ZIO<java.lang.Object, java.lang.Throwable, java.lang.Object>>);
 }
 
 ## io.worxbend.gitea4s.GiteaConfig
@@ -499,6 +483,9 @@ public interface io.worxbend.gitea4s.api.ActionsApi {
 
 ## io.worxbend.gitea4s.api.IssuesApi
 public interface io.worxbend.gitea4s.api.IssuesApi {
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> addAssignees(java.lang.String, java.lang.String, long, zio.Chunk<java.lang.String>);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> removeAssignees(java.lang.String, java.lang.String, long, zio.Chunk<java.lang.String>);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.Object> isAssignee(java.lang.String, java.lang.String, long, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> get(java.lang.String, java.lang.String, long);
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> list(java.lang.String, java.lang.String, io.worxbend.gitea4s.http.IssueListParams);
   public static io.worxbend.gitea4s.http.IssueListParams list$default$3$(io.worxbend.gitea4s.api.IssuesApi);
@@ -556,13 +543,6 @@ public interface io.worxbend.gitea4s.api.IssuesApi {
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteStopwatch(java.lang.String, java.lang.String, long);
 }
 
-## io.worxbend.gitea4s.api.IssuesApiV1273
-public interface io.worxbend.gitea4s.api.IssuesApiV1273 extends io.worxbend.gitea4s.api.IssuesApi {
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> addAssignees(java.lang.String, java.lang.String, long, zio.Chunk<java.lang.String>);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Issue> removeAssignees(java.lang.String, java.lang.String, long, zio.Chunk<java.lang.String>);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.Object> isAssignee(java.lang.String, java.lang.String, long, java.lang.String);
-}
-
 ## io.worxbend.gitea4s.api.NotificationsApi
 public interface io.worxbend.gitea4s.api.NotificationsApi {
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.NotificationThread> list(io.worxbend.gitea4s.http.NotificationListParams);
@@ -574,6 +554,9 @@ public interface io.worxbend.gitea4s.api.NotificationsApi {
 
 ## io.worxbend.gitea4s.api.OrgsApi
 public interface io.worxbend.gitea4s.api.OrgsApi {
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> createRepository(java.lang.String, io.worxbend.gitea4s.model.CreateRepoOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> createRepositoryLegacy(java.lang.String, io.worxbend.gitea4s.model.CreateRepoOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteAllRepositories(java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Organization> get(java.lang.String);
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.User> members(java.lang.String);
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.User> publicMembers(java.lang.String);
@@ -582,15 +565,9 @@ public interface io.worxbend.gitea4s.api.OrgsApi {
   public default io.worxbend.gitea4s.http.RepoListParams repos$default$2();
 }
 
-## io.worxbend.gitea4s.api.OrgsApiV1273
-public interface io.worxbend.gitea4s.api.OrgsApiV1273 extends io.worxbend.gitea4s.api.OrgsApi {
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> createRepository(java.lang.String, io.worxbend.gitea4s.model.CreateRepoOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> createRepositoryLegacy(java.lang.String, io.worxbend.gitea4s.model.CreateRepoOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteAllRepositories(java.lang.String);
-}
-
 ## io.worxbend.gitea4s.api.PullRequestsApi
 public interface io.worxbend.gitea4s.api.PullRequestsApi {
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReviewComment> replyToReviewComment(java.lang.String, java.lang.String, long, long, java.lang.String);
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullRequest> list(java.lang.String, java.lang.String, io.worxbend.gitea4s.http.PullRequestListParams);
   public static io.worxbend.gitea4s.http.PullRequestListParams list$default$3$(io.worxbend.gitea4s.api.PullRequestsApi);
   public default io.worxbend.gitea4s.http.PullRequestListParams list$default$3();
@@ -627,11 +604,6 @@ public interface io.worxbend.gitea4s.api.PullRequestsApi {
   public default io.worxbend.gitea4s.http.PullRequestCommitsParams commits$default$4();
 }
 
-## io.worxbend.gitea4s.api.PullRequestsApiV1273
-public interface io.worxbend.gitea4s.api.PullRequestsApiV1273 extends io.worxbend.gitea4s.api.PullRequestsApi {
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.PullReviewComment> replyToReviewComment(java.lang.String, java.lang.String, long, long, java.lang.String);
-}
-
 ## io.worxbend.gitea4s.api.ReleasesApi
 public interface io.worxbend.gitea4s.api.ReleasesApi {
   public abstract zio.stream.ZStream<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Release> list(java.lang.String, java.lang.String, io.worxbend.gitea4s.http.ReleaseListParams);
@@ -646,6 +618,30 @@ public interface io.worxbend.gitea4s.api.ReleasesApi {
 
 ## io.worxbend.gitea4s.api.ReposApi
 public interface io.worxbend.gitea4s.api.ReposApi {
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> createForCurrentUser(io.worxbend.gitea4s.model.CreateRepoOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> edit(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditRepoOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> delete(java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> fork(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateForkOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Branch> createBranch(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateBranchRepoOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteBranch(java.lang.String, java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Branch> getBranch(java.lang.String, java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> updateBranch(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.UpdateBranchRepoOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> renameBranch(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.RenameBranchRepoOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.GitHook>> gitHooks(java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GitHook> gitHook(java.lang.String, java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GitHook> editGitHook(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditGitHookOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteGitHook(java.lang.String, java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.TagProtection> createTagProtection(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateTagProtectionOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.TagProtection> editTagProtection(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditTagProtectionOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteTagProtection(java.lang.String, java.lang.String, long);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.BranchProtection> createBranchProtection(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateBranchProtectionOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.BranchProtection> editBranchProtection(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditBranchProtectionOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteBranchProtection(java.lang.String, java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> updateBranchProtectionPriorities(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> transfer(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.TransferRepoOption);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> acceptTransfer(java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> rejectTransfer(java.lang.String, java.lang.String);
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.Object> isAssignee(java.lang.String, java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> get(java.lang.String, java.lang.String);
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Commit> commit(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.http.SingleCommitParams);
   public static io.worxbend.gitea4s.http.SingleCommitParams commit$default$4$(io.worxbend.gitea4s.api.ReposApi);
@@ -707,30 +703,6 @@ public interface io.worxbend.gitea4s.api.ReposApi {
   public static io.worxbend.gitea4s.http.CommitStatusListParams statuses$default$4$(io.worxbend.gitea4s.api.ReposApi);
   public default io.worxbend.gitea4s.http.CommitStatusListParams statuses$default$4();
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.CommitStatus> createStatus(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateStatusOption);
-}
-
-## io.worxbend.gitea4s.api.ReposApiV1273
-public interface io.worxbend.gitea4s.api.ReposApiV1273 extends io.worxbend.gitea4s.api.ReposApi {
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> createForCurrentUser(io.worxbend.gitea4s.model.CreateRepoOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> edit(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditRepoOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> delete(java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> fork(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateForkOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Branch> createBranch(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateBranchRepoOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteBranch(java.lang.String, java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Branch> getBranch(java.lang.String, java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> updateBranch(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.UpdateBranchRepoOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> renameBranch(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.RenameBranchRepoOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, zio.Chunk<io.worxbend.gitea4s.model.GitHook>> gitHooks(java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GitHook> gitHook(java.lang.String, java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GitHook> editGitHook(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditGitHookOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteGitHook(java.lang.String, java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.TagProtection> createTagProtection(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateTagProtectionOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.TagProtection> editTagProtection(java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditTagProtectionOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, scala.runtime.BoxedUnit> deleteTagProtection(java.lang.String, java.lang.String, long);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> transfer(java.lang.String, java.lang.String, io.worxbend.gitea4s.model.TransferRepoOption);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> acceptTransfer(java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.Repository> rejectTransfer(java.lang.String, java.lang.String);
-  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, java.lang.Object> isAssignee(java.lang.String, java.lang.String, java.lang.String);
 }
 
 ## io.worxbend.gitea4s.api.TokensApi
@@ -1222,6 +1194,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoCheckCollaborator();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoCheckTeam();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoCreateBranch();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoCreateBranchProtection();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoCreatePullRequest();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoCreatePullReview();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoCreatePullReviewCommentReply();
@@ -1230,6 +1203,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoCreateTagProtection();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDelete();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDeleteBranch();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoDeleteBranchProtection();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDeleteGitHook();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDeletePullReview();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDeletePullReviewRequests();
@@ -1238,6 +1212,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDownloadCommitDiffOrPatch();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoDownloadPullDiffOrPatch();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoEdit();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoEditBranchProtection();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoEditGitHook();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoEditPullRequest();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoEditTagProtection();
@@ -1301,6 +1276,7 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoUnDismissPullReview();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoUnresolvePullReviewComment();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoUpdateBranch();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint repoUpdateBranchProtectionPriories();
   public static io.worxbend.gitea4s.http.GiteaEndpoint repoUpdatePullRequest();
   public static io.worxbend.gitea4s.http.GiteaEndpoint unpinIssue();
   public static io.worxbend.gitea4s.http.GiteaEndpoint userGet();
@@ -1372,6 +1348,10 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.S
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetTagProtection();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListBranchProtection();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetBranchProtection();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoCreateBranchProtection();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoUpdateBranchProtectionPriories();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoDeleteBranchProtection();
+  public io.worxbend.gitea4s.http.GiteaEndpoint repoEditBranchProtection();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoListReleases();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetRelease();
   public io.worxbend.gitea4s.http.GiteaEndpoint repoGetLatestRelease();
@@ -1567,6 +1547,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> cancelScheduledAutoMerge(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> clearIssueLabels(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Branch> createBranch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateBranchRepoOption);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.BranchProtection> createBranchProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateBranchProtectionOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> createCurrentUserRepo(io.worxbend.gitea4s.GiteaConfig, io.worxbend.gitea4s.model.CreateRepoOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> createFork(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateForkOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> createIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateIssue);
@@ -1583,6 +1564,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.CurrentAccessToken> currentToken(io.worxbend.gitea4s.GiteaConfig);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.User> currentUser(io.worxbend.gitea4s.GiteaConfig);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteBranch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
+  public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteBranchProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteCurrentToken(io.worxbend.gitea4s.GiteaConfig);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteGitHook(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
@@ -1597,6 +1579,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteRepository(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteTagProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullReview> dismissPullReview(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long, io.worxbend.gitea4s.model.DismissPullReviewOptions);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.BranchProtection> editBranchProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditBranchProtectionOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GitHook> editGitHook(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditGitHookOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Issue> editIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssue);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Comment> editIssueComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditIssueComment);
@@ -1717,6 +1700,7 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> unpinIssue(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> unresolvePullReviewComment(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> updateBranch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.UpdateBranchRepoOption);
+  public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> updateBranchProtectionPriorities(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities);
   public static io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> updatePullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.http.PullRequestUpdateStyle);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.User> user(io.worxbend.gitea4s.GiteaConfig, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Page<io.worxbend.gitea4s.model.User>> userFollowers(io.worxbend.gitea4s.GiteaConfig, java.lang.String, int);
@@ -1777,6 +1761,10 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
 public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Serializable {
   public static final io.worxbend.gitea4s.http.GiteaRequests$ MODULE$;
   public static {};
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.BranchProtection> createBranchProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateBranchProtectionOption);
+  public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> updateBranchProtectionPriorities(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.BranchProtection> editBranchProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditBranchProtectionOption);
+  public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> deleteBranchProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> createCurrentUserRepo(io.worxbend.gitea4s.GiteaConfig, io.worxbend.gitea4s.model.CreateRepoOption);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> createOrgRepo(io.worxbend.gitea4s.GiteaConfig, java.lang.String, io.worxbend.gitea4s.model.CreateRepoOption);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> createOrgRepoDeprecated(io.worxbend.gitea4s.GiteaConfig, java.lang.String, io.worxbend.gitea4s.model.CreateRepoOption);

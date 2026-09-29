@@ -1,6 +1,6 @@
 package io.worxbend.gitea4s.http
 
-import io.worxbend.gitea4s.{GiteaClientV1273, GiteaConfig}
+import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
 import io.worxbend.gitea4s.model.Auth
 import sttp.client4.*
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -42,7 +42,7 @@ object OrgDeleteReposSpec extends ZIOSpecDefault:
       test("the versioned facade exposes explicit bulk deletion") {
         val backend = BackendStub[Task](new RIOMonadAsyncError[Any])
           .whenAnyRequest.thenRespond(ResponseStub.adjust("", StatusCode.Accepted))
-        val client = GiteaClientV1273.fromBackend(config, backend)
+        val client = GiteaClient.fromBackend(config, backend)
 
         assertZIO(client.orgs.deleteAllRepositories("example"))(Assertion.equalTo(()))
       }

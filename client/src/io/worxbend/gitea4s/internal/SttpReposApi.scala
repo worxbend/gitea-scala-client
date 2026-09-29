@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.internal
 
 import io.worxbend.gitea4s.GiteaConfig
-import io.worxbend.gitea4s.api.ReposApiV1273
+import io.worxbend.gitea4s.api.ReposApi
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
   ArchiveParams,
@@ -18,6 +18,7 @@ import io.worxbend.gitea4s.model.{
   AnnotatedTag,
   Branch,
   BranchProtection,
+  CreateBranchProtectionOption,
   CreateBranchRepoOption,
   CreateForkOption,
   CreateRepoOption,
@@ -33,6 +34,7 @@ import io.worxbend.gitea4s.model.{
   GitTreeResponse,
   GitHook,
   EditRepoOption,
+  EditBranchProtectionOption,
   EditTagProtectionOption,
   LanguageStatistics,
   NewIssuePinsAllowed,
@@ -46,12 +48,13 @@ import io.worxbend.gitea4s.model.{
   Team,
   TransferRepoOption,
   UpdateBranchRepoOption,
+  UpdateBranchProtectionPriorities,
   User
 }
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
-private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends ReposApiV1273:
+private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends ReposApi:
   override def createForCurrentUser(body: CreateRepoOption): IO[GiteaError, Repository] =
     executor.send(GiteaRequests.createCurrentUserRepo(config, body))
 
@@ -99,6 +102,18 @@ private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRe
 
   override def deleteTagProtection(owner: String, repo: String, id: Long): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.deleteTagProtection(config, owner, repo, id))
+
+  override def createBranchProtection(owner: String, repo: String, body: CreateBranchProtectionOption): IO[GiteaError, BranchProtection] =
+    executor.send(GiteaRequests.createBranchProtection(config, owner, repo, body))
+
+  override def editBranchProtection(owner: String, repo: String, name: String, body: EditBranchProtectionOption): IO[GiteaError, BranchProtection] =
+    executor.send(GiteaRequests.editBranchProtection(config, owner, repo, name, body))
+
+  override def deleteBranchProtection(owner: String, repo: String, name: String): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteBranchProtection(config, owner, repo, name))
+
+  override def updateBranchProtectionPriorities(owner: String, repo: String, body: UpdateBranchProtectionPriorities): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.updateBranchProtectionPriorities(config, owner, repo, body))
 
   override def transfer(owner: String, repo: String, body: TransferRepoOption): IO[GiteaError, Repository] =
     executor.send(GiteaRequests.transferRepository(config, owner, repo, body))
