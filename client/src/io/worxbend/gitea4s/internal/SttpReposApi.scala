@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.internal
 
 import io.worxbend.gitea4s.GiteaConfig
-import io.worxbend.gitea4s.api.ReposApi
+import io.worxbend.gitea4s.api.ReposApiV1273
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{
   ArchiveParams,
@@ -40,7 +40,10 @@ import io.worxbend.gitea4s.model.{
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
-private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends ReposApi:
+private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends ReposApiV1273:
+  override def isAssignee(owner: String, repo: String, assignee: String): IO[GiteaError, Boolean] =
+    executor.send(GiteaRequests.repoCheckAssignee(config, owner, repo, assignee))
+
   override def get(owner: String, repo: String): IO[GiteaError, Repository] =
     executor.send(GiteaRequests.repository(config, owner, repo))
 

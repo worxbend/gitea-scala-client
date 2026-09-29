@@ -11,6 +11,129 @@ final case class GiteaEndpoint(
 final case class GiteaParameter(name: String, in: String, required: Boolean)
 
 object GiteaEndpoints:
+  val actionsListWorkflowRuns: GiteaEndpoint =
+    GiteaEndpoint(
+      "GET",
+      "/repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs",
+      "ActionsListWorkflowRuns",
+      List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("workflow_id", "path", required = true),
+        GiteaParameter("event", "query", required = false),
+        GiteaParameter("branch", "query", required = false),
+        GiteaParameter("status", "query", required = false),
+        GiteaParameter("actor", "query", required = false),
+        GiteaParameter("head_sha", "query", required = false),
+        GiteaParameter("exclude_pull_requests", "query", required = false),
+        GiteaParameter("scoped_workflow_source_repo_id", "query", required = false),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      "#/responses/WorkflowRunsList"
+    )
+
+  val getWorkflowRunAttempt: GiteaEndpoint =
+    GiteaEndpoint(
+      "GET",
+      "/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}",
+      "getWorkflowRunAttempt",
+      List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("run", "path", required = true),
+        GiteaParameter("attempt", "path", required = true)
+      ),
+      "#/responses/WorkflowRun"
+    )
+
+  val listWorkflowRunAttemptJobs: GiteaEndpoint =
+    GiteaEndpoint(
+      "GET",
+      "/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}/jobs",
+      "listWorkflowRunAttemptJobs",
+      getWorkflowRunAttempt.parameters ++ List(
+        GiteaParameter("status", "query", required = false),
+        GiteaParameter("page", "query", required = false),
+        GiteaParameter("limit", "query", required = false)
+      ),
+      "#/responses/WorkflowJobsList"
+    )
+
+  val repoCreatePullReviewCommentReply: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST",
+      "/repos/{owner}/{repo}/pulls/{index}/comments/{id}/replies",
+      "repoCreatePullReviewCommentReply",
+      List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("id", "path", required = true),
+        GiteaParameter("body", "body", required = true)
+      ),
+      "#/responses/PullReviewComment"
+    )
+
+  val orgDeleteRepos: GiteaEndpoint =
+    GiteaEndpoint(
+      "DELETE",
+      "/orgs/{org}/repos",
+      "orgDeleteRepos",
+      List(GiteaParameter("org", "path", required = true)),
+      "#/responses/empty"
+    )
+
+  val repoCheckAssignee: GiteaEndpoint =
+    GiteaEndpoint(
+      "GET",
+      "/repos/{owner}/{repo}/assignees/{assignee}",
+      "repoCheckAssignee",
+      List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("assignee", "path", required = true)
+      ),
+      "#/responses/empty"
+    )
+
+  val issueAddAssignees: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST",
+      "/repos/{owner}/{repo}/issues/{index}/assignees",
+      "issueAddAssignees",
+      List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("body", "body", required = true)
+      ),
+      "#/responses/Issue"
+    )
+
+  val issueRemoveAssignees: GiteaEndpoint =
+    issueAddAssignees.copy(method = "DELETE", operationId = "issueRemoveAssignees")
+
+  val issueCheckAssignee: GiteaEndpoint =
+    GiteaEndpoint(
+      "GET",
+      "/repos/{owner}/{repo}/issues/{index}/assignees/{assignee}",
+      "issueCheckAssignee",
+      List(
+        GiteaParameter("owner", "path", required = true),
+        GiteaParameter("repo", "path", required = true),
+        GiteaParameter("index", "path", required = true),
+        GiteaParameter("assignee", "path", required = true)
+      ),
+      "#/responses/empty"
+    )
+
+  val getCurrentToken: GiteaEndpoint =
+    GiteaEndpoint("GET", "/token", "getCurrentToken", Nil, "#/responses/CurrentAccessToken")
+
+  val deleteCurrentToken: GiteaEndpoint =
+    GiteaEndpoint("DELETE", "/token", "deleteCurrentToken", Nil, "description: token deleted")
+
   val userGetCurrent: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",
@@ -1799,6 +1922,17 @@ object GiteaEndpoints:
     * reflection and fails when the two disagree.
     */
   private[gitea4s] val all: List[GiteaEndpoint] = List(
+    actionsListWorkflowRuns,
+    getWorkflowRunAttempt,
+    listWorkflowRunAttemptJobs,
+    repoCreatePullReviewCommentReply,
+    orgDeleteRepos,
+    repoCheckAssignee,
+    issueAddAssignees,
+    issueRemoveAssignees,
+    issueCheckAssignee,
+    getCurrentToken,
+    deleteCurrentToken,
     userGetCurrent,
     userGet,
     userSearch,

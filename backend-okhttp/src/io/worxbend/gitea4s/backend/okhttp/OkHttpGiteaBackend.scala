@@ -2,7 +2,7 @@ package io.worxbend.gitea4s.backend.okhttp
 
 import io.worxbend.gitea4s.internal.GiteaRequestExecutor
 import io.worxbend.gitea4s.model.Auth
-import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
+import io.worxbend.gitea4s.{GiteaClient, GiteaClientV1273, GiteaConfig}
 import okhttp3.{Authenticator, Credentials, OkHttpClient, Request as OkHttpRequest, Response as OkHttpResponse, Route}
 import sttp.capabilities.Effect
 import sttp.client4.impl.zio.RIOMonadAsyncError
@@ -51,6 +51,19 @@ import scala.concurrent.{ExecutionContext, Future}
   * ZIO backend and cancels the request when the fiber is interrupted.
   */
 object OkHttpGiteaBackend:
+  val liveV1273: ZLayer[GiteaConfig, Throwable, GiteaClientV1273] =
+    ZLayer.scoped {
+      for
+        config <- ZIO.service[GiteaConfig]
+        executionContext <- backendExecutionContext
+        client <- scopedOwnedClient(config)
+        backend <- scopedBackend(OkHttpFutureBackend.usingClient(client)(using executionContext))
+      yield GiteaClientV1273.fromBackend(config, backend)
+    }
+
+  def configuredV1273(config: GiteaConfig): ZLayer[Any, Throwable, GiteaClientV1273] =
+    ZLayer.succeed(config) >>> liveV1273
+
 
   val live: ZLayer[GiteaConfig, Throwable, GiteaClient] =
     ZLayer.scoped {

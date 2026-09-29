@@ -3,6 +3,9 @@ package io.worxbend.gitea4s.http
 import io.worxbend.gitea4s.{Accept, GiteaConfig}
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.model.{
+  ActionWorkflowJobsResponse,
+  ActionWorkflowRun,
+  ActionWorkflowRunsResponse,
   AddTimeOption,
   AnnotatedTag,
   Branch,
@@ -12,11 +15,13 @@ import io.worxbend.gitea4s.model.{
   Commit,
   CommitDiffType,
   CommitStatus,
+  CurrentAccessToken,
   CombinedStatus,
   ContentsResponse,
   CreateIssue,
   CreateIssueComment,
   CreatePullRequestOption,
+  CreatePullReviewCommentReplyOptions,
   CreatePullReviewOptions,
   CreateStatusOption,
   DismissPullReviewOptions,
@@ -28,6 +33,7 @@ import io.worxbend.gitea4s.model.{
   GitBlobResponse,
   GitTreeResponse,
   Issue,
+  IssueAssigneesOption,
   IssueDeadline,
   IssueLabelsOption,
   IssueMeta,
@@ -67,6 +73,147 @@ import zio.json.*
 
 
 object GiteaRequests:
+  def actionsListWorkflowRuns(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      workflowId: String,
+      params: WorkflowRunsParams = WorkflowRunsParams()
+  ): GiteaRequest[ActionWorkflowRunsResponse] =
+    val query = List(
+      params.event.map("event" -> _),
+      params.branch.map("branch" -> _),
+      params.status.map("status" -> _),
+      params.actor.map("actor" -> _),
+      params.headSha.map("head_sha" -> _),
+      params.excludePullRequests.map(value => "exclude_pull_requests" -> value.toString),
+      params.scopedWorkflowSourceRepoId.map(value => "scoped_workflow_source_repo_id" -> value.toString),
+      params.page.map(value => "page" -> value.toString),
+      params.limit.map(value => "limit" -> value.toString)
+    ).flatten
+    get(
+      config,
+      GiteaEndpoints.actionsListWorkflowRuns,
+      List("repos", owner, repo, "actions", "workflows", workflowId, "runs"),
+      query,
+      GiteaResponseMapper.decodeJson[ActionWorkflowRunsResponse]
+    )
+
+  def getWorkflowRunAttempt(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      run: Long,
+      attempt: Long
+  ): GiteaRequest[ActionWorkflowRun] =
+    get(
+      config,
+      GiteaEndpoints.getWorkflowRunAttempt,
+      List("repos", owner, repo, "actions", "runs", run.toString, "attempts", attempt.toString),
+      Nil,
+      GiteaResponseMapper.decodeJson[ActionWorkflowRun]
+    )
+
+  def listWorkflowRunAttemptJobs(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      run: Long,
+      attempt: Long,
+      params: WorkflowAttemptJobsParams = WorkflowAttemptJobsParams()
+  ): GiteaRequest[ActionWorkflowJobsResponse] =
+    val query = List(
+      params.status.map("status" -> _),
+      params.page.map(value => "page" -> value.toString),
+      params.limit.map(value => "limit" -> value.toString)
+    ).flatten
+    get(
+      config,
+      GiteaEndpoints.listWorkflowRunAttemptJobs,
+      List("repos", owner, repo, "actions", "runs", run.toString, "attempts", attempt.toString, "jobs"),
+      query,
+      GiteaResponseMapper.decodeJson[ActionWorkflowJobsResponse]
+    )
+
+  def repoCreatePullReviewCommentReply(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      commentId: Long,
+      body: String
+  ): GiteaRequest[PullReviewComment] =
+    postJson(
+      config,
+      GiteaEndpoints.repoCreatePullReviewCommentReply,
+      List("repos", owner, repo, "pulls", index.toString, "comments", commentId.toString, "replies"),
+      CreatePullReviewCommentReplyOptions(body).toJson,
+      GiteaResponseMapper.decodeJson[PullReviewComment]
+    )
+
+  def orgDeleteRepos(config: GiteaConfig, org: String): GiteaRequest[Unit] =
+    delete(config, GiteaEndpoints.orgDeleteRepos, List("orgs", org, "repos"), GiteaResponseMapper.decodeAcceptedOrNoContent)
+
+  def repoCheckAssignee(config: GiteaConfig, owner: String, repo: String, assignee: String): GiteaRequest[Boolean] =
+    get(
+      config,
+      GiteaEndpoints.repoCheckAssignee,
+      List("repos", owner, repo, "assignees", assignee),
+      Nil,
+      GiteaResponseMapper.decodeNoContentOrNotFoundBoolean
+    )
+
+  def issueAddAssignees(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: IssueAssigneesOption
+  ): GiteaRequest[Issue] =
+    postJson(
+      config,
+      GiteaEndpoints.issueAddAssignees,
+      List("repos", owner, repo, "issues", index.toString, "assignees"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Issue]
+    )
+
+  def issueRemoveAssignees(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      body: IssueAssigneesOption
+  ): GiteaRequest[Issue] =
+    deleteJson(
+      config,
+      GiteaEndpoints.issueRemoveAssignees,
+      List("repos", owner, repo, "issues", index.toString, "assignees"),
+      body.toJson,
+      GiteaResponseMapper.decodeJson[Issue]
+    )
+
+  def issueCheckAssignee(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      index: Long,
+      assignee: String
+  ): GiteaRequest[Boolean] =
+    get(
+      config,
+      GiteaEndpoints.issueCheckAssignee,
+      List("repos", owner, repo, "issues", index.toString, "assignees", assignee),
+      Nil,
+      GiteaResponseMapper.decodeNoContentOrNotFoundBoolean
+    )
+
+  def currentToken(config: GiteaConfig): GiteaRequest[CurrentAccessToken] =
+    get(config, GiteaEndpoints.getCurrentToken, List("token"), Nil, GiteaResponseMapper.decodeJson[CurrentAccessToken])
+
+  def deleteCurrentToken(config: GiteaConfig): GiteaRequest[Unit] =
+    delete(config, GiteaEndpoints.deleteCurrentToken, List("token"), GiteaResponseMapper.decodeNoContent)
+
   def currentUser(config: GiteaConfig): GiteaRequest[User] =
     get(config, GiteaEndpoints.userGetCurrent, List("user"), Nil, GiteaResponseMapper.decodeJson[User])
 

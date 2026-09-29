@@ -1,7 +1,7 @@
 package io.worxbend.gitea4s.backend.zio
 
 import io.worxbend.gitea4s.model.Auth
-import io.worxbend.gitea4s.{GiteaClient, GiteaConfig}
+import io.worxbend.gitea4s.{GiteaClient, GiteaClientV1273, GiteaConfig}
 import sttp.client4.httpclient.zio.HttpClientZioBackend
 import sttp.model.Uri
 import zio.ZLayer
@@ -9,6 +9,20 @@ import zio.ZLayer
 import java.net.http.HttpClient
 
 object ZioGiteaBackend:
+  val liveV1273: ZLayer[GiteaConfig, Throwable, GiteaClientV1273] =
+    ZLayer.scoped {
+      for
+        config <- zio.ZIO.service[GiteaConfig]
+        backend <- HttpClientZioBackend.scoped()
+      yield GiteaClientV1273.fromBackend(config, backend)
+    }
+
+  def configuredV1273(config: GiteaConfig): ZLayer[Any, Throwable, GiteaClientV1273] =
+    ZLayer.succeed(config) >>> liveV1273
+
+  def withTokenV1273(baseUrl: Uri, token: String): ZLayer[Any, Throwable, GiteaClientV1273] =
+    configuredV1273(GiteaConfig.default(baseUrl, Auth.Token(token)))
+
   val live: ZLayer[GiteaConfig, Throwable, GiteaClient] =
     ZLayer.scoped {
       for

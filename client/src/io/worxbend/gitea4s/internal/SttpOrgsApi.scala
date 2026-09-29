@@ -1,14 +1,17 @@
 package io.worxbend.gitea4s.internal
 
 import io.worxbend.gitea4s.GiteaConfig
-import io.worxbend.gitea4s.api.OrgsApi
+import io.worxbend.gitea4s.api.OrgsApiV1273
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{GiteaRequests, RepoListParams}
 import io.worxbend.gitea4s.model.{Organization, Repository, User}
 import zio.IO
 import zio.stream.ZStream
 
-private[gitea4s] final class SttpOrgsApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends OrgsApi:
+private[gitea4s] final class SttpOrgsApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends OrgsApiV1273:
+  override def deleteAllRepositories(org: String): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.orgDeleteRepos(config, org))
+
   override def get(org: String): IO[GiteaError, Organization] =
     executor.send(GiteaRequests.organization(config, org))
 

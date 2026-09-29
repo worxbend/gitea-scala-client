@@ -3,6 +3,7 @@ package io.worxbend.gitea4s.http
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.model.{
   Auth,
+  IssueAssigneesOption,
   CommitDiffType,
   CommitStatusState,
   CreatePullRequestOption,
@@ -27,6 +28,32 @@ import java.nio.file.{Files, Path, Paths}
 object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   private val config =
     GiteaConfig.default(uri"https://gitea.example", Auth.Token("secret"))
+
+  private val currentTokenRequests = List(
+    AuditedRequest(GiteaRequests.currentToken(config), noBodyLifecyclePost = false),
+    AuditedRequest(GiteaRequests.deleteCurrentToken(config), noBodyLifecyclePost = false)
+  )
+
+  private val issueAssigneeRequests = List(
+    AuditedRequest(GiteaRequests.issueAddAssignees(config, "owner", "repo", 12L, IssueAssigneesOption(Chunk("alice"))), false),
+    AuditedRequest(GiteaRequests.issueRemoveAssignees(config, "owner", "repo", 12L, IssueAssigneesOption(Chunk("alice"))), false),
+    AuditedRequest(GiteaRequests.issueCheckAssignee(config, "owner", "repo", 12L, "alice"), false)
+  )
+
+  private val repositoryAssigneeCheck =
+    AuditedRequest(GiteaRequests.repoCheckAssignee(config, "owner", "repo", "alice"), false)
+
+  private val organizationRepositoryDeletion =
+    AuditedRequest(GiteaRequests.orgDeleteRepos(config, "space org"), false)
+
+  private val pullReviewCommentReply =
+    AuditedRequest(GiteaRequests.repoCreatePullReviewCommentReply(config, "owner", "repo", 12L, 42L, "Thanks"), false)
+
+  private val workflowAttemptRequests = List(
+    AuditedRequest(GiteaRequests.actionsListWorkflowRuns(config, "owner", "repo", "ci.yml"), false),
+    AuditedRequest(GiteaRequests.getWorkflowRunAttempt(config, "owner", "repo", 12L, 2L), false),
+    AuditedRequest(GiteaRequests.listWorkflowRunAttemptJobs(config, "owner", "repo", 12L, 2L), false)
+  )
 
   private val pullReviewLifecycleRequests = List(
     AuditedRequest(
@@ -486,6 +513,49 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   )
 
   private val expectedNonSuccessResponseLabels = Map(
+    "ActionsListWorkflowRuns" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "getWorkflowRunAttempt" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "listWorkflowRunAttemptJobs" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoCreatePullReviewCommentReply" -> List(
+      GiteaResponseLabel("400", "#/responses/validationError"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "orgDeleteRepos" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "repoCheckAssignee" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "issueAddAssignees" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "issueRemoveAssignees" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "issueCheckAssignee" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "getCurrentToken" -> Nil,
+    "deleteCurrentToken" -> Nil,
     "repoCreatePullRequest" -> List(
       GiteaResponseLabel("403", "#/responses/forbidden"),
       GiteaResponseLabel("404", "#/responses/notFound"),
@@ -699,6 +769,44 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Gitea endpoint metadata audit")(
+      test("current token operations match gitea-v1.27.3.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = currentTokenRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("issue assignee operations match gitea-v1.27.3.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = issueAssigneeRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("repository assignee check matches gitea-v1.27.3.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = audit(swagger, repositoryAssigneeCheck)
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("organization repository deletion matches both success statuses in v1.27.3") {
+        val swagger = SwaggerAudit.load()
+        val endpoint = organizationRepositoryDeletion.request.endpoint
+        val failures = audit(swagger, organizationRepositoryDeletion)
+        val statuses = swagger.operation(endpoint.path, endpoint.method).map(_.successResponses.map(_.status))
+
+        assertTrue(failures.isEmpty, statuses == Right(List("202", "204"))) ?? failures.mkString("\n")
+      },
+      test("pull-review comment replies match gitea-v1.27.3.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = audit(swagger, pullReviewCommentReply)
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
+      test("workflow runs and attempt jobs match gitea-v1.27.3.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = workflowAttemptRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
       test("pull-review lifecycle metadata matches gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = pullReviewLifecycleRequests.flatMap(audit(swagger, _))
@@ -935,6 +1043,18 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
         assertTrue(failures.isEmpty) ?? failures.mkString("\n")
       },
+      test("tracks full-spec operation coverage without calling partial support complete") {
+        val swaggerIds = SwaggerAudit.load().operationIds
+        val implemented = GiteaEndpoints.all.map(_.operationId)
+        val missing = swaggerIds -- implemented
+
+        assertTrue(
+          swaggerIds.size == 482,
+          implemented.size == 141,
+          implemented.distinct.size == implemented.size,
+          missing.size == 341
+        ) ?? s"remaining operation IDs: ${missing.toList.sorted.mkString(", ")}"
+      },
       test("GiteaEndpoints.all lists every endpoint constant") {
         val declared = GiteaEndpoints.all.map(_.operationId).sorted
         val defined = definedEndpointConstants.map(_.operationId).sorted
@@ -995,7 +1115,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           compare("path", endpoint.path, operation.path),
           compare("required path parameters", requiredPathParameterNames, operation.requiredPathParameters),
           compare("optional query parameters", optionalQueryParameterNames, operation.optionalQueryParameters),
-          compare("success response labels", List(endpoint.response), operation.successResponseLabels),
+          compare("success response labels", List(endpoint.response), operation.successResponseLabels.distinct),
           expectedNonSuccessResponses.fold(
             Some("non-2xx response label lookup failed: no expected labels registered for audited endpoint")
           )(expected => compare("non-2xx response labels", expected, operation.nonSuccessResponses)),
@@ -1027,7 +1147,7 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
           compare("path", endpoint.path, operation.path),
           compare("required path parameters", requiredPathParameterNames, operation.requiredPathParameters),
           compare("optional query parameters", optionalQueryParameterNames, operation.optionalQueryParameters),
-          compare("success response labels", List(endpoint.response), operation.successResponseLabels),
+          compare("success response labels", List(endpoint.response), operation.successResponseLabels.distinct),
           expectedNonSuccessResponses.fold(
             Some("non-2xx response label lookup failed: no expected labels registered for audited endpoint")
           )(expected => compare("non-2xx response labels", expected, operation.nonSuccessResponses)),
@@ -1235,6 +1355,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   private final case class GiteaResponseLabel(status: String, label: String)
 
   private final class SwaggerAudit(lines: Vector[String]):
+    def operationIds: Set[String] =
+      lines.iterator
+        .filter(_.startsWith("      operationId: "))
+        .map(_.stripPrefix("      operationId: ").trim)
+        .toSet
+
     def operation(path: String, method: String): Either[String, SwaggerOperation] =
       for
         pathIndex <- findPath(path)

@@ -392,6 +392,45 @@ object CoreModelsSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Core models")(
+      test("new v1.27.3 token, assignee, reply, and minimal pull models match their schemas") {
+        val expectedFields = Map(
+          "CurrentAccessToken" -> Set("created_at", "id", "last_used_at", "name", "scopes", "user"),
+          "UserMeta" -> Set("id", "login"),
+          "IssueAssigneesOption" -> Set("assignees"),
+          "CreatePullReviewCommentReplyOptions" -> Set("body"),
+          "PullRequestMinimal" -> Set("base", "head", "id", "number", "url"),
+          "PullRequestMinimalHead" -> Set("ref", "repo", "sha"),
+          "PullRequestMinimalHeadRepo" -> Set("id", "name", "url")
+        )
+        val mismatches = expectedFields.toList.collect {
+          case (name, fields) if latestDefinitionFields.get(name) != Some(fields) => name
+        }
+
+        assertTrue(mismatches.isEmpty) ?? mismatches.mkString(", ")
+      },
+      test("workflow run and job models account for every v1.27.3 field") {
+        val expectedFields = Map(
+          "ActionWorkflowRun" -> Set(
+            "actor", "completed_at", "conclusion", "display_title", "event", "head_branch",
+            "head_repository", "head_sha", "html_url", "id", "path", "previous_attempt_url",
+            "pull_requests", "repository", "repository_id", "run_attempt", "run_number",
+            "started_at", "status", "trigger_actor", "url"
+          ),
+          "ActionWorkflowJob" -> Set(
+            "completed_at", "conclusion", "created_at", "head_branch", "head_sha", "html_url", "id",
+            "labels", "name", "run_attempt", "run_id", "run_url", "runner_id", "runner_name",
+            "started_at", "status", "steps", "url"
+          ),
+          "ActionWorkflowStep" -> Set("completed_at", "conclusion", "name", "number", "started_at", "status"),
+          "ActionWorkflowRunsResponse" -> Set("total_count", "workflow_runs"),
+          "ActionWorkflowJobsResponse" -> Set("jobs", "total_count")
+        )
+        val mismatches = expectedFields.toList.collect {
+          case (name, fields) if latestDefinitionFields.get(name) != Some(fields) => name
+        }
+
+        assertTrue(mismatches.isEmpty) ?? mismatches.mkString(", ")
+      },
       test("published response fields still exist in the v1.27.3 schemas") {
         val removedFields = schemaFieldChecklist.flatMap { checklist =>
           latestDefinitionFields.get(checklist.swaggerDefinition) match

@@ -10,6 +10,16 @@ guarded by the `api-snapshot/` binary-compatibility check.
 
 ## Unreleased
 
+The first full-coverage batch adds all eleven operations introduced in Gitea
+1.27.3: current-token metadata and revocation, issue/repository assignee
+operations, bulk deletion of organization repositories, pull-review comment
+replies, and workflow runs and attempt jobs. Use
+`GiteaClientV1273.fromBackend` to access the additive typed namespaces without
+changing the published `GiteaClient` interface. The token deletion and bulk
+repository deletion decoders accept only the documented success statuses.
+This is **not** full v1.27.3 operation coverage: 341 operations from the older
+spec remain missing; track them in `API_V1273_PLAN.md`.
+
 A hardening release. Everything here is source-compatible: code that compiled
 against `1.0.0` still compiles. Some behaviour changed on purpose; read the
 notes below before upgrading.
@@ -19,9 +29,9 @@ The API target is now Gitea 1.27.3. Its tagged Swagger contract is vendored as
 available. All 130 implemented operations retain their method and path. The
 optional branch-list `q` is available through new request-builder and
 `ReposApi.branches` overloads; the existing unfiltered stream is unchanged.
-Merge-request JSON now uses the lowercase field names declared by 1.27.3; decoding still accepts the previous
-capitalized names. New optional response fields and the eleven new operations
-in the server spec are not yet represented by the typed client.
+Merge-request JSON now uses the lowercase field names declared by 1.27.3;
+decoding still accepts the previous capitalized names. Added optional response
+fields across the older models still need a full schema audit.
 
 **The three-argument JVM constructors, `apply`, and `copy` from `1.0.0` are
 restored** for `UserSearchParams` and `RequestEvent`. Adding defaulted fields

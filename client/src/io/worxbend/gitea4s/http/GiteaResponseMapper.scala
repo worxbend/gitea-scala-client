@@ -34,6 +34,14 @@ object GiteaResponseMapper:
   def decodeUnit(response: Response[String]): Either[GiteaError, Unit] =
     if response.isSuccess then Right(()) else Left(toError(response))
 
+  /** Destructive endpoints must not accept an unrelated 200 login page as success. */
+  def decodeNoContent(response: Response[String]): Either[GiteaError, Unit] =
+    if response.code == StatusCode.NoContent then Right(()) else Left(toError(response))
+
+  def decodeAcceptedOrNoContent(response: Response[String]): Either[GiteaError, Unit] =
+    if response.code == StatusCode.Accepted || response.code == StatusCode.NoContent then Right(())
+    else Left(toError(response))
+
   def decodeString(response: Response[String]): Either[GiteaError, String] =
     if response.isSuccess then Right(response.body) else Left(toError(response))
 

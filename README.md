@@ -8,6 +8,8 @@ A Scala 3 client library for the [Gitea](https://gitea.io) API, built with
 - **JVM baseline:** Java 21 · **Scala:** 3.x
 - **API target:** Gitea `1.27.3` (`gitea-v1.27.3.yaml` is the current contract;
   `plugin-redoc-2.yaml` preserves the 1.26.2 reference)
+- **Coverage:** 141 of 482 v1.27.3 operations; see [`API_V1273_PLAN.md`](API_V1273_PLAN.md)
+  for the full-coverage work and remaining gaps.
 - **Version:** `1.0.0` · **License:** Apache-2.0
 - **Backends:** `backend-zio` (Java `HttpClient`, default) and an optional
   `backend-okhttp` bridge
@@ -122,6 +124,20 @@ object Main extends ZIOAppDefault:
 ```
 
 To search branches by name on Gitea 1.27.3, call `client.repos.branches("owner", "repo", "release/")`. The stream sends the `q` filter on every page; the two-argument overload still lists all branches.
+
+The additive v1.27.3 operations use `GiteaClientV1273` so existing `GiteaClient` implementations remain compatible. For example, we can read current-token metadata using the ZIO backend:
+
+```scala
+import io.worxbend.gitea4s.GiteaClientV1273
+import io.worxbend.gitea4s.backend.zio.ZioGiteaBackend
+import sttp.client4.*
+import zio.ZIO
+
+val currentToken = ZIO.serviceWithZIO[GiteaClientV1273](_.tokens.current)
+  .provideLayer(ZioGiteaBackend.withTokenV1273(uri"https://gitea.example", sys.env("GITEA_TOKEN")))
+```
+
+`GiteaClientV1273` also exposes issue and repository assignee checks, pull-review comment replies, organization repository deletion, and workflow-run attempt reads. `orgs.deleteAllRepositories` deletes every repository in an organization; use it only when that bulk action is intended.
 
 ## Authentication
 
