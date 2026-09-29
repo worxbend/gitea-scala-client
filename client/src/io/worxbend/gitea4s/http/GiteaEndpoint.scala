@@ -11,6 +11,18 @@ final case class GiteaEndpoint(
 final case class GiteaParameter(name: String, in: String, required: Boolean)
 
 object GiteaEndpoints:
+  val getGeneralAPISettings: GiteaEndpoint =
+    GiteaEndpoint("GET", "/settings/api", "getGeneralAPISettings", Nil, "#/responses/GeneralAPISettings")
+
+  val getGeneralAttachmentSettings: GiteaEndpoint =
+    GiteaEndpoint("GET", "/settings/attachment", "getGeneralAttachmentSettings", Nil, "#/responses/GeneralAttachmentSettings")
+
+  val getGeneralRepositorySettings: GiteaEndpoint =
+    GiteaEndpoint("GET", "/settings/repository", "getGeneralRepositorySettings", Nil, "#/responses/GeneralRepoSettings")
+
+  val getGeneralUISettings: GiteaEndpoint =
+    GiteaEndpoint("GET", "/settings/ui", "getGeneralUISettings", Nil, "#/responses/GeneralUISettings")
+
   val actionsListWorkflowRuns: GiteaEndpoint =
     GiteaEndpoint(
       "GET",
@@ -2055,6 +2067,10 @@ object GiteaEndpoints:
     * reflection and fails when the two disagree.
     */
   private[gitea4s] val all: List[GiteaEndpoint] = List(
+    getGeneralAPISettings,
+    getGeneralAttachmentSettings,
+    getGeneralRepositorySettings,
+    getGeneralUISettings,
     createCurrentUserRepo,
     createOrgRepo,
     createOrgRepoDeprecated,

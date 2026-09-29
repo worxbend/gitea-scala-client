@@ -42,6 +42,13 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   private val config =
     GiteaConfig.default(uri"https://gitea.example", Auth.Token("secret"))
 
+  private val settingsRequests = List(
+    AuditedRequest(GiteaRequests.generalAPISettings(config), false),
+    AuditedRequest(GiteaRequests.generalAttachmentSettings(config), false),
+    AuditedRequest(GiteaRequests.generalRepositorySettings(config), false),
+    AuditedRequest(GiteaRequests.generalUISettings(config), false)
+  )
+
   private val currentTokenRequests = List(
     AuditedRequest(GiteaRequests.currentToken(config), noBodyLifecyclePost = false),
     AuditedRequest(GiteaRequests.deleteCurrentToken(config), noBodyLifecyclePost = false)
@@ -563,6 +570,10 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   )
 
   private val expectedNonSuccessResponseLabels = Map(
+    "getGeneralAPISettings" -> Nil,
+    "getGeneralAttachmentSettings" -> Nil,
+    "getGeneralRepositorySettings" -> Nil,
+    "getGeneralUISettings" -> Nil,
     "repoCreateBranchProtection" -> List(
       GiteaResponseLabel("403", "#/responses/forbidden"),
       GiteaResponseLabel("404", "#/responses/notFound"),
@@ -918,6 +929,11 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Gitea endpoint metadata audit")(
+      test("public settings reads match gitea-v1.27.3.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = settingsRequests.flatMap(audit(swagger, _))
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
       test("branch protection writes match gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = branchProtectionWrites.flatMap(audit(swagger, _))
@@ -1223,9 +1239,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
         assertTrue(
           swaggerIds.size == 482,
-          implemented.size == 166,
+          implemented.size == 170,
           implemented.distinct.size == implemented.size,
-          missing.size == 316
+          missing.size == 312
         ) ?? s"remaining operation IDs: ${missing.toList.sorted.mkString(", ")}"
       },
       test("GiteaEndpoints.all lists every endpoint constant") {

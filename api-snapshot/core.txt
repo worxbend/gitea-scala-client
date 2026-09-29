@@ -3905,6 +3905,216 @@ public final class io.worxbend.gitea4s.model.FileLinksResponse$ implements scala
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.GeneralAPISettings
+public final class io.worxbend.gitea4s.model.GeneralAPISettings implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.GeneralAPISettings(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.Object> defaultGitTreesPerPage();
+  public scala.Option<java.lang.Object> defaultMaxBlobSize();
+  public scala.Option<java.lang.Object> defaultMaxResponseSize();
+  public scala.Option<java.lang.Object> defaultPagingNum();
+  public scala.Option<java.lang.Object> maxResponseItems();
+  public io.worxbend.gitea4s.model.GeneralAPISettings copy(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.lang.Object> copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.Object> copy$default$3();
+  public scala.Option<java.lang.Object> copy$default$4();
+  public scala.Option<java.lang.Object> copy$default$5();
+  public scala.Option<java.lang.Object> _1();
+  public scala.Option<java.lang.Object> _2();
+  public scala.Option<java.lang.Object> _3();
+  public scala.Option<java.lang.Object> _4();
+  public scala.Option<java.lang.Object> _5();
+  public static io.worxbend.gitea4s.model.GeneralAPISettings apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.model.GeneralAPISettings fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.GeneralAPISettings> given_JsonCodec_GeneralAPISettings();
+  public static io.worxbend.gitea4s.model.GeneralAPISettings unapply(io.worxbend.gitea4s.model.GeneralAPISettings);
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$5();
+}
+
+## io.worxbend.gitea4s.model.GeneralAPISettings$
+public final class io.worxbend.gitea4s.model.GeneralAPISettings$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.GeneralAPISettings$ MODULE$;
+  public io.worxbend.gitea4s.model.GeneralAPISettings apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.model.GeneralAPISettings unapply(io.worxbend.gitea4s.model.GeneralAPISettings);
+  public scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.GeneralAPISettings> given_JsonCodec_GeneralAPISettings();
+  public io.worxbend.gitea4s.model.GeneralAPISettings fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.GeneralAttachmentSettings
+public final class io.worxbend.gitea4s.model.GeneralAttachmentSettings implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.GeneralAttachmentSettings(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.String> allowedTypes();
+  public scala.Option<java.lang.Object> enabled();
+  public scala.Option<java.lang.Object> maxFiles();
+  public scala.Option<java.lang.Object> maxSize();
+  public io.worxbend.gitea4s.model.GeneralAttachmentSettings copy(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.lang.String> copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.Object> copy$default$3();
+  public scala.Option<java.lang.Object> copy$default$4();
+  public scala.Option<java.lang.String> _1();
+  public scala.Option<java.lang.Object> _2();
+  public scala.Option<java.lang.Object> _3();
+  public scala.Option<java.lang.Object> _4();
+  public static io.worxbend.gitea4s.model.GeneralAttachmentSettings apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.model.GeneralAttachmentSettings fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.GeneralAttachmentSettings> given_JsonCodec_GeneralAttachmentSettings();
+  public static io.worxbend.gitea4s.model.GeneralAttachmentSettings unapply(io.worxbend.gitea4s.model.GeneralAttachmentSettings);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$4();
+}
+
+## io.worxbend.gitea4s.model.GeneralAttachmentSettings$
+public final class io.worxbend.gitea4s.model.GeneralAttachmentSettings$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.GeneralAttachmentSettings$ MODULE$;
+  public io.worxbend.gitea4s.model.GeneralAttachmentSettings apply(scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.model.GeneralAttachmentSettings unapply(io.worxbend.gitea4s.model.GeneralAttachmentSettings);
+  public scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.GeneralAttachmentSettings> given_JsonCodec_GeneralAttachmentSettings();
+  public io.worxbend.gitea4s.model.GeneralAttachmentSettings fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.GeneralRepoSettings
+public final class io.worxbend.gitea4s.model.GeneralRepoSettings implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.GeneralRepoSettings(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.Object> httpGitDisabled();
+  public scala.Option<java.lang.Object> lfsDisabled();
+  public scala.Option<java.lang.Object> migrationsDisabled();
+  public scala.Option<java.lang.Object> mirrorsDisabled();
+  public scala.Option<java.lang.Object> starsDisabled();
+  public scala.Option<java.lang.Object> timeTrackingDisabled();
+  public io.worxbend.gitea4s.model.GeneralRepoSettings copy(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.lang.Object> copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.Object> copy$default$3();
+  public scala.Option<java.lang.Object> copy$default$4();
+  public scala.Option<java.lang.Object> copy$default$5();
+  public scala.Option<java.lang.Object> copy$default$6();
+  public scala.Option<java.lang.Object> _1();
+  public scala.Option<java.lang.Object> _2();
+  public scala.Option<java.lang.Object> _3();
+  public scala.Option<java.lang.Object> _4();
+  public scala.Option<java.lang.Object> _5();
+  public scala.Option<java.lang.Object> _6();
+  public static io.worxbend.gitea4s.model.GeneralRepoSettings apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.model.GeneralRepoSettings fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.GeneralRepoSettings> given_JsonCodec_GeneralRepoSettings();
+  public static io.worxbend.gitea4s.model.GeneralRepoSettings unapply(io.worxbend.gitea4s.model.GeneralRepoSettings);
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$6();
+}
+
+## io.worxbend.gitea4s.model.GeneralRepoSettings$
+public final class io.worxbend.gitea4s.model.GeneralRepoSettings$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.GeneralRepoSettings$ MODULE$;
+  public io.worxbend.gitea4s.model.GeneralRepoSettings apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.model.GeneralRepoSettings unapply(io.worxbend.gitea4s.model.GeneralRepoSettings);
+  public scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$6();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.GeneralRepoSettings> given_JsonCodec_GeneralRepoSettings();
+  public io.worxbend.gitea4s.model.GeneralRepoSettings fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.GeneralUISettings
+public final class io.worxbend.gitea4s.model.GeneralUISettings implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.GeneralUISettings(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> allowedReactions();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> customEmojis();
+  public scala.Option<java.lang.String> defaultTheme();
+  public io.worxbend.gitea4s.model.GeneralUISettings copy(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>);
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$1();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> copy$default$2();
+  public scala.Option<java.lang.String> copy$default$3();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _1();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> _2();
+  public scala.Option<java.lang.String> _3();
+  public static io.worxbend.gitea4s.model.GeneralUISettings apply(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.GeneralUISettings fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.GeneralUISettings> given_JsonCodec_GeneralUISettings();
+  public static io.worxbend.gitea4s.model.GeneralUISettings unapply(io.worxbend.gitea4s.model.GeneralUISettings);
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$1();
+  public static scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$3();
+}
+
+## io.worxbend.gitea4s.model.GeneralUISettings$
+public final class io.worxbend.gitea4s.model.GeneralUISettings$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.GeneralUISettings$ MODULE$;
+  public io.worxbend.gitea4s.model.GeneralUISettings apply(scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.GeneralUISettings unapply(io.worxbend.gitea4s.model.GeneralUISettings);
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$1();
+  public scala.Option<scala.collection.immutable.List<java.lang.String>> $lessinit$greater$default$2();
+  public scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.GeneralUISettings> given_JsonCodec_GeneralUISettings();
+  public io.worxbend.gitea4s.model.GeneralUISettings fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.GitBlobResponse
 public final class io.worxbend.gitea4s.model.GitBlobResponse implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.GitBlobResponse(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);

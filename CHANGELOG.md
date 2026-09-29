@@ -27,7 +27,8 @@ bodies and status-checked responses.
 Branch-protection create/edit/delete and priority reorder now use typed bodies.
 `BranchProtection` and its ordinary list/detail reads include the new bypass
 allowlist fields. Version-suffixed client facades and the old-release JVM guard
-have been removed; use `GiteaClient` directly. This is **not** full v1.27.3 coverage: 316 operations remain
+have been removed; use `GiteaClient` directly. The four public `/settings`
+routes now have typed responses on `client.settings`. This is **not** full v1.27.3 coverage: 312 operations remain
 missing; track them in `API_V1273_PLAN.md`.
 
 This release changes the client API to represent the current Gitea contract;

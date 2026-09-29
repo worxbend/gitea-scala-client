@@ -9,6 +9,7 @@ import io.worxbend.gitea4s.api.{
   PullRequestsApi,
   ReleasesApi,
   ReposApi,
+  SettingsApi,
   UsersApi,
   TokensApi
 }
@@ -33,3 +34,4 @@ final class SttpGiteaClient(config: GiteaConfig, backend: Backend[Task]) extends
   override val orgs: OrgsApi = SttpOrgsApi(config, executor)
   override val tokens: TokensApi = SttpTokensApi(config, executor)
   override val actions: ActionsApi = SttpActionsApi(config, executor)
+  override val settings: SettingsApi = SttpSettingsApi(config, executor)

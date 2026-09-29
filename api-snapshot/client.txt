@@ -31,6 +31,7 @@ public final class io.worxbend.gitea4s.Accept$ implements scala.deriving.Mirror$
 
 ## io.worxbend.gitea4s.GiteaClient
 public interface io.worxbend.gitea4s.GiteaClient {
+  public abstract io.worxbend.gitea4s.api.SettingsApi settings();
   public abstract io.worxbend.gitea4s.api.ActionsApi actions();
   public abstract io.worxbend.gitea4s.api.TokensApi tokens();
   public abstract io.worxbend.gitea4s.api.ReposApi repos();
@@ -705,6 +706,14 @@ public interface io.worxbend.gitea4s.api.ReposApi {
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.CommitStatus> createStatus(java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateStatusOption);
 }
 
+## io.worxbend.gitea4s.api.SettingsApi
+public interface io.worxbend.gitea4s.api.SettingsApi {
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GeneralAPISettings> api();
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GeneralAttachmentSettings> attachments();
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GeneralRepoSettings> repositories();
+  public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.GeneralUISettings> ui();
+}
+
 ## io.worxbend.gitea4s.api.TokensApi
 public interface io.worxbend.gitea4s.api.TokensApi {
   public abstract zio.ZIO<java.lang.Object, io.worxbend.gitea4s.error.GiteaError, io.worxbend.gitea4s.model.CurrentAccessToken> current();
@@ -1130,6 +1139,10 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
   public static io.worxbend.gitea4s.http.GiteaEndpoint getAnnotatedTag();
   public static io.worxbend.gitea4s.http.GiteaEndpoint getBlob();
   public static io.worxbend.gitea4s.http.GiteaEndpoint getCurrentToken();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint getGeneralAPISettings();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint getGeneralAttachmentSettings();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint getGeneralRepositorySettings();
+  public static io.worxbend.gitea4s.http.GiteaEndpoint getGeneralUISettings();
   public static io.worxbend.gitea4s.http.GiteaEndpoint getTree();
   public static io.worxbend.gitea4s.http.GiteaEndpoint getWorkflowRunAttempt();
   public static io.worxbend.gitea4s.http.GiteaEndpoint issueAddAssignees();
@@ -1292,6 +1305,10 @@ public final class io.worxbend.gitea4s.http.GiteaEndpoints {
 public final class io.worxbend.gitea4s.http.GiteaEndpoints$ implements java.io.Serializable {
   public static final io.worxbend.gitea4s.http.GiteaEndpoints$ MODULE$;
   public static {};
+  public io.worxbend.gitea4s.http.GiteaEndpoint getGeneralAPISettings();
+  public io.worxbend.gitea4s.http.GiteaEndpoint getGeneralAttachmentSettings();
+  public io.worxbend.gitea4s.http.GiteaEndpoint getGeneralRepositorySettings();
+  public io.worxbend.gitea4s.http.GiteaEndpoint getGeneralUISettings();
   public io.worxbend.gitea4s.http.GiteaEndpoint actionsListWorkflowRuns();
   public io.worxbend.gitea4s.http.GiteaEndpoint getWorkflowRunAttempt();
   public io.worxbend.gitea4s.http.GiteaEndpoint listWorkflowRunAttemptJobs();
@@ -1587,6 +1604,10 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.PullRequest> editPullRequest(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditPullRequestOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Repository> editRepository(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditRepoOption);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.TagProtection> editTagProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, io.worxbend.gitea4s.model.EditTagProtectionOption);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GeneralAPISettings> generalAPISettings(io.worxbend.gitea4s.GiteaConfig);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GeneralAttachmentSettings> generalAttachmentSettings(io.worxbend.gitea4s.GiteaConfig);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GeneralRepoSettings> generalRepositorySettings(io.worxbend.gitea4s.GiteaConfig);
+  public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GeneralUISettings> generalUISettings(io.worxbend.gitea4s.GiteaConfig);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.Branch> getBranch(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GitHook> getGitHook(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String);
   public static io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.ActionWorkflowRun> getWorkflowRunAttempt(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, long, long);
@@ -1761,6 +1782,10 @@ public final class io.worxbend.gitea4s.http.GiteaRequests {
 public final class io.worxbend.gitea4s.http.GiteaRequests$ implements java.io.Serializable {
   public static final io.worxbend.gitea4s.http.GiteaRequests$ MODULE$;
   public static {};
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GeneralAPISettings> generalAPISettings(io.worxbend.gitea4s.GiteaConfig);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GeneralAttachmentSettings> generalAttachmentSettings(io.worxbend.gitea4s.GiteaConfig);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GeneralRepoSettings> generalRepositorySettings(io.worxbend.gitea4s.GiteaConfig);
+  public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.GeneralUISettings> generalUISettings(io.worxbend.gitea4s.GiteaConfig);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.BranchProtection> createBranchProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.CreateBranchProtectionOption);
   public io.worxbend.gitea4s.http.GiteaRequest<scala.runtime.BoxedUnit> updateBranchProtectionPriorities(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.UpdateBranchProtectionPriorities);
   public io.worxbend.gitea4s.http.GiteaRequest<io.worxbend.gitea4s.model.BranchProtection> editBranchProtection(io.worxbend.gitea4s.GiteaConfig, java.lang.String, java.lang.String, java.lang.String, io.worxbend.gitea4s.model.EditBranchProtectionOption);

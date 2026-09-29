@@ -392,6 +392,24 @@ object CoreModelsSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Core models")(
+      test("public settings models match their v1.27.3 schemas") {
+        assertTrue(
+          latestDefinitionFields.get("GeneralAPISettings").contains(Set(
+            "default_git_trees_per_page", "default_max_blob_size", "default_max_response_size",
+            "default_paging_num", "max_response_items"
+          )),
+          latestDefinitionFields.get("GeneralAttachmentSettings").contains(Set(
+            "allowed_types", "enabled", "max_files", "max_size"
+          )),
+          latestDefinitionFields.get("GeneralRepoSettings").contains(Set(
+            "http_git_disabled", "lfs_disabled", "migrations_disabled", "mirrors_disabled",
+            "stars_disabled", "time_tracking_disabled"
+          )),
+          latestDefinitionFields.get("GeneralUISettings").contains(Set(
+            "allowed_reactions", "custom_emojis", "default_theme"
+          ))
+        )
+      },
       test("branch protection response and writes match the v1.27.3 schema") {
         val shared = BranchProtectionModelSpec.sharedSchemaFields
         assertTrue(

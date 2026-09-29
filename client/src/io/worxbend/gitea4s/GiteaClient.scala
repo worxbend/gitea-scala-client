@@ -8,6 +8,7 @@ import io.worxbend.gitea4s.api.{
   PullRequestsApi,
   ReleasesApi,
   ReposApi,
+  SettingsApi,
   TokensApi,
   UsersApi
 }
@@ -27,8 +28,10 @@ import zio.Task
   *   - [[orgs]] — organizations and their members/repositories
   *   - [[tokens]] — current access-token metadata and revocation
   *   - [[actions]] — workflows, runs, and jobs
+  *   - [[settings]] — public instance settings
   */
 trait GiteaClient:
+  def settings: SettingsApi
   def actions: ActionsApi
   def tokens: TokensApi
   def repos: ReposApi

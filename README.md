@@ -8,7 +8,7 @@ A Scala 3 client library for the [Gitea](https://gitea.io) API, built with
 - **JVM baseline:** Java 21 · **Scala:** 3.x
 - **API target:** Gitea `1.27.3` (`gitea-v1.27.3.yaml` is the current contract;
   `plugin-redoc-2.yaml` preserves the 1.26.2 reference)
-- **Coverage:** 166 of 482 v1.27.3 operations; see [`API_V1273_PLAN.md`](API_V1273_PLAN.md)
+- **Coverage:** 170 of 482 v1.27.3 operations; see [`API_V1273_PLAN.md`](API_V1273_PLAN.md)
   for the full-coverage work and remaining gaps.
 - **Version:** `1.0.0` · **License:** Apache-2.0
 - **Backends:** `backend-zio` (Java `HttpClient`, default) and an optional
@@ -138,6 +138,8 @@ val currentToken = ZIO.serviceWithZIO[GiteaClient](_.tokens.current)
 ```
 
 The client also exposes issue and repository assignee checks, pull-review comment replies, organization repository deletion, and workflow-run attempt reads. `orgs.deleteAllRepositories` deletes every repository in an organization; use it only when that bulk action is intended.
+
+Read public instance limits and defaults using `client.settings.api`, `client.settings.attachments`, `client.settings.repositories`, and `client.settings.ui`. These are typed, retryable reads; they do not change server configuration.
 
 For repository lifecycle writes, use `client.repos.createForCurrentUser(CreateRepoOption("demo"))`, `client.orgs.createRepository("team", CreateRepoOption("demo"))`, or the corresponding edit, fork, branch, and transfer methods. `client.repos.delete` permanently removes a repository; `client.repos.transfer` changes ownership. Neither method retries automatically.
 

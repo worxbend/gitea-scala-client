@@ -18,6 +18,8 @@ Missing operations by first path component at baseline: `/repos` 157, `/user` 60
 
 **Branch protection:** the catalog now has **166 of 482 operations, with 316 missing**. Create, edit, delete, and priority reorder have typed requests and hermetic wire tests. The ordinary `BranchProtection` response and existing list/detail reads cover the current contract's bypass-allowlist fields.
 
+**Public instance settings:** the catalog now has **170 of 482 operations, with 312 missing**. `client.settings` exposes the four typed `/settings` reads: API limits, attachments, repository switches, and UI defaults. Each has a schema and wire audit.
+
 **Public API direction:** target the current Gitea contract directly. Do not create version-suffixed client facades or retain old-release binary compatibility at the expense of a coherent current API. The checked-in JVM snapshot records intentional API changes, not compatibility with v1.0.0.
 
 ## Implementation Order
@@ -29,6 +31,7 @@ Missing operations by first path component at baseline: `/repos` 157, `/user` 60
 - [x] Branch detail/update/rename and Git-hook list/get/edit/delete. Other Git operations remain open.
 - [x] Tag-protection create/edit/delete; list/get were already present.
 - [x] Branch-protection create/edit/delete/priority reorder, plus full-field list/detail reads on the ordinary client.
+- [x] Public `/settings` reads on `client.settings`.
 - [ ] Add the missing `/user`, `/users`, `/orgs`, `/teams`, `/admin`, `/packages`, and remaining root operations. Put each in an appropriate typed namespace, creating additive namespaces where needed.
 - [ ] Audit all 222 definitions, reusable responses, enum values, pagination formats, request bodies (including multipart and binary), HTTP statuses, and authentication requirements. Model optional/unknown server fields without discarding required information or exposing credentials in logs.
 - [ ] Split the monolithic `GiteaRequests.scala` and endpoint catalog into resource-focused files while preserving existing public JVM forwarders.

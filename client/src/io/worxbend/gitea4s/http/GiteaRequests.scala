@@ -42,6 +42,10 @@ import io.worxbend.gitea4s.model.{
   GitBlobResponse,
   GitHook,
   GitTreeResponse,
+  GeneralAPISettings,
+  GeneralAttachmentSettings,
+  GeneralRepoSettings,
+  GeneralUISettings,
   Issue,
   IssueAssigneesOption,
   IssueDeadline,
@@ -87,6 +91,22 @@ import zio.json.*
 
 
 object GiteaRequests:
+  def generalAPISettings(config: GiteaConfig): GiteaRequest[GeneralAPISettings] =
+    get(config, GiteaEndpoints.getGeneralAPISettings, List("settings", "api"), Nil,
+      GiteaResponseMapper.decodeJson[GeneralAPISettings])
+
+  def generalAttachmentSettings(config: GiteaConfig): GiteaRequest[GeneralAttachmentSettings] =
+    get(config, GiteaEndpoints.getGeneralAttachmentSettings, List("settings", "attachment"), Nil,
+      GiteaResponseMapper.decodeJson[GeneralAttachmentSettings])
+
+  def generalRepositorySettings(config: GiteaConfig): GiteaRequest[GeneralRepoSettings] =
+    get(config, GiteaEndpoints.getGeneralRepositorySettings, List("settings", "repository"), Nil,
+      GiteaResponseMapper.decodeJson[GeneralRepoSettings])
+
+  def generalUISettings(config: GiteaConfig): GiteaRequest[GeneralUISettings] =
+    get(config, GiteaEndpoints.getGeneralUISettings, List("settings", "ui"), Nil,
+      GiteaResponseMapper.decodeJson[GeneralUISettings])
+
   def createBranchProtection(
       config: GiteaConfig, owner: String, repo: String, body: CreateBranchProtectionOption
   ): GiteaRequest[BranchProtection] =
