@@ -31,6 +31,10 @@ object GiteaResponseMapper:
       response.body.fromJson[A].left.map(message => GiteaError.DecodeError(message, truncate(response.body)))
     else Left(toError(response))
 
+  /** A write only succeeds with the status its endpoint promises. */
+  def decodeJsonAt[A: JsonDecoder](response: Response[String], status: StatusCode): Either[GiteaError, A] =
+    if response.code == status then decodeJson[A](response) else Left(toError(response))
+
   def decodeUnit(response: Response[String]): Either[GiteaError, Unit] =
     if response.isSuccess then Right(()) else Left(toError(response))
 

@@ -3,6 +3,11 @@ package io.worxbend.gitea4s.http
 import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.model.{
   Auth,
+  CreateBranchRepoOption,
+  CreateForkOption,
+  CreateRepoOption,
+  EditRepoOption,
+  TransferRepoOption,
   IssueAssigneesOption,
   CommitDiffType,
   CommitStatusState,
@@ -53,6 +58,20 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
     AuditedRequest(GiteaRequests.actionsListWorkflowRuns(config, "owner", "repo", "ci.yml"), false),
     AuditedRequest(GiteaRequests.getWorkflowRunAttempt(config, "owner", "repo", 12L, 2L), false),
     AuditedRequest(GiteaRequests.listWorkflowRunAttemptJobs(config, "owner", "repo", 12L, 2L), false)
+  )
+
+  private val repositoryLifecycleRequests = List(
+    AuditedRequest(GiteaRequests.createCurrentUserRepo(config, CreateRepoOption("new")), false),
+    AuditedRequest(GiteaRequests.createOrgRepo(config, "org", CreateRepoOption("new")), false),
+    AuditedRequest(GiteaRequests.createOrgRepoDeprecated(config, "org", CreateRepoOption("new")), false),
+    AuditedRequest(GiteaRequests.editRepository(config, "owner", "repo", EditRepoOption(description = Some("updated"))), false),
+    AuditedRequest(GiteaRequests.deleteRepository(config, "owner", "repo"), false),
+    AuditedRequest(GiteaRequests.createFork(config, "owner", "repo", CreateForkOption()), false),
+    AuditedRequest(GiteaRequests.createBranch(config, "owner", "repo", CreateBranchRepoOption("release")), false),
+    AuditedRequest(GiteaRequests.deleteBranch(config, "owner", "repo", "release"), false),
+    AuditedRequest(GiteaRequests.transferRepository(config, "owner", "repo", TransferRepoOption("team")), false),
+    AuditedRequest(GiteaRequests.acceptRepositoryTransfer(config, "owner", "repo"), false),
+    AuditedRequest(GiteaRequests.rejectRepositoryTransfer(config, "owner", "repo"), false)
   )
 
   private val pullReviewLifecycleRequests = List(
@@ -513,6 +532,60 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
   )
 
   private val expectedNonSuccessResponseLabels = Map(
+    "createCurrentUserRepo" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("409", "description: The repository with the same name already exists."),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "createOrgRepo" -> List(
+      GiteaResponseLabel("400", "#/responses/error"),
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "createOrgRepoDeprecated" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoEdit" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoDelete" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "createFork" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("409", "description: The repository with the same name already exists."),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "repoCreateBranch" -> List(
+      GiteaResponseLabel("403", "description: The branch is archived or a mirror."),
+      GiteaResponseLabel("404", "description: The old branch does not exist."),
+      GiteaResponseLabel("409", "description: The branch with the same name already exists."),
+      GiteaResponseLabel("423", "#/responses/repoArchivedError")
+    ),
+    "repoDeleteBranch" -> List(
+      GiteaResponseLabel("403", "#/responses/error"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("423", "#/responses/repoArchivedError")
+    ),
+    "repoTransfer" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound"),
+      GiteaResponseLabel("422", "#/responses/validationError")
+    ),
+    "acceptRepoTransfer" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
+    "rejectRepoTransfer" -> List(
+      GiteaResponseLabel("403", "#/responses/forbidden"),
+      GiteaResponseLabel("404", "#/responses/notFound")
+    ),
     "ActionsListWorkflowRuns" -> List(
       GiteaResponseLabel("400", "#/responses/error"),
       GiteaResponseLabel("403", "#/responses/forbidden"),
@@ -769,6 +842,12 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Gitea endpoint metadata audit")(
+      test("repository lifecycle operations match gitea-v1.27.3.yaml") {
+        val swagger = SwaggerAudit.load()
+        val failures = repositoryLifecycleRequests.flatMap(audit(swagger, _))
+
+        assertTrue(failures.isEmpty) ?? failures.mkString("\n")
+      },
       test("current token operations match gitea-v1.27.3.yaml") {
         val swagger = SwaggerAudit.load()
         val failures = currentTokenRequests.flatMap(audit(swagger, _))
@@ -1050,9 +1129,9 @@ object GiteaEndpointAuditSpec extends ZIOSpecDefault:
 
         assertTrue(
           swaggerIds.size == 482,
-          implemented.size == 141,
+          implemented.size == 152,
           implemented.distinct.size == implemented.size,
-          missing.size == 341
+          missing.size == 330
         ) ?? s"remaining operation IDs: ${missing.toList.sorted.mkString(", ")}"
       },
       test("GiteaEndpoints.all lists every endpoint constant") {

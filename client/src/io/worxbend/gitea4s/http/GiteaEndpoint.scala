@@ -178,6 +178,67 @@ object GiteaEndpoints:
       response = "#/responses/Repository"
     )
 
+  val createCurrentUserRepo: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/user/repos", "createCurrentUserRepo",
+      List(GiteaParameter("body", "body", required = false)), "#/responses/Repository"
+    )
+
+  val createOrgRepo: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/orgs/{org}/repos", "createOrgRepo",
+      List(GiteaParameter("org", "path", required = true), GiteaParameter("body", "body", required = false)),
+      "#/responses/Repository"
+    )
+
+  val createOrgRepoDeprecated: GiteaEndpoint =
+    createOrgRepo.copy(path = "/org/{org}/repos", operationId = "createOrgRepoDeprecated")
+
+  val repoEdit: GiteaEndpoint =
+    GiteaEndpoint(
+      "PATCH", repoGet.path, "repoEdit",
+      repoGet.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/Repository"
+    )
+
+  val repoDelete: GiteaEndpoint =
+    GiteaEndpoint("DELETE", repoGet.path, "repoDelete", repoGet.parameters, "#/responses/empty")
+
+  val createFork: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/repos/{owner}/{repo}/forks", "createFork",
+      repoGet.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/Repository"
+    )
+
+  val repoCreateBranch: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/repos/{owner}/{repo}/branches", "repoCreateBranch",
+      repoGet.parameters :+ GiteaParameter("body", "body", required = false), "#/responses/Branch"
+    )
+
+  val repoDeleteBranch: GiteaEndpoint =
+    GiteaEndpoint(
+      "DELETE", "/repos/{owner}/{repo}/branches/{branch}", "repoDeleteBranch",
+      repoGet.parameters :+ GiteaParameter("branch", "path", required = true), "#/responses/empty"
+    )
+
+  val repoTransfer: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/repos/{owner}/{repo}/transfer", "repoTransfer",
+      repoGet.parameters :+ GiteaParameter("body", "body", required = true), "#/responses/Repository"
+    )
+
+  val acceptRepoTransfer: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/repos/{owner}/{repo}/transfer/accept", "acceptRepoTransfer",
+      repoGet.parameters, "#/responses/Repository"
+    )
+
+  val rejectRepoTransfer: GiteaEndpoint =
+    GiteaEndpoint(
+      "POST", "/repos/{owner}/{repo}/transfer/reject", "rejectRepoTransfer",
+      repoGet.parameters, "#/responses/Repository"
+    )
+
   val orgGet: GiteaEndpoint =
     GiteaEndpoint(
       method = "GET",
@@ -1922,6 +1983,17 @@ object GiteaEndpoints:
     * reflection and fails when the two disagree.
     */
   private[gitea4s] val all: List[GiteaEndpoint] = List(
+    createCurrentUserRepo,
+    createOrgRepo,
+    createOrgRepoDeprecated,
+    repoEdit,
+    repoDelete,
+    createFork,
+    repoCreateBranch,
+    repoDeleteBranch,
+    repoTransfer,
+    acceptRepoTransfer,
+    rejectRepoTransfer,
     actionsListWorkflowRuns,
     getWorkflowRunAttempt,
     listWorkflowRunAttemptJobs,

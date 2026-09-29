@@ -392,6 +392,39 @@ object CoreModelsSpec extends ZIOSpecDefault:
 
   def spec =
     suite("Core models")(
+      test("repository lifecycle request models cover their v1.27.3 schema fields") {
+        val expectedFields = Map(
+          "CreateRepoOption" -> Set(
+            "auto_init", "default_branch", "description", "gitignores", "issue_labels", "license",
+            "name", "object_format_name", "private", "readme", "template", "trust_model"
+          ),
+          "EditRepoOption" -> Set(
+            "allow_fast_forward_only_merge", "allow_manual_merge", "allow_merge_commits", "allow_merge_update",
+            "allow_rebase", "allow_rebase_explicit", "allow_rebase_update", "allow_squash_merge",
+            "archived", "autodetect_manual_merge", "default_allow_maintainer_edit", "default_branch",
+            "default_delete_branch_after_merge", "default_merge_style", "default_update_style", "description",
+            "enable_prune", "external_tracker", "external_wiki", "has_actions", "has_code", "has_issues",
+            "has_packages", "has_projects", "has_pull_requests", "has_releases", "has_wiki",
+            "ignore_whitespace_conflicts", "internal_tracker", "mirror_interval", "mirror_password",
+            "mirror_token", "mirror_username", "name", "private", "projects_mode", "template", "website"
+          ),
+          "CreateForkOption" -> Set("name", "organization"),
+          "CreateBranchRepoOption" -> Set("new_branch_name", "old_branch_name", "old_ref_name"),
+          "TransferRepoOption" -> Set("new_owner", "team_ids"),
+          "ExternalTracker" -> Set(
+            "external_tracker_format", "external_tracker_regexp_pattern", "external_tracker_style", "external_tracker_url"
+          ),
+          "ExternalWiki" -> Set("external_wiki_url"),
+          "InternalTracker" -> Set(
+            "allow_only_contributors_to_track_time", "enable_issue_dependencies", "enable_time_tracker"
+          )
+        )
+        val mismatches = expectedFields.toList.collect {
+          case (name, fields) if latestDefinitionFields.get(name) != Some(fields) => name
+        }
+
+        assertTrue(mismatches.isEmpty) ?? mismatches.mkString(", ")
+      },
       test("new v1.27.3 token, assignee, reply, and minimal pull models match their schemas") {
         val expectedFields = Map(
           "CurrentAccessToken" -> Set("created_at", "id", "last_used_at", "name", "scopes", "user"),

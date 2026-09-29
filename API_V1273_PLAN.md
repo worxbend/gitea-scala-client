@@ -10,11 +10,14 @@ Missing operations by first path component at baseline: `/repos` 157, `/user` 60
 
 **First batch:** the catalog now has 141 endpoints, including all eleven introduced by v1.27.3. **341 older operations remain missing.** Some endpoint constants reuse metadata with `copy`, so count `GiteaEndpoints.all` rather than merely counting literal `operationId =` expressions. `GiteaClientV1273.fromBackend` exposes the additive methods without adding abstract members to the published `GiteaClient` trait.
 
+**Repository lifecycle batch:** the catalog now has **152 of 482 operations, with 330 missing**. Eleven additional operations cover current-user and organization repository creation (including the legacy organization path), repository edit/delete, fork, branch create/delete, and ownership transfer request/accept/reject. The accompanying write models account for every field in their v1.27.3 schemas. No live or destructive request was sent during testing.
+
 ## Implementation Order
 
 - [x] Complete the eleven newly introduced operations: token metadata/revocation; issue and repository assignees; organization repository deletion; pull-review comment replies; and workflow runs/attempt jobs. Each has a typed facade method, request builder, contract audit, and hermetic wire tests. The workflow run and job list methods expose one requested page plus its `total_count`; callers supply `page` and `limit` explicitly.
 - [ ] Reconcile **all existing 130 operations** with the new contract, including query/body/response semantics and every added response property. Preserve 1.0.0 JVM members; add overloads, separate read models, or explicitly version an incompatible change rather than silently changing published case-class arity.
 - [ ] Add the missing `/repos` operations by domain: repository lifecycle and settings, branches/Git, issues and comments, pull requests and reviews, actions/workflows, packages, and remaining reads/writes.
+- [x] Repository lifecycle slice: create/edit/delete/fork; branch create/delete; ownership transfer request/accept/reject; modern and deprecated organization creation paths. Repository settings, migration, mirrors, and the rest of `/repos` remain open.
 - [ ] Add the missing `/user`, `/users`, `/orgs`, `/teams`, `/admin`, `/packages`, and remaining root operations. Put each in an appropriate typed namespace, creating additive namespaces where needed.
 - [ ] Audit all 222 definitions, reusable responses, enum values, pagination formats, request bodies (including multipart and binary), HTTP statuses, and authentication requirements. Model optional/unknown server fields without discarding required information or exposing credentials in logs.
 - [ ] Split the monolithic `GiteaRequests.scala` and endpoint catalog into resource-focused files while preserving existing public JVM forwarders.

@@ -17,8 +17,12 @@ replies, and workflow runs and attempt jobs. Use
 `GiteaClientV1273.fromBackend` to access the additive typed namespaces without
 changing the published `GiteaClient` interface. The token deletion and bulk
 repository deletion decoders accept only the documented success statuses.
-This is **not** full v1.27.3 operation coverage: 341 operations from the older
-spec remain missing; track them in `API_V1273_PLAN.md`.
+The next repository lifecycle batch adds typed repository creation (current
+user and both organization routes), edit, deletion, fork, branch creation and
+deletion, and ownership transfer request/accept/reject. Destructive writes
+accept only their documented success statuses; mirror credentials in
+`EditRepoOption.toString` are redacted. This is **not** full v1.27.3 coverage:
+330 operations remain missing; track them in `API_V1273_PLAN.md`.
 
 A hardening release. Everything here is source-compatible: code that compiled
 against `1.0.0` still compiles. Some behaviour changed on purpose; read the

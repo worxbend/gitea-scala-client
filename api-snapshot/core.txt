@@ -2224,6 +2224,89 @@ public final class io.worxbend.gitea4s.model.ContentsResponse$ implements scala.
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.CreateBranchRepoOption
+public final class io.worxbend.gitea4s.model.CreateBranchRepoOption implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.CreateBranchRepoOption(java.lang.String, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public java.lang.String newBranchName();
+  public scala.Option<java.lang.String> oldBranchName();
+  public scala.Option<java.lang.String> oldRefName();
+  public io.worxbend.gitea4s.model.CreateBranchRepoOption copy(java.lang.String, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public java.lang.String copy$default$1();
+  public scala.Option<java.lang.String> copy$default$2();
+  public scala.Option<java.lang.String> copy$default$3();
+  public java.lang.String _1();
+  public scala.Option<java.lang.String> _2();
+  public scala.Option<java.lang.String> _3();
+  public static io.worxbend.gitea4s.model.CreateBranchRepoOption apply(java.lang.String, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.CreateBranchRepoOption fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.CreateBranchRepoOption> given_JsonCodec_CreateBranchRepoOption();
+  public static io.worxbend.gitea4s.model.CreateBranchRepoOption unapply(io.worxbend.gitea4s.model.CreateBranchRepoOption);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$3();
+}
+
+## io.worxbend.gitea4s.model.CreateBranchRepoOption$
+public final class io.worxbend.gitea4s.model.CreateBranchRepoOption$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.CreateBranchRepoOption$ MODULE$;
+  public io.worxbend.gitea4s.model.CreateBranchRepoOption apply(java.lang.String, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.CreateBranchRepoOption unapply(io.worxbend.gitea4s.model.CreateBranchRepoOption);
+  public scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.CreateBranchRepoOption> given_JsonCodec_CreateBranchRepoOption();
+  public io.worxbend.gitea4s.model.CreateBranchRepoOption fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.CreateForkOption
+public final class io.worxbend.gitea4s.model.CreateForkOption implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.CreateForkOption(scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.String> name();
+  public scala.Option<java.lang.String> organization();
+  public io.worxbend.gitea4s.model.CreateForkOption copy(scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public scala.Option<java.lang.String> copy$default$1();
+  public scala.Option<java.lang.String> copy$default$2();
+  public scala.Option<java.lang.String> _1();
+  public scala.Option<java.lang.String> _2();
+  public static io.worxbend.gitea4s.model.CreateForkOption apply(scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.CreateForkOption fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.CreateForkOption> given_JsonCodec_CreateForkOption();
+  public static io.worxbend.gitea4s.model.CreateForkOption unapply(io.worxbend.gitea4s.model.CreateForkOption);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$2();
+}
+
+## io.worxbend.gitea4s.model.CreateForkOption$
+public final class io.worxbend.gitea4s.model.CreateForkOption$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.CreateForkOption$ MODULE$;
+  public io.worxbend.gitea4s.model.CreateForkOption apply(scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.CreateForkOption unapply(io.worxbend.gitea4s.model.CreateForkOption);
+  public scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.CreateForkOption> given_JsonCodec_CreateForkOption();
+  public io.worxbend.gitea4s.model.CreateForkOption fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.CreateIssue
 public final class io.worxbend.gitea4s.model.CreateIssue implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.CreateIssue(java.lang.String, scala.Option<java.lang.String>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.time.Instant>, scala.Option<scala.collection.immutable.List<java.lang.Object>>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
@@ -2550,6 +2633,94 @@ public final class io.worxbend.gitea4s.model.CreatePullReviewOptions$ implements
   public scala.Option<io.worxbend.gitea4s.model.PullReviewState> $lessinit$greater$default$4();
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.CreatePullReviewOptions> given_JsonCodec_CreatePullReviewOptions();
   public io.worxbend.gitea4s.model.CreatePullReviewOptions fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.CreateRepoOption
+public final class io.worxbend.gitea4s.model.CreateRepoOption implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.CreateRepoOption(java.lang.String, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.ObjectFormatName>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.RepoTrustModel>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public java.lang.String name();
+  public scala.Option<java.lang.Object> autoInit();
+  public scala.Option<java.lang.String> defaultBranch();
+  public scala.Option<java.lang.String> description();
+  public scala.Option<java.lang.String> gitignores();
+  public scala.Option<java.lang.String> issueLabels();
+  public scala.Option<java.lang.String> license();
+  public scala.Option<io.worxbend.gitea4s.model.ObjectFormatName> objectFormatName();
+  public scala.Option<java.lang.Object> isPrivate();
+  public scala.Option<java.lang.String> readme();
+  public scala.Option<java.lang.Object> template();
+  public scala.Option<io.worxbend.gitea4s.model.RepoTrustModel> trustModel();
+  public io.worxbend.gitea4s.model.CreateRepoOption copy(java.lang.String, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.ObjectFormatName>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.RepoTrustModel>);
+  public java.lang.String copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.String> copy$default$3();
+  public scala.Option<java.lang.String> copy$default$4();
+  public scala.Option<java.lang.String> copy$default$5();
+  public scala.Option<java.lang.String> copy$default$6();
+  public scala.Option<java.lang.String> copy$default$7();
+  public scala.Option<io.worxbend.gitea4s.model.ObjectFormatName> copy$default$8();
+  public scala.Option<java.lang.Object> copy$default$9();
+  public scala.Option<java.lang.String> copy$default$10();
+  public scala.Option<java.lang.Object> copy$default$11();
+  public scala.Option<io.worxbend.gitea4s.model.RepoTrustModel> copy$default$12();
+  public java.lang.String _1();
+  public scala.Option<java.lang.Object> _2();
+  public scala.Option<java.lang.String> _3();
+  public scala.Option<java.lang.String> _4();
+  public scala.Option<java.lang.String> _5();
+  public scala.Option<java.lang.String> _6();
+  public scala.Option<java.lang.String> _7();
+  public scala.Option<io.worxbend.gitea4s.model.ObjectFormatName> _8();
+  public scala.Option<java.lang.Object> _9();
+  public scala.Option<java.lang.String> _10();
+  public scala.Option<java.lang.Object> _11();
+  public scala.Option<io.worxbend.gitea4s.model.RepoTrustModel> _12();
+  public static io.worxbend.gitea4s.model.CreateRepoOption apply(java.lang.String, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.ObjectFormatName>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.RepoTrustModel>);
+  public static io.worxbend.gitea4s.model.CreateRepoOption fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.CreateRepoOption> given_JsonCodec_CreateRepoOption();
+  public static io.worxbend.gitea4s.model.CreateRepoOption unapply(io.worxbend.gitea4s.model.CreateRepoOption);
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$4();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$5();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$6();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$7();
+  public static scala.Option<io.worxbend.gitea4s.model.ObjectFormatName> $lessinit$greater$default$8();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$9();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$10();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$11();
+  public static scala.Option<io.worxbend.gitea4s.model.RepoTrustModel> $lessinit$greater$default$12();
+}
+
+## io.worxbend.gitea4s.model.CreateRepoOption$
+public final class io.worxbend.gitea4s.model.CreateRepoOption$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.CreateRepoOption$ MODULE$;
+  public io.worxbend.gitea4s.model.CreateRepoOption apply(java.lang.String, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<io.worxbend.gitea4s.model.ObjectFormatName>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.RepoTrustModel>);
+  public io.worxbend.gitea4s.model.CreateRepoOption unapply(io.worxbend.gitea4s.model.CreateRepoOption);
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public scala.Option<java.lang.String> $lessinit$greater$default$4();
+  public scala.Option<java.lang.String> $lessinit$greater$default$5();
+  public scala.Option<java.lang.String> $lessinit$greater$default$6();
+  public scala.Option<java.lang.String> $lessinit$greater$default$7();
+  public scala.Option<io.worxbend.gitea4s.model.ObjectFormatName> $lessinit$greater$default$8();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$9();
+  public scala.Option<java.lang.String> $lessinit$greater$default$10();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$11();
+  public scala.Option<io.worxbend.gitea4s.model.RepoTrustModel> $lessinit$greater$default$12();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.CreateRepoOption> given_JsonCodec_CreateRepoOption();
+  public io.worxbend.gitea4s.model.CreateRepoOption fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 
@@ -2972,6 +3143,311 @@ public final class io.worxbend.gitea4s.model.EditReactionOption$ implements scal
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.EditRepoOption
+public final class io.worxbend.gitea4s.model.EditRepoOption implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.EditRepoOption(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.ExternalTracker>, scala.Option<io.worxbend.gitea4s.model.ExternalWiki>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.InternalTracker>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.Object> allowFastForwardOnlyMerge();
+  public scala.Option<java.lang.Object> allowManualMerge();
+  public scala.Option<java.lang.Object> allowMergeCommits();
+  public scala.Option<java.lang.Object> allowMergeUpdate();
+  public scala.Option<java.lang.Object> allowRebase();
+  public scala.Option<java.lang.Object> allowRebaseExplicit();
+  public scala.Option<java.lang.Object> allowRebaseUpdate();
+  public scala.Option<java.lang.Object> allowSquashMerge();
+  public scala.Option<java.lang.Object> archived();
+  public scala.Option<java.lang.Object> autodetectManualMerge();
+  public scala.Option<java.lang.Object> defaultAllowMaintainerEdit();
+  public scala.Option<java.lang.String> defaultBranch();
+  public scala.Option<java.lang.Object> defaultDeleteBranchAfterMerge();
+  public scala.Option<java.lang.String> defaultMergeStyle();
+  public scala.Option<java.lang.String> defaultUpdateStyle();
+  public scala.Option<java.lang.String> description();
+  public scala.Option<java.lang.Object> enablePrune();
+  public scala.Option<io.worxbend.gitea4s.model.ExternalTracker> externalTracker();
+  public scala.Option<io.worxbend.gitea4s.model.ExternalWiki> externalWiki();
+  public scala.Option<java.lang.Object> hasActions();
+  public scala.Option<java.lang.Object> hasCode();
+  public scala.Option<java.lang.Object> hasIssues();
+  public scala.Option<java.lang.Object> hasPackages();
+  public scala.Option<java.lang.Object> hasProjects();
+  public scala.Option<java.lang.Object> hasPullRequests();
+  public scala.Option<java.lang.Object> hasReleases();
+  public scala.Option<java.lang.Object> hasWiki();
+  public scala.Option<java.lang.Object> ignoreWhitespaceConflicts();
+  public scala.Option<io.worxbend.gitea4s.model.InternalTracker> internalTracker();
+  public scala.Option<java.lang.String> mirrorInterval();
+  public scala.Option<java.lang.String> mirrorPassword();
+  public scala.Option<java.lang.String> mirrorToken();
+  public scala.Option<java.lang.String> mirrorUsername();
+  public scala.Option<java.lang.String> name();
+  public scala.Option<java.lang.Object> isPrivate();
+  public scala.Option<java.lang.String> projectsMode();
+  public scala.Option<java.lang.Object> template();
+  public scala.Option<java.lang.String> website();
+  public java.lang.String toString();
+  public io.worxbend.gitea4s.model.EditRepoOption copy(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.ExternalTracker>, scala.Option<io.worxbend.gitea4s.model.ExternalWiki>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.InternalTracker>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public scala.Option<java.lang.Object> copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.Object> copy$default$3();
+  public scala.Option<java.lang.Object> copy$default$4();
+  public scala.Option<java.lang.Object> copy$default$5();
+  public scala.Option<java.lang.Object> copy$default$6();
+  public scala.Option<java.lang.Object> copy$default$7();
+  public scala.Option<java.lang.Object> copy$default$8();
+  public scala.Option<java.lang.Object> copy$default$9();
+  public scala.Option<java.lang.Object> copy$default$10();
+  public scala.Option<java.lang.Object> copy$default$11();
+  public scala.Option<java.lang.String> copy$default$12();
+  public scala.Option<java.lang.Object> copy$default$13();
+  public scala.Option<java.lang.String> copy$default$14();
+  public scala.Option<java.lang.String> copy$default$15();
+  public scala.Option<java.lang.String> copy$default$16();
+  public scala.Option<java.lang.Object> copy$default$17();
+  public scala.Option<io.worxbend.gitea4s.model.ExternalTracker> copy$default$18();
+  public scala.Option<io.worxbend.gitea4s.model.ExternalWiki> copy$default$19();
+  public scala.Option<java.lang.Object> copy$default$20();
+  public scala.Option<java.lang.Object> copy$default$21();
+  public scala.Option<java.lang.Object> copy$default$22();
+  public scala.Option<java.lang.Object> copy$default$23();
+  public scala.Option<java.lang.Object> copy$default$24();
+  public scala.Option<java.lang.Object> copy$default$25();
+  public scala.Option<java.lang.Object> copy$default$26();
+  public scala.Option<java.lang.Object> copy$default$27();
+  public scala.Option<java.lang.Object> copy$default$28();
+  public scala.Option<io.worxbend.gitea4s.model.InternalTracker> copy$default$29();
+  public scala.Option<java.lang.String> copy$default$30();
+  public scala.Option<java.lang.String> copy$default$31();
+  public scala.Option<java.lang.String> copy$default$32();
+  public scala.Option<java.lang.String> copy$default$33();
+  public scala.Option<java.lang.String> copy$default$34();
+  public scala.Option<java.lang.Object> copy$default$35();
+  public scala.Option<java.lang.String> copy$default$36();
+  public scala.Option<java.lang.Object> copy$default$37();
+  public scala.Option<java.lang.String> copy$default$38();
+  public scala.Option<java.lang.Object> _1();
+  public scala.Option<java.lang.Object> _2();
+  public scala.Option<java.lang.Object> _3();
+  public scala.Option<java.lang.Object> _4();
+  public scala.Option<java.lang.Object> _5();
+  public scala.Option<java.lang.Object> _6();
+  public scala.Option<java.lang.Object> _7();
+  public scala.Option<java.lang.Object> _8();
+  public scala.Option<java.lang.Object> _9();
+  public scala.Option<java.lang.Object> _10();
+  public scala.Option<java.lang.Object> _11();
+  public scala.Option<java.lang.String> _12();
+  public scala.Option<java.lang.Object> _13();
+  public scala.Option<java.lang.String> _14();
+  public scala.Option<java.lang.String> _15();
+  public scala.Option<java.lang.String> _16();
+  public scala.Option<java.lang.Object> _17();
+  public scala.Option<io.worxbend.gitea4s.model.ExternalTracker> _18();
+  public scala.Option<io.worxbend.gitea4s.model.ExternalWiki> _19();
+  public scala.Option<java.lang.Object> _20();
+  public scala.Option<java.lang.Object> _21();
+  public scala.Option<java.lang.Object> _22();
+  public scala.Option<java.lang.Object> _23();
+  public scala.Option<java.lang.Object> _24();
+  public scala.Option<java.lang.Object> _25();
+  public scala.Option<java.lang.Object> _26();
+  public scala.Option<java.lang.Object> _27();
+  public scala.Option<java.lang.Object> _28();
+  public scala.Option<io.worxbend.gitea4s.model.InternalTracker> _29();
+  public scala.Option<java.lang.String> _30();
+  public scala.Option<java.lang.String> _31();
+  public scala.Option<java.lang.String> _32();
+  public scala.Option<java.lang.String> _33();
+  public scala.Option<java.lang.String> _34();
+  public scala.Option<java.lang.Object> _35();
+  public scala.Option<java.lang.String> _36();
+  public scala.Option<java.lang.Object> _37();
+  public scala.Option<java.lang.String> _38();
+  public static io.worxbend.gitea4s.model.EditRepoOption apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.ExternalTracker>, scala.Option<io.worxbend.gitea4s.model.ExternalWiki>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.InternalTracker>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.EditRepoOption fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.EditRepoOption> given_JsonCodec_EditRepoOption();
+  public static io.worxbend.gitea4s.model.EditRepoOption unapply(io.worxbend.gitea4s.model.EditRepoOption);
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$6();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$7();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$8();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$9();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$10();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$11();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$12();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$13();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$14();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$15();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$16();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$17();
+  public static scala.Option<io.worxbend.gitea4s.model.ExternalTracker> $lessinit$greater$default$18();
+  public static scala.Option<io.worxbend.gitea4s.model.ExternalWiki> $lessinit$greater$default$19();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$20();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$21();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$22();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$23();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$24();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$25();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$26();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$27();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$28();
+  public static scala.Option<io.worxbend.gitea4s.model.InternalTracker> $lessinit$greater$default$29();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$30();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$31();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$32();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$33();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$34();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$35();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$36();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$37();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$38();
+}
+
+## io.worxbend.gitea4s.model.EditRepoOption$
+public final class io.worxbend.gitea4s.model.EditRepoOption$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.EditRepoOption$ MODULE$;
+  public io.worxbend.gitea4s.model.EditRepoOption apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.ExternalTracker>, scala.Option<io.worxbend.gitea4s.model.ExternalWiki>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.InternalTracker>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.EditRepoOption unapply(io.worxbend.gitea4s.model.EditRepoOption);
+  public scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$4();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$5();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$6();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$7();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$8();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$9();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$10();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$11();
+  public scala.Option<java.lang.String> $lessinit$greater$default$12();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$13();
+  public scala.Option<java.lang.String> $lessinit$greater$default$14();
+  public scala.Option<java.lang.String> $lessinit$greater$default$15();
+  public scala.Option<java.lang.String> $lessinit$greater$default$16();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$17();
+  public scala.Option<io.worxbend.gitea4s.model.ExternalTracker> $lessinit$greater$default$18();
+  public scala.Option<io.worxbend.gitea4s.model.ExternalWiki> $lessinit$greater$default$19();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$20();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$21();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$22();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$23();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$24();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$25();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$26();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$27();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$28();
+  public scala.Option<io.worxbend.gitea4s.model.InternalTracker> $lessinit$greater$default$29();
+  public scala.Option<java.lang.String> $lessinit$greater$default$30();
+  public scala.Option<java.lang.String> $lessinit$greater$default$31();
+  public scala.Option<java.lang.String> $lessinit$greater$default$32();
+  public scala.Option<java.lang.String> $lessinit$greater$default$33();
+  public scala.Option<java.lang.String> $lessinit$greater$default$34();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$35();
+  public scala.Option<java.lang.String> $lessinit$greater$default$36();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$37();
+  public scala.Option<java.lang.String> $lessinit$greater$default$38();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.EditRepoOption> given_JsonCodec_EditRepoOption();
+  public io.worxbend.gitea4s.model.EditRepoOption fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.ExternalTracker
+public final class io.worxbend.gitea4s.model.ExternalTracker implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.ExternalTracker(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.String> format();
+  public scala.Option<java.lang.String> regexpPattern();
+  public scala.Option<java.lang.String> style();
+  public scala.Option<java.lang.String> url();
+  public io.worxbend.gitea4s.model.ExternalTracker copy(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public scala.Option<java.lang.String> copy$default$1();
+  public scala.Option<java.lang.String> copy$default$2();
+  public scala.Option<java.lang.String> copy$default$3();
+  public scala.Option<java.lang.String> copy$default$4();
+  public scala.Option<java.lang.String> _1();
+  public scala.Option<java.lang.String> _2();
+  public scala.Option<java.lang.String> _3();
+  public scala.Option<java.lang.String> _4();
+  public static io.worxbend.gitea4s.model.ExternalTracker apply(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.ExternalTracker fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.ExternalTracker> given_JsonCodec_ExternalTracker();
+  public static io.worxbend.gitea4s.model.ExternalTracker unapply(io.worxbend.gitea4s.model.ExternalTracker);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public static scala.Option<java.lang.String> $lessinit$greater$default$4();
+}
+
+## io.worxbend.gitea4s.model.ExternalTracker$
+public final class io.worxbend.gitea4s.model.ExternalTracker$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.ExternalTracker$ MODULE$;
+  public io.worxbend.gitea4s.model.ExternalTracker apply(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.ExternalTracker unapply(io.worxbend.gitea4s.model.ExternalTracker);
+  public scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public scala.Option<java.lang.String> $lessinit$greater$default$2();
+  public scala.Option<java.lang.String> $lessinit$greater$default$3();
+  public scala.Option<java.lang.String> $lessinit$greater$default$4();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.ExternalTracker> given_JsonCodec_ExternalTracker();
+  public io.worxbend.gitea4s.model.ExternalTracker fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.ExternalWiki
+public final class io.worxbend.gitea4s.model.ExternalWiki implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.ExternalWiki(scala.Option<java.lang.String>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.String> url();
+  public io.worxbend.gitea4s.model.ExternalWiki copy(scala.Option<java.lang.String>);
+  public scala.Option<java.lang.String> copy$default$1();
+  public scala.Option<java.lang.String> _1();
+  public static io.worxbend.gitea4s.model.ExternalWiki apply(scala.Option<java.lang.String>);
+  public static io.worxbend.gitea4s.model.ExternalWiki fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.ExternalWiki> given_JsonCodec_ExternalWiki();
+  public static io.worxbend.gitea4s.model.ExternalWiki unapply(io.worxbend.gitea4s.model.ExternalWiki);
+  public static scala.Option<java.lang.String> $lessinit$greater$default$1();
+}
+
+## io.worxbend.gitea4s.model.ExternalWiki$
+public final class io.worxbend.gitea4s.model.ExternalWiki$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.ExternalWiki$ MODULE$;
+  public io.worxbend.gitea4s.model.ExternalWiki apply(scala.Option<java.lang.String>);
+  public io.worxbend.gitea4s.model.ExternalWiki unapply(io.worxbend.gitea4s.model.ExternalWiki);
+  public scala.Option<java.lang.String> $lessinit$greater$default$1();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.ExternalWiki> given_JsonCodec_ExternalWiki();
+  public io.worxbend.gitea4s.model.ExternalWiki fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
 ## io.worxbend.gitea4s.model.FileLinksResponse
 public final class io.worxbend.gitea4s.model.FileLinksResponse implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.FileLinksResponse(scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>);
@@ -3284,6 +3760,51 @@ public final class io.worxbend.gitea4s.model.GiteaErrorPayload$ implements scala
   public scala.Option<java.lang.String> $lessinit$greater$default$2();
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.GiteaErrorPayload> given_JsonCodec_GiteaErrorPayload();
   public io.worxbend.gitea4s.model.GiteaErrorPayload fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.InternalTracker
+public final class io.worxbend.gitea4s.model.InternalTracker implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.InternalTracker(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public scala.Option<java.lang.Object> allowOnlyContributorsToTrackTime();
+  public scala.Option<java.lang.Object> enableIssueDependencies();
+  public scala.Option<java.lang.Object> enableTimeTracker();
+  public io.worxbend.gitea4s.model.InternalTracker copy(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public scala.Option<java.lang.Object> copy$default$1();
+  public scala.Option<java.lang.Object> copy$default$2();
+  public scala.Option<java.lang.Object> copy$default$3();
+  public scala.Option<java.lang.Object> _1();
+  public scala.Option<java.lang.Object> _2();
+  public scala.Option<java.lang.Object> _3();
+  public static io.worxbend.gitea4s.model.InternalTracker apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public static io.worxbend.gitea4s.model.InternalTracker fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.InternalTracker> given_JsonCodec_InternalTracker();
+  public static io.worxbend.gitea4s.model.InternalTracker unapply(io.worxbend.gitea4s.model.InternalTracker);
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public static scala.Option<java.lang.Object> $lessinit$greater$default$3();
+}
+
+## io.worxbend.gitea4s.model.InternalTracker$
+public final class io.worxbend.gitea4s.model.InternalTracker$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.InternalTracker$ MODULE$;
+  public io.worxbend.gitea4s.model.InternalTracker apply(scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>);
+  public io.worxbend.gitea4s.model.InternalTracker unapply(io.worxbend.gitea4s.model.InternalTracker);
+  public scala.Option<java.lang.Object> $lessinit$greater$default$1();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$2();
+  public scala.Option<java.lang.Object> $lessinit$greater$default$3();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.InternalTracker> given_JsonCodec_InternalTracker();
+  public io.worxbend.gitea4s.model.InternalTracker fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 
@@ -5670,6 +6191,37 @@ public final class io.worxbend.gitea4s.model.RepoCommit$ implements scala.derivi
   public java.lang.Object fromProduct(scala.Product);
 }
 
+## io.worxbend.gitea4s.model.RepoTrustModel
+public abstract class io.worxbend.gitea4s.model.RepoTrustModel implements scala.reflect.Enum {
+  public io.worxbend.gitea4s.model.RepoTrustModel(java.lang.String);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public java.lang.String productPrefix();
+  public java.lang.String productElementName(int);
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public java.lang.String jsonValue();
+  public static io.worxbend.gitea4s.model.RepoTrustModel fromOrdinal(int);
+  public static scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.RepoTrustModel> fromString(java.lang.String);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.RepoTrustModel> given_JsonCodec_RepoTrustModel();
+  public static io.worxbend.gitea4s.model.RepoTrustModel valueOf(java.lang.String);
+  public static io.worxbend.gitea4s.model.RepoTrustModel[] values();
+}
+
+## io.worxbend.gitea4s.model.RepoTrustModel$
+public final class io.worxbend.gitea4s.model.RepoTrustModel$ implements scala.deriving.Mirror$Sum,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.RepoTrustModel Default;
+  public static final io.worxbend.gitea4s.model.RepoTrustModel Collaborator;
+  public static final io.worxbend.gitea4s.model.RepoTrustModel Committer;
+  public static final io.worxbend.gitea4s.model.RepoTrustModel CollaboratorCommitter;
+  public static final io.worxbend.gitea4s.model.RepoTrustModel$ MODULE$;
+  public io.worxbend.gitea4s.model.RepoTrustModel[] values();
+  public io.worxbend.gitea4s.model.RepoTrustModel valueOf(java.lang.String);
+  public io.worxbend.gitea4s.model.RepoTrustModel fromOrdinal(int);
+  public scala.util.Either<java.lang.String, io.worxbend.gitea4s.model.RepoTrustModel> fromString(java.lang.String);
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.RepoTrustModel> given_JsonCodec_RepoTrustModel();
+  public int ordinal(io.worxbend.gitea4s.model.RepoTrustModel);
+  public int ordinal(java.lang.Object);
+}
+
 ## io.worxbend.gitea4s.model.Repository
 public final class io.worxbend.gitea4s.model.Repository implements scala.Product,java.io.Serializable {
   public io.worxbend.gitea4s.model.Repository(scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.User>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.String>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<java.lang.Object>, scala.Option<io.worxbend.gitea4s.model.Permission>, scala.Option<scala.collection.immutable.List<java.lang.String>>, scala.Option<io.worxbend.gitea4s.model.ObjectFormatName>, scala.Option<java.time.Instant>, scala.Option<java.time.Instant>, scala.Option<java.lang.String>);
@@ -6316,6 +6868,44 @@ public final class io.worxbend.gitea4s.model.TrackedTime$ implements scala.deriv
   public scala.Option<java.lang.String> $lessinit$greater$default$7();
   public final zio.json.JsonCodec<io.worxbend.gitea4s.model.TrackedTime> given_JsonCodec_TrackedTime();
   public io.worxbend.gitea4s.model.TrackedTime fromProduct(scala.Product);
+  public java.lang.Object fromProduct(scala.Product);
+}
+
+## io.worxbend.gitea4s.model.TransferRepoOption
+public final class io.worxbend.gitea4s.model.TransferRepoOption implements scala.Product,java.io.Serializable {
+  public io.worxbend.gitea4s.model.TransferRepoOption(java.lang.String, scala.Option<zio.Chunk<java.lang.Object>>);
+  public scala.collection.Iterator<java.lang.Object> productIterator();
+  public scala.collection.Iterator<java.lang.String> productElementNames();
+  public int hashCode();
+  public boolean equals(java.lang.Object);
+  public java.lang.String toString();
+  public boolean canEqual(java.lang.Object);
+  public int productArity();
+  public java.lang.String productPrefix();
+  public java.lang.Object productElement(int);
+  public java.lang.String productElementName(int);
+  public java.lang.String newOwner();
+  public scala.Option<zio.Chunk<java.lang.Object>> teamIds();
+  public io.worxbend.gitea4s.model.TransferRepoOption copy(java.lang.String, scala.Option<zio.Chunk<java.lang.Object>>);
+  public java.lang.String copy$default$1();
+  public scala.Option<zio.Chunk<java.lang.Object>> copy$default$2();
+  public java.lang.String _1();
+  public scala.Option<zio.Chunk<java.lang.Object>> _2();
+  public static io.worxbend.gitea4s.model.TransferRepoOption apply(java.lang.String, scala.Option<zio.Chunk<java.lang.Object>>);
+  public static io.worxbend.gitea4s.model.TransferRepoOption fromProduct(scala.Product);
+  public static zio.json.JsonCodec<io.worxbend.gitea4s.model.TransferRepoOption> given_JsonCodec_TransferRepoOption();
+  public static io.worxbend.gitea4s.model.TransferRepoOption unapply(io.worxbend.gitea4s.model.TransferRepoOption);
+  public static scala.Option<zio.Chunk<java.lang.Object>> $lessinit$greater$default$2();
+}
+
+## io.worxbend.gitea4s.model.TransferRepoOption$
+public final class io.worxbend.gitea4s.model.TransferRepoOption$ implements scala.deriving.Mirror$Product,java.io.Serializable {
+  public static final io.worxbend.gitea4s.model.TransferRepoOption$ MODULE$;
+  public io.worxbend.gitea4s.model.TransferRepoOption apply(java.lang.String, scala.Option<zio.Chunk<java.lang.Object>>);
+  public io.worxbend.gitea4s.model.TransferRepoOption unapply(io.worxbend.gitea4s.model.TransferRepoOption);
+  public scala.Option<zio.Chunk<java.lang.Object>> $lessinit$greater$default$2();
+  public final zio.json.JsonCodec<io.worxbend.gitea4s.model.TransferRepoOption> given_JsonCodec_TransferRepoOption();
+  public io.worxbend.gitea4s.model.TransferRepoOption fromProduct(scala.Product);
   public java.lang.Object fromProduct(scala.Product);
 }
 

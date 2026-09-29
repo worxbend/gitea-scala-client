@@ -20,6 +20,9 @@ import io.worxbend.gitea4s.model.{
   ContentsResponse,
   CreateIssue,
   CreateIssueComment,
+  CreateBranchRepoOption,
+  CreateForkOption,
+  CreateRepoOption,
   CreatePullRequestOption,
   CreatePullReviewCommentReplyOptions,
   CreatePullReviewOptions,
@@ -28,6 +31,7 @@ import io.worxbend.gitea4s.model.{
   EditDeadlineOption,
   EditIssueComment,
   EditIssue,
+  EditRepoOption,
   EditPullRequestOption,
   EditReactionOption,
   GitBlobResponse,
@@ -62,17 +66,91 @@ import io.worxbend.gitea4s.model.{
   Tag,
   TagProtection,
   Team,
+  TransferRepoOption,
   TrackedTime,
   User,
   WatchInfo
 }
 import sttp.client4.*
-import sttp.model.{MediaType, Uri}
+import sttp.model.{MediaType, StatusCode, Uri}
 import zio.Chunk
 import zio.json.*
 
 
 object GiteaRequests:
+  def createCurrentUserRepo(config: GiteaConfig, body: CreateRepoOption): GiteaRequest[Repository] =
+    postJson(
+      config, GiteaEndpoints.createCurrentUserRepo, List("user", "repos"), body.toJson,
+      response => GiteaResponseMapper.decodeJsonAt[Repository](response, StatusCode.Created)
+    )
+
+  def createOrgRepo(config: GiteaConfig, org: String, body: CreateRepoOption): GiteaRequest[Repository] =
+    postJson(
+      config, GiteaEndpoints.createOrgRepo, List("orgs", org, "repos"), body.toJson,
+      response => GiteaResponseMapper.decodeJsonAt[Repository](response, StatusCode.Created)
+    )
+
+  def createOrgRepoDeprecated(config: GiteaConfig, org: String, body: CreateRepoOption): GiteaRequest[Repository] =
+    postJson(
+      config, GiteaEndpoints.createOrgRepoDeprecated, List("org", org, "repos"), body.toJson,
+      response => GiteaResponseMapper.decodeJsonAt[Repository](response, StatusCode.Created)
+    )
+
+  def editRepository(config: GiteaConfig, owner: String, repo: String, body: EditRepoOption): GiteaRequest[Repository] =
+    patchJson(
+      config, GiteaEndpoints.repoEdit, List("repos", owner, repo), body.toJson,
+      response => GiteaResponseMapper.decodeJsonAt[Repository](response, StatusCode.Ok)
+    )
+
+  def deleteRepository(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Unit] =
+    delete(config, GiteaEndpoints.repoDelete, List("repos", owner, repo), GiteaResponseMapper.decodeNoContent)
+
+  def createFork(config: GiteaConfig, owner: String, repo: String, body: CreateForkOption): GiteaRequest[Repository] =
+    postJson(
+      config, GiteaEndpoints.createFork, List("repos", owner, repo, "forks"), body.toJson,
+      response => GiteaResponseMapper.decodeJsonAt[Repository](response, StatusCode.Accepted)
+    )
+
+  def createBranch(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      body: CreateBranchRepoOption
+  ): GiteaRequest[Branch] =
+    postJson(
+      config, GiteaEndpoints.repoCreateBranch, List("repos", owner, repo, "branches"), body.toJson,
+      response => GiteaResponseMapper.decodeJsonAt[Branch](response, StatusCode.Created)
+    )
+
+  def deleteBranch(config: GiteaConfig, owner: String, repo: String, branch: String): GiteaRequest[Unit] =
+    delete(
+      config, GiteaEndpoints.repoDeleteBranch, List("repos", owner, repo, "branches", branch),
+      GiteaResponseMapper.decodeNoContent
+    )
+
+  def transferRepository(
+      config: GiteaConfig,
+      owner: String,
+      repo: String,
+      body: TransferRepoOption
+  ): GiteaRequest[Repository] =
+    postJson(
+      config, GiteaEndpoints.repoTransfer, List("repos", owner, repo, "transfer"), body.toJson,
+      response => GiteaResponseMapper.decodeJsonAt[Repository](response, StatusCode.Accepted)
+    )
+
+  def acceptRepositoryTransfer(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Repository] =
+    post(
+      config, GiteaEndpoints.acceptRepoTransfer, List("repos", owner, repo, "transfer", "accept"),
+      response => GiteaResponseMapper.decodeJsonAt[Repository](response, StatusCode.Accepted)
+    )
+
+  def rejectRepositoryTransfer(config: GiteaConfig, owner: String, repo: String): GiteaRequest[Repository] =
+    post(
+      config, GiteaEndpoints.rejectRepoTransfer, List("repos", owner, repo, "transfer", "reject"),
+      response => GiteaResponseMapper.decodeJsonAt[Repository](response, StatusCode.Ok)
+    )
+
   def actionsListWorkflowRuns(
       config: GiteaConfig,
       owner: String,

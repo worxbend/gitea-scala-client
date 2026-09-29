@@ -18,6 +18,9 @@ import io.worxbend.gitea4s.model.{
   AnnotatedTag,
   Branch,
   BranchProtection,
+  CreateBranchRepoOption,
+  CreateForkOption,
+  CreateRepoOption,
   CombinedStatus,
   Commit,
   CommitDiffType,
@@ -26,6 +29,7 @@ import io.worxbend.gitea4s.model.{
   CreateStatusOption,
   GitBlobResponse,
   GitTreeResponse,
+  EditRepoOption,
   LanguageStatistics,
   NewIssuePinsAllowed,
   Note,
@@ -35,12 +39,40 @@ import io.worxbend.gitea4s.model.{
   Tag,
   TagProtection,
   Team,
+  TransferRepoOption,
   User
 }
 import zio.{Chunk, IO}
 import zio.stream.ZStream
 
 private[gitea4s] final class SttpReposApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends ReposApiV1273:
+  override def createForCurrentUser(body: CreateRepoOption): IO[GiteaError, Repository] =
+    executor.send(GiteaRequests.createCurrentUserRepo(config, body))
+
+  override def edit(owner: String, repo: String, body: EditRepoOption): IO[GiteaError, Repository] =
+    executor.send(GiteaRequests.editRepository(config, owner, repo, body))
+
+  override def delete(owner: String, repo: String): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteRepository(config, owner, repo))
+
+  override def fork(owner: String, repo: String, body: CreateForkOption): IO[GiteaError, Repository] =
+    executor.send(GiteaRequests.createFork(config, owner, repo, body))
+
+  override def createBranch(owner: String, repo: String, body: CreateBranchRepoOption): IO[GiteaError, Branch] =
+    executor.send(GiteaRequests.createBranch(config, owner, repo, body))
+
+  override def deleteBranch(owner: String, repo: String, branch: String): IO[GiteaError, Unit] =
+    executor.send(GiteaRequests.deleteBranch(config, owner, repo, branch))
+
+  override def transfer(owner: String, repo: String, body: TransferRepoOption): IO[GiteaError, Repository] =
+    executor.send(GiteaRequests.transferRepository(config, owner, repo, body))
+
+  override def acceptTransfer(owner: String, repo: String): IO[GiteaError, Repository] =
+    executor.send(GiteaRequests.acceptRepositoryTransfer(config, owner, repo))
+
+  override def rejectTransfer(owner: String, repo: String): IO[GiteaError, Repository] =
+    executor.send(GiteaRequests.rejectRepositoryTransfer(config, owner, repo))
+
   override def isAssignee(owner: String, repo: String, assignee: String): IO[GiteaError, Boolean] =
     executor.send(GiteaRequests.repoCheckAssignee(config, owner, repo, assignee))
 

@@ -4,11 +4,17 @@ import io.worxbend.gitea4s.GiteaConfig
 import io.worxbend.gitea4s.api.OrgsApiV1273
 import io.worxbend.gitea4s.error.GiteaError
 import io.worxbend.gitea4s.http.{GiteaRequests, RepoListParams}
-import io.worxbend.gitea4s.model.{Organization, Repository, User}
+import io.worxbend.gitea4s.model.{CreateRepoOption, Organization, Repository, User}
 import zio.IO
 import zio.stream.ZStream
 
 private[gitea4s] final class SttpOrgsApi(config: GiteaConfig, executor: GiteaRequestExecutor) extends OrgsApiV1273:
+  override def createRepository(org: String, body: CreateRepoOption): IO[GiteaError, Repository] =
+    executor.send(GiteaRequests.createOrgRepo(config, org, body))
+
+  override def createRepositoryLegacy(org: String, body: CreateRepoOption): IO[GiteaError, Repository] =
+    executor.send(GiteaRequests.createOrgRepoDeprecated(config, org, body))
+
   override def deleteAllRepositories(org: String): IO[GiteaError, Unit] =
     executor.send(GiteaRequests.orgDeleteRepos(config, org))
 
