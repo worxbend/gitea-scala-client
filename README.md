@@ -8,15 +8,16 @@ A Scala 3 client library for the [Gitea](https://gitea.io) API, built with
 - **JVM baseline:** Java 21 · **Scala:** 3.x
 - **API target:** Gitea `1.27.3` (`gitea-v1.27.3.yaml` is the current contract;
   `plugin-redoc-2.yaml` preserves the 1.26.2 reference)
-- **Source coverage (unreleased):** 482 of 482 v1.27.3 operations; see the
+- **Source coverage:** 482 of 482 v1.27.3 operations; see the
   [operation reference](docs/contract-operations.md) and [wire models](docs/contract-models.md).
-- **Version:** `1.0.0` · **License:** Apache-2.0
+- **Version:** `2.0.0` · **License:** Apache-2.0
 - **Backends:** `backend-zio` (Java `HttpClient`, default) and an optional
   `backend-okhttp` bridge
 - **Documentation:** <https://worxbend.github.io/gitea-scala-client/>
 
-> The repository's current `master` branch has the full typed v1.27.3 surface;
-> the published `1.0.0` artifacts do not. The 312 newly covered routes are
+> Version `2.0.0` includes the full typed Gitea v1.27.3 surface and uses the
+> `com.worxbend` Maven group. Upgrade from `1.0.0` by updating dependency
+> coordinates and recompiling against the current API. The 312 added routes are
 > available through the ordinary `GiteaClient` namespaces, with generated DTOs
 > in `io.worxbend.gitea4s.model.contract`. Exercise destructive routes only
 > against instances you are authorized to change.
@@ -24,10 +25,10 @@ A Scala 3 client library for the [Gitea](https://gitea.io) API, built with
 ## Installation
 
 ```scala
-"com.worxbend" %% "gitea4s-core"           % "1.0.0"
-"com.worxbend" %% "gitea4s-client"         % "1.0.0"
-"com.worxbend" %% "gitea4s-backend-zio"    % "1.0.0"
-"com.worxbend" %% "gitea4s-backend-okhttp" % "1.0.0"
+"com.worxbend" %% "gitea4s-core"           % "2.0.0"
+"com.worxbend" %% "gitea4s-client"         % "2.0.0"
+"com.worxbend" %% "gitea4s-backend-zio"    % "2.0.0"
+"com.worxbend" %% "gitea4s-backend-okhttp" % "2.0.0"
 ```
 
 Most applications only need `gitea4s-backend-zio` (it pulls in `client` and
@@ -48,9 +49,9 @@ prebuilt jar without a build tool).
 
 | Channel | Resolver | Coordinates | Auth |
 | --- | --- | --- | --- |
-| Maven Central | default | `com.worxbend %% gitea4s-* % 1.0.0` | none |
-| GitHub Packages | `https://maven.pkg.github.com/worxbend/gitea-scala-client` | `com.worxbend %% gitea4s-* % 1.0.0` | GitHub token with `read:packages` |
-| JitPack | `https://jitpack.io` | `com.github.worxbend.gitea-scala-client %% gitea4s-* % v1.0.0` | none |
+| Maven Central | default | `com.worxbend %% gitea4s-* % 2.0.0` | none |
+| GitHub Packages | `https://maven.pkg.github.com/worxbend/gitea-scala-client` | `com.worxbend %% gitea4s-* % 2.0.0` | GitHub token with `read:packages` |
+| JitPack | `https://jitpack.io` | `com.github.worxbend.gitea-scala-client %% gitea4s-* % v2.0.0` | none |
 | GitHub Releases | n/a | prebuilt `*.jar` attached to each `v*` release | none |
 
 The `Release` workflow (`.github/workflows/release.yml`) runs on every `v*` tag:
@@ -71,7 +72,7 @@ credentials += Credentials(
   sys.env("GITHUB_ACTOR"),
   sys.env("GITHUB_TOKEN") // a PAT with read:packages
 )
-"com.worxbend" %% "gitea4s-backend-zio" % "1.0.0"
+"com.worxbend" %% "gitea4s-backend-zio" % "2.0.0"
 ```
 
 **JitPack.** No account needed: JitPack builds the tag on first request and
@@ -83,7 +84,7 @@ list. Confirm the exact published coordinates at
 
 ```scala
 resolvers += "jitpack" at "https://jitpack.io"
-"com.github.worxbend.gitea-scala-client" %% "gitea4s-backend-zio" % "v1.0.0"
+"com.github.worxbend.gitea-scala-client" %% "gitea4s-backend-zio" % "v2.0.0"
 ```
 
 Module dependency direction:

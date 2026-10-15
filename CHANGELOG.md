@@ -4,10 +4,24 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Semantic Versioning](https://semver.org). The current
 Gitea contract takes priority over compatibility with the previous client
-release; the next release must communicate this breaking change. The
+release; version 2.0.0 communicates this breaking change. The
 `api-snapshot/` files record the intended current JVM surface.
 
 ## Unreleased
+
+## 2.0.0 — 2026-10-15
+
+### Breaking changes
+
+- Publish all four libraries under `com.worxbend`, replacing `io.worxbend` Maven
+  coordinates. Scala packages remain `io.worxbend.gitea4s`.
+- Release the complete current Gitea 1.27.3 contract. Recompile consumers and
+  update calls that used the previous client surface.
+
+### Publishing
+
+- Publish signed artifacts to Maven Central and GitHub Packages from the same
+  validated release tag, then verify every uploaded POM and jar.
 
 Request telemetry now counts transport failures as attempts. Rate-limit parsing
 rejects signed retry delays and falls back between reset headers only after
@@ -24,8 +38,8 @@ the ordinary `GiteaClient` namespaces; 222 full-schema DTOs live in
 `model.contract`. The generator in `tools/generate_contract.py` produces
 operation builders, typed facades, DTOs, contract audits, wire tests, and
 reference documentation. Multipart attachments and binary artifact/job-log
-downloads have dedicated builders. This source-only change is not in the
-published `1.0.0` artifacts.
+downloads have dedicated builders. These additions first ship in `2.0.0`;
+they are absent from the `1.0.0` artifacts.
 
 The first full-coverage batch adds all eleven operations introduced in Gitea
 1.27.3: current-token metadata and revocation, issue/repository assignee

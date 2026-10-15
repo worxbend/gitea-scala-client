@@ -2,7 +2,7 @@
 
 This project publishes to Maven Central through Mill's Sonatype Central Portal
 support. These notes define local release readiness checks and the tag-triggered
-Central publishing path. The project is at `1.0.0`.
+Central publishing path. The project is at `2.0.0`.
 
 ## Preconditions
 
@@ -139,5 +139,5 @@ refreshed with `./mill compatibility.writeSnapshot`.
 `./mill compatibility.check` compares the current JVM public signatures against
 the checked-in `api-snapshot/` baseline for `core`, `client`, `backend-zio`, and
 `backend-okhttp`. It detects unreviewed surface changes, not compatibility with
-the v1.0.0 release. The current-contract work intentionally breaks the old
-client API and must be released as a major version.
+the v1.0.0 release. Version `2.0.0` releases the intentional current-contract
+API changes and moves Maven coordinates to `com.worxbend`.
