@@ -1,7 +1,7 @@
 # Release Process
 
 This project publishes to Maven Central through Mill's Sonatype Central Portal
-support. These notes define local release readiness checks and the manual
+support. These notes define local release readiness checks and the tag-triggered
 Central publishing path. The project is at `1.0.0`.
 
 ## Preconditions
@@ -14,7 +14,7 @@ Central publishing path. The project is at `1.0.0`.
   directive and the checked-in `mill` launcher's `DEFAULT_MILL_VERSION`.
 - Do not require live Gitea credentials for default validation. Live integration
   tests must remain opt-in through `GITEA_URL` and `GITEA_TOKEN`.
-- Configure the GitHub Actions `maven-central` environment before publishing.
+- Configure the four repository secrets listed below before publishing.
 - Use a non-`-SNAPSHOT` `Versions.library` value for Maven Central releases.
 
 ## Local Validation
@@ -64,16 +64,18 @@ documentation.
 
 ## Maven Central Publishing
 
-`core`, `client`, `backend-zio`, and `backend-okhttp` extend Mill's
-`SonatypeCentralPublishModule`. The manual GitHub Actions workflow
-`.github/workflows/publish-central.yml` validates the build and publishes all
-library artifacts with:
+`core`, `client`, `backend-zio`, and `backend-okhttp` publish together under
+`com.worxbend`. Push a matching `v<version>` tag to run both
+`.github/workflows/publish-central.yml` and `.github/workflows/release.yml`.
+To retry an existing release, choose that tag in the **Run workflow** ref selector.
+Branches and snapshot versions are rejected.
 
-```bash
-./mill mill.javalib.SonatypeCentralPublishModule/publishAll
-```
+Both workflows call the full CI workflow without publishing credentials. The
+publishing job checks out the validated SHA and checks the tag, all four module
+versions, POM coordinates, and internal dependency coordinates before uploading.
+Examples and integration-test modules are excluded from the explicit publish list.
 
-Required GitHub environment secrets:
+Required GitHub repository Actions secrets:
 
 ```text
 MILL_SONATYPE_USERNAME
@@ -82,47 +84,28 @@ MILL_PGP_SECRET_BASE64
 MILL_PGP_PASSPHRASE
 ```
 
-The Sonatype values are Central Portal user-token credentials. The PGP secret is
-the base64-encoded armored secret key accepted by Mill, and the public key must
-be available to Sonatype's verification infrastructure before publishing.
+The Sonatype values are a Central Portal user-token pair. The PGP secret is a
+base64-encoded armored private key; its public key must be on a supported
+keyserver. Verify that the token can publish to the `com.worxbend` namespace.
 
-The workflow refuses `-SNAPSHOT` versions. Its `release` dispatch input controls
-whether Mill automatically publishes the validated Central deployment. Leave it
-`false` when staging a deployment for manual review.
-
-Before the first Central release:
-
-1. Verify the `io.worxbend` namespace in Sonatype Central Portal.
-2. Generate a Central Portal user token and store it as the Sonatype secrets.
-3. Generate or select the release PGP key.
-4. Publish the public PGP key.
-5. Store the base64 secret key and passphrase as the PGP secrets.
-6. Move `Versions.library` and README coordinates to the release version.
-7. Run the `Publish Central` workflow from the release tag or commit.
+The Central workflow signs all four libraries and automatically releases them.
+For a manual staging run, select the release tag and set its `release` input to
+`false`; finish publishing in Central Portal. Public artifact verification runs
+only for automatic releases. The workflow allows up to 20 minutes for Central
+validation, then downloads every POM and main/source/javadoc jar and compares
+its SHA-256 with the local build.
 
 ## GitHub Packages, JitPack, and Release Jars
 
-Maven Central is the canonical channel. Three additional channels distribute the
-same artifacts for convenience and are documented for consumers in `README.md`.
+The `Release` workflow publishes the same four libraries with Mill's
+`MavenPublishModule/publishAll`, using the built-in `GITHUB_TOKEN` and
+`packages: write`. No additional package credentials are needed. It downloads and
+verifies every uploaded POM and jar, then attaches the twelve main/source/javadoc
+jars to the GitHub Release, creating that release if necessary.
 
-The `.github/workflows/release.yml` workflow runs on every `v*` tag push (and can
-be dispatched manually against an existing tag). It reuses the same validation as
-Maven Central, then:
-
-1. Builds all publishable modules with
-   `./mill __.publishM2Local --m-2-repo-path "$GITHUB_WORKSPACE/staging-m2"`.
-2. Generates `.sha1`/`.md5` checksums and uploads the full Maven layout to
-   **GitHub Packages** (`https://maven.pkg.github.com/<owner>/<repo>`) via HTTP
-   `PUT`. Re-runs are idempotent: an existing version returns `409` and is
-   skipped.
-3. Attaches every `*.jar` (main, sources, javadoc) to the **GitHub Release** for
-   the tag, creating the release with auto-generated notes if it does not exist.
-
-The workflow needs no extra secrets: it authenticates with the built-in
-`GITHUB_TOKEN` and the `contents: write` / `packages: write` permissions declared
-in the workflow. It refuses `-SNAPSHOT` versions like the Central workflow does.
-Note that GitHub Packages requires consumers to authenticate even for public
-packages.
+GitHub Packages requires consumers to authenticate even for public packages.
+Publication failures are reported; inspect a partially uploaded version before
+retrying, since release versions are immutable.
 
 **JitPack** builds on demand from `jitpack.yml`, which installs Temurin 21 via
 SDKMAN (the default JitPack image is Java 8), then compiles, tests, and runs

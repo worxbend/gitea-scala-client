@@ -1,6 +1,11 @@
 name: CI
 
 on:
+  workflow_call:
+    outputs:
+      validated-sha:
+        description: Commit checked by the complete CI workflow
+        value: ${{ jobs.mill.outputs.validated-sha }}
   push:
     branches: [master]
   pull_request:
@@ -9,7 +14,7 @@ on:
 # Without this, a push to a branch that has an open PR runs the whole matrix
 # twice, and superseded runs keep burning runners after a follow-up push.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 # This workflow only compiles and tests; it never writes to the repository.
@@ -18,8 +23,11 @@ permissions:
 
 jobs:
   mill:
+    outputs:
+      validated-sha: ${{ steps.commit.outputs.sha }}
     name: Java ${{ matrix.java }} / Scala ${{ matrix.scala }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -32,6 +40,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # compatibility.check reads the pinned v1.0.0 tag
+          persist-credentials: false
+
+      - name: Record validated commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -53,6 +66,9 @@ jobs:
           grep -q 'val scala = "${{ matrix.scala }}"' build.mill
           java -version
           ./mill --version
+
+      - name: Publishing guard tests
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
 
       - name: Compile
         run: ./mill __.compile

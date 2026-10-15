@@ -1,165 +1,85 @@
 name: Release
 
-# Publishes the four library modules to GitHub Packages and attaches their jars
-# to the GitHub Release. Triggered by pushing a `v*` tag, or manually against an
-# existing tag. Maven Central remains a separate, gated workflow
-# (publish-central.yml); JitPack builds on demand from jitpack.yml.
-
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
+  # Choose the existing release tag in the Run workflow ref selector.
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Existing git tag to (re)publish, e.g. v1.0.0"
-        required: true
-        type: string
 
 permissions:
-  contents: write # create the GitHub Release and upload jar assets
-  packages: write # publish Maven artifacts to GitHub Packages
+  contents: read
 
-# A release must never be cancelled part-way through uploading artifacts: half
-# the jars published is worse than none. Queue instead.
 concurrency:
-  group: release-${{ inputs.tag || github.ref }}
+  group: github-packages-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Publish jars to GitHub Packages and Releases
+  tag:
+    name: Require a release tag
+    if: ${{ !github.event.repository.fork }}
     runs-on: ubuntu-latest
-
+    timeout-minutes: 5
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag || github.ref }}
-          fetch-depth: 0
-          # This job's GITHUB_TOKEN carries contents:write and packages:write.
-          # Checkout otherwise leaves it in .git/config as an http.extraheader
-          # for the whole job — including while `./mill __.test` and
-          # `./mill examples.run` execute code from the ref being released.
-          # Nothing here needs the git credential: uploads authenticate
-          # explicitly through `curl -u` and `gh` with GH_TOKEN from `env:`.
-          persist-credentials: false
+      - run: test "$GITHUB_REF_TYPE" = tag
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
+  validate:
+    needs: tag
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      packages: write
+    env:
+      MAVEN_REPOSITORY: https://maven.pkg.github.com/${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validate.outputs.validated-sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: "21"
-
-      - name: Cache Scala dependencies
-        uses: actions/cache@v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cache/coursier
             ~/.cache/mill
           key: ${{ runner.os }}-release-${{ hashFiles('build.mill', 'mill') }}
-
-      - name: Resolve release tag
-        id: meta
+      - name: Tag, validated commit, versions and com.worxbend coordinates agree
         env:
-          # Read the tag through the environment rather than substituting it
-          # into the script text. Git ref names may legally contain `;`, `$`
-          # and backticks, and the `tag` dispatch input is free-form, so a
-          # `${{ }}` splice here would be pasted into the shell as code.
-          INPUT_TAG: ${{ inputs.tag }}
-          REF_TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          TAG="${INPUT_TAG:-$REF_TAG}"
-          case "$TAG" in
-            v[0-9]*) ;;
-            *) echo "Refusing to release '$TAG': expected a v<version> tag." >&2; exit 1 ;;
-          esac
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Releasing $TAG"
-
-      - name: Verify release version
+          VALIDATED_SHA: ${{ needs.validate.outputs.validated-sha }}
+        run: python3 .github/scripts/validate-release.py
+      - name: Publish libraries to GitHub Packages
+        timeout-minutes: 25
         env:
-          TAG: ${{ steps.meta.outputs.tag }}
+          MILL_MAVEN_USERNAME: ${{ github.actor }}
+          MILL_MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -euo pipefail
-
-          if grep -q 'val library = ".*-SNAPSHOT"' build.mill; then
-            echo "Refusing to publish a SNAPSHOT version." >&2
-            exit 1
-          fi
-
-          # The tag names the release; `Versions.library` names the artifacts.
-          # Nothing compared them, so tagging v2.0.0 while build.mill still said
-          # 1.0.0 published 1.0.0 jars, attached them to a Release called
-          # v2.0.0, and reported success. Anyone resolving 2.0.0 afterwards got
-          # a version that was never published.
-          library="$(sed -n 's/^[[:space:]]*val library = "\(.*\)"$/\1/p' build.mill)"
-
-          if [ -z "$library" ]; then
-            echo "Could not read 'val library' from build.mill." >&2
-            exit 1
-          fi
-
-          if [ "$TAG" != "v$library" ]; then
-            echo "Tag '$TAG' does not match build.mill version '$library' (expected 'v$library')." >&2
-            exit 1
-          fi
-
-          echo "Publishing $library as $TAG"
-
-      - name: Validate build
-        run: |
-          ./mill __.compile
-          ./mill __.test
-          ./mill examples.run
-          ./mill compatibility.check
-
-      - name: Build publishable artifacts
-        run: |
-          rm -rf "$GITHUB_WORKSPACE/staging-m2"
-          ./mill __.publishM2Local --m-2-repo-path "$GITHUB_WORKSPACE/staging-m2"
-
-      - name: Publish to GitHub Packages
+          ./mill mill.javalib.MavenPublishModule/publishAll \
+            --publishArtifacts '{core,client,backend-zio,backend-okhttp}.publishArtifacts' \
+            --releaseUri "$MAVEN_REPOSITORY" --snapshotUri "$MAVEN_REPOSITORY"
+      - name: Verify every GitHub Packages POM and jar
+        timeout-minutes: 10
         env:
-          GH_ACTOR: ${{ github.actor }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          staging="$GITHUB_WORKSPACE/staging-m2"
-          base="https://maven.pkg.github.com/${GITHUB_REPOSITORY}"
-
-          # Snapshot the artifact list before adding checksums to it.
-          find "$staging" -type f ! -name '*.sha1' ! -name '*.md5' | sort > /tmp/artifacts.txt
-
-          # Maven clients expect a .sha1/.md5 next to every artifact.
-          while IFS= read -r f; do
-            sha1sum "$f" | awk '{print $1}' > "$f.sha1"
-            md5sum  "$f" | awk '{print $1}' > "$f.md5"
-          done < /tmp/artifacts.txt
-
-          # Upload every file, preserving its Maven layout path under the repo.
-          find "$staging" -type f | sort | while IFS= read -r f; do
-            rel="${f#"$staging"/}"
-            code=$(curl -sS -o /tmp/gh-pkg-resp -w '%{http_code}' \
-              -u "${GH_ACTOR}:${GH_TOKEN}" \
-              --upload-file "$f" "${base}/${rel}")
-            case "$code" in
-              2*)  echo "uploaded  $rel" ;;
-              409) echo "exists    $rel (skipped)" ;;
-              *)   echo "FAILED    $rel ($code)"; cat /tmp/gh-pkg-resp; echo; exit 1 ;;
-            esac
-          done
-
+          GITHUB_PACKAGES_USERNAME: ${{ github.actor }}
+          GITHUB_PACKAGES_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/verify-published.py "$MAVEN_REPOSITORY"
+      - name: Stage release jars
+        run: ./mill '{core,client,backend-zio,backend-okhttp}.publishM2Local' --m-2-repo-path "$RUNNER_TEMP/staging-m2"
       - name: Attach jars to the GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.meta.outputs.tag }}
         run: |
           set -euo pipefail
-          tag="$TAG"
-          mapfile -t jars < <(find "$GITHUB_WORKSPACE/staging-m2" -type f -name '*.jar' | sort)
-          if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --title "$tag" --generate-notes --verify-tag
+          mapfile -t jars < <(find "$RUNNER_TEMP/staging-m2/com/worxbend" -type f -name '*.jar' | sort)
+          test "${#jars[@]}" = 12
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
           fi
-          gh release upload "$tag" "${jars[@]}" --clobber
+          gh release upload "$GITHUB_REF_NAME" "${jars[@]}" --clobber

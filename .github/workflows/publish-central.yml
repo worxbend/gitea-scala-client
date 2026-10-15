@@ -1,119 +1,89 @@
 name: Publish Central
 
 on:
+  push:
+    tags: ["v*"]
+  # Choose the existing release tag in the Run workflow ref selector.
   workflow_dispatch:
     inputs:
       release:
-        description: "Automatically publish the validated Central Portal deployment"
+        description: Automatically release the validated Central deployment
         required: true
-        default: false
+        default: true
         type: boolean
 
-# GITHUB_TOKEN is only used to check out the repository. Publishing
-# authenticates to Sonatype with its own credentials, so the token needs
-# no write scope even though it shares a process with the signing key.
 permissions:
   contents: read
 
-# Maven Central publication is immutable, so a cancelled mid-upload run is worse
-# than a queued one.
 concurrency:
-  group: publish-central
+  group: central-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  publish:
-    name: Publish Maven Central artifacts
+  tag:
+    name: Require a release tag
+    if: ${{ !github.event.repository.fork }}
     runs-on: ubuntu-latest
-    environment: maven-central
-
+    timeout-minutes: 5
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          # Tags are needed by the version check below, and the default shallow
-          # checkout fetches none.
-          fetch-depth: 0
+      - run: test "$GITHUB_REF_TYPE" = tag
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
+  validate:
+    needs: tag
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validate.outputs.validated-sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: temurin
           java-version: "21"
-
-      - name: Cache Scala dependencies
-        uses: actions/cache@v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cache/coursier
             ~/.cache/mill
-          key: ${{ runner.os }}-publish-central-${{ hashFiles('build.mill', 'mill') }}
-
-      - name: Verify release version
-        run: |
-          set -euo pipefail
-
-          if grep -q 'val library = ".*-SNAPSHOT"' build.mill; then
-            echo "Refusing to publish a SNAPSHOT version to Maven Central." >&2
-            exit 1
-          fi
-
-          # This workflow is dispatched by hand against whatever ref the
-          # operator picked, and a Maven Central release can never be taken
-          # back. The only check was the SNAPSHOT one above, so a mistyped ref
-          # could permanently publish an arbitrary commit under whatever
-          # version build.mill happened to carry.
-          #
-          # Require the commit to be the one that was actually released: it has
-          # to carry the matching v<version> tag.
-          library="$(sed -n 's/^[[:space:]]*val library = "\(.*\)"$/\1/p' build.mill)"
-
-          if [ -z "$library" ]; then
-            echo "Could not read 'val library' from build.mill." >&2
-            exit 1
-          fi
-
-          if ! git tag --points-at HEAD | grep -qx "v$library"; then
-            echo "Refusing to publish: HEAD is not tagged 'v$library'." >&2
-            echo "Tags on HEAD: $(git tag --points-at HEAD | tr '\n' ' ')" >&2
-            exit 1
-          fi
-
-          echo "Publishing $library from tag v$library"
-
-      - name: Validate build
-        run: |
-          ./mill __.compile
-          ./mill __.test
-          ./mill examples.run
-          ./mill compatibility.check
-          ./mill __.docJar __.sourceJar __.publishArtifacts
-
-      - name: Publish to Sonatype Central Portal
+          key: ${{ runner.os }}-release-${{ hashFiles('build.mill', 'mill') }}
+      - name: Tag, validated commit, versions and com.worxbend coordinates agree
+        env:
+          VALIDATED_SHA: ${{ needs.validate.outputs.validated-sha }}
+        run: python3 .github/scripts/validate-release.py
+      - name: Publishing credentials are present
         env:
           MILL_SONATYPE_USERNAME: ${{ secrets.MILL_SONATYPE_USERNAME }}
           MILL_SONATYPE_PASSWORD: ${{ secrets.MILL_SONATYPE_PASSWORD }}
           MILL_PGP_SECRET_BASE64: ${{ secrets.MILL_PGP_SECRET_BASE64 }}
           MILL_PGP_PASSPHRASE: ${{ secrets.MILL_PGP_PASSPHRASE }}
-          # Passed through the environment rather than spliced into the
-          # command text, so a ref name containing shell metacharacters
-          # cannot become part of the command.
-          SHOULD_RELEASE: ${{ inputs.release }}
-          REF_NAME: ${{ github.ref_name }}
         run: |
-          # Credentials and signing arguments are deliberately NOT passed as
-          # flags. Process arguments are readable through /proc/<pid>/cmdline
-          # and show up in `ps`, so `--password` and a `--gpgArgs` string
-          # carrying `--passphrase=` put both secrets in the process table for
-          # the lifetime of the publish. Mill already reads all four from the
-          # MILL_SONATYPE_* and MILL_PGP_* variables in the `env:` block above,
-          # and the gpg arguments removed here were character-for-character
-          # Mill's own default. Do not reinstate them.
+          missing=""
+          for name in MILL_SONATYPE_USERNAME MILL_SONATYPE_PASSWORD MILL_PGP_SECRET_BASE64 MILL_PGP_PASSPHRASE; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository publishing secrets:$missing"
+            exit 1
+          fi
+      - name: Publish signed libraries to Maven Central
+        timeout-minutes: 25
+        env:
+          MILL_SONATYPE_USERNAME: ${{ secrets.MILL_SONATYPE_USERNAME }}
+          MILL_SONATYPE_PASSWORD: ${{ secrets.MILL_SONATYPE_PASSWORD }}
+          MILL_PGP_SECRET_BASE64: ${{ secrets.MILL_PGP_SECRET_BASE64 }}
+          MILL_PGP_PASSPHRASE: ${{ secrets.MILL_PGP_PASSPHRASE }}
+          SHOULD_RELEASE: ${{ github.event_name == 'push' || inputs.release }}
+        run: |
           ./mill mill.javalib.SonatypeCentralPublishModule/publishAll \
-            --publishArtifacts __.publishArtifacts \
-            --readTimeout 36000 \
-            --awaitTimeout 36000 \
-            --connectTimeout 36000 \
-            --shouldRelease "$SHOULD_RELEASE" \
-            --bundleName "io.worxbend-gitea4s-$REF_NAME"
+            --publishArtifacts '{core,client,backend-zio,backend-okhttp}.publishArtifacts' \
+            --shouldRelease "$SHOULD_RELEASE" --awaitTimeout 1200000
+      - name: Verify every public Central POM and jar
+        if: github.event_name == 'push' || inputs.release
+        timeout-minutes: 20
+        run: python3 .github/scripts/verify-published.py https://repo.maven.apache.org/maven2

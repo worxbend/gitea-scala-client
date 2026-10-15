@@ -24,14 +24,14 @@ A Scala 3 client library for the [Gitea](https://gitea.io) API, built with
 ## Installation
 
 ```scala
-"io.worxbend" %% "gitea4s-core"           % "1.0.0"
-"io.worxbend" %% "gitea4s-client"         % "1.0.0"
-"io.worxbend" %% "gitea4s-backend-zio"    % "1.0.0"
-"io.worxbend" %% "gitea4s-backend-okhttp" % "1.0.0"
+"com.worxbend" %% "gitea4s-core"           % "1.0.0"
+"com.worxbend" %% "gitea4s-client"         % "1.0.0"
+"com.worxbend" %% "gitea4s-backend-zio"    % "1.0.0"
+"com.worxbend" %% "gitea4s-backend-okhttp" % "1.0.0"
 ```
 
 Most applications only need `gitea4s-backend-zio` (it pulls in `client` and
-`core`). Maven Central publishing runs through the gated `Publish Central`
+`core`). Maven Central publishing runs on release tags through the `Publish Central`
 workflow; see `RELEASE.md`. To build or publish to your local Maven repo
 instead:
 
@@ -48,8 +48,8 @@ prebuilt jar without a build tool).
 
 | Channel | Resolver | Coordinates | Auth |
 | --- | --- | --- | --- |
-| Maven Central | default | `io.worxbend %% gitea4s-* % 1.0.0` | none |
-| GitHub Packages | `https://maven.pkg.github.com/worxbend/gitea-scala-client` | `io.worxbend %% gitea4s-* % 1.0.0` | GitHub token with `read:packages` |
+| Maven Central | default | `com.worxbend %% gitea4s-* % 1.0.0` | none |
+| GitHub Packages | `https://maven.pkg.github.com/worxbend/gitea-scala-client` | `com.worxbend %% gitea4s-* % 1.0.0` | GitHub token with `read:packages` |
 | JitPack | `https://jitpack.io` | `com.github.worxbend.gitea-scala-client %% gitea4s-* % v1.0.0` | none |
 | GitHub Releases | n/a | prebuilt `*.jar` attached to each `v*` release | none |
 
@@ -71,13 +71,13 @@ credentials += Credentials(
   sys.env("GITHUB_ACTOR"),
   sys.env("GITHUB_TOKEN") // a PAT with read:packages
 )
-"io.worxbend" %% "gitea4s-backend-zio" % "1.0.0"
+"com.worxbend" %% "gitea4s-backend-zio" % "1.0.0"
 ```
 
 **JitPack.** No account needed: JitPack builds the tag on first request and
 serves each module under the `com.github.worxbend.gitea-scala-client` group (the
 `_3` Scala suffix is preserved, so `%%` still works). Inter-module dependencies
-keep their `io.worxbend` coordinates, so also keep Maven Central on the resolver
+keep their `com.worxbend` coordinates, so also keep Maven Central on the resolver
 list. Confirm the exact published coordinates at
 <https://jitpack.io/#worxbend/gitea-scala-client>:
 
